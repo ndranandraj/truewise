@@ -1,18 +1,21 @@
 """Truewise pipeline configuration.
 
 Central place for source URLs, paths, and the field mapping used to build the
-Value Check spine from College Scorecard's Field-of-Study data.
+Value Check spine from College Scorecard data.
 
-Field names: College Scorecard's bulk CSV column names are stable but occasionally
-renamed between releases, and the Field-of-Study dictionary lives in an .xlsx we
-can't parse blind. So instead of hard-coding one name per concept, each logical
-field lists CANDIDATE column names; `resolve_columns()` picks the first that is
-actually present in the downloaded file and fails loudly if none match. That keeps
-the pipeline honest across data refreshes.
+Two source files are needed and joined on UNITID:
+  * Field-of-Study file  -> per-program median earnings, debt, and the count of
+    graduates out-earning a typical HS grad.
+  * Institution file     -> the earnings THRESHOLDS (EARN_THR_STATE / EARN_THR_NAT):
+    the "typical high-school-graduate earnings" benchmark. These are institution-level
+    (one per school, based on its state) and are NOT in the Field-of-Study file, so
+    the federal earnings-premium (median earnings vs threshold) requires this join.
 
-Confirmed from the College Scorecard changelog (2026-03-23 release): EARN_THR_STATE
-and EARN_THR_NAT are the state/national earnings thresholds (typical HS-grad earnings
-benchmark) that underpin the federal earnings-premium (EP) test.
+Field names: bulk-CSV column names are stable but occasionally renamed between
+releases, and the dictionary lives in an .xlsx we can't parse blind. So each logical
+field lists CANDIDATE column names; `resolve_columns()` picks the first present and
+fails loudly if a required one is missing. Names below were confirmed against the
+2026 Field-of-Study file header. Suppressed values appear as 'PS' / 'NA'.
 """
 
 from __future__ import annotations
@@ -26,44 +29,48 @@ ARCHIVE_DIR = ROOT / "archive" / "fvt"  # dated snapshots = FVT/GE Monitor artif
 DB_PATH = DATA_DIR / "truewise.duckdb"
 PARQUET_DIR = DATA_DIR / "parquet"
 
-# The Scorecard data home lists date-stamped bulk files. We parse the current
-# "Most Recent ... Field of Study" link from this page rather than hard-code a
-# filename that changes each release.
 SCORECARD_DATA_HOME = "https://collegescorecard.ed.gov/data/"
 
-# --- Field-of-Study logical field -> candidate column names (first present wins) ---
-# Keys are Truewise's internal names; values are ordered candidates to look for.
+# Bulk files to fetch: logical name -> substring identifying its link on the data home.
+BULK_FILES = {
+    "field_of_study": "Most-Recent-Cohorts-Field-of-Study",
+    "institution": "Most-Recent-Cohorts-Institution",
+}
+
+# --- Field-of-Study: logical field -> candidate column names (first present wins) ---
 FOS_FIELD_CANDIDATES: dict[str, list[str]] = {
-    # Identity / grain
     "unitid": ["UNITID"],
     "opeid6": ["OPEID6"],
     "inst_name": ["INSTNM"],
     "control": ["CONTROL"],
-    "state": ["STABBR", "ST_FIPS"],
     "cip_code": ["CIPCODE"],
     "cip_desc": ["CIPDESC"],
     "credential_level": ["CREDLEV"],
     "credential_desc": ["CREDDESC"],
     "completers_count": ["IPEDSCOUNT1", "IPEDSCOUNT2"],
-    # Earnings after completion (median). Candidates cover recent renames; the
-    # 2026-03-23 release added a 4-year-after-completion measure.
-    "earnings_median_1yr": ["EARN_MDN_1YR", "EARN_MDN_HI_1YR", "MD_EARN_WNE_1YR"],
-    "earnings_median_4yr": ["EARN_MDN_4YR", "EARN_MDN_HI_4YR", "MD_EARN_WNE_4YR"],
-    # Earnings thresholds = typical HS-grad earnings (the EP benchmark). CONFIRMED.
+    # Median earnings after completion.
+    "earnings_median_1yr": ["EARN_MDN_1YR", "EARN_MDN_HI_1YR"],
+    "earnings_median_4yr": ["EARN_MDN_4YR", "EARN_MDN_HI_4YR"],
+    # Count of graduates (working, not enrolled) earning above the HS-grad threshold,
+    # and the working-not-enrolled denominator -> "share out-earning a HS grad".
+    "earn_gt_threshold_1yr": ["EARN_GT_THRESHOLD_1YR"],
+    "earn_count_wne_1yr": ["EARN_COUNT_WNE_1YR"],
+    # Median debt at graduation.
+    "debt_median": ["DEBT_ALL_STGP_EVAL_MDN", "DEBT_ALL_STGP_ANY_MDN"],
+}
+FOS_REQUIRED = ["unitid", "cip_code", "credential_level", "earnings_median_1yr"]
+
+# --- Institution: logical field -> candidate column names ---
+# EARN_THR_STATE / EARN_THR_NAT confirmed added to Scorecard on 2026-03-23.
+INST_FIELD_CANDIDATES: dict[str, list[str]] = {
+    "unitid": ["UNITID"],
+    "inst_name": ["INSTNM"],
+    "state": ["STABBR"],
     "earnings_threshold_state": ["EARN_THR_STATE"],
     "earnings_threshold_national": ["EARN_THR_NAT"],
-    # Median debt at graduation for the program.
-    "debt_median": [
-        "DEBT_ALL_STGP_EVAL_MDN",
-        "DEBT_ALL_STGP_EVAL_MDN10YR",
-        "DEBT_ALL_STGP_ANY_MDN",
-        "DEBTMEDIAN",
-    ],
 }
+INST_REQUIRED = ["unitid", "earnings_threshold_state", "earnings_threshold_national"]
 
 # Scorecard suppresses small-cohort values. These sentinels must become NULL and
 # be surfaced as "insufficient data" — never imputed.
 SUPPRESSION_SENTINELS = {"PrivacySuppressed", "PS", "NULL", "", "NA"}
-
-# Preferred earnings horizon for the earnings-premium test (fallback order).
-EARNINGS_FOR_EP = ["earnings_median_1yr", "earnings_median_4yr"]

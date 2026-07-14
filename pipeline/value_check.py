@@ -36,6 +36,7 @@ WITH base AS (
         cip_code, cip_desc, credential_level, credential_desc,
         completers_count,
         earnings_median_1yr, earnings_median_4yr,
+        earn_gt_threshold_1yr, earn_count_wne_1yr,
         earnings_threshold_state, earnings_threshold_national,
         debt_median,
         COALESCE(earnings_median_1yr, earnings_median_4yr) AS earnings,
@@ -59,6 +60,12 @@ SELECT
         WHEN earnings < earnings_threshold_state THEN 'fails_earnings_premium'
         ELSE 'passes_earnings_premium'
     END AS value_flag,
+    -- Intuitive companion metric: share of working graduates out-earning a typical
+    -- HS grad (ED's own count / working-not-enrolled count). Not the EP test itself.
+    CASE WHEN earn_gt_threshold_1yr IS NULL OR earn_count_wne_1yr IS NULL
+              OR earn_count_wne_1yr = 0 THEN NULL
+         ELSE round(earn_gt_threshold_1yr / earn_count_wne_1yr, 3) END
+                                                             AS share_earning_above_hs_grad,
     CASE WHEN earnings IS NULL OR earnings = 0 OR debt_median IS NULL THEN NULL
          ELSE round(debt_median / earnings, 3) END           AS debt_to_earnings_ratio,
     '{source}' AS source_dataset

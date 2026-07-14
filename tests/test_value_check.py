@@ -10,7 +10,24 @@ import duckdb
 import pytest
 
 from pipeline.build_spine import resolve_columns
+from pipeline.config import (
+    FOS_FIELD_CANDIDATES,
+    FOS_REQUIRED,
+    INST_FIELD_CANDIDATES,
+    INST_REQUIRED,
+)
 from pipeline.value_check import build_value_check
+
+_NUMERIC = {
+    "completers_count",
+    "earnings_median_1yr",
+    "earnings_median_4yr",
+    "earn_gt_threshold_1yr",
+    "earn_count_wne_1yr",
+    "earnings_threshold_state",
+    "earnings_threshold_national",
+    "debt_median",
+}
 
 FOS_COLUMNS = [
     "unitid",
@@ -25,6 +42,8 @@ FOS_COLUMNS = [
     "completers_count",
     "earnings_median_1yr",
     "earnings_median_4yr",
+    "earn_gt_threshold_1yr",
+    "earn_count_wne_1yr",
     "earnings_threshold_state",
     "earnings_threshold_national",
     "debt_median",
@@ -33,20 +52,7 @@ FOS_COLUMNS = [
 
 def _con_with_fos(rows: list[dict]) -> duckdb.DuckDBPyConnection:
     con = duckdb.connect(":memory:")
-    cols_ddl = ", ".join(
-        f"{c} DOUBLE"
-        if c
-        in {
-            "completers_count",
-            "earnings_median_1yr",
-            "earnings_median_4yr",
-            "earnings_threshold_state",
-            "earnings_threshold_national",
-            "debt_median",
-        }
-        else f"{c} VARCHAR"
-        for c in FOS_COLUMNS
-    )
+    cols_ddl = ", ".join(f"{c} DOUBLE" if c in _NUMERIC else f"{c} VARCHAR" for c in FOS_COLUMNS)
     con.execute(f"CREATE TABLE fos ({cols_ddl})")
     for r in rows:
         placeholders = ", ".join("?" for _ in FOS_COLUMNS)
@@ -153,6 +159,39 @@ def test_debt_to_earnings_ratio_and_null_safety():
     )
 
 
+def test_share_earning_above_hs_grad():
+    con = _con_with_fos(
+        [
+            _row(
+                unitid="shr",
+                earnings_median_1yr=40000,
+                earnings_threshold_state=30000,
+                earn_gt_threshold_1yr=30,
+                earn_count_wne_1yr=40,
+            ),
+            _row(
+                unitid="nodenom",
+                earnings_median_1yr=40000,
+                earnings_threshold_state=30000,
+                earn_gt_threshold_1yr=30,
+                earn_count_wne_1yr=0,
+            ),
+        ]
+    )
+    build_value_check(con)
+    share = con.execute(
+        "SELECT share_earning_above_hs_grad FROM value_check WHERE unitid='shr'"
+    ).fetchone()[0]
+    assert share == pytest.approx(0.75)
+    # Zero denominator -> NULL, not an error.
+    assert (
+        con.execute(
+            "SELECT share_earning_above_hs_grad FROM value_check WHERE unitid='nodenom'"
+        ).fetchone()[0]
+        is None
+    )
+
+
 def test_national_premium_independent_of_state():
     con = _con_with_fos(
         [
@@ -175,23 +214,21 @@ def test_national_premium_independent_of_state():
 # --- column resolver -------------------------------------------------------
 
 
-def test_resolve_columns_picks_first_present_candidate():
-    actual = [
-        "UNITID",
-        "CIPCODE",
-        "CREDLEV",
-        "EARN_THR_STATE",
-        "EARN_THR_NAT",
-        "EARN_MDN_1YR",
-        "DEBT_ALL_STGP_EVAL_MDN",
-    ]
-    resolved = resolve_columns(actual)
+def test_resolve_fos_columns_picks_first_present_candidate():
+    actual = ["UNITID", "CIPCODE", "CREDLEV", "EARN_MDN_1YR", "DEBT_ALL_STGP_EVAL_MDN"]
+    resolved = resolve_columns(actual, FOS_FIELD_CANDIDATES, FOS_REQUIRED)
     assert resolved["unitid"] == "UNITID"
     assert resolved["earnings_median_1yr"] == "EARN_MDN_1YR"
-    assert resolved["earnings_threshold_state"] == "EARN_THR_STATE"
     assert resolved["debt_median"] == "DEBT_ALL_STGP_EVAL_MDN"
+
+
+def test_resolve_inst_columns_finds_thresholds():
+    actual = ["UNITID", "STABBR", "EARN_THR_STATE", "EARN_THR_NAT"]
+    resolved = resolve_columns(actual, INST_FIELD_CANDIDATES, INST_REQUIRED)
+    assert resolved["earnings_threshold_state"] == "EARN_THR_STATE"
+    assert resolved["earnings_threshold_national"] == "EARN_THR_NAT"
 
 
 def test_resolve_columns_raises_when_required_missing():
     with pytest.raises(SystemExit):
-        resolve_columns(["UNITID", "CIPCODE"])  # missing CREDLEV + thresholds
+        resolve_columns(["UNITID", "CIPCODE"], FOS_FIELD_CANDIDATES, FOS_REQUIRED)
