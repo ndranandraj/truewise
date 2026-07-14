@@ -10,7 +10,6 @@ Usage (from repo root):
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import duckdb
 
@@ -74,8 +73,10 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(summary, indent=2))
 
-    print(f"programs: {total:,}  decided: {decided:,}  "
-          f"fail EP: {fails:,} ({100 * fails / decided:.1f}% of decided)")
+    print(
+        f"programs: {total:,}  decided: {decided:,}  "
+        f"fail EP: {fails:,} ({100 * fails / decided:.1f}% of decided)"
+    )
     print("\nTop 5 states by count of programs failing the earnings-premium test:")
     for s, f, d in by_state[:5]:
         print(f"  {s}: {f:,} programs fail ({100 * f / d:.0f}% of {d:,} decided)")

@@ -22,9 +22,31 @@ Usage (run from the repo root):
 
 from __future__ import annotations
 
+import datetime as dt
+
 import duckdb
 
-from pipeline.config import DB_PATH, PARQUET_DIR
+from pipeline.config import ARCHIVE_DIR, DB_PATH, PARQUET_DIR
+
+# Compact columns preserved in the dated FVT/GE Monitor snapshot (diffable, ~1.4 MB).
+SNAPSHOT_COLUMNS = [
+    "unitid",
+    "opeid6",
+    "inst_name",
+    "state",
+    "cip_code",
+    "credential_level",
+    "credential_desc",
+    "earnings",
+    "earnings_threshold_state",
+    "earnings_threshold_national",
+    "earnings_premium_state",
+    "fails_ep_state",
+    "value_flag",
+    "share_earning_above_hs_grad",
+    "debt_median",
+    "debt_to_earnings_ratio",
+]
 
 SOURCE_DATASET = "college_scorecard_field_of_study"
 
@@ -99,6 +121,16 @@ def main() -> None:
     out = PARQUET_DIR / "value_check.parquet"
     con.execute(f"COPY value_check TO '{out}' (FORMAT PARQUET)")
     print(f"\nWrote -> {out}")
+
+    # Dated FVT/GE Monitor snapshot — the compact, committed, diffable record.
+    snap_dir = ARCHIVE_DIR / dt.date.today().isoformat()
+    snap_dir.mkdir(parents=True, exist_ok=True)
+    snap = snap_dir / "value_check_snapshot.parquet"
+    con.execute(
+        f"COPY (SELECT {', '.join(SNAPSHOT_COLUMNS)} FROM value_check) "
+        f"TO '{snap}' (FORMAT PARQUET, COMPRESSION zstd)"
+    )
+    print(f"Monitor snapshot -> {snap}")
     con.close()
 
 

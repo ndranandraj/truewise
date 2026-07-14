@@ -1,0 +1,50 @@
+name: FVT Monitor
+
+# Monthly refresh: pull ED's latest Scorecard data, rebuild Value Check, and commit a
+# dated snapshot so the FVT/GE Monitor accumulates a diffable history ED does not keep.
+on:
+  schedule:
+    - cron: "0 12 8 * *"   # 08th of each month, 12:00 UTC
+  workflow_dispatch: {}     # allow manual runs
+
+permissions:
+  contents: write           # to commit the snapshot + summary back to the repo
+
+concurrency:
+  group: fvt-monitor
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download latest Scorecard data (network)
+        run: python -m pipeline.download
+
+      - name: Build spine + Value Check + summary
+        run: |
+          python -m pipeline.build_spine
+          python -m pipeline.value_check
+          python -m analysis.summary
+
+      - name: Commit snapshot + summary if changed
+        run: |
+          git config user.name "truewise-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add archive/ site/data/value_check_summary.json
+          if git diff --cached --quiet; then
+            echo "No changes this run."
+          else
+            git commit -m "FVT Monitor: snapshot $(date -u +%Y-%m-%d) [skip ci]"
+            git push
+          fi
