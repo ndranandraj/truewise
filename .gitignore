@@ -18,3 +18,14 @@ __pycache__/
 .DS_Store
 .idea/
 .vscode/
+
+# Planning / internal strategy & goal docs — kept LOCAL, never published to GitHub
+/PLAN.md
+/HANDOFF.md
+/CLAUDE.md
+/Truewise - Project Plan v2 (Reputation-First).md
+/Truewise - Iteration Plan & Checklist.md
+/Truewise - Education Data Platform Plan.pdf
+/College ROI Analyzer - Project Plan.pdf
+/docs/IMPACT_LOG.md
+/docs/GO_PUBLIC.md

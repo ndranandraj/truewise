@@ -61,5 +61,4 @@ capped ~$50/yr (truewise.us). One project at a time.
 ## Success signals (why this exists)
 
 Public, adoptable artifacts with countable adoption: a published CC-BY dataset (with DOIs), a
-pip package, a methodology write-up, press coverage, and talks — all recorded in
-[`IMPACT_LOG.md`](IMPACT_LOG.md) from day one.
+pip package, a methodology write-up, press coverage, and talks.
