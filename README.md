@@ -5,7 +5,7 @@ guidance for students and families. Mission: replace the scary or hidden number 
 price, anecdote, unclaimed aid) with the real one, drawn from public data.
 
 - **Name:** Truewise
-- **Domain:** truewise.us (available as of 2026-07; not yet registered)
+- **Domain:** [truewise.dev](https://truewise.dev) (registered 2026-07-13)
 - **Stage:** Iteration 0 (foundation) built: static landing page, CI, tests, docs. Ready to go
   public. First module is **Value Check**.
 - **Nature:** Portfolio / skills / social-impact project. ~$0 direct revenue expected.

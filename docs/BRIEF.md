@@ -56,7 +56,7 @@ Positioning is infrastructure, not another consumer site. Where a module overlap
 ## Constraints
 
 Revenue expected ≈ $0; this is a portfolio, skills, and social-impact project. Domain spend
-capped ~$50/yr (truewise.us). One project at a time.
+capped ~$50/yr (truewise.dev). One project at a time.
 
 ## Success signals (why this exists)
 
