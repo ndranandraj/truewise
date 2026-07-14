@@ -113,6 +113,18 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(15, 157, 106, 0); }
 }
 
+.finding {
+  margin: 24px 0 0;
+  padding: 18px 20px;
+  border-left: 4px solid var(--accent);
+  background: var(--bg-alt);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  max-width: 62ch;
+  font-size: 1.05rem;
+  color: var(--ink);
+}
+.finding strong { color: var(--brand-deep); }
+
 /* Panels */
 .panel { padding: 56px 0; border-top: 1px solid var(--line); }
 .panel.alt { background: var(--bg-alt); }
