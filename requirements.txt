@@ -1,0 +1,15 @@
+# Truewise — core dependencies for the data spine + first module
+# Install: pip install -r requirements.txt
+
+duckdb>=1.0.0          # columnar analytics engine (the spine)
+pandas>=2.0.0          # data wrangling
+requests>=2.31.0       # downloading bulk files / API calls
+pyarrow>=15.0.0        # Parquet read/write
+python-dotenv>=1.0.0   # load API key from .env
+
+# Analysis / modeling (add when needed)
+# scikit-learn>=1.4.0  # earnings estimation for thin cohorts
+# geopandas>=0.14.0    # maps
+
+# Dev / testing
+pytest>=8.0.0
