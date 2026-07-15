@@ -71,5 +71,5 @@ INST_FIELD_CANDIDATES: dict[str, list[str]] = {
 INST_REQUIRED = ["unitid", "earnings_threshold_state", "earnings_threshold_national"]
 
 # Scorecard suppresses small-cohort values. These sentinels must become NULL and
-# be surfaced as "insufficient data" — never imputed.
+# be surfaced as "insufficient data", never imputed.
 SUPPRESSION_SENTINELS = {"PrivacySuppressed", "PS", "NULL", "", "NA"}

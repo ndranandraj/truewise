@@ -4,7 +4,7 @@ Runs a battery of checks against the built `value_check` table so a bad data ref
 (schema drift, a broken join, an imputation bug, another wrong-earnings-horizon slip)
 fails loudly instead of shipping. Used two ways:
 
-  * `python -m analysis.validate` — checks data/parquet/value_check.parquet; exit 1 on failure.
+  * `python -m analysis.validate`, checks data/parquet/value_check.parquet; exit 1 on failure.
   * the FVT Monitor workflow runs it before committing a refresh.
 
 Each check is a small function taking a DuckDB connection that has a `vc` view and
@@ -51,7 +51,7 @@ def _flags(con):
 
 @check("no_imputation_of_suppressed")
 def _no_imputation(con):
-    # An insufficient_data row must be missing earnings or the state threshold —
+    # An insufficient_data row must be missing earnings or the state threshold ,
     # i.e. we never labelled a fully-populated row insufficient, nor vice-versa.
     bad = _scalar(
         con,
@@ -131,7 +131,7 @@ def main() -> None:
 
     path = PARQUET_DIR / "value_check.parquet"
     if not path.exists():
-        raise SystemExit("No value_check.parquet — run the pipeline first.")
+        raise SystemExit("No value_check.parquet, run the pipeline first.")
     con = duckdb.connect()
     con.execute(f"CREATE VIEW vc AS SELECT * FROM read_parquet('{path}')")
     results = run(con)

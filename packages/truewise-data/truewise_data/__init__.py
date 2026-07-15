@@ -1,4 +1,4 @@
-"""truewise-data — clean US college program value data in two lines of Python.
+"""truewise-data, clean US college program value data in two lines of Python.
 
     import truewise_data as tw
     df = tw.load_value_check()   # one row per school x field of study x credential

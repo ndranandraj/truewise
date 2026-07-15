@@ -16,8 +16,8 @@ Verify URLs and field names against current docs when you build (federal sites r
 - API key (free): https://api.data.gov/signup/  (rate limit 1,000 req/IP/hour)
 - Data dictionary + field-of-study docs linked from the data home page.
 - Last refreshed: 2026-06-10. Institution files cover 1996-97 → 2025-26.
-- Two access routes: **bulk download** (full CSV, no rate limit — use this for the pipeline)
-  and the **API** (JSON, needs key — use for spot lookups).
+- Two access routes: **bulk download** (full CSV, no rate limit, use this for the pipeline)
+  and the **API** (JSON, needs key, use for spot lookups).
 - Grain: institution-level (one row per school, ~6,500 rows, ~3,000 fields) AND
   field-of-study level (school × 4-digit CIP × credential; earnings + debt).
 
@@ -28,14 +28,14 @@ Key fields (institution-level):
 - Completion: `C150_4`, `C150_L4`; retention `RET_FT4`.
 - Debt: median debt fields (e.g., `GRAD_DEBT_MDN`, `DEBT_MDN`).
 - Earnings + earnings premium: fields comparing completer earnings to a HS grad
-  (national and within-state) — the basis for the **Value Check** module. Also
+  (national and within-state), the basis for the **Value Check** module. Also
   field-of-study national median earnings. Confirm exact field names in the current
   data dictionary (these were added/expanded in the 2025–2026 updates).
 - Pell / aid: `PCTPELL`, `PCTFLOAN`.
 
 Field-of-study file grain: institution × 4-digit CIP code × credential level; includes
 cumulative debt at graduation and earnings ~1 year after completion. Note: values are
-**suppressed** (blank) for small cohorts — handle as "insufficient data," never impute.
+**suppressed** (blank) for small cohorts, handle as "insufficient data," never impute.
 
 ### IPEDS (Integrated Postsecondary Education Data System)
 - https://nces.ed.gov/ipeds/use-the-data
@@ -50,7 +50,7 @@ cumulative debt at graduation and earnings ~1 year after completion. Note: value
 ### Opportunity Insights (college social mobility)
 - https://opportunityinsights.org/data/
 - Mobility Report Cards: fraction of students moving from bottom income quintile to top, etc.
-- Static research releases (older cohorts — label the years). Join on UnitID / super-OPEID.
+- Static research releases (older cohorts, label the years). Join on UnitID / super-OPEID.
 
 ## K-12 datasets
 
@@ -76,10 +76,10 @@ cumulative debt at graduation and earnings ~1 year after completion. Note: value
 ## Geography / demographics
 - Census ACS: https://www.census.gov/programs-surveys/acs/data.html  (API:
   https://www.census.gov/data/developers/data-sets/acs-5year.html). Pull only needed
-  variables — full national tables balloon fast.
+  variables, full national tables balloon fast.
 
 ## Notes
 - Earnings/aid data reflect the recent past (cohorts from several years ago). Always label
   cohort years and frame numbers as "students like you paid/earned roughly," not a promise.
 - The most precise per-student number comes from each school's own federally-required
-  Net Price Calculator — link users there for a personal estimate after they find matches.
+  Net Price Calculator, link users there for a personal estimate after they find matches.

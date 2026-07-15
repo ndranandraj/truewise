@@ -33,7 +33,7 @@ def _round(x, n=0):
 def main() -> None:
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
-        raise SystemExit("No value_check.parquet — run the pipeline first.")
+        raise SystemExit("No value_check.parquet, run the pipeline first.")
     con = duckdb.connect()
     # Real institutions only (numeric UNITID); Scorecard also carries national
     # aggregate rows we don't want as "schools".

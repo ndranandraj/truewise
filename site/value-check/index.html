@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Look up a US college — Truewise</title>
+  <title>Look up a US college | Truewise</title>
   <meta name="description" content="Look up a US college program and see whether its graduates typically out-earn a high-school graduate, using the Department of Education's own data." />
-  <meta property="og:title" content="Value Check — Truewise" />
+  <meta property="og:title" content="Value Check | Truewise" />
   <meta property="og:description" content="Does a college program's graduates out-earn a typical high-school graduate? Look it up." />
   <meta property="og:url" content="https://truewise.dev/value-check/" />
   <meta name="twitter:card" content="summary" />
@@ -104,7 +104,7 @@
   let SCHOOLS = null;                 // school index
   const stateCache = {};              // state -> {unitid: [programs]}
 
-  const money = n => n == null ? "—" : "$" + Number(n).toLocaleString();
+  const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
                         : h === "4yr_after_completion" ? "4 years after completing" : "after completing";
@@ -135,7 +135,7 @@
     app.innerHTML = `
       <section class="vc-search">
         <h1>Look up any US college</h1>
-        <p class="lede">Search a school for its Truewise profile — starting with Value Check:
+        <p class="lede">Search a school for its Truewise profile, starting with Value Check:
           whether each program's graduates typically out-earn a high-school graduate, from the
           Department of Education's own data. More measures coming.</p>
         <div class="searchbox">
@@ -181,7 +181,7 @@
     const premAbs = money(Math.abs(premium ?? 0));
     const line = p.earnings == null ? "" : `
       <p class="line">Graduates typically earn <b>${money(p.earnings)}</b> ${horizonLabel(p.horizon)},
-      versus <b>${money(threshold)}</b> for a typical high-school graduate in this state —
+      versus <b>${money(threshold)}</b> for a typical high-school graduate in this state,
       ${fail ? `about <b>${premAbs} less</b>.` : `a <b>${premAbs} premium</b>.`}</p>`;
     const debt = p.debt == null ? "" : `<div><b>${money(p.debt)}</b> median debt${p.debt_to_earnings!=null?` · ${(p.debt_to_earnings).toFixed(2)}× earnings`:""}</div>`;
     const completers = p.completers == null ? "" : `<div>${Number(p.completers).toLocaleString()} graduates</div>`;
@@ -224,13 +224,13 @@
     if (ugI) iparts.push(`${ugI} undergraduate`);
     const insuffNote = !totI ? "" : `
       <p class="insuff"><b>${totI}</b> more ${totI===1?"program":"programs"} don't have enough
-        data to judge${iparts.length?` — ${iparts.join(" and ")}`:""}.
+        data to judge${iparts.length?`: ${iparts.join(" and ")}`:""}.
         <details><summary>Why?</summary><span>The Department of Education only publishes a
-        program's earnings when enough of its graduates received federal financial aid, to
-        protect individual privacy. That mainly affects graduate programs — especially doctoral,
-        where students are usually funded by stipends and assistantships rather than federal
-        loans — so most of the missing programs here are graduate-level. Undergraduate coverage
-        is far more complete.</span></details></p>`;
+        program's earnings when enough of its graduates received federal financial aid, so that
+        individuals can't be identified. That mainly affects graduate programs, especially
+        doctoral, where students are usually funded by stipends and assistantships rather than
+        federal loans. So most of the missing programs here are graduate level, and undergraduate
+        coverage is far more complete.</span></details></p>`;
     app.innerHTML = `
       <a class="backlink" href="/value-check/" id="back">← Find another college</a>
       <div class="school-head">
@@ -246,7 +246,7 @@
           </a>`).join("")}
       </div>
       <section id="value-check" class="module">
-        <h2>Value Check — do graduates out-earn a high-school graduate?</h2>
+        <h2>Value Check: do graduates out-earn a high-school graduate?</h2>
         <div class="summary">
           Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
           <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate

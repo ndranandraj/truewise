@@ -1,4 +1,4 @@
-# Value Check — accuracy audit
+# Value Check, accuracy audit
 
 _2026-07-14. Verifying Truewise's Value Check numbers against the Department of
 Education's own published figures on the live College Scorecard site._

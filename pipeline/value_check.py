@@ -1,12 +1,12 @@
-"""Value Check — compute the earnings-premium flag per program.
+"""Value Check, compute the earnings-premium flag per program.
 
 The flagship signal: does a program's typical graduate earn at least as much as a
 typical high-school graduate (the federal earnings-premium, "EP", test)? We compare
 each program's median earnings to the state and national earnings thresholds
 (EARN_THR_STATE / EARN_THR_NAT), and expose a plain debt-to-earnings ratio.
 
-The flag logic lives in ONE place — `build_value_check(con)` runs SQL against the
-`fos` table — and the tests exercise that same function on synthetic data, so what
+The flag logic lives in ONE place, `build_value_check(con)` runs SQL against the
+`fos` table, and the tests exercise that same function on synthetic data, so what
 is tested is exactly what ships.
 
 Principles enforced here:
@@ -116,7 +116,7 @@ def main() -> None:
     con.execute(f"COPY value_check TO '{out}' (FORMAT PARQUET)")
     print(f"\nWrote -> {out}")
 
-    # Dated FVT/GE Monitor snapshot — the compact, committed, diffable record.
+    # Dated FVT/GE Monitor snapshot, the compact, committed, diffable record.
     snap_dir = ARCHIVE_DIR / dt.date.today().isoformat()
     snap_dir.mkdir(parents=True, exist_ok=True)
     snap = snap_dir / "value_check_snapshot.parquet"

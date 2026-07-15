@@ -1,7 +1,7 @@
 # truewise-data
 
-Clean, ready-to-use data on the economic value of US college programs — median earnings
-versus a typical high-school graduate — derived from the U.S. Department of Education's
+Clean, ready-to-use data on the economic value of US college programs, median earnings
+versus a typical high-school graduate, derived from the U.S. Department of Education's
 [College Scorecard](https://collegescorecard.ed.gov/). No API key, no 178-column bulk
 files, no decoding suppression flags: one clean table, offline.
 
@@ -41,10 +41,10 @@ an accuracy audit: <https://github.com/ndranandraj/truewise>.
 
 ## License
 
-Code MIT. **Data is CC-BY-4.0** — free to use with attribution to Truewise
+Code MIT. **Data is CC-BY-4.0**, free to use with attribution to Truewise
 (<https://truewise.dev>). Underlying figures are US federal public-domain works.
 
 ## Citation
 
-If you use this dataset, please cite it (a DOI is minted per release via Zenodo — see the
+If you use this dataset, please cite it (a DOI is minted per release via Zenodo, see the
 repository releases page).

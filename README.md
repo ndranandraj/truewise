@@ -7,7 +7,7 @@ price, anecdote, unclaimed aid) with the real one, drawn from public data.
 - **Name:** Truewise
 - **Domain:** [truewise.dev](https://truewise.dev) (registered 2026-07-13)
 - **Stage:** **Value Check is live** at [truewise.dev/value-check](https://truewise.dev/value-check/)
-  — look up any US college program and see whether its graduates out-earn a typical
+ , look up any US college program and see whether its graduates out-earn a typical
   high-school graduate, using ED's own figures.
 - **Nature:** Portfolio / skills / social-impact project. ~$0 direct revenue expected.
 
@@ -27,8 +27,8 @@ Source in [`packages/truewise-data/`](packages/truewise-data/); columns in
 [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md).
 
 ## Read these first
-1. **docs/BRIEF.md** — one-page product brief (mission, modules, principles).
-2. **DATA_SOURCES.md** — dataset URLs, grain, key fields, join keys.
+1. **docs/BRIEF.md**, one-page product brief (mission, modules, principles).
+2. **DATA_SOURCES.md**, dataset URLs, grain, key fields, join keys.
 
 ## Quick start (for the takeover session)
 ```bash

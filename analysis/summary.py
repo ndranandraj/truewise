@@ -1,4 +1,4 @@
-"""National + state Value Check summary — the headline numbers and local-press hook.
+"""National + state Value Check summary, the headline numbers and local-press hook.
 
 Reads data/parquet/value_check.parquet and writes a small JSON summary
 (site/data/value_check_summary.json) plus prints headlines. Runs on local files.
@@ -21,7 +21,7 @@ OUT = ROOT / "site" / "data" / "value_check_summary.json"
 def main() -> None:
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
-        raise SystemExit("No value_check.parquet — run the pipeline first.")
+        raise SystemExit("No value_check.parquet, run the pipeline first.")
     con = duckdb.connect()
     con.execute(f"CREATE VIEW v AS SELECT * FROM read_parquet('{vc}')")
 

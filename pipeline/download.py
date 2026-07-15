@@ -1,11 +1,11 @@
 """Download the current College Scorecard bulk files (Field-of-Study + Institution).
 
-Runs where there is open network (your Mac, or GitHub Actions) — NOT in the
+Runs where there is open network (your Mac, or GitHub Actions), NOT in the
 restricted build sandbox. For each file it:
 
   1. finds the current date-stamped .zip link on the Scorecard data home,
   2. downloads it,
-  3. saves a DATED raw copy to archive/fvt/<YYYY-MM-DD>/ — these dated copies are
+  3. saves a DATED raw copy to archive/fvt/<YYYY-MM-DD>/, these dated copies are
      snapshot #1 of the FVT/GE Monitor (a source ED itself does not preserve),
   4. extracts the CSV into data/raw/ for the loader.
 

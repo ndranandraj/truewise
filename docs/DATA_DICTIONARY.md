@@ -1,4 +1,4 @@
-# Data dictionary — Truewise Value Check dataset
+# Data dictionary, Truewise Value Check dataset
 
 One row per **institution × 4-digit CIP code × credential level**. Derived from the U.S.
 Department of Education College Scorecard (Field-of-Study + Institution files). Suppressed
@@ -7,7 +7,7 @@ small-cohort values are `null` (never imputed). Distributed as `value_check.parq
 
 | column | type | description |
 |---|---|---|
-| `unitid` | string | IPEDS UnitID — the institution identifier. |
+| `unitid` | string | IPEDS UnitID, the institution identifier. |
 | `opeid6` | string | 6-digit OPEID (Office of Postsecondary Education ID). |
 | `inst_name` | string | Institution name. |
 | `state` | string | Institution's state (2-letter). |
@@ -18,7 +18,7 @@ small-cohort values are `null` (never imputed). Distributed as `value_check.parq
 | `credential_desc` | string | Credential name (e.g. Bachelor's Degree). |
 | `completers_count` | number | Award count for the program (IPEDS). May be null. |
 | `earnings` | number | Median earnings 4 years after completion, USD (falls back to 1-year where 4-year is suppressed). Mirrors ED's published figure. |
-| `earnings_horizon` | string | `4yr_after_completion` or `1yr_after_completion` — which measure `earnings` used. |
+| `earnings_horizon` | string | `4yr_after_completion` or `1yr_after_completion`, which measure `earnings` used. |
 | `earnings_threshold_state` | number | Typical high-school-graduate earnings in the school's state, USD (the earnings-premium benchmark). |
 | `earnings_threshold_national` | number | Typical high-school-graduate earnings nationally, USD. |
 | `earnings_premium_state` | number | `earnings − earnings_threshold_state` (negative = below a HS grad). |

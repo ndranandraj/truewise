@@ -1,4 +1,4 @@
-# Truewise — Product Brief
+# Truewise, Product Brief
 
 _One page. What Truewise is, who it serves, and what ships. Written 2026-07-13 (Iteration 0)._
 
@@ -33,11 +33,11 @@ Positioning is infrastructure, not another consumer site. Where a module overlap
    high-school graduate, and how does debt compare to earnings? Mirrors the federal Financial
    Value Transparency & Gainful Employment framework, plus a monitor that snapshots and diffs
    ED's live transparency figures each refresh.
-2. **Affordability** — net price by family income bracket (credits TuitionTracker).
-3. **ROI** — field-of-study earnings vs debt, payback, completion-weighted.
-4. **Mobility** — Opportunity Insights, including a hidden-gems view.
-5. **Careers** — major-to-career (CIP→SOC), wages, outlook, grad-program ROI.
-6. **K-12** — advanced-course access, beating-the-odds schools, FAFSA gaps.
+2. **Affordability**, net price by family income bracket (credits TuitionTracker).
+3. **ROI**, field-of-study earnings vs debt, payback, completion-weighted.
+4. **Mobility**, Opportunity Insights, including a hidden-gems view.
+5. **Careers**, major-to-career (CIP→SOC), wages, outlook, grad-program ROI.
+6. **K-12**, advanced-course access, beating-the-odds schools, FAFSA gaps.
 
 ## Principles (non-negotiable)
 
@@ -51,7 +51,7 @@ Positioning is infrastructure, not another consumer site. Where a module overlap
 - **Spine:** DuckDB + Parquet over the major federal education datasets, joined on school IDs
   (UnitID/OPEID for college, NCES for K-12).
 - **Hosting:** static-first, precomputed in CI, served from Cloudflare Pages ($0, no cold starts).
-- **Automation:** GitHub Actions — annual full rebuild plus monthly FVT snapshot + link check.
+- **Automation:** GitHub Actions, annual full rebuild plus monthly FVT snapshot + link check.
 
 ## Constraints
 

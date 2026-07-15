@@ -1,4 +1,4 @@
-"""FVT/GE Monitor — diff two dated snapshots.
+"""FVT/GE Monitor, diff two dated snapshots.
 
 The government publishes only today's program-level numbers and can revise them
 silently. Each refresh we archive a compact snapshot (`pipeline.value_check` writes
@@ -105,7 +105,7 @@ def _latest_two_snapshots() -> tuple[Path, Path]:
 
 
 def render_markdown(diff: dict, old_label: str, new_label: str) -> str:
-    lines = [f"# FVT Monitor changelog — {old_label} → {new_label}", ""]
+    lines = [f"# FVT Monitor changelog, {old_label} → {new_label}", ""]
     for key, title in [
         ("newly_failing", "Newly failing the earnings-premium test"),
         ("newly_passing", "Newly passing (recovered)"),
@@ -119,7 +119,7 @@ def render_markdown(diff: dict, old_label: str, new_label: str) -> str:
             note = ""
             if key == "earnings_revised":
                 note = f" (${int(r['old_earn']):,} → ${int(r['new_earn']):,})"
-            lines.append(f"- {r['inst_name']} — {r['credential']} (CIP {r['cip']}){note}")
+            lines.append(f"- {r['inst_name']}, {r['credential']} (CIP {r['cip']}){note}")
         if len(items) > 50:
             lines.append(f"- …and {len(items) - 50} more")
         lines.append("")

@@ -52,7 +52,7 @@ COLUMNS = [
 def main() -> None:
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
-        raise SystemExit("No value_check.parquet — run the pipeline first.")
+        raise SystemExit("No value_check.parquet, run the pipeline first.")
     PKG_DATA.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect()

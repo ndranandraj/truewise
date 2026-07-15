@@ -26,7 +26,7 @@ Or with make: `make data && make spine && make flags` (or `make all`).
 
 | Step | Output | Notes |
 |------|--------|-------|
-| `download` | `archive/fvt/<YYYY-MM-DD>/…zip` + `SOURCE.txt`, `data/raw/*.csv` | The dated zip is **snapshot #1 of the FVT/GE Monitor** — a copy ED does not preserve. |
+| `download` | `archive/fvt/<YYYY-MM-DD>/…zip` + `SOURCE.txt`, `data/raw/*.csv` | The dated zip is **snapshot #1 of the FVT/GE Monitor**, a copy ED does not preserve. |
 | `build_spine` | `fos` table + `data/parquet/fos.parquet` | Loads losslessly, prints the resolved field mapping, cleans suppressed values to NULL. |
 | `value_check` | `value_check` table + `data/parquet/value_check.parquet` | Earnings-premium flag per program. |
 
@@ -41,7 +41,7 @@ Per program (school × 4-digit CIP × credential):
   earnings threshold (`EARN_THR_STATE` / `EARN_THR_NAT`).
 - `earnings_premium_state` / `_national`: median earnings minus the threshold (dollars).
 - `debt_to_earnings_ratio`: plain median-debt / median-annual-earnings. **Not** the
-  federal amortized D/E rate (that needs an amortization schedule — a follow-up).
+  federal amortized D/E rate (that needs an amortization schedule, a follow-up).
 
 Principles: never impute suppressed values (render "insufficient data"); every figure
 carries its source; a flag describes the data, it never says "don't attend".

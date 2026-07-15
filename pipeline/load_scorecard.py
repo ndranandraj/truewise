@@ -1,8 +1,8 @@
 """
-Truewise — data spine starter: load College Scorecard into DuckDB.
+Truewise, data spine starter: load College Scorecard into DuckDB.
 
 This is a STARTER STUB for Module 1 (Affordability matcher). It shows the intended shape
-of the pipeline. Read PLAN.md and DATA_SOURCES.md first. Field names below are indicative —
+of the pipeline. Read PLAN.md and DATA_SOURCES.md first. Field names below are indicative ,
 confirm against the current Scorecard data dictionary (see DATA_SOURCES.md).
 
 Two ways to get data:
@@ -64,7 +64,7 @@ def fetch_sample(per_page: int = 100, pages: int = 2) -> list[dict]:
     """Pull a small sample via the API so you can see the shape end-to-end.
     Replace with the BULK loader (option A) for the real pipeline."""
     if not API_KEY:
-        raise SystemExit("Set SCORECARD_API_KEY in .env — see https://api.data.gov/signup/")
+        raise SystemExit("Set SCORECARD_API_KEY in .env, see https://api.data.gov/signup/")
     rows: list[dict] = []
     for page in range(pages):
         resp = requests.get(
@@ -84,16 +84,16 @@ def fetch_sample(per_page: int = 100, pages: int = 2) -> list[dict]:
 
 def load_to_duckdb(rows: list[dict]) -> None:
     """Land the data in DuckDB. Real pipeline: read bulk CSVs directly with
-    duckdb.read_csv(...) and write Parquet — DuckDB does this without pandas."""
+    duckdb.read_csv(...) and write Parquet, DuckDB does this without pandas."""
     import pandas as pd
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    df = pd.json_normalize(rows)  # noqa: F841 — DuckDB reads this local var by name in the SQL below
+    df = pd.json_normalize(rows)  # noqa: F841, DuckDB reads this local var by name in the SQL below
     con = duckdb.connect(str(DB_PATH))
     con.execute("CREATE OR REPLACE TABLE scorecard_institutions AS SELECT * FROM df")
     n = con.execute("SELECT count(*) FROM scorecard_institutions").fetchone()[0]
     print(f"Loaded {n} institutions into {DB_PATH}")
-    # Sanity peek — cheapest net price for a low-income family (the Module 1 question):
+    # Sanity peek, cheapest net price for a low-income family (the Module 1 question):
     col = '"latest.cost.net_price.public.by_income_level.0-30000"'
     try:
         print(
