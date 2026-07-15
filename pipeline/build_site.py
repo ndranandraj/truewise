@@ -87,6 +87,8 @@ def main() -> None:
                 "n_fail": 0,
                 "n_pass": 0,
                 "n_insufficient": 0,
+                "n_insuff_ug": 0,  # insufficient-data programs, split by level
+                "n_insuff_grad": 0,
             },
         )
         if s["threshold"] is None and thr is not None:
@@ -94,7 +96,11 @@ def main() -> None:
         s["n_programs"] += 1
         s["n_fail"] += flag == "fails_earnings_premium"
         s["n_pass"] += flag == "passes_earnings_premium"
-        s["n_insufficient"] += flag == "insufficient_data"
+        if flag == "insufficient_data":
+            s["n_insufficient"] += 1
+            # CREDLEV: 1-3 undergraduate; 4-8 graduate/professional.
+            level = "grad" if (credlev or "") in {"4", "5", "6", "7", "8"} else "ug"
+            s[f"n_insuff_{level}"] += 1
 
         # Shards carry only decided programs (keeps the payload small); the index
         # counts above still tell each school how many are insufficient-data.

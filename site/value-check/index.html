@@ -56,6 +56,10 @@
       margin: 16px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt);
       border: 1px solid var(--line); max-width: 760px; font-size: 1.02rem;
     }
+    .insuff { color: var(--ink-soft); font-size: .95rem; margin: 8px 0 0; max-width: 760px; line-height: 1.55; }
+    .insuff summary { color: var(--brand); cursor: pointer; display: inline; }
+    .insuff details[open] summary { display: block; margin-bottom: 4px; }
+    .insuff details span { display: block; margin-top: 4px; }
     .toggle { display: inline-flex; gap: 6px; margin: 18px 0 8px; flex-wrap: wrap; }
     .toggle button {
       border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 14px;
@@ -214,6 +218,19 @@
       { key: "mobility", name: "Mobility", live: false, blurb: "Moving students up" },
       { key: "careers", name: "Careers", live: false, blurb: "Where a major leads" },
     ];
+    const ugI = s.n_insuff_ug || 0, gradI = s.n_insuff_grad || 0, totI = s.n_insufficient || 0;
+    const iparts = [];
+    if (gradI) iparts.push(`${gradI} graduate`);
+    if (ugI) iparts.push(`${ugI} undergraduate`);
+    const insuffNote = !totI ? "" : `
+      <p class="insuff"><b>${totI}</b> more ${totI===1?"program":"programs"} don't have enough
+        data to judge${iparts.length?` — ${iparts.join(" and ")}`:""}.
+        <details><summary>Why?</summary><span>The Department of Education only publishes a
+        program's earnings when enough of its graduates received federal financial aid, to
+        protect individual privacy. That mainly affects graduate programs — especially doctoral,
+        where students are usually funded by stipends and assistantships rather than federal
+        loans — so most of the missing programs here are graduate-level. Undergraduate coverage
+        is far more complete.</span></details></p>`;
     app.innerHTML = `
       <a class="backlink" href="/value-check/" id="back">← Find another college</a>
       <div class="school-head">
@@ -234,8 +251,8 @@
           Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
           <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
           and <b style="color:#067647">${s.n_pass}</b> out-earn one.
-          ${s.n_insufficient ? `${s.n_insufficient} more don't have enough data.` : ""}
         </div>
+        ${insuffNote}
         <div class="toggle" role="group" aria-label="Filter programs">
           <button data-f="all" aria-pressed="true">All (${decided})</button>
           <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
