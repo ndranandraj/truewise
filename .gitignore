@@ -40,3 +40,8 @@ archive/**/*.csv
 # Bundled dataset inside the pip package (tracked)
 !packages/**/*.parquet
 /docs/GO_PUBLISH.md
+
+# Python build artifacts inside packages
+packages/**/build/
+packages/**/dist/
+packages/**/*.egg-info/
