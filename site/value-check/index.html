@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Value Check — Truewise</title>
+  <title>Look up a US college — Truewise</title>
   <meta name="description" content="Look up a US college program and see whether its graduates typically out-earn a high-school graduate, using the Department of Education's own data." />
   <meta property="og:title" content="Value Check — Truewise" />
   <meta property="og:description" content="Does a college program's graduates out-earn a typical high-school graduate? Look it up." />
@@ -41,6 +41,17 @@
     .school-head { padding: 8px 0 4px; }
     .school-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 6px; }
     .school-head .sub { color: var(--ink-soft); }
+    .school-head .sub a { color: var(--brand); text-decoration: none; }
+    .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0 8px; }
+    .mod { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; text-decoration: none; color: inherit; background: #fff; }
+    .mod.live { border-color: var(--brand); }
+    .mod.soon { opacity: .6; cursor: default; }
+    .mod-name { font-weight: 700; font-size: .98rem; }
+    .mod-blurb { font-size: .82rem; color: var(--ink-soft); }
+    .mod-tag { margin-top: 6px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .mod.live .mod-tag { color: var(--accent); }
+    .mod.soon .mod-tag { color: #8b95a7; }
+    .module h2 { font-size: 1.3rem; letter-spacing: -.02em; margin: 26px 0 6px; }
     .summary {
       margin: 16px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt);
       border: 1px solid var(--line); max-width: 760px; font-size: 1.02rem;
@@ -119,9 +130,10 @@
     await loadSchools();
     app.innerHTML = `
       <section class="vc-search">
-        <h1>Is a college program worth it?</h1>
-        <p class="lede">Look up a US college and see, program by program, whether its graduates
-          typically out-earn a high-school graduate — from the Department of Education's own data.</p>
+        <h1>Look up any US college</h1>
+        <p class="lede">Search a school for its Truewise profile — starting with Value Check:
+          whether each program's graduates typically out-earn a high-school graduate, from the
+          Department of Education's own data. More measures coming.</p>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b95a7" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" placeholder="Search ${SCHOOLS.length.toLocaleString()} colleges by name…" value="${esc(preset)}" />
@@ -140,7 +152,7 @@
       results.innerHTML = hits.map(s => `
         <li><a class="school-card" href="?school=${s.unitid}" data-u="${s.unitid}">
           <h3>${esc(s.name)}</h3>
-          <div class="meta">${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
+          <div class="meta">${s.city ? esc(s.city) + ", " : ""}${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
           <div class="mini">
             ${s.n_fail ? `<span class="f">${s.n_fail} fall short</span>` : ""}
             ${s.n_pass ? `<span class="p">${s.n_pass} pass</span>` : ""}
@@ -190,24 +202,47 @@
       return (a.program||"").localeCompare(b.program||"");
     });
     const decided = s.n_fail + s.n_pass;
+    const bits = [];
+    if (s.city) bits.push(esc(s.city) + ", " + esc(s.state)); else bits.push(esc(s.state));
+    if (s.control) bits.push(esc(s.control));
+    if (s.enrollment) bits.push(Number(s.enrollment).toLocaleString() + " undergraduates");
+    const website = s.url ? ` · <a href="${/^https?:/.test(s.url) ? s.url : "https://" + s.url}" target="_blank" rel="noopener">website ↗</a>` : "";
+    const modules = [
+      { key: "value", name: "Value Check", live: true, blurb: "Do graduates out-earn a HS grad?" },
+      { key: "afford", name: "Affordability", live: false, blurb: "What families really pay" },
+      { key: "roi", name: "ROI", live: false, blurb: "Earnings vs debt, payback" },
+      { key: "mobility", name: "Mobility", live: false, blurb: "Moving students up" },
+      { key: "careers", name: "Careers", live: false, blurb: "Where a major leads" },
+    ];
     app.innerHTML = `
-      <a class="backlink" href="/value-check/" id="back">← Search another college</a>
+      <a class="backlink" href="/value-check/" id="back">← Find another college</a>
       <div class="school-head">
         <h1>${esc(s.name)}</h1>
-        <div class="sub">${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
+        <div class="sub">${bits.join(" · ")}${website}</div>
       </div>
-      <div class="summary">
-        Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
-        <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
-        and <b style="color:#067647">${s.n_pass}</b> out-earn one.
-        ${s.n_insufficient ? `${s.n_insufficient} more don't have enough data.` : ""}
+      <div class="modules" aria-label="Sections">
+        ${modules.map(m => `
+          <a class="mod${m.live ? " live" : " soon"}" ${m.live ? 'href="#value-check"' : ""}>
+            <span class="mod-name">${m.name}</span>
+            <span class="mod-blurb">${m.blurb}</span>
+            <span class="mod-tag">${m.live ? "Live" : "Coming soon"}</span>
+          </a>`).join("")}
       </div>
-      <div class="toggle" role="group" aria-label="Filter programs">
-        <button data-f="all" aria-pressed="true">All (${decided})</button>
-        <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
-        <button data-f="pass" aria-pressed="false">Passes (${s.n_pass})</button>
-      </div>
-      <div id="proglist"></div>
+      <section id="value-check" class="module">
+        <h2>Value Check — do graduates out-earn a high-school graduate?</h2>
+        <div class="summary">
+          Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
+          <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
+          and <b style="color:#067647">${s.n_pass}</b> out-earn one.
+          ${s.n_insufficient ? `${s.n_insufficient} more don't have enough data.` : ""}
+        </div>
+        <div class="toggle" role="group" aria-label="Filter programs">
+          <button data-f="all" aria-pressed="true">All (${decided})</button>
+          <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
+          <button data-f="pass" aria-pressed="false">Passes (${s.n_pass})</button>
+        </div>
+        <div id="proglist"></div>
+      </section>
       <div class="caveats">
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal

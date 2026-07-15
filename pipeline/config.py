@@ -62,6 +62,9 @@ INST_FIELD_CANDIDATES: dict[str, list[str]] = {
     "unitid": ["UNITID"],
     "inst_name": ["INSTNM"],
     "state": ["STABBR"],
+    "city": ["CITY"],
+    "enrollment": ["UGDS", "UG"],
+    "school_url": ["INSTURL"],
     "earnings_threshold_state": ["EARN_THR_STATE"],
     "earnings_threshold_national": ["EARN_THR_NAT"],
 }

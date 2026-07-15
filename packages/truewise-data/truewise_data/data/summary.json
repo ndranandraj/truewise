@@ -278,16 +278,16 @@
       "fail_rate": 0.0572
     },
     {
-      "state": "AK",
-      "fails": 13,
-      "decided": 89,
-      "fail_rate": 0.1461
-    },
-    {
       "state": "VT",
       "fails": 13,
       "decided": 221,
       "fail_rate": 0.0588
+    },
+    {
+      "state": "AK",
+      "fails": 13,
+      "decided": 89,
+      "fail_rate": 0.1461
     },
     {
       "state": "WY",
@@ -323,49 +323,49 @@
   "highest_fail_rate_fields": [
     {
       "cip2": "12",
-      "example": "Culinary Arts and Related Services.",
+      "example": "Cosmetology and Related Personal Grooming Services.",
       "fails": 1178,
       "decided": 1377,
       "fail_rate": 0.8555
     },
     {
       "cip2": "10",
-      "example": "Graphic Communications.",
+      "example": "Audiovisual Communications Technologies/Technicians.",
       "fails": 74,
       "decided": 184,
       "fail_rate": 0.4022
     },
     {
       "cip2": "50",
-      "example": "Dance.",
+      "example": "Fine and Studio Arts.",
       "fails": 571,
       "decided": 2365,
       "fail_rate": 0.2414
     },
     {
       "cip2": "19",
-      "example": "Foods, Nutrition, and Related Services.",
+      "example": "Family and Consumer Sciences/Human Sciences, General.",
       "fails": 144,
       "decided": 653,
       "fail_rate": 0.2205
     },
     {
       "cip2": "38",
-      "example": "Philosophy and Religious Studies, General.",
+      "example": "Philosophy.",
       "fails": 38,
       "decided": 178,
       "fail_rate": 0.2135
     },
     {
       "cip2": "01",
-      "example": "Food Science and Technology.",
+      "example": "Animal Sciences.",
       "fails": 112,
       "decided": 806,
       "fail_rate": 0.139
     },
     {
       "cip2": "51",
-      "example": "Allied Health and Medical Assisting Services.",
+      "example": "Communication Disorders Sciences and Services.",
       "fails": 1559,
       "decided": 12456,
       "fail_rate": 0.1252
@@ -386,7 +386,7 @@
     },
     {
       "cip2": "05",
-      "example": "Area Studies.",
+      "example": "Ethnic, Cultural Minority, Gender, and Group Studies.",
       "fails": 23,
       "decided": 227,
       "fail_rate": 0.1013

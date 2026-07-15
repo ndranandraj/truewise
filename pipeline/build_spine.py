@@ -115,17 +115,22 @@ def main() -> None:
     print(f"  rows: {con.execute('SELECT count(*) FROM inst_raw').fetchone()[0]:,}")
     _print_mapping("Institution", INST_FIELD_CANDIDATES, inst)
 
-    # Institution-level thresholds, one row per school.
+    # Institution-level identity + thresholds, one row per school.
     con.execute(
         f"""
         CREATE OR REPLACE TABLE institutions AS SELECT
             {_txt(inst, "unitid")}                        AS unitid,
+            {_txt(inst, "inst_name")}                     AS inst_name,
+            {_txt(inst, "city")}                          AS city,
             {_txt(inst, "state")}                         AS state,
+            {_txt(inst, "school_url")}                    AS school_url,
+            {_num(inst, "enrollment")}                    AS enrollment,
             {_num(inst, "earnings_threshold_state")}      AS earnings_threshold_state,
             {_num(inst, "earnings_threshold_national")}   AS earnings_threshold_national
         FROM inst_raw
         """
     )
+    con.execute(f"COPY institutions TO '{PARQUET_DIR / 'institutions.parquet'}' (FORMAT PARQUET)")
 
     # Program-level table joined to its institution's thresholds by UNITID.
     con.execute(

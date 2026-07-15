@@ -114,6 +114,21 @@ def main() -> None:
             }
         )
 
+    # Merge school identity (city, enrollment, url) from the institutions table.
+    inst_path = PARQUET_DIR / "institutions.parquet"
+    if inst_path.exists():
+        ident = {
+            r[0]: r[1:]
+            for r in con.execute(
+                f"SELECT unitid, city, school_url, enrollment FROM read_parquet('{inst_path}')"
+            ).fetchall()
+        }
+        for s in schools.values():
+            city, url, enr = ident.get(s["unitid"], (None, None, None))
+            s["city"] = city
+            s["url"] = url
+            s["enrollment"] = int(enr) if enr else None
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "programs").mkdir(exist_ok=True)
 
