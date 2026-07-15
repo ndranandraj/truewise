@@ -23,8 +23,12 @@ flags value-check:
 site:
 	python -m pipeline.build_site
 
+# 5) Refresh the data bundled inside the truewise-data pip package.
+package-data:
+	python -m pipeline.build_package_data
+
 # Full local build (assumes `make data` already ran on a networked machine).
-value: spine flags site
+value: spine flags site package-data
 
 test:
 	pytest

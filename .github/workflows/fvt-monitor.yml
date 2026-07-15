@@ -37,12 +37,14 @@ jobs:
           python -m pipeline.value_check
           python -m analysis.summary
           python -m pipeline.build_site
+          python -m pipeline.build_package_data
 
-      - name: Commit snapshot + summary + site data if changed
+      - name: Commit snapshot + summary + site + package data if changed
         run: |
           git config user.name "truewise-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add archive/ site/data/value_check_summary.json site/value-check/data
+          git add archive/ site/data/value_check_summary.json site/value-check/data \
+                  packages/truewise-data/truewise_data/data
           if git diff --cached --quiet; then
             echo "No changes this run."
           else

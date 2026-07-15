@@ -1,0 +1,12 @@
+README.md
+pyproject.toml
+tests/test_package.py
+truewise_data/__init__.py
+truewise_data.egg-info/PKG-INFO
+truewise_data.egg-info/SOURCES.txt
+truewise_data.egg-info/dependency_links.txt
+truewise_data.egg-info/requires.txt
+truewise_data.egg-info/top_level.txt
+truewise_data/data/meta.json
+truewise_data/data/summary.json
+truewise_data/data/value_check.parquet

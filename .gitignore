@@ -36,3 +36,7 @@ archive/**/*.csv
 
 # ...but DO keep the compact dated Monitor snapshots
 !archive/**/*.parquet
+
+# Bundled dataset inside the pip package (tracked)
+!packages/**/*.parquet
+/docs/GO_PUBLISH.md

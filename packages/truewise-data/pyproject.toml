@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "truewise-data"
+version = "0.1.0"
+description = "Clean, ready-to-use US college program value data — median earnings vs a high-school-graduate benchmark — derived from the Dept. of Education's College Scorecard."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Anand Raj" }]
+keywords = ["education", "college", "scorecard", "earnings", "gainful-employment", "open-data"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Intended Audience :: Science/Research",
+]
+dependencies = ["pandas>=2.0", "pyarrow>=15.0"]
+
+[project.urls]
+Homepage = "https://truewise.dev"
+Source = "https://github.com/ndranandraj/truewise"
+Issues = "https://github.com/ndranandraj/truewise/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["truewise_data*"]
+
+[tool.setuptools.package-data]
+truewise_data = ["data/*.parquet", "data/*.json"]

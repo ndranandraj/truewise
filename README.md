@@ -6,9 +6,25 @@ price, anecdote, unclaimed aid) with the real one, drawn from public data.
 
 - **Name:** Truewise
 - **Domain:** [truewise.dev](https://truewise.dev) (registered 2026-07-13)
-- **Stage:** Iteration 0 (foundation) built: static landing page, CI, tests, docs. Ready to go
-  public. First module is **Value Check**.
+- **Stage:** **Value Check is live** at [truewise.dev/value-check](https://truewise.dev/value-check/)
+  — look up any US college program and see whether its graduates out-earn a typical
+  high-school graduate, using ED's own figures.
 - **Nature:** Portfolio / skills / social-impact project. ~$0 direct revenue expected.
+
+## Use the data
+
+The cleaned, joined dataset ships as a Python package (data licensed CC-BY-4.0):
+
+```bash
+pip install truewise-data
+```
+```python
+import truewise_data as tw
+df = tw.load_value_check(decided_only=True)   # earnings vs a HS-grad benchmark, per program
+```
+
+Source in [`packages/truewise-data/`](packages/truewise-data/); columns in
+[`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md).
 
 ## Read these first
 1. **docs/BRIEF.md** — one-page product brief (mission, modules, principles).
