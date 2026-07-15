@@ -125,6 +125,19 @@ body {
 }
 .finding strong { color: var(--brand-deep); }
 
+.cta {
+  display: inline-block;
+  margin-top: 18px;
+  background: var(--brand);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 10px;
+  transition: background .15s;
+}
+.cta:hover { background: var(--brand-deep); }
+
 /* Panels */
 .panel { padding: 56px 0; border-top: 1px solid var(--line); }
 .panel.alt { background: var(--bg-alt); }

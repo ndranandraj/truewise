@@ -19,8 +19,12 @@ spine:
 flags value-check:
 	python -m pipeline.value_check
 
+# 4) Generate the static site JSON (school index + per-state program shards).
+site:
+	python -m pipeline.build_site
+
 # Full local build (assumes `make data` already ran on a networked machine).
-value: spine flags
+value: spine flags site
 
 test:
 	pytest

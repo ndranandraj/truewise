@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Value Check — Truewise</title>
+  <meta name="description" content="Look up a US college program and see whether its graduates typically out-earn a high-school graduate, using the Department of Education's own data." />
+  <meta property="og:title" content="Value Check — Truewise" />
+  <meta property="og:description" content="Does a college program's graduates out-earn a typical high-school graduate? Look it up." />
+  <meta property="og:url" content="https://truewise.dev/value-check/" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .vc-search { padding: 48px 0 8px; }
+    .vc-search h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .vc-search p.lede { font-size: 1.1rem; }
+    .searchbox {
+      display: flex; align-items: center; gap: 10px; margin: 20px 0 6px;
+      border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px;
+      max-width: 620px; background: #fff; transition: border-color .15s;
+    }
+    .searchbox:focus-within { border-color: var(--brand); }
+    .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.1rem; padding: 12px 0; background: transparent; }
+    .hint { color: var(--ink-soft); font-size: .9rem; margin: 4px 0 0; }
+    .results { list-style: none; padding: 0; margin: 18px 0; max-width: 720px; }
+    .results li { margin: 0 0 10px; }
+    .school-card {
+      display: block; text-decoration: none; color: inherit; border: 1px solid var(--line);
+      border-radius: 12px; padding: 14px 16px; background: #fff; transition: border-color .15s, box-shadow .15s;
+    }
+    .school-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31,111,235,.08); }
+    .school-card h3 { margin: 0 0 4px; font-size: 1.08rem; }
+    .school-card .meta { color: var(--ink-soft); font-size: .9rem; }
+    .mini { display: inline-flex; gap: 12px; margin-top: 8px; font-size: .88rem; }
+    .mini .f { color: #b42318; font-weight: 700; }
+    .mini .p { color: #067647; font-weight: 700; }
+    .mini .i { color: #8b95a7; }
+
+    .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
+    .backlink:hover { text-decoration: underline; }
+    .school-head { padding: 8px 0 4px; }
+    .school-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+    .school-head .sub { color: var(--ink-soft); }
+    .summary {
+      margin: 16px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt);
+      border: 1px solid var(--line); max-width: 760px; font-size: 1.02rem;
+    }
+    .toggle { display: inline-flex; gap: 6px; margin: 18px 0 8px; flex-wrap: wrap; }
+    .toggle button {
+      border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 14px;
+      font-size: .9rem; cursor: pointer; color: var(--ink);
+    }
+    .toggle button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    .prog { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 0 0 12px; background: #fff; }
+    .prog.hl { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(31,111,235,.12); }
+    .prog .top { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+    .prog h3 { margin: 0; font-size: 1.06rem; }
+    .prog .cred { color: var(--ink-soft); font-size: .9rem; margin-top: 2px; }
+    .badge { font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 4px 11px; white-space: nowrap; }
+    .badge.fail { background: #fef3f2; color: #b42318; }
+    .badge.pass { background: #ecfdf3; color: #067647; }
+    .prog .line { margin: 10px 0 0; color: var(--ink); font-size: .98rem; }
+    .prog .stats { display: flex; gap: 22px; flex-wrap: wrap; margin-top: 10px; color: var(--ink-soft); font-size: .9rem; }
+    .prog .stats b { color: var(--ink); font-weight: 600; }
+    .share-bar { height: 7px; background: #eef1f6; border-radius: 4px; overflow: hidden; max-width: 260px; margin-top: 6px; }
+    .share-bar > span { display: block; height: 100%; background: var(--accent); }
+
+    .caveats { margin: 28px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 760px; color: var(--ink-soft); font-size: .92rem; }
+    .caveats a { color: var(--brand); }
+    .empty { color: var(--ink-soft); padding: 20px 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">true<span>wise</span></a>
+      <nav aria-label="Primary"><a href="/#modules">What's coming</a><a href="/#methodology">Methodology</a></nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="app">
+    <!-- rendered by JS -->
+  </main>
+
+  <script>
+  const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
+  const app = document.getElementById("app");
+  let SCHOOLS = null;                 // school index
+  const stateCache = {};              // state -> {unitid: [programs]}
+
+  const money = n => n == null ? "—" : "$" + Number(n).toLocaleString();
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
+                        : h === "4yr_after_completion" ? "4 years after completing" : "after completing";
+
+  async function loadSchools() {
+    if (SCHOOLS) return SCHOOLS;
+    const r = await fetch("data/schools.json");
+    SCHOOLS = (await r.json()).schools;
+    return SCHOOLS;
+  }
+  async function loadState(state) {
+    if (stateCache[state]) return stateCache[state];
+    const r = await fetch("data/programs/" + state + ".json");
+    stateCache[state] = r.ok ? await r.json() : {};
+    return stateCache[state];
+  }
+
+  function go(params, push = true) {
+    const qs = new URLSearchParams(params).toString();
+    const url = qs ? "?" + qs : location.pathname;
+    if (push) history.pushState(params, "", url);
+    route(params);
+  }
+
+  // ---- Search view ----
+  async function renderSearch(preset = "") {
+    await loadSchools();
+    app.innerHTML = `
+      <section class="vc-search">
+        <h1>Is a college program worth it?</h1>
+        <p class="lede">Look up a US college and see, program by program, whether its graduates
+          typically out-earn a high-school graduate — from the Department of Education's own data.</p>
+        <div class="searchbox">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b95a7" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="search" autocomplete="off" placeholder="Search ${SCHOOLS.length.toLocaleString()} colleges by name…" value="${esc(preset)}" />
+        </div>
+        <p class="hint">Try “Baylor”, “Long Beach”, or your local community college.</p>
+        <ul class="results" id="results"></ul>
+      </section>`;
+    const q = document.getElementById("q");
+    const results = document.getElementById("results");
+    let t;
+    const run = () => {
+      const term = q.value.trim().toLowerCase();
+      if (term.length < 2) { results.innerHTML = `<li class="empty">Type at least two letters to search.</li>`; return; }
+      const hits = SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 40);
+      if (!hits.length) { results.innerHTML = `<li class="empty">No colleges match “${esc(term)}”.</li>`; return; }
+      results.innerHTML = hits.map(s => `
+        <li><a class="school-card" href="?school=${s.unitid}" data-u="${s.unitid}">
+          <h3>${esc(s.name)}</h3>
+          <div class="meta">${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
+          <div class="mini">
+            ${s.n_fail ? `<span class="f">${s.n_fail} fall short</span>` : ""}
+            ${s.n_pass ? `<span class="p">${s.n_pass} pass</span>` : ""}
+            ${s.n_insufficient ? `<span class="i">${s.n_insufficient} not enough data</span>` : ""}
+          </div>
+        </a></li>`).join("");
+      results.querySelectorAll("a.school-card").forEach(a =>
+        a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.u }); }));
+    };
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 120); });
+    q.focus();
+    if (preset) run();
+  }
+
+  // ---- School view ----
+  function programCard(p, highlight) {
+    const fail = p.flag === "fails_earnings_premium";
+    const badge = fail
+      ? `<span class="badge fail">Earns less than a HS grad</span>`
+      : `<span class="badge pass">Out-earns a HS grad</span>`;
+    const premAbs = money(Math.abs(p.premium ?? 0));
+    const line = p.earnings == null ? "" : `
+      <p class="line">Graduates typically earn <b>${money(p.earnings)}</b> ${horizonLabel(p.horizon)},
+      versus <b>${money(p.threshold)}</b> for a typical high-school graduate in this state —
+      ${fail ? `about <b>${premAbs} less</b>.` : `a <b>${premAbs} premium</b>.`}</p>`;
+    const share = p.share_above_hs == null ? "" :
+      `<div><span>Graduates out-earning a HS grad</span>
+        <div class="share-bar"><span style="width:${Math.min(100, Math.round(p.share_above_hs*100))}%"></span></div>
+        ${Math.min(100, Math.round(p.share_above_hs*100))}%</div>`;
+    const debt = p.debt == null ? "" : `<div><b>${money(p.debt)}</b> median debt${p.debt_to_earnings!=null?` · ${(p.debt_to_earnings).toFixed(2)}× earnings`:""}</div>`;
+    const anchor = `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`;
+    return `<article class="prog${highlight?" hl":""}" id="${anchor}">
+      <div class="top"><div><h3>${esc(p.program)}</h3><div class="cred">${esc(p.credential)}</div></div>${badge}</div>
+      ${line}
+      <div class="stats">${share}${debt}</div>
+    </article>`;
+  }
+
+  async function renderSchool(unitid, programAnchor) {
+    await loadSchools();
+    const s = SCHOOLS.find(x => x.unitid === unitid);
+    if (!s) { app.innerHTML = `<a class="backlink" href="#" id="back">← Search</a><p class="empty">School not found.</p>`; wireBack(); return; }
+    const byId = await loadState(s.state);
+    let progs = (byId[unitid] || []).slice();
+    // fails first, then passes, each by descending |premium| then name
+    progs.sort((a,b) => {
+      const af = a.flag==="fails_earnings_premium", bf = b.flag==="fails_earnings_premium";
+      if (af !== bf) return af ? -1 : 1;
+      return (a.program||"").localeCompare(b.program||"");
+    });
+    const decided = s.n_fail + s.n_pass;
+    app.innerHTML = `
+      <a class="backlink" href="/value-check/" id="back">← Search another college</a>
+      <div class="school-head">
+        <h1>${esc(s.name)}</h1>
+        <div class="sub">${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
+      </div>
+      <div class="summary">
+        Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
+        <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
+        and <b style="color:#067647">${s.n_pass}</b> out-earn one.
+        ${s.n_insufficient ? `${s.n_insufficient} more don't have enough data.` : ""}
+      </div>
+      <div class="toggle" role="group" aria-label="Filter programs">
+        <button data-f="all" aria-pressed="true">All (${decided})</button>
+        <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
+        <button data-f="pass" aria-pressed="false">Passes (${s.n_pass})</button>
+      </div>
+      <div id="proglist"></div>
+      <div class="caveats">
+        <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
+        compared with the earnings of a typical high-school graduate in the school's state (the federal
+        “earnings-premium” test). They describe past graduates, not a promise, and can't tell you what
+        <em>you</em> would earn. Programs with too few graduates to report are shown as “not enough data,”
+        never guessed. For your own likely cost, use the school's
+        <a href="https://collegescorecard.ed.gov/school/?${unitid}" target="_blank" rel="noopener">net price calculator</a>.
+        Source: ${DATA_VINTAGE}. <a href="/#methodology">Methodology</a>.
+      </div>`;
+    const list = document.getElementById("proglist");
+    const draw = (filter) => {
+      const shown = progs.filter(p => filter==="all" ? true : filter==="fail" ? p.flag==="fails_earnings_premium" : p.flag==="passes_earnings_premium");
+      list.innerHTML = shown.length ? shown.map(p => programCard(p, programAnchor && `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`===programAnchor)).join("")
+        : `<p class="empty">No programs in this view.</p>`;
+      if (programAnchor) { const el = document.getElementById(programAnchor); if (el) el.scrollIntoView({behavior:"smooth", block:"center"}); }
+    };
+    document.querySelectorAll(".toggle button").forEach(b =>
+      b.addEventListener("click", () => {
+        document.querySelectorAll(".toggle button").forEach(x => x.setAttribute("aria-pressed", x===b));
+        draw(b.dataset.f);
+      }));
+    draw("all");
+    wireBack();
+  }
+
+  function wireBack() {
+    const b = document.getElementById("back");
+    if (b) b.addEventListener("click", e => { e.preventDefault(); go({}); });
+  }
+
+  // ---- Router ----
+  function route(params) {
+    const school = params.school;
+    if (school) renderSchool(school, params.program || null);
+    else renderSearch(params.q || "");
+  }
+  window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
+  route(Object.fromEntries(new URLSearchParams(location.search)));
+  </script>
+</body>
+</html>
