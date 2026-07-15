@@ -22,6 +22,8 @@ _NUMERIC = {
     "completers_count",
     "earnings_median_1yr",
     "earnings_median_4yr",
+    "earn_gt_threshold_4yr",
+    "earn_count_wne_4yr",
     "earn_gt_threshold_1yr",
     "earn_count_wne_1yr",
     "earnings_threshold_state",
@@ -42,6 +44,8 @@ FOS_COLUMNS = [
     "completers_count",
     "earnings_median_1yr",
     "earnings_median_4yr",
+    "earn_gt_threshold_4yr",
+    "earn_count_wne_4yr",
     "earn_gt_threshold_1yr",
     "earn_count_wne_1yr",
     "earnings_threshold_state",
@@ -110,22 +114,27 @@ def test_insufficient_when_threshold_missing():
     assert _flag(con, "not") == "insufficient_data"
 
 
-def test_earnings_horizon_prefers_1yr_then_falls_back_to_4yr():
+def test_earnings_horizon_prefers_4yr_then_falls_back_to_1yr():
+    # Mirrors ED's published display: prefer 4-year earnings, fall back to 1-year.
     con = _con_with_fos(
         [
             _row(
-                unitid="oneyr",
+                unitid="both",
                 earnings_median_1yr=40000,
                 earnings_median_4yr=60000,
                 earnings_threshold_state=30000,
             ),
-            _row(unitid="fouryr", earnings_median_4yr=60000, earnings_threshold_state=30000),
+            _row(unitid="oneonly", earnings_median_1yr=40000, earnings_threshold_state=30000),
         ]
     )
     build_value_check(con)
-    horizons = dict(con.execute("SELECT unitid, earnings_horizon FROM value_check").fetchall())
-    assert horizons["oneyr"] == "1yr_after_completion"
-    assert horizons["fouryr"] == "4yr_after_completion"
+    rows = dict(con.execute("SELECT unitid, earnings_horizon FROM value_check").fetchall())
+    assert rows["both"] == "4yr_after_completion"
+    assert rows["oneonly"] == "1yr_after_completion"
+    # the earnings actually used for 'both' should be the 4-year value
+    assert (
+        con.execute("SELECT earnings FROM value_check WHERE unitid='both'").fetchone()[0] == 60000
+    )
 
 
 def test_debt_to_earnings_ratio_and_null_safety():

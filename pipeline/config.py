@@ -53,6 +53,9 @@ FOS_FIELD_CANDIDATES: dict[str, list[str]] = {
     "earnings_median_4yr": ["EARN_MDN_4YR", "EARN_MDN_HI_4YR"],
     # Count of graduates (working, not enrolled) earning above the HS-grad threshold,
     # and the working-not-enrolled denominator -> "share out-earning a HS grad".
+    # Both horizons: we prefer 4-year (to match ED's published display) with a 1-year fallback.
+    "earn_gt_threshold_4yr": ["EARN_GT_THRESHOLD_4YR"],
+    "earn_count_wne_4yr": ["EARN_COUNT_WNE_4YR"],
     "earn_gt_threshold_1yr": ["EARN_GT_THRESHOLD_1YR"],
     "earn_count_wne_1yr": ["EARN_COUNT_WNE_1YR"],
     # Median debt at graduation.

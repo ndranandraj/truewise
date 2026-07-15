@@ -20,8 +20,9 @@ files (most recent release, dated 2026-06-10), joined on the IPEDS **UNITID**:
 
 ## The earnings-premium flag
 
-For each program we take median earnings 1 year after completion (falling back to the
-4-year figure) and compare it to the state threshold:
+For each program we take median earnings **4 years after completion** — the same figure the
+Department of Education displays on the public College Scorecard site — falling back to the
+1-year figure only where the 4-year value is suppressed, and compare it to the state threshold:
 
 - **`passes_earnings_premium`** — median earnings ≥ the state HS-grad threshold.
 - **`fails_earnings_premium`** — median earnings < the state HS-grad threshold.
@@ -45,17 +46,23 @@ amortization schedule and is a planned addition).
 
 Of 227,980 programs, **60,202 (26%) have sufficient data** for a determination; the rest
 have earnings suppressed by ED for privacy (small cohorts). Among the decided programs,
-**29% fail the earnings-premium test** — their graduates typically earn less than a
-typical high-school graduate. 94.8% of programs matched an institution-level threshold.
+**9% fail the earnings-premium test** — their graduates typically earn less than a
+typical high-school graduate even four years after finishing. 94.8% of programs matched
+an institution-level threshold.
 
 ## Validation
 
 - **By construction**, the flag uses ED's own published median earnings and thresholds,
   so it reproduces the federal earnings-premium comparison directly.
+- **Matches ED's public site exactly.** A 20-program audit against the live College
+  Scorecard site confirmed our earnings equal ED's displayed figures to the dollar (e.g.
+  UCLA Economics $95,440, Psychology $61,050, Sociology $64,692). The audit is what led us
+  to use the 4-year earnings measure ED publishes rather than the 1-year figure — see
+  [AUDIT.md](AUDIT.md).
 - **Independent cross-check:** compared against ED's separate count of graduates
-  out-earning the threshold (`EARN_GT_THRESHOLD`), our median-based flag agrees on
-  **86.7%** of comparable programs. Disagreements cluster at the boundary (median ≈
-  threshold), where ED's two underlying counts use slightly different bases.
+  out-earning the threshold (`EARN_GT_THRESHOLD`), our median-based flag agrees on the
+  large majority of comparable programs; disagreements cluster at the boundary
+  (median ≈ threshold), where ED's two underlying counts use slightly different bases.
 - Unit tests exercise the exact flag SQL on synthetic edge cases (suppressed earnings,
   missing threshold, division-by-zero, state-vs-national, share).
 

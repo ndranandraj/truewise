@@ -144,6 +144,8 @@ def main() -> None:
                 {_num(fos, "completers_count")}      AS completers_count,
                 {_num(fos, "earnings_median_1yr")}   AS earnings_median_1yr,
                 {_num(fos, "earnings_median_4yr")}   AS earnings_median_4yr,
+                {_num(fos, "earn_gt_threshold_4yr")} AS earn_gt_threshold_4yr,
+                {_num(fos, "earn_count_wne_4yr")}    AS earn_count_wne_4yr,
                 {_num(fos, "earn_gt_threshold_1yr")} AS earn_gt_threshold_1yr,
                 {_num(fos, "earn_count_wne_1yr")}    AS earn_count_wne_1yr,
                 {_num(fos, "debt_median")}           AS debt_median
