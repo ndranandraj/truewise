@@ -65,6 +65,18 @@ an institution-level threshold.
 - Unit tests exercise the exact flag SQL on synthetic edge cases (suppressed earnings,
   missing threshold, division-by-zero, state-vs-national, share).
 
+## Affordability (net price by income)
+
+Each school profile also shows **net price by family income bracket**: what students whose
+families fall in each of five income ranges ($0 to $30k, $30k to $48k, $48k to $75k, $75k to
+$110k, $110k and up) typically paid per year after grants and scholarships. These figures are
+College Scorecard's `NPT41`-`NPT45` fields, coalesced across the school's sector (public,
+private, program-year). Suppressed brackets show as "not reported," never guessed. Figures
+describe past students, not a quote; profiles link each school's own net price calculator for
+a personal estimate. The idea of ranking schools by what families at each income level
+actually pay was pioneered by [TuitionTracker](https://www.tuitiontracker.org/), which we
+credit here; Truewise's contribution is joining it with the earnings-premium view on one page.
+
 ## Known limitations
 
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.

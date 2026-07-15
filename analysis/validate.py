@@ -126,6 +126,21 @@ def run(con: duckdb.DuckDBPyConnection) -> list[tuple[str, bool, str]]:
     return [(name, *fn(con)) for name, fn in CHECKS.items()]
 
 
+def check_net_price(inst_path) -> tuple[bool, str]:
+    """Affordability sanity: net price values within a plausible range."""
+    con = duckdb.connect()
+    cols = [
+        "net_price_avg",
+        *[f"net_price_{b}" for b in ("0_30k", "30_48k", "48_75k", "75_110k", "110k_plus")],
+    ]
+    con.execute(f"CREATE VIEW inst AS SELECT * FROM read_parquet('{inst_path}')")
+    # Net price can be modestly negative (aid exceeds cost at low-cost schools); bounds
+    # are set to allow legitimate values and catch true garbage.
+    conds = " OR ".join(f"({c} IS NOT NULL AND ({c} < -15000 OR {c} > 150000))" for c in cols)
+    bad = con.execute(f"SELECT count(*) FROM inst WHERE {conds}").fetchone()[0]
+    return bad == 0, f"{bad} schools with implausible net price"
+
+
 def main() -> None:
     from pipeline.config import PARQUET_DIR
 
@@ -135,6 +150,9 @@ def main() -> None:
     con = duckdb.connect()
     con.execute(f"CREATE VIEW vc AS SELECT * FROM read_parquet('{path}')")
     results = run(con)
+    inst_path = PARQUET_DIR / "institutions.parquet"
+    if inst_path.exists():
+        results.append(("net_price_within_bounds", *check_net_price(inst_path)))
     failed = 0
     for name, ok, detail in results:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name:32s} {detail}")

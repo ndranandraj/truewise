@@ -66,6 +66,16 @@
       font-size: .9rem; cursor: pointer; color: var(--ink);
     }
     .toggle button[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .prose-line { color: var(--ink-soft); max-width: 760px; margin: 6px 0 0; }
+    .income-toggle { display: inline-flex; gap: 6px; margin: 14px 0 10px; flex-wrap: wrap; }
+    .income-toggle button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 7px 15px; font-size: .9rem; cursor: pointer; color: var(--ink); }
+    .income-toggle button[aria-pressed="true"] { background: var(--brand); color: #fff; border-color: var(--brand); }
+    .income-toggle button:disabled { opacity: .4; cursor: not-allowed; }
+    .afford-result { font-size: 1.15rem; color: var(--ink); max-width: 620px; margin: 6px 0; line-height: 1.5; }
+    .afford-result .big { font-size: 1.5rem; color: var(--brand-deep); }
+    .afford-result .empty { color: var(--ink-soft); font-size: 1rem; }
+    .afford-note { color: var(--ink-soft); font-size: .85rem; max-width: 760px; margin: 12px 0 0; line-height: 1.55; }
+    .afford-note a { color: var(--brand); }
 
     .prog { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 0 0 12px; background: #fff; }
     .prog.hl { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(31,111,235,.12); }
@@ -212,11 +222,11 @@
     if (s.enrollment) bits.push(Number(s.enrollment).toLocaleString() + " undergraduates");
     const website = s.url ? ` · <a href="${/^https?:/.test(s.url) ? s.url : "https://" + s.url}" target="_blank" rel="noopener">website ↗</a>` : "";
     const modules = [
-      { key: "value", name: "Value Check", live: true, blurb: "Do graduates out-earn a HS grad?" },
-      { key: "afford", name: "Affordability", live: false, blurb: "What families really pay" },
-      { key: "roi", name: "ROI", live: false, blurb: "Earnings vs debt, payback" },
-      { key: "mobility", name: "Mobility", live: false, blurb: "Moving students up" },
-      { key: "careers", name: "Careers", live: false, blurb: "Where a major leads" },
+      { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
+      { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
+      { name: "ROI", live: false, blurb: "Earnings vs debt, payback" },
+      { name: "Mobility", live: false, blurb: "Moving students up" },
+      { name: "Careers", live: false, blurb: "Where a major leads" },
     ];
     const ugI = s.n_insuff_ug || 0, gradI = s.n_insuff_grad || 0, totI = s.n_insufficient || 0;
     const iparts = [];
@@ -231,6 +241,26 @@
         doctoral, where students are usually funded by stipends and assistantships rather than
         federal loans. So most of the missing programs here are graduate level, and undergraduate
         coverage is far more complete.</span></details></p>`;
+    const INCOME = [
+      { label: "Under $30k", full: "under $30,000" },
+      { label: "$30k to $48k", full: "between $30,000 and $48,000" },
+      { label: "$48k to $75k", full: "between $48,000 and $75,000" },
+      { label: "$75k to $110k", full: "between $75,000 and $110,000" },
+      { label: "$110k and up", full: "$110,000 or more" },
+    ];
+    const np = s.net_price;
+    const affordSection = !np ? "" : `
+      <section id="affordability" class="module">
+        <h2>Affordability: what students actually paid</h2>
+        <p class="prose-line">Sticker prices hide what families really pay after grants and
+          scholarships. Pick your family's income to see the typical yearly net price for
+          students in that range.</p>
+        <div class="income-toggle" role="group" aria-label="Family income">
+          ${INCOME.map((b,i)=>`<button data-i="${i}"${np.brackets[i]==null?" disabled":""}>${b.label}</button>`).join("")}
+        </div>
+        <div id="afford-result" class="afford-result"></div>
+        <p class="afford-note">${np.avg!=null?`Across all families, students paid about <b>${money(np.avg)}</b> per year on average. `:""}These are what past students paid after aid, not a quote for you. For a personal estimate, use the school's <a href="https://collegescorecard.ed.gov/school/?${unitid}" target="_blank" rel="noopener">net price calculator</a>. Net-price-by-income figures come from College Scorecard; the idea of ranking schools by what families at each income level actually pay was pioneered by <a href="https://www.tuitiontracker.org/" target="_blank" rel="noopener">TuitionTracker</a>.</p>
+      </section>`;
     app.innerHTML = `
       <a class="backlink" href="/value-check/" id="back">← Find another college</a>
       <div class="school-head">
@@ -239,7 +269,7 @@
       </div>
       <div class="modules" aria-label="Sections">
         ${modules.map(m => `
-          <a class="mod${m.live ? " live" : " soon"}" ${m.live ? 'href="#value-check"' : ""}>
+          <a class="mod${m.live ? " live" : " soon"}" ${m.live ? `href="#${m.anchor}"` : ""}>
             <span class="mod-name">${m.name}</span>
             <span class="mod-blurb">${m.blurb}</span>
             <span class="mod-tag">${m.live ? "Live" : "Coming soon"}</span>
@@ -260,6 +290,7 @@
         </div>
         <div id="proglist"></div>
       </section>
+      ${affordSection}
       <div class="caveats">
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal
@@ -282,6 +313,28 @@
         draw(b.dataset.f);
       }));
     draw("all");
+
+    if (np) {
+      const result = document.getElementById("afford-result");
+      const showIncome = (i) => {
+        const price = np.brackets[i];
+        result.innerHTML = price == null
+          ? `<span class="empty">Not reported for this income range.</span>`
+          : `Students from families earning <b>${INCOME[i].full}</b> typically paid about
+             <b class="big">${money(price)}</b> per year.`;
+        document.querySelectorAll(".income-toggle button").forEach(b =>
+          b.setAttribute("aria-pressed", (+b.dataset.i) === i));
+        const u = new URLSearchParams(location.search);
+        u.set("income", i);
+        history.replaceState(Object.fromEntries(u), "", "?" + u.toString());
+      };
+      document.querySelectorAll(".income-toggle button").forEach(b =>
+        b.addEventListener("click", () => showIncome(+b.dataset.i)));
+      const init = new URLSearchParams(location.search).get("income");
+      if (init != null && np.brackets[+init] != null) showIncome(+init);
+      else result.innerHTML = `<span class="empty">Select your family income above.</span>`;
+    }
+
     wireBack();
   }
 

@@ -22,8 +22,8 @@ FOS_CSV = """UNITID,OPEID6,INSTNM,CONTROL,CIPCODE,CIPDESC,CREDLEV,CREDDESC,IPEDS
 999,009990,National Aggregate,Public,0101,Computer Science.,3,Bachelor's Degree,0,50000,70000,10000
 """
 
-INST_CSV = """UNITID,INSTNM,STABBR,EARN_THR_STATE,EARN_THR_NAT
-100,Test State University,TX,35000,36000
+INST_CSV = """UNITID,INSTNM,CITY,STABBR,INSTURL,UGDS,EARN_THR_STATE,EARN_THR_NAT,NPT4_PUB,NPT41_PUB,NPT42_PUB,NPT43_PUB,NPT44_PUB,NPT45_PUB
+100,Test State University,Testville,TX,tsu.edu,12000,35000,36000,15000,6000,9000,13000,17000,21000
 """
 
 
@@ -81,6 +81,10 @@ def test_site_generator(built, tmp_path, monkeypatch):
     tsu = next(s for s in schools if s["unitid"] == "100")
     assert tsu["n_fail"] == 1 and tsu["n_pass"] == 1 and tsu["n_insufficient"] == 1
     assert tsu["state"] == "TX"
+    # identity + affordability flow through
+    assert tsu["city"] == "Testville" and tsu["enrollment"] == 12000
+    assert tsu["net_price"]["avg"] == 15000
+    assert tsu["net_price"]["brackets"] == [6000, 9000, 13000, 17000, 21000]
 
     tx = json.loads((out / "programs" / "TX.json").read_text())
     progs = {p["cip"]: p for p in tx["100"]}

@@ -120,20 +120,29 @@ def main() -> None:
             }
         )
 
-    # Merge school identity (city, enrollment, url) from the institutions table.
+    # Merge school identity + net-price-by-income (Affordability) from the institutions table.
     inst_path = PARQUET_DIR / "institutions.parquet"
     if inst_path.exists():
         ident = {
             r[0]: r[1:]
             for r in con.execute(
-                f"SELECT unitid, city, school_url, enrollment FROM read_parquet('{inst_path}')"
+                f"""SELECT unitid, city, school_url, enrollment, net_price_avg,
+                       net_price_0_30k, net_price_30_48k, net_price_48_75k,
+                       net_price_75_110k, net_price_110k_plus
+                    FROM read_parquet('{inst_path}')"""
             ).fetchall()
         }
         for s in schools.values():
-            city, url, enr = ident.get(s["unitid"], (None, None, None))
+            row = ident.get(s["unitid"])
+            if not row:
+                continue
+            city, url, enr, npa, b1, b2, b3, b4, b5 = row
             s["city"] = city
             s["url"] = url
             s["enrollment"] = int(enr) if enr else None
+            brackets = [_round(b1), _round(b2), _round(b3), _round(b4), _round(b5)]
+            if npa is not None or any(b is not None for b in brackets):
+                s["net_price"] = {"avg": _round(npa), "brackets": brackets}
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "programs").mkdir(exist_ok=True)

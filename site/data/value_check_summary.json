@@ -278,16 +278,16 @@
       "fail_rate": 0.0572
     },
     {
-      "state": "VT",
-      "fails": 13,
-      "decided": 221,
-      "fail_rate": 0.0588
-    },
-    {
       "state": "AK",
       "fails": 13,
       "decided": 89,
       "fail_rate": 0.1461
+    },
+    {
+      "state": "VT",
+      "fails": 13,
+      "decided": 221,
+      "fail_rate": 0.0588
     },
     {
       "state": "WY",
@@ -337,14 +337,14 @@
     },
     {
       "cip2": "50",
-      "example": "Fine and Studio Arts.",
+      "example": "Music.",
       "fails": 571,
       "decided": 2365,
       "fail_rate": 0.2414
     },
     {
       "cip2": "19",
-      "example": "Family and Consumer Sciences/Human Sciences, General.",
+      "example": "Human Development, Family Studies, and Related Services.",
       "fails": 144,
       "decided": 653,
       "fail_rate": 0.2205
@@ -358,35 +358,35 @@
     },
     {
       "cip2": "01",
-      "example": "Animal Sciences.",
+      "example": "Applied Horticulture and Horticultural Business Services.",
       "fails": 112,
       "decided": 806,
       "fail_rate": 0.139
     },
     {
       "cip2": "51",
-      "example": "Communication Disorders Sciences and Services.",
+      "example": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing.",
       "fails": 1559,
       "decided": 12456,
       "fail_rate": 0.1252
     },
     {
       "cip2": "16",
-      "example": "Linguistic, Comparative, and Related Language Studies and Services.",
+      "example": "Romance Languages, Literatures, and Linguistics.",
       "fails": 53,
       "decided": 468,
       "fail_rate": 0.1132
     },
     {
       "cip2": "46",
-      "example": "Mason/Masonry.",
+      "example": "Building/Construction Finishing, Management, and Inspection.",
       "fails": 38,
       "decided": 369,
       "fail_rate": 0.103
     },
     {
       "cip2": "05",
-      "example": "Ethnic, Cultural Minority, Gender, and Group Studies.",
+      "example": "Area Studies.",
       "fails": 23,
       "decided": 227,
       "fail_rate": 0.1013

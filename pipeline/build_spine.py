@@ -84,6 +84,24 @@ def _txt(resolved: dict[str, str], logical: str) -> str:
     return f'"{col}"' if col else "NULL"
 
 
+# Average net price and net-price-by-income-bracket come in parallel columns per sector
+# (NPT4x_PUB / _PRIV / _PROG / _OTHER); a school populates only its own sector, so we
+# COALESCE across them. bracket "" = average; "1".."5" = the five income brackets.
+_NPT_VARIANTS = ("PUB", "PRIV", "PROG", "OTHER")
+
+
+def _net_price(cols: set[str], bracket: str) -> str:
+    names = [f"NPT4{bracket}_{v}" for v in _NPT_VARIANTS]
+    present = [n for n in names if n in cols]
+    if not present:
+        return "NULL"
+    parts = [
+        f'CASE WHEN trim("{n}") IN ({_sentinel_list()}) THEN NULL ELSE TRY_CAST("{n}" AS DOUBLE) END'
+        for n in present
+    ]
+    return "COALESCE(" + ", ".join(parts) + ")"
+
+
 def _print_mapping(title: str, candidates: dict[str, str], resolved: dict[str, str]) -> None:
     print(f"  {title} field mapping:")
     for logical in candidates:
@@ -115,7 +133,8 @@ def main() -> None:
     print(f"  rows: {con.execute('SELECT count(*) FROM inst_raw').fetchone()[0]:,}")
     _print_mapping("Institution", INST_FIELD_CANDIDATES, inst)
 
-    # Institution-level identity + thresholds, one row per school.
+    # Institution-level identity + thresholds + net price, one row per school.
+    icols = set(inst_cols)
     con.execute(
         f"""
         CREATE OR REPLACE TABLE institutions AS SELECT
@@ -126,7 +145,13 @@ def main() -> None:
             {_txt(inst, "school_url")}                    AS school_url,
             {_num(inst, "enrollment")}                    AS enrollment,
             {_num(inst, "earnings_threshold_state")}      AS earnings_threshold_state,
-            {_num(inst, "earnings_threshold_national")}   AS earnings_threshold_national
+            {_num(inst, "earnings_threshold_national")}   AS earnings_threshold_national,
+            {_net_price(icols, "")}                       AS net_price_avg,
+            {_net_price(icols, "1")}                      AS net_price_0_30k,
+            {_net_price(icols, "2")}                      AS net_price_30_48k,
+            {_net_price(icols, "3")}                      AS net_price_48_75k,
+            {_net_price(icols, "4")}                      AS net_price_75_110k,
+            {_net_price(icols, "5")}                      AS net_price_110k_plus
         FROM inst_raw
         """
     )
