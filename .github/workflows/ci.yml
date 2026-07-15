@@ -39,5 +39,5 @@ jobs:
           cache: pip
       - name: Install the package from source
         run: pip install ./packages/truewise-data pytest
-      - name: Test the package (installed, not editable — verifies bundled data ships)
+      - name: Test the package (installed, not editable, verifies bundled data ships)
         run: pytest packages/truewise-data/tests -q
