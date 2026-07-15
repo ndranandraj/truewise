@@ -25,7 +25,6 @@ small-cohort values are `null` (never imputed). Distributed as `value_check.parq
 | `earnings_premium_national` | number | `earnings − earnings_threshold_national`. |
 | `fails_ep_state` | boolean | True if earnings are below the state threshold; null if undetermined. |
 | `value_flag` | string | `passes_earnings_premium` / `fails_earnings_premium` / `insufficient_data`. |
-| `share_earning_above_hs_grad` | number | Fraction of working graduates out-earning a HS grad (ED's count ÷ working-not-enrolled count, 4-year). Companion metric, can slightly exceed 1. |
 | `debt_median` | number | Median debt at graduation for the program, USD. |
 | `debt_to_earnings_ratio` | number | `debt_median ÷ earnings`. A plain ratio, **not** the federal amortized debt-to-earnings rate. |
 

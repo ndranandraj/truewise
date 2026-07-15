@@ -29,10 +29,9 @@ Department of Education displays on the public College Scorecard site — fallin
 - **`insufficient_data`** — earnings suppressed (small cohort) or no threshold available.
 
 We also report the **earnings premium in dollars** (median − threshold), state and
-national; a **companion share** (`share_earning_above_hs_grad` = graduates out-earning
-the threshold ÷ working graduates); and a plain **debt-to-earnings ratio** (median debt
-÷ median annual earnings — *not* the federal amortized D/E rate, which needs an
-amortization schedule and is a planned addition).
+national, and a plain **debt-to-earnings ratio** (median debt ÷ median annual earnings —
+*not* the federal amortized D/E rate, which needs an amortization schedule and is a
+planned addition).
 
 ## Principles
 
@@ -68,8 +67,5 @@ an institution-level threshold.
 
 ## Known limitations
 
-- The companion share can slightly exceed 100% because ED's "count above threshold" and
-  "working, not enrolled" counts use marginally different bases; it is a companion signal,
-  not the test itself.
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.
 - Earnings cohorts predate the current year; figures describe past graduates.

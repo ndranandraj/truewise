@@ -156,26 +156,24 @@
   }
 
   // ---- School view ----
-  function programCard(p, highlight) {
+  function programCard(p, threshold, highlight) {
     const fail = p.flag === "fails_earnings_premium";
     const badge = fail
       ? `<span class="badge fail">Earns less than a HS grad</span>`
       : `<span class="badge pass">Out-earns a HS grad</span>`;
-    const premAbs = money(Math.abs(p.premium ?? 0));
+    const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
+    const premAbs = money(Math.abs(premium ?? 0));
     const line = p.earnings == null ? "" : `
       <p class="line">Graduates typically earn <b>${money(p.earnings)}</b> ${horizonLabel(p.horizon)},
-      versus <b>${money(p.threshold)}</b> for a typical high-school graduate in this state —
+      versus <b>${money(threshold)}</b> for a typical high-school graduate in this state —
       ${fail ? `about <b>${premAbs} less</b>.` : `a <b>${premAbs} premium</b>.`}</p>`;
-    const share = p.share_above_hs == null ? "" :
-      `<div><span>Graduates out-earning a HS grad</span>
-        <div class="share-bar"><span style="width:${Math.min(100, Math.round(p.share_above_hs*100))}%"></span></div>
-        ${Math.min(100, Math.round(p.share_above_hs*100))}%</div>`;
     const debt = p.debt == null ? "" : `<div><b>${money(p.debt)}</b> median debt${p.debt_to_earnings!=null?` · ${(p.debt_to_earnings).toFixed(2)}× earnings`:""}</div>`;
+    const completers = p.completers == null ? "" : `<div>${Number(p.completers).toLocaleString()} graduates</div>`;
     const anchor = `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`;
     return `<article class="prog${highlight?" hl":""}" id="${anchor}">
       <div class="top"><div><h3>${esc(p.program)}</h3><div class="cred">${esc(p.credential)}</div></div>${badge}</div>
       ${line}
-      <div class="stats">${share}${debt}</div>
+      <div class="stats">${debt}${completers}</div>
     </article>`;
   }
 
@@ -222,7 +220,7 @@
     const list = document.getElementById("proglist");
     const draw = (filter) => {
       const shown = progs.filter(p => filter==="all" ? true : filter==="fail" ? p.flag==="fails_earnings_premium" : p.flag==="passes_earnings_premium");
-      list.innerHTML = shown.length ? shown.map(p => programCard(p, programAnchor && `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`===programAnchor)).join("")
+      list.innerHTML = shown.length ? shown.map(p => programCard(p, s.threshold, programAnchor && `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`===programAnchor)).join("")
         : `<p class="empty">No programs in this view.</p>`;
       if (programAnchor) { const el = document.getElementById(programAnchor); if (el) el.scrollIntoView({behavior:"smooth", block:"center"}); }
     };

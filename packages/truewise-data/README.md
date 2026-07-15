@@ -33,7 +33,6 @@ One row per institution × 4-digit CIP code × credential level. Key columns:
 | `earnings_threshold_state` / `_national` | typical high-school-graduate earnings benchmark |
 | `earnings_premium_state` / `_national` | earnings minus the threshold (negative = below) |
 | `value_flag` | `passes_earnings_premium` / `fails_earnings_premium` / `insufficient_data` |
-| `share_earning_above_hs_grad` | fraction of graduates out-earning a HS grad |
 | `debt_median`, `debt_to_earnings_ratio` | median debt at graduation; debt ÷ annual earnings |
 
 Suppressed small-cohort values are `NULL`, never imputed. Earnings mirror what ED

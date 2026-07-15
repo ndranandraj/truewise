@@ -39,7 +39,6 @@ def load_value_check(decided_only: bool = False):
       earnings_threshold_state     typical HS-grad earnings in the school's state (USD)
       earnings_premium_state       earnings - threshold (USD; negative = below)
       value_flag                   passes_earnings_premium | fails_earnings_premium | insufficient_data
-      share_earning_above_hs_grad  fraction of graduates out-earning a HS grad
       debt_median, debt_to_earnings_ratio
 
     Suppressed (small-cohort) values are NULL, never imputed. Pass decided_only=True

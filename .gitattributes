@@ -1,0 +1,6 @@
+*.parquet binary
+# Generated data — keep out of language stats and collapse in diffs
+site/value-check/data/** linguist-generated=true
+site/data/value_check_summary.json linguist-generated=true
+archive/** linguist-generated=true
+packages/truewise-data/truewise_data/data/** linguist-generated=true

@@ -22,10 +22,6 @@ _NUMERIC = {
     "completers_count",
     "earnings_median_1yr",
     "earnings_median_4yr",
-    "earn_gt_threshold_4yr",
-    "earn_count_wne_4yr",
-    "earn_gt_threshold_1yr",
-    "earn_count_wne_1yr",
     "earnings_threshold_state",
     "earnings_threshold_national",
     "debt_median",
@@ -44,10 +40,6 @@ FOS_COLUMNS = [
     "completers_count",
     "earnings_median_1yr",
     "earnings_median_4yr",
-    "earn_gt_threshold_4yr",
-    "earn_count_wne_4yr",
-    "earn_gt_threshold_1yr",
-    "earn_count_wne_1yr",
     "earnings_threshold_state",
     "earnings_threshold_national",
     "debt_median",
@@ -163,39 +155,6 @@ def test_debt_to_earnings_ratio_and_null_safety():
     assert (
         con.execute(
             "SELECT debt_to_earnings_ratio FROM value_check WHERE unitid='zero'"
-        ).fetchone()[0]
-        is None
-    )
-
-
-def test_share_earning_above_hs_grad():
-    con = _con_with_fos(
-        [
-            _row(
-                unitid="shr",
-                earnings_median_1yr=40000,
-                earnings_threshold_state=30000,
-                earn_gt_threshold_1yr=30,
-                earn_count_wne_1yr=40,
-            ),
-            _row(
-                unitid="nodenom",
-                earnings_median_1yr=40000,
-                earnings_threshold_state=30000,
-                earn_gt_threshold_1yr=30,
-                earn_count_wne_1yr=0,
-            ),
-        ]
-    )
-    build_value_check(con)
-    share = con.execute(
-        "SELECT share_earning_above_hs_grad FROM value_check WHERE unitid='shr'"
-    ).fetchone()[0]
-    assert share == pytest.approx(0.75)
-    # Zero denominator -> NULL, not an error.
-    assert (
-        con.execute(
-            "SELECT share_earning_above_hs_grad FROM value_check WHERE unitid='nodenom'"
         ).fetchone()[0]
         is None
     )

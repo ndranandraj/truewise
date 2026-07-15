@@ -44,7 +44,6 @@ COLUMNS = [
     "earnings_premium_national",
     "fails_ep_state",
     "value_flag",
-    "share_earning_above_hs_grad",
     "debt_median",
     "debt_to_earnings_ratio",
 ]

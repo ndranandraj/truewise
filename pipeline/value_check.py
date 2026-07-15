@@ -43,7 +43,6 @@ SNAPSHOT_COLUMNS = [
     "earnings_premium_state",
     "fails_ep_state",
     "value_flag",
-    "share_earning_above_hs_grad",
     "debt_median",
     "debt_to_earnings_ratio",
 ]
@@ -58,8 +57,6 @@ WITH base AS (
         cip_code, cip_desc, credential_level, credential_desc,
         completers_count,
         earnings_median_1yr, earnings_median_4yr,
-        earn_gt_threshold_4yr, earn_count_wne_4yr,
-        earn_gt_threshold_1yr, earn_count_wne_1yr,
         earnings_threshold_state, earnings_threshold_national,
         debt_median,
         -- Prefer 4-year-after-completion earnings, matching what ED publishes on the
@@ -85,16 +82,6 @@ SELECT
         WHEN earnings < earnings_threshold_state THEN 'fails_earnings_premium'
         ELSE 'passes_earnings_premium'
     END AS value_flag,
-    -- Intuitive companion metric: share of working graduates out-earning a typical
-    -- HS grad (ED's own count / working-not-enrolled count). Prefer the 4-year horizon
-    -- to match the earnings above; fall back to 1-year. Not the EP test itself.
-    CASE
-        WHEN earn_count_wne_4yr > 0 AND earn_gt_threshold_4yr IS NOT NULL
-            THEN round(earn_gt_threshold_4yr / earn_count_wne_4yr, 3)
-        WHEN earn_count_wne_1yr > 0 AND earn_gt_threshold_1yr IS NOT NULL
-            THEN round(earn_gt_threshold_1yr / earn_count_wne_1yr, 3)
-        ELSE NULL
-    END AS share_earning_above_hs_grad,
     CASE WHEN earnings IS NULL OR earnings = 0 OR debt_median IS NULL THEN NULL
          ELSE round(debt_median / earnings, 3) END           AS debt_to_earnings_ratio,
     '{source}' AS source_dataset

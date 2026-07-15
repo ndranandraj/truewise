@@ -39,6 +39,12 @@ jobs:
           python -m pipeline.build_site
           python -m pipeline.build_package_data
 
+      - name: Data-quality gate (fails the run on a bad refresh)
+        run: python -m analysis.validate
+
+      - name: Diff against the previous snapshot (skips on the first run)
+        run: python -m pipeline.monitor_diff || echo "No prior snapshot yet — diff skipped."
+
       - name: Commit snapshot + summary + site + package data if changed
         run: |
           git config user.name "truewise-bot"

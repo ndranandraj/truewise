@@ -43,7 +43,7 @@ def main() -> None:
                cip_code, cip_desc, credential_level, credential_desc,
                completers_count, earnings, earnings_horizon,
                earnings_threshold_state, earnings_premium_state,
-               share_earning_above_hs_grad, debt_median, debt_to_earnings_ratio,
+               debt_median, debt_to_earnings_ratio,
                value_flag
         FROM read_parquet('{vc}')
         WHERE regexp_matches(unitid, '^[0-9]+$')
@@ -69,7 +69,6 @@ def main() -> None:
             horizon,
             thr,
             prem,
-            share,
             debt,
             dte,
             flag,
@@ -83,12 +82,15 @@ def main() -> None:
                 "name": name,
                 "state": state,
                 "control": control,
+                "threshold": None,  # per-school (state HS-grad benchmark); dedupes off programs
                 "n_programs": 0,
                 "n_fail": 0,
                 "n_pass": 0,
                 "n_insufficient": 0,
             },
         )
+        if s["threshold"] is None and thr is not None:
+            s["threshold"] = _round(thr)
         s["n_programs"] += 1
         s["n_fail"] += flag == "fails_earnings_premium"
         s["n_pass"] += flag == "passes_earnings_premium"
@@ -106,9 +108,6 @@ def main() -> None:
                 "flag": flag,
                 "earnings": _round(earn),
                 "horizon": horizon,
-                "threshold": _round(thr),
-                "premium": _round(prem),
-                "share_above_hs": _round(share, 3),
                 "debt": _round(debt),
                 "debt_to_earnings": _round(dte, 3),
                 "completers": _round(completers),
