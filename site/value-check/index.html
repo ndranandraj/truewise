@@ -8,7 +8,10 @@
   <meta property="og:title" content="Value Check | Truewise" />
   <meta property="og:description" content="Does a college program's graduates out-earn a typical high-school graduate? Look it up." />
   <meta property="og:url" content="https://truewise.dev/value-check/" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
   <style>
     .vc-search { padding: 48px 0 8px; }
@@ -34,7 +37,7 @@
     .mini { display: inline-flex; gap: 12px; margin-top: 8px; font-size: .88rem; }
     .mini .f { color: #b42318; font-weight: 700; }
     .mini .p { color: #067647; font-weight: 700; }
-    .mini .i { color: #8b95a7; }
+    .mini .i { color: #6b7688; }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -50,7 +53,7 @@
     .mod-blurb { font-size: .82rem; color: var(--ink-soft); }
     .mod-tag { margin-top: 6px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     .mod.live .mod-tag { color: var(--accent); }
-    .mod.soon .mod-tag { color: #8b95a7; }
+    .mod.soon .mod-tag { color: #6b7688; }
     .module h2 { font-size: 1.3rem; letter-spacing: -.02em; margin: 26px 0 6px; }
     .summary {
       margin: 16px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt);
@@ -77,6 +80,37 @@
     .afford-note { color: var(--ink-soft); font-size: .85rem; max-width: 760px; margin: 12px 0 0; line-height: 1.55; }
     .afford-note a { color: var(--brand); }
 
+    /* Program table + controls */
+    .vc-controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
+    .vc-tools { display: flex; gap: 8px; }
+    .vc-tools input, .vc-tools select { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: .9rem; background: #fff; color: var(--ink); }
+    .baseline { color: var(--ink-soft); font-size: .92rem; max-width: 760px; margin: 8px 0 0; }
+    .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .prog-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    .prog-table th, .prog-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .prog-table thead th { background: var(--bg-alt); font-weight: 600; color: var(--ink-soft); position: sticky; top: 64px; }
+    .prog-table th.num, .prog-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .prog-table tbody tr:last-child td { border-bottom: 0; }
+    .prog-table tbody tr.hl { background: rgba(31,111,235,.08); }
+    .prog-table td.pname { white-space: normal; min-width: 220px; font-weight: 500; }
+    .prog-table td.deg { color: var(--ink-soft); }
+    .tag1yr { display: inline-block; font-size: .68rem; font-weight: 700; color: #92610a; background: #fef7e6; border-radius: 4px; padding: 1px 5px; vertical-align: middle; }
+    .prem { min-width: 190px; }
+    .prem-val { font-variant-numeric: tabular-nums; font-weight: 600; }
+    .prem-val.pos { color: #067647; } .prem-val.neg { color: #b42318; }
+    .minibar { position: relative; display: block; height: 6px; background: #eef1f6; border-radius: 3px; margin-top: 5px; }
+    .minibar .fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; }
+    .minibar .fill.pf { background: var(--accent); } .minibar .fill.nf { background: #e0736a; }
+    .minibar .base { position: absolute; top: -2px; width: 2px; height: 10px; background: var(--ink); opacity: .55; }
+    .insuff-view { margin-top: 12px; }
+    .insuff-note { color: var(--ink-soft); font-size: .92rem; max-width: 760px; line-height: 1.55; }
+    .insuff-list { columns: 2; column-gap: 28px; list-style: none; padding: 0; margin: 14px 0 0; }
+    .insuff-list li { break-inside: avoid; padding: 4px 0; border-bottom: 1px solid var(--line); font-size: .92rem; }
+    .insuff-list .deg { color: var(--ink-soft); font-size: .82rem; }
+    #to-top { position: fixed; right: 20px; bottom: 20px; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line); background: #fff; color: var(--ink); font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.12); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
+    #to-top.show { opacity: 1; pointer-events: auto; }
+    @media (max-width: 560px) { .insuff-list { columns: 1; } .prog-table thead th { top: 0; } .vc-tools { width: 100%; } .vc-tools input { flex: 1; } }
+
     .prog { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 0 0 12px; background: #fff; }
     .prog.hl { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(31,111,235,.12); }
     .prog .top { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
@@ -100,13 +134,18 @@
   <header class="site-header">
     <div class="wrap">
       <a class="brand" href="/">true<span>wise</span></a>
-      <nav aria-label="Primary"><a href="/#modules">What's coming</a><a href="/#methodology">Methodology</a></nav>
+      <nav aria-label="Primary">
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/#data">Data</a>
+        <a href="/#methodology">Methodology</a>
+      </nav>
     </div>
   </header>
 
   <main class="wrap" id="app">
     <!-- rendered by JS -->
   </main>
+  <button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
 
   <script>
   const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
@@ -149,7 +188,7 @@
           whether each program's graduates typically out-earn a high-school graduate, from the
           Department of Education's own data. More measures coming.</p>
         <div class="searchbox">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b95a7" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" placeholder="Search ${SCHOOLS.length.toLocaleString()} colleges by name…" value="${esc(preset)}" />
         </div>
         <p class="hint">Try “Baylor”, “Long Beach”, or your local community college.</p>
@@ -182,25 +221,55 @@
   }
 
   // ---- School view ----
-  function programCard(p, threshold, highlight) {
+  const CRED_SHORT = {
+    "Bachelor's Degree": "Bachelor's", "Master's Degree": "Master's",
+    "Doctoral Degree": "Doctoral", "Associate's Degree": "Associate's",
+    "First Professional Degree": "First prof.", "Undergraduate Certificate or Diploma": "Undergrad cert",
+    "Graduate/Professional Certificate": "Grad cert", "Post-baccalaureate Certificate": "Post-bacc cert",
+  };
+  const credShort = c => CRED_SHORT[c] || (c || "");
+  const anchorFor = p => `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`;
+
+  function programRow(p, threshold, maxEarn, highlight) {
     const fail = p.flag === "fails_earnings_premium";
-    const badge = fail
-      ? `<span class="badge fail">Earns less than a HS grad</span>`
-      : `<span class="badge pass">Out-earns a HS grad</span>`;
     const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
-    const premAbs = money(Math.abs(premium ?? 0));
-    const line = p.earnings == null ? "" : `
-      <p class="line">Graduates typically earn <b>${money(p.earnings)}</b> ${horizonLabel(p.horizon)},
-      versus <b>${money(threshold)}</b> for a typical high-school graduate in this state,
-      ${fail ? `about <b>${premAbs} less</b>.` : `a <b>${premAbs} premium</b>.`}</p>`;
-    const debt = p.debt == null ? "" : `<div><b>${money(p.debt)}</b> median debt${p.debt_to_earnings!=null?` · ${(p.debt_to_earnings).toFixed(2)}× earnings`:""}</div>`;
-    const completers = p.completers == null ? "" : `<div>${Number(p.completers).toLocaleString()} graduates</div>`;
-    const anchor = `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`;
-    return `<article class="prog${highlight?" hl":""}" id="${anchor}">
-      <div class="top"><div><h3>${esc(p.program)}</h3><div class="cred">${esc(p.credential)}</div></div>${badge}</div>
-      ${line}
-      <div class="stats">${debt}${completers}</div>
-    </article>`;
+    const premTxt = premium == null ? "n/a" : (premium < 0 ? "−" : "+") + money(Math.abs(premium));
+    const w = (p.earnings != null && maxEarn) ? Math.max(2, Math.round(p.earnings / maxEarn * 100)) : 0;
+    const bw = (threshold != null && maxEarn) ? Math.round(threshold / maxEarn * 100) : 0;
+    const tag = p.horizon === "1yr_after_completion"
+      ? ` <span class="tag1yr" title="Earnings measured 1 year after completing, not 4">1-yr</span>` : "";
+    return `<tr id="${anchorFor(p)}" class="${highlight ? "hl " : ""}${fail ? "row-fail" : "row-pass"}">
+      <td class="pname">${esc(p.program)}${tag}</td>
+      <td class="deg">${esc(credShort(p.credential))}</td>
+      <td class="num">${money(p.earnings)}</td>
+      <td class="prem">
+        <span class="prem-val ${fail ? "neg" : "pos"}">${premTxt}</span>
+        <span class="minibar"><i class="fill ${fail ? "nf" : "pf"}" style="width:${w}%"></i><i class="base" style="left:${bw}%"></i></span>
+      </td>
+      <td class="num">${money(p.debt)}</td>
+      <td class="num">${p.debt_to_earnings != null ? p.debt_to_earnings.toFixed(2) + "×" : "n/a"}</td>
+      <td class="num">${p.completers != null ? Number(p.completers).toLocaleString() : "n/a"}</td>
+    </tr>`;
+  }
+
+  function programTable(rows) {
+    return `<div class="table-wrap"><table class="prog-table">
+      <thead><tr>
+        <th>Program</th><th>Degree</th><th class="num">Earnings</th>
+        <th>Premium vs HS grad</th><th class="num">Debt</th><th class="num">Debt/earn</th><th class="num">Grads</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function sortProgs(list, sort, threshold) {
+    const prem = p => (p.earnings != null && threshold != null) ? p.earnings - threshold : -Infinity;
+    const cmp = {
+      premium: (a, b) => prem(a) - prem(b),                       // worst (most below) first
+      earnings: (a, b) => (b.earnings ?? -1) - (a.earnings ?? -1),
+      debt: (a, b) => (b.debt ?? -1) - (a.debt ?? -1),
+      grads: (a, b) => (b.completers ?? -1) - (a.completers ?? -1),
+      name: (a, b) => (a.program || "").localeCompare(b.program || ""),
+    }[sort] || ((a, b) => prem(a) - prem(b));
+    return list.slice().sort(cmp);
   }
 
   async function renderSchool(unitid, programAnchor) {
@@ -228,19 +297,15 @@
       { name: "Mobility", live: false, blurb: "Moving students up" },
       { name: "Careers", live: false, blurb: "Where a major leads" },
     ];
-    const ugI = s.n_insuff_ug || 0, gradI = s.n_insuff_grad || 0, totI = s.n_insufficient || 0;
+    const totI = s.n_insufficient || 0;
     const iparts = [];
-    if (gradI) iparts.push(`${gradI} graduate`);
-    if (ugI) iparts.push(`${ugI} undergraduate`);
-    const insuffNote = !totI ? "" : `
-      <p class="insuff"><b>${totI}</b> more ${totI===1?"program":"programs"} don't have enough
-        data to judge${iparts.length?`: ${iparts.join(" and ")}`:""}.
-        <details><summary>Why?</summary><span>The Department of Education only publishes a
-        program's earnings when enough of its graduates received federal financial aid, so that
-        individuals can't be identified. That mainly affects graduate programs, especially
-        doctoral, where students are usually funded by stipends and assistantships rather than
-        federal loans. So most of the missing programs here are graduate level, and undergraduate
-        coverage is far more complete.</span></details></p>`;
+    if (s.n_insuff_grad) iparts.push(`${s.n_insuff_grad} graduate`);
+    if (s.n_insuff_ug) iparts.push(`${s.n_insuff_ug} undergraduate`);
+    const whyHtml = `The Department of Education only publishes a program's earnings when enough of
+      its graduates received federal financial aid, so that individuals can't be identified. That
+      mainly affects graduate programs, especially doctoral, where students are usually funded by
+      stipends and assistantships rather than federal loans, so most suppressed programs are
+      graduate level and undergraduate coverage is far more complete.`;
     const INCOME = [
       { label: "Under $30k", full: "under $30,000" },
       { label: "$30k to $48k", full: "between $30,000 and $48,000" },
@@ -256,10 +321,11 @@
           scholarships. Pick your family's income to see the typical yearly net price for
           students in that range.</p>
         <div class="income-toggle" role="group" aria-label="Family income">
+          <button data-i="all">All families</button>
           ${INCOME.map((b,i)=>`<button data-i="${i}"${np.brackets[i]==null?" disabled":""}>${b.label}</button>`).join("")}
         </div>
         <div id="afford-result" class="afford-result"></div>
-        <p class="afford-note">${np.avg!=null?`Across all families, students paid about <b>${money(np.avg)}</b> per year on average. `:""}These are what past students paid after aid, not a quote for you. For a personal estimate, use the school's <a href="https://collegescorecard.ed.gov/school/?${unitid}" target="_blank" rel="noopener">net price calculator</a>. Net-price-by-income figures come from College Scorecard; the idea of ranking schools by what families at each income level actually pay was pioneered by <a href="https://www.tuitiontracker.org/" target="_blank" rel="noopener">TuitionTracker</a>.</p>
+        <p class="afford-note">These are what past students paid after aid, not a quote for you. For a personal estimate, use the school's <a href="https://collegescorecard.ed.gov/school/?${unitid}" target="_blank" rel="noopener">net price calculator</a>. Net-price-by-income figures come from College Scorecard; the idea of ranking schools by what families at each income level actually pay was pioneered by <a href="https://www.tuitiontracker.org/" target="_blank" rel="noopener">TuitionTracker</a>.</p>
       </section>`;
     app.innerHTML = `
       <a class="backlink" href="/value-check/" id="back">← Find another college</a>
@@ -282,11 +348,26 @@
           <b style="color:#b42318">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
           and <b style="color:#067647">${s.n_pass}</b> out-earn one.
         </div>
-        ${insuffNote}
-        <div class="toggle" role="group" aria-label="Filter programs">
-          <button data-f="all" aria-pressed="true">All (${decided})</button>
-          <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
-          <button data-f="pass" aria-pressed="false">Passes (${s.n_pass})</button>
+        <p class="baseline">Baseline: a typical high-school graduate in ${esc(s.state)} earns about
+          <b>${money(s.threshold)}</b> per year (median). Each bar compares a program's graduate
+          earnings to that line.</p>
+        <div class="vc-controls">
+          <div class="toggle" role="group" aria-label="Filter programs">
+            <button data-f="all" aria-pressed="true">All (${decided})</button>
+            <button data-f="fail" aria-pressed="false">Falls short (${s.n_fail})</button>
+            <button data-f="pass" aria-pressed="false">Passes (${s.n_pass})</button>
+            <button data-f="insufficient" aria-pressed="false">Not enough data (${totI})</button>
+          </div>
+          <div class="vc-tools">
+            <input id="prog-search" type="search" placeholder="Find a program…" aria-label="Find a program" />
+            <select id="prog-sort" aria-label="Sort programs">
+              <option value="premium">Sort: Premium</option>
+              <option value="earnings">Sort: Earnings</option>
+              <option value="debt">Sort: Debt</option>
+              <option value="grads">Sort: Graduates</option>
+              <option value="name">Sort: A to Z</option>
+            </select>
+          </div>
         </div>
         <div id="proglist"></div>
       </section>
@@ -295,44 +376,79 @@
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal
         “earnings-premium” test). They describe past graduates, not a promise, and can't tell you what
-        <em>you</em> would earn. Programs with too few graduates to report are shown as “not enough data,”
-        never guessed. For your own likely cost, use the school's
+        <em>you</em> would earn. Earnings are measured four years after completing where available;
+        rows tagged “1-yr” use the one-year figure instead, so compare those cautiously. Programs
+        with too few graduates to report are shown as “not enough data,” never guessed. For your
+        own likely cost, use the school's
         <a href="https://collegescorecard.ed.gov/school/?${unitid}" target="_blank" rel="noopener">net price calculator</a>.
         Source: ${DATA_VINTAGE}. <a href="/#methodology">Methodology</a>.
       </div>`;
     const list = document.getElementById("proglist");
-    const draw = (filter) => {
-      const shown = progs.filter(p => filter==="all" ? true : filter==="fail" ? p.flag==="fails_earnings_premium" : p.flag==="passes_earnings_premium");
-      list.innerHTML = shown.length ? shown.map(p => programCard(p, s.threshold, programAnchor && `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`===programAnchor)).join("")
+    const decidedProgs = progs.filter(p => p.flag !== "insufficient");
+    const maxEarn = Math.max(1, ...decidedProgs.map(p => p.earnings || 0));
+    const vstate = { filter: "all", search: "", sort: "premium" };
+    const draw = () => {
+      if (vstate.filter === "insufficient") {
+        const ins = progs.filter(p => p.flag === "insufficient")
+          .sort((a, b) => (a.program || "").localeCompare(b.program || ""));
+        const bd = iparts.length ? ` (${iparts.join(" and ")})` : "";
+        list.innerHTML = `<div class="insuff-view">
+          <p class="insuff-note">${totI} program${totI !== 1 ? "s" : ""} don't have enough data to judge${bd}. ${whyHtml}</p>
+          ${ins.length ? `<ul class="insuff-list">${ins.map(p => `<li>${esc(p.program)} <span class="deg">${esc(credShort(p.credential))}</span></li>`).join("")}</ul>` : ""}
+        </div>`;
+        return;
+      }
+      let shown = decidedProgs.filter(p =>
+        vstate.filter === "all" ? true
+        : vstate.filter === "fail" ? p.flag === "fails_earnings_premium"
+        : p.flag === "passes_earnings_premium");
+      if (vstate.search) shown = shown.filter(p => (p.program || "").toLowerCase().includes(vstate.search));
+      shown = sortProgs(shown, vstate.sort, s.threshold);
+      list.innerHTML = shown.length
+        ? programTable(shown.map(p => programRow(p, s.threshold, maxEarn, programAnchor && anchorFor(p) === programAnchor)).join(""))
         : `<p class="empty">No programs in this view.</p>`;
-      if (programAnchor) { const el = document.getElementById(programAnchor); if (el) el.scrollIntoView({behavior:"smooth", block:"center"}); }
+      if (programAnchor) { const el = document.getElementById(programAnchor); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }
     };
     document.querySelectorAll(".toggle button").forEach(b =>
       b.addEventListener("click", () => {
-        document.querySelectorAll(".toggle button").forEach(x => x.setAttribute("aria-pressed", x===b));
-        draw(b.dataset.f);
+        document.querySelectorAll(".toggle button").forEach(x => x.setAttribute("aria-pressed", x === b));
+        vstate.filter = b.dataset.f;
+        draw();
       }));
-    draw("all");
+    const psearch = document.getElementById("prog-search");
+    let st;
+    psearch.addEventListener("input", () => {
+      clearTimeout(st);
+      st = setTimeout(() => { vstate.search = psearch.value.trim().toLowerCase(); draw(); }, 120);
+    });
+    document.getElementById("prog-sort").addEventListener("change", e => { vstate.sort = e.target.value; draw(); });
+    draw();
 
     if (np) {
       const result = document.getElementById("afford-result");
       const showIncome = (i) => {
-        const price = np.brackets[i];
-        result.innerHTML = price == null
-          ? `<span class="empty">Not reported for this income range.</span>`
-          : `Students from families earning <b>${INCOME[i].full}</b> typically paid about
-             <b class="big">${money(price)}</b> per year.`;
+        if (i === "all") {
+          result.innerHTML = np.avg != null
+            ? `Across all families, students paid about <b class="big">${money(np.avg)}</b> per year on average.`
+            : `<span class="empty">Average not reported.</span>`;
+        } else {
+          const price = np.brackets[i];
+          result.innerHTML = price == null
+            ? `<span class="empty">Not reported for this income range.</span>`
+            : `Students from families earning <b>${INCOME[i].full}</b> typically paid about
+               <b class="big">${money(price)}</b> per year.`;
+        }
         document.querySelectorAll(".income-toggle button").forEach(b =>
-          b.setAttribute("aria-pressed", (+b.dataset.i) === i));
+          b.setAttribute("aria-pressed", b.dataset.i === String(i)));
         const u = new URLSearchParams(location.search);
         u.set("income", i);
         history.replaceState(Object.fromEntries(u), "", "?" + u.toString());
       };
       document.querySelectorAll(".income-toggle button").forEach(b =>
-        b.addEventListener("click", () => showIncome(+b.dataset.i)));
+        b.addEventListener("click", () => showIncome(b.dataset.i === "all" ? "all" : +b.dataset.i)));
       const init = new URLSearchParams(location.search).get("income");
-      if (init != null && np.brackets[+init] != null) showIncome(+init);
-      else result.innerHTML = `<span class="empty">Select your family income above.</span>`;
+      if (init != null && init !== "all" && np.brackets[+init] != null) showIncome(+init);
+      else showIncome("all");
     }
 
     wireBack();
@@ -351,6 +467,13 @@
   }
   window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
   route(Object.fromEntries(new URLSearchParams(location.search)));
+
+  // Back-to-top affordance
+  const toTop = document.getElementById("to-top");
+  toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  addEventListener("scroll", () => toTop.classList.toggle("show", scrollY > 500), { passive: true });
+  // Subtle header shadow once scrolled
+  addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
   </script>
 </body>
 </html>

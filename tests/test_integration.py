@@ -87,8 +87,10 @@ def test_site_generator(built, tmp_path, monkeypatch):
     assert tsu["net_price"]["brackets"] == [6000, 9000, 13000, 17000, 21000]
 
     tx = json.loads((out / "programs" / "TX.json").read_text())
-    progs = {p["cip"]: p for p in tx["100"]}
-    assert progs["0101"]["flag"] == "passes_earnings_premium"
-    assert progs["0101"]["earnings"] == 60000
-    # insufficient-data programs are excluded from the shards (index still counts them)
-    assert "0303" not in progs
+    decided = {p["cip"]: p for p in tx["100"] if p["flag"] != "insufficient"}
+    assert decided["0101"]["flag"] == "passes_earnings_premium"
+    assert decided["0101"]["earnings"] == 60000
+    assert decided["0101"]["program"] == "Computer Science"  # trailing period stripped
+    # suppressed programs are listed by name (no cip) for the "Not enough data" pill
+    suppressed = [p for p in tx["100"] if p["flag"] == "insufficient"]
+    assert any(p["program"] == "Tiny Program" for p in suppressed)

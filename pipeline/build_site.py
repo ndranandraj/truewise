@@ -102,14 +102,18 @@ def main() -> None:
             level = "grad" if (credlev or "") in {"4", "5", "6", "7", "8"} else "ug"
             s[f"n_insuff_{level}"] += 1
 
-        # Shards carry only decided programs (keeps the payload small); the index
-        # counts above still tell each school how many are insufficient-data.
+        name = (cip_desc or "").rstrip(". ")  # CIP titles carry trailing periods
         if flag == "insufficient_data":
+            # Suppressed programs carry name + credential only (small), so the profile
+            # can list them behind a "Not enough data" pill without bloating the shard.
+            by_state[state][unitid].append(
+                {"program": name, "credential": cred_desc, "flag": "insufficient"}
+            )
             continue
         by_state[state][unitid].append(
             {
                 "cip": cip,
-                "program": cip_desc,
+                "program": name,
                 "credential": cred_desc,
                 "flag": flag,
                 "earnings": _round(earn),

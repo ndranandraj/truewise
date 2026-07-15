@@ -11,8 +11,11 @@
   <meta property="og:title" content="Truewise: the honest number behind US education" />
   <meta property="og:description" content="Open, honest college and school data for students and families. Built on public federal data." />
   <meta property="og:url" content="https://truewise.dev" />
-  <meta name="twitter:card" content="summary" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
 
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -20,8 +23,7 @@
     <div class="wrap">
       <a class="brand" href="/">true<span>wise</span></a>
       <nav aria-label="Primary">
-        <a href="/value-check/">Find a college</a>
-        <a href="#modules">What's coming</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
         <a href="#data">Data</a>
         <a href="#methodology">Methodology</a>
       </nav>
@@ -34,60 +36,67 @@
         <p class="eyebrow">Public-data project · free forever</p>
         <h1>The honest number behind US&nbsp;education.</h1>
         <p class="lede">
-          Truewise turns scattered US federal education data into clear, honest guidance for
-          students and families. We replace the scary or hidden number, such as the sticker
-          price or the anecdote, with the real one, drawn straight from public data.
+          Look up any US college and see, program by program, whether its graduates out-earn a
+          high-school graduate and what families actually pay, drawn straight from the government's
+          own data.
         </p>
-        <p class="status" role="status">
-          <span class="dot" aria-hidden="true"></span>
-          Building in the open. First module: <strong>Value&nbsp;Check</strong>.
-        </p>
+        <form class="hero-search" action="/value-check/" method="get" role="search">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b95a7" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input name="q" type="search" placeholder="Search a college by name…" aria-label="Search a college" autocomplete="off" />
+          <button type="submit">Search</button>
+        </form>
+        <p class="hero-hint">Try Baylor, UCLA, or your local community college.</p>
+      </div>
+    </section>
 
-        <p class="finding">
-          First finding, from the Department of Education's own 2026 data:
-          <strong>1 in 11 college programs (9%)</strong> leave graduates earning less than a
-          typical high-school graduate even four years after finishing,
-          rising to <strong>86% of cosmetology programs</strong>.
-        </p>
-
-        <p><a class="cta" href="/value-check/">Look up a college &rarr;</a></p>
+    <section class="finding-band">
+      <div class="wrap finding-grid">
+        <div class="dots" role="img" aria-label="1 in 11 programs">
+          <span class="dot-hi"></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="finding-text">
+          <p class="finding-stat"><b>1 in 11</b> college programs</p>
+          <p class="finding-body">
+            leave graduates earning <b>less than a typical high-school graduate</b>, even four
+            years after finishing, from the Department of Education's own 2026 data. That rises to
+            <b>86% of cosmetology programs</b>.
+          </p>
+          <p><a class="cta" href="/value-check/">Look one up &rarr;</a></p>
+        </div>
       </div>
     </section>
 
     <section id="modules" class="panel">
       <div class="wrap">
-        <h2>What's coming</h2>
-        <ul class="cards">
-          <li class="card flagship">
-            <span class="tag">Live now</span>
+        <h2>What Truewise shows</h2>
+        <div class="live-modules">
+          <a class="live-card" href="/value-check/">
+            <span class="tag">Live</span>
             <h3>Value Check</h3>
             <p>
-              Look up a college program and see, in plain language, whether its graduates
-              typically earn more than a high-school graduate, and how their debt compares to
-              their earnings. Mirrors the federal Financial Value Transparency framework.
+              Does a program's graduates typically out-earn a high-school graduate, and how does
+              their debt compare to their earnings? Mirrors the federal Financial Value
+              Transparency framework.
             </p>
-            <p><a href="/value-check/">Open Value Check &rarr;</a></p>
-          </li>
-          <li class="card">
+            <span class="live-cta">Open Value Check &rarr;</span>
+          </a>
+          <a class="live-card" href="/value-check/">
+            <span class="tag">Live</span>
             <h3>Affordability</h3>
-            <p>What families at your income level actually paid, not the sticker price.</p>
-          </li>
-          <li class="card">
-            <h3>ROI</h3>
-            <p>Field-of-study earnings versus debt, and roughly how long a degree takes to pay off.</p>
-          </li>
-          <li class="card">
-            <h3>Mobility</h3>
-            <p>Schools with a track record of moving students up, including the hidden gems.</p>
-          </li>
-          <li class="card">
-            <h3>Careers</h3>
-            <p>Where a major actually leads: real jobs, real wages, real demand.</p>
-          </li>
-          <li class="card">
-            <h3>K-12</h3>
-            <p>Advanced-course access, beating-the-odds schools, and unclaimed financial aid.</p>
-          </li>
+            <p>
+              What families at your income level actually paid after grants and scholarships, not
+              the sticker price. On every school profile.
+            </p>
+            <span class="live-cta">Open a profile &rarr;</span>
+          </a>
+        </div>
+        <p class="soon-label">More measures coming</p>
+        <ul class="soon-list">
+          <li><b>ROI:</b> field-of-study earnings vs debt, and roughly how long a degree takes to pay off.</li>
+          <li><b>Mobility:</b> schools with a track record of moving students up, including hidden gems.</li>
+          <li><b>Careers:</b> where a major actually leads, with real wages and demand.</li>
+          <li><b>K-12:</b> advanced-course access, beating-the-odds schools, and unclaimed financial aid.</li>
         </ul>
       </div>
     </section>
@@ -102,8 +111,10 @@
           documented dataset, and published under an open license with a reproducible pipeline.
         </p>
         <p class="prose">
-          A clean, joined dataset, a Python package, and dated snapshots of the government's own
-          transparency figures are on the way. This page will link them as they ship.
+          A clean, joined dataset (<code>pip install truewise-data</code>), a reproducible
+          pipeline, and dated monthly snapshots of the government's transparency figures back it.
+          The source and data live on
+          <a href="https://github.com/ndranandraj/truewise">GitHub</a>.
         </p>
       </div>
     </section>
