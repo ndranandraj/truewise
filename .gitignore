@@ -45,3 +45,10 @@ archive/**/*.csv
 packages/**/build/
 packages/**/dist/
 packages/**/*.egg-info/
+
+# Generated site data is built at deploy time, not committed (kept lean).
+site/value-check/data/
+site/data/value_check_summary.json
+# ...but the compact parquet build-source IS tracked:
+!published/*.parquet
+/docs/GO_DEPLOY.md

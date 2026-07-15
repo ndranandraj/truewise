@@ -1,0 +1,44 @@
+name: Deploy site
+
+# Build the site's generated JSON from the committed parquet source, then deploy the
+# static site to Cloudflare with Wrangler. The 36MB of shard JSON is produced here at
+# deploy time and never committed, so the repo stays lean as modules are added.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build site data from the committed parquet source
+        run: |
+          mkdir -p data/parquet
+          cp published/value_check.parquet published/institutions.parquet data/parquet/
+          python -m pipeline.build_site
+          python -m analysis.summary
+
+      - name: Deploy to Cloudflare
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

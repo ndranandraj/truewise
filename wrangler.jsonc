@@ -1,0 +1,10 @@
+{
+  // Cloudflare Worker (static assets) config. The site/ folder is served as-is.
+  // Deployed by .github/workflows/deploy.yml via Wrangler on push to main.
+  // The generated data under site/value-check/data is built in CI (not committed).
+  "name": "truewise",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./site"
+  }
+}
