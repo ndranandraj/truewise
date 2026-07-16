@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced courses at your high school | Truewise</title>
+  <meta name="description" content="Does a US public high school offer AP, calculus, and physics, and how many students take them? From the federal Civil Rights Data Collection." />
+  <meta property="og:title" content="Advanced courses at your high school | Truewise" />
+  <meta property="og:description" content="Which US high schools offer AP, calculus, and physics, and how many students take them. Federal data." />
+  <meta property="og:url" content="https://truewise.dev/k12/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .k-head { padding: 44px 0 6px; }
+    .k-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .k-head p.lede { font-size: 1.1rem; }
+    .searchbox { display: flex; align-items: center; gap: 10px; margin: 20px 0 6px; border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px; max-width: 620px; background: #fff; transition: border-color .15s; }
+    .searchbox:focus-within { border-color: var(--brand); }
+    .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.1rem; padding: 12px 0; background: transparent; }
+    .hint { color: var(--ink-soft); font-size: .9rem; margin: 4px 0 0; }
+    .results { list-style: none; padding: 0; margin: 18px 0; max-width: 720px; }
+    .results li { margin: 0 0 10px; }
+    .school-card { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .school-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31,111,235,.08); }
+    .school-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .school-card .meta { color: var(--ink-soft); font-size: .9rem; }
+    .chips { display: inline-flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .chip { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
+    .chip.on { background: #ecfdf3; color: #067647; } .chip.off { background: #f4f5f7; color: #98a1b0; }
+
+    .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
+    .backlink:hover { text-decoration: underline; }
+    .sch-head { padding: 8px 0 4px; }
+    .sch-head h1 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+    .sch-head .sub { color: var(--ink-soft); }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 6px; max-width: 800px; }
+    .course { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; background: #fff; }
+    .course h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    .course .status { font-weight: 700; font-size: .95rem; }
+    .course .status.yes { color: #067647; } .course .status.no { color: #b42318; }
+    .course .detail { color: var(--ink-soft); font-size: .92rem; margin-top: 6px; line-height: 1.5; }
+    .equity { margin: 18px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt); border: 1px solid var(--line); max-width: 800px; }
+    .equity h2 { font-size: 1.2rem; margin: 0 0 8px; letter-spacing: -.02em; }
+    .equity .read { font-size: 1.02rem; color: var(--ink); line-height: 1.55; }
+    .equity .gap { font-weight: 800; }
+    .equity .gap.under { color: #b42318; } .equity .gap.over { color: #067647; }
+    .bar2 { margin: 12px 0 2px; max-width: 520px; }
+    .bar2 .row { display: flex; align-items: center; gap: 10px; margin: 5px 0; font-size: .9rem; }
+    .bar2 .lbl { width: 92px; color: var(--ink-soft); flex: 0 0 auto; }
+    .bar2 .track { flex: 1; height: 12px; background: #eef1f6; border-radius: 6px; overflow: hidden; }
+    .bar2 .fill { height: 100%; background: var(--brand); border-radius: 6px; }
+    .bar2 .val { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
+    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 800px; color: var(--ink-soft); font-size: .9rem; }
+    .caveats a { color: var(--brand); }
+    .empty { color: var(--ink-soft); padding: 20px 0; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">true<span>wise</span></a>
+      <nav aria-label="Primary">
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/#data">Data</a>
+        <a href="/#methodology">Methodology</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="app"><!-- rendered by JS --></main>
+
+  <script>
+  const VINTAGE = "U.S. Dept. of Education, Civil Rights Data Collection, 2020-21";
+  const app = document.getElementById("app");
+  let INDEX = null;
+  const stateCache = {};
+
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num = n => n == null ? "n/a" : Number(n).toLocaleString();
+
+  async function loadIndex() {
+    if (INDEX) return INDEX;
+    const r = await fetch("data/index.json");
+    INDEX = (await r.json()).schools;
+    return INDEX;
+  }
+  async function loadState(st) {
+    if (stateCache[st]) return stateCache[st];
+    const r = await fetch("data/schools/" + st + ".json");
+    stateCache[st] = r.ok ? await r.json() : {};
+    return stateCache[st];
+  }
+  function go(params, push = true) {
+    const qs = new URLSearchParams(params).toString();
+    if (push) history.pushState(params, "", qs ? "?" + qs : location.pathname);
+    route(params);
+  }
+
+  // ---- Search ----
+  async function renderSearch(preset = "") {
+    await loadIndex();
+    app.innerHTML = `
+      <section class="k-head">
+        <h1>Advanced courses at your high school</h1>
+        <p class="lede">Does a US public high school offer AP, calculus, and physics, and how many students take them?
+          Many high schools offer none at all. From the federal Civil Rights Data Collection.</p>
+        <div class="searchbox">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="search" autocomplete="off" placeholder="Search ${INDEX.length.toLocaleString()} public high schools by name…" value="${esc(preset)}" />
+        </div>
+        <p class="hint">Try your high school, or a well-known one like “Lane Tech” or “Stuyvesant”.</p>
+        <ul class="results" id="results"></ul>
+      </section>`;
+    const q = document.getElementById("q"), results = document.getElementById("results");
+    let t;
+    const run = () => {
+      const term = q.value.trim().toLowerCase();
+      if (term.length < 3) { results.innerHTML = `<li class="empty">Type at least three letters to search.</li>`; return; }
+      const hits = INDEX.filter(s => (s.n || "").toLowerCase().includes(term)).slice(0, 40);
+      if (!hits.length) { results.innerHTML = `<li class="empty">No high schools match “${esc(term)}”.</li>`; return; }
+      results.innerHTML = hits.map(s => `
+        <li><a class="school-card" href="?school=${s.k}" data-k="${s.k}" data-s="${s.s}">
+          <h3>${esc(s.n)}</h3>
+          <div class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</div>
+          <div class="chips">
+            <span class="chip ${s.ap ? "on" : "off"}">${s.ap ? "AP" : "No AP"}</span>
+            <span class="chip ${s.c ? "on" : "off"}">${s.c ? "Calculus" : "No calculus"}</span>
+            <span class="chip ${s.p ? "on" : "off"}">${s.p ? "Physics" : "No physics"}</span>
+          </div>
+        </a></li>`).join("");
+      results.querySelectorAll("a.school-card").forEach(a =>
+        a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.k }); }));
+    };
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 140); });
+    q.focus();
+    if (preset) run();
+  }
+
+  // ---- School detail ----
+  function courseCard(title, offered, detail) {
+    return `<div class="course"><h3>${title}</h3>
+      <div class="status ${offered ? "yes" : "no"}">${offered ? "Offered" : "Not offered"}</div>
+      ${offered && detail ? `<div class="detail">${detail}</div>` : ""}</div>`;
+  }
+  async function renderSchool(combokey) {
+    await loadIndex();
+    const ref = INDEX.find(s => s.k === combokey);
+    if (!ref) { app.innerHTML = `<a class="backlink" href="/k12/" id="back">← Search</a><p class="empty">School not found.</p>`; wireBack(); return; }
+    const s = (await loadState(ref.s))[combokey];
+    if (!s) { app.innerHTML = `<a class="backlink" href="/k12/" id="back">← Search</a><p class="empty">No data for this school.</p>`; wireBack(); return; }
+
+    const rate = r => r != null ? ` (${r}% of students)` : "";
+    const apDetail = s.ap.offered
+      ? `${s.ap.courses != null ? s.ap.courses + " AP course" + (s.ap.courses === 1 ? "" : "s") + "; " : ""}${num(s.ap.enroll)} students in AP${rate(s.ap.rate)}.`
+      : "";
+    const calcDetail = s.calc.offered ? `${num(s.calc.enroll)} students enrolled${rate(s.calc.rate)}.` : "";
+    const physDetail = s.phys.offered ? `${num(s.phys.enroll)} students enrolled${rate(s.phys.rate)}.` : "";
+
+    // Breadth of advanced-course access: how many of the three tracks the school offers.
+    const have = [["AP", s.ap.offered], ["calculus", s.calc.offered], ["physics", s.phys.offered]];
+    const on = have.filter(x => x[1]).map(x => x[0]);
+    const off = have.filter(x => !x[1]).map(x => x[0]);
+    const breadthMsg = s.breadth === 3
+      ? `This school offers <b>all three</b> advanced tracks: AP, calculus, and physics.`
+      : s.breadth === 0
+        ? `This school offers <b>none</b> of the three advanced tracks (AP, calculus, or physics).`
+        : `This school offers <b>${s.breadth} of 3</b> advanced tracks (${on.join(" and ")}), but not ${off.join(" or ")}.`;
+    const breadthCls = s.breadth === 3 ? "over" : s.breadth === 0 ? "under" : "";
+    const summary = `
+      <div class="equity"><h2>Advanced-course access</h2>
+        <p class="read"><span class="gap ${breadthCls}">${breadthMsg}</span></p></div>`;
+
+    const tags = [];
+    if (s.charter) tags.push("Charter");
+    if (s.magnet) tags.push("Magnet");
+    app.innerHTML = `
+      <a class="backlink" href="/k12/" id="back">← Find another school</a>
+      <div class="sch-head">
+        <h1>${esc(s.name)}</h1>
+        <div class="sub">${esc(s.district || "")}${s.district ? " · " : ""}${esc(s.state)}${tags.length ? " · " + tags.join(" · ") : ""} · ${num(s.enroll)} students</div>
+      </div>
+      ${summary}
+      <div class="course-grid">
+        ${courseCard("Advanced Placement", s.ap.offered, apDetail)}
+        ${courseCard("Calculus", s.calc.offered, calcDetail)}
+        ${courseCard("Physics", s.phys.offered, physDetail)}
+      </div>
+      <div class="caveats"><strong>How to read this.</strong> Whether a school offers AP, calculus, and physics, and
+        how many students take them, is reported by the school to the U.S. Department of Education's Office for Civil
+        Rights. The participation rate is the share of the school's students (grades 9-12) taking the course. Counts a
+        school withheld or that were too small to report are shown as unavailable, never guessed. Data is from the
+        <b>2020-21</b> collection, a pandemic year when course-taking was disrupted, so read participation counts with
+        that in mind. Source: ${VINTAGE}.</div>`;
+    wireBack();
+    window.scrollTo({ top: 0 });
+  }
+
+  function wireBack() {
+    const b = document.getElementById("back");
+    if (b) b.addEventListener("click", e => { e.preventDefault(); go({}); });
+  }
+
+  function route(params) {
+    if (params.school) renderSchool(params.school);
+    else renderSearch(params.q || "");
+  }
+  window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
+  route(Object.fromEntries(new URLSearchParams(location.search)));
+
+  addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
+  </script>
+</body>
+</html>

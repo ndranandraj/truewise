@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install data spine flags value-check site careers careers-demand bls package-data value test lint format all
+.PHONY: install data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -35,6 +35,12 @@ bls:
 	$(PYTHON) -m pipeline.download_bls
 careers-demand:
 	$(PYTHON) -m pipeline.build_careers_demand
+
+# 5c) K-12 advanced-course access from the CRDC (needs the CRDC School CSVs locally).
+k12-source:
+	$(PYTHON) -m pipeline.build_k12_source
+k12:
+	$(PYTHON) -m pipeline.build_k12
 
 # 6) Refresh the data bundled inside the truewise-data pip package.
 package-data:

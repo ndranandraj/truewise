@@ -149,6 +149,27 @@ total annual openings across them). It is **not** a claim that a given graduate 
 Earnings ship with or without this layer; when the labor-market sources are unavailable the profile says
 the outlook is on the way rather than guessing.
 
+## K-12 (advanced-course access)
+
+The high-school view comes from the U.S. Department of Education's **Civil Rights Data Collection
+(CRDC)**, which every public school reports to. For each high school (any school serving grades
+9-12) we show whether it offers **Advanced Placement, calculus, and physics**, how many students
+take each, the **participation rate** (share of the school's students taking the course), and how
+many of the three advanced tracks it offers at all. Many high schools offer none, which is the
+core access story.
+
+Counts are summed from the CRDC race-by-sex cells rather than the published totals on purpose: the
+CRDC sometimes suppresses a total (e.g. `TOT_ENR_F = -11`) while the underlying cells are present,
+so summing the cells gives a complete count where the total would silently undercount. This is only
+used to reconstruct a school's overall enrollment and course counts; Truewise does not break these
+figures out by student race or other demographics. Every negative CRDC code (suppressed or not
+applicable) is treated as missing, never as zero data.
+
+**Vintage.** This uses the **2020-21** CRDC, a pandemic school year when course-taking was
+disrupted; course *offerings* are fairly stable year to year, but participation counts should be
+read with that in mind. The collection year is labeled on every page. The pipeline reads the CRDC
+files by name, so refreshing to a newer collection (2021-22 and later) is a drop-in replacement.
+
 ## Known limitations
 
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.

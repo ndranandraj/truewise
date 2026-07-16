@@ -33,10 +33,12 @@ jobs:
         run: |
           mkdir -p data/parquet
           cp published/value_check.parquet published/institutions.parquet data/parquet/
-          # Careers demand is optional: copy it in if a committed build-source exists.
+          # Careers demand + K-12 are optional: copy in if a committed build-source exists.
           cp published/careers_demand.parquet data/parquet/ 2>/dev/null || true
+          cp published/k12.parquet data/parquet/ 2>/dev/null || true
           python -m pipeline.build_site
           python -m pipeline.build_careers
+          [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
 
       - name: Deploy to Cloudflare
