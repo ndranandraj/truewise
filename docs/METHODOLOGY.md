@@ -77,6 +77,30 @@ a personal estimate. The idea of ranking schools by what families at each income
 actually pay was pioneered by [TuitionTracker](https://www.tuitiontracker.org/), which we
 credit here; Truewise's contribution is joining it with the earnings-premium view on one page.
 
+## Return on investment (debt payback)
+
+Each profile also shows a **debt payback** for every program: how many years of a program's
+**earnings premium over a typical high-school graduate** it would take to recoup the typical
+debt its graduates borrowed.
+
+    debt_payback_years = median debt / (median earnings − state HS-grad threshold)
+
+It is deliberately assumption-free: it uses only figures ED already publishes (median debt and
+the same earnings and threshold behind the Value Check flag), so there is no earnings-growth or
+discount-rate modeling. It is **null** whenever there is no premium to recoup (a program that
+fails the earnings-premium test, or has missing data) or no debt to pay off, so it is never
+negative or infinite. A program that fails the earnings premium is shown as not paying back on
+this measure rather than as a made-up number.
+
+A secondary **whole-degree cost view** appears on undergraduate programs where net price is
+available. It divides the school's average net price times a nominal time-to-finish (2 years for
+an associate's, 4 for a bachelor's, 1 for an undergraduate certificate) by the same earnings
+premium. Unlike debt payback, this counts the full out-of-pocket cost of the degree, not just
+borrowed money, and it carries the stated time-to-finish assumption, so it is presented as an
+illustration on the site rather than shipped in the dataset.
+
+Both are descriptive summaries of past graduates. They never tell anyone whether to attend.
+
 ## Known limitations
 
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.

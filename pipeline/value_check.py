@@ -84,6 +84,16 @@ SELECT
     END AS value_flag,
     CASE WHEN earnings IS NULL OR earnings = 0 OR debt_median IS NULL THEN NULL
          ELSE round(debt_median / earnings, 3) END           AS debt_to_earnings_ratio,
+    -- Debt payback: years for the yearly earnings premium over a HS grad to recoup the
+    -- typical borrowed debt. NULL when there is no premium to recoup (fails EP or missing
+    -- data) or no debt to pay off, so it is never negative or infinite.
+    CASE WHEN earnings IS NULL OR earnings_threshold_state IS NULL
+              OR debt_median IS NULL OR debt_median <= 0
+              OR (earnings - earnings_threshold_state) <= 0 THEN NULL
+         -- Floor at 0.1: when debt is tiny next to the premium the ratio rounds to 0.0,
+         -- which would read as a misleading "0 years"; show it as ~0.1 (near-instant).
+         ELSE greatest(round(debt_median / (earnings - earnings_threshold_state), 1), 0.1)
+    END                                                       AS debt_payback_years,
     '{source}' AS source_dataset
 FROM base
 """

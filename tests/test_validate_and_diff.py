@@ -53,6 +53,27 @@ def test_earnings_positive_detects_nonpositive():
     assert not ok
 
 
+def _vc_payback(rows: list[tuple]) -> duckdb.DuckDBPyConnection:
+    con = duckdb.connect()
+    con.execute("CREATE TABLE vc (value_flag VARCHAR, debt_payback_years DOUBLE)")
+    con.executemany("INSERT INTO vc VALUES (?,?)", rows)
+    return con
+
+
+def test_debt_payback_sane_flags_bad_rows():
+    # Valid: positive payback on a passing program; null elsewhere.
+    ok, _ = CHECKS["debt_payback_sane"](
+        _vc_payback([("passes_earnings_premium", 1.3), ("fails_earnings_premium", None)])
+    )
+    assert ok
+    # A payback set on a failing program is a bug.
+    bad_flag, _ = CHECKS["debt_payback_sane"](_vc_payback([("fails_earnings_premium", 2.0)]))
+    assert not bad_flag
+    # A non-positive payback is a bug.
+    bad_val, _ = CHECKS["debt_payback_sane"](_vc_payback([("passes_earnings_premium", -1.0)]))
+    assert not bad_val
+
+
 # --- diff engine -----------------------------------------------------------
 
 _SNAP_COLS = (

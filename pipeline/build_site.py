@@ -43,7 +43,7 @@ def main() -> None:
                cip_code, cip_desc, credential_level, credential_desc,
                completers_count, earnings, earnings_horizon,
                earnings_threshold_state, earnings_premium_state,
-               debt_median, debt_to_earnings_ratio,
+               debt_median, debt_to_earnings_ratio, debt_payback_years,
                value_flag
         FROM read_parquet('{vc}')
         WHERE regexp_matches(unitid, '^[0-9]+$')
@@ -71,6 +71,7 @@ def main() -> None:
             prem,
             debt,
             dte,
+            payback,
             flag,
         ) = r
         if unitid is None:
@@ -120,6 +121,7 @@ def main() -> None:
                 "horizon": horizon,
                 "debt": _round(debt),
                 "debt_to_earnings": _round(dte, 3),
+                "payback": _round(payback, 1),
                 "completers": _round(completers),
             }
         )

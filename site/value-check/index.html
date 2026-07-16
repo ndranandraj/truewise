@@ -230,6 +230,75 @@
   const credShort = c => CRED_SHORT[c] || (c || "");
   const anchorFor = p => `${p.cip}-${(p.credential||"").replace(/\W+/g,"")}`;
 
+  // Nominal time to finish, used only for the whole-degree cost view (undergraduate,
+  // where net price applies). Stated as an assumption on the page.
+  const PROG_YEARS = {
+    "Bachelor's Degree": 4, "Associate's Degree": 2,
+    "Undergraduate Certificate or Diploma": 1,
+  };
+  const median = arr => {
+    if (!arr.length) return null;
+    const s = arr.slice().sort((a, b) => a - b), m = Math.floor(s.length / 2);
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+
+  // ROI module: debt payback (headline) + a whole-degree cost view for undergrad.
+  function roiModule(progs, threshold, np) {
+    const decided = progs.filter(p =>
+      p.flag === "passes_earnings_premium" || p.flag === "fails_earnings_premium");
+    if (!decided.length) return "";
+    const paybacks = decided.map(p => p.payback).filter(v => v != null);
+    const noPremium = decided.filter(p => p.flag === "fails_earnings_premium").length;
+    let fastest = null;
+    decided.forEach(p => { if (p.payback != null && (!fastest || p.payback < fastest.payback)) fastest = p; });
+
+    let summary;
+    if (paybacks.length) {
+      const med = median(paybacks);
+      const medTxt = (Math.round(med * 10) / 10);
+      summary = `Across <b>${paybacks.length}</b> program${paybacks.length !== 1 ? "s" : ""} with both
+        reported debt and an earnings premium, the typical one recoups what students borrowed in about
+        <b class="big">${medTxt} year${medTxt === 1 ? "" : "s"}</b> of that premium`
+        + (fastest ? `. Fastest here: <b>${esc(fastest.program)}</b>, about ${fastest.payback} year${fastest.payback === 1 ? "" : "s"}.` : ".");
+    } else {
+      summary = `No program here has both reported debt and an earnings premium, so a payback can't be computed.`;
+    }
+    if (noPremium) {
+      summary += ` <span style="color:#b42318"><b>${noPremium}</b> program${noPremium !== 1 ? "s" : ""}</span>
+        don't out-earn a high-school graduate, so they have no premium and don't pay back on this measure.`;
+    }
+
+    let costLine = "";
+    if (np && np.avg != null) {
+      const cost = decided
+        .filter(p => p.flag === "passes_earnings_premium" && PROG_YEARS[p.credential]
+                     && threshold != null && p.earnings != null && (p.earnings - threshold) > 0)
+        .map(p => (np.avg * PROG_YEARS[p.credential]) / (p.earnings - threshold));
+      if (cost.length) {
+        const cmed = median(cost);
+        costLine = `<p class="prose-line" style="margin-top:14px"><b>Counting the whole degree, not just loans:</b>
+          at this school's average net price of <b>${money(np.avg)}</b> a year, a typical undergraduate program
+          whose graduates clear the bar pays back its full cost in about <b>${cmed.toFixed(1)} years</b>
+          (assuming the standard time to finish: 2 years for an associate's, 4 for a bachelor's). Adjust the
+          family-income assumption under <a href="#affordability">Affordability</a> above.</p>`;
+      }
+    }
+
+    return `
+      <section id="roi" class="module">
+        <h2>Return on investment: how fast does the payoff cover the cost?</h2>
+        <p class="prose-line">A simple way to weigh a program: how many years of its earnings premium over a
+          high-school graduate it takes to recoup what students borrowed. Lower is faster. See the
+          <b>Debt payback</b> column in the table above for every program.</p>
+        <div class="summary">${summary}</div>
+        ${costLine}
+        <p class="afford-note">Debt payback divides a program's median federal debt by its yearly earnings
+          premium over a typical high-school graduate: how long that extra pay would take to cover what was
+          borrowed. It counts only borrowed money, not grants or cash paid; the whole-degree view adds net
+          price and assumes a standard time to finish. These describe past graduates, not a promise or advice.</p>
+      </section>`;
+  }
+
   function programRow(p, threshold, maxEarn, highlight) {
     const fail = p.flag === "fails_earnings_premium";
     const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
@@ -238,6 +307,9 @@
     const bw = (threshold != null && maxEarn) ? Math.round(threshold / maxEarn * 100) : 0;
     const tag = p.horizon === "1yr_after_completion"
       ? ` <span class="tag1yr" title="Earnings measured 1 year after completing, not 4">1-yr</span>` : "";
+    const paybackCell = p.payback != null
+      ? `<span title="Years of the earnings premium over a HS grad needed to recoup the debt">${p.payback} yrs</span>`
+      : (fail ? `<span title="No earnings premium over a HS grad, so the debt does not pay back on this measure">—</span>` : "n/a");
     return `<tr id="${anchorFor(p)}" class="${highlight ? "hl " : ""}${fail ? "row-fail" : "row-pass"}">
       <td class="pname">${esc(p.program)}${tag}</td>
       <td class="deg">${esc(credShort(p.credential))}</td>
@@ -248,6 +320,7 @@
       </td>
       <td class="num">${money(p.debt)}</td>
       <td class="num">${p.debt_to_earnings != null ? p.debt_to_earnings.toFixed(2) + "×" : "n/a"}</td>
+      <td class="num">${paybackCell}</td>
       <td class="num">${p.completers != null ? Number(p.completers).toLocaleString() : "n/a"}</td>
     </tr>`;
   }
@@ -256,7 +329,8 @@
     return `<div class="table-wrap"><table class="prog-table">
       <thead><tr>
         <th>Program</th><th>Degree</th><th class="num">Earnings</th>
-        <th>Premium vs HS grad</th><th class="num">Debt</th><th class="num">Debt/earn</th><th class="num">Grads</th>
+        <th>Premium vs HS grad</th><th class="num">Debt</th><th class="num">Debt/earn</th>
+        <th class="num">Debt payback</th><th class="num">Grads</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
@@ -266,6 +340,7 @@
       premium: (a, b) => prem(a) - prem(b),                       // worst (most below) first
       earnings: (a, b) => (b.earnings ?? -1) - (a.earnings ?? -1),
       debt: (a, b) => (b.debt ?? -1) - (a.debt ?? -1),
+      payback: (a, b) => (a.payback ?? Infinity) - (b.payback ?? Infinity),  // fastest first
       grads: (a, b) => (b.completers ?? -1) - (a.completers ?? -1),
       name: (a, b) => (a.program || "").localeCompare(b.program || ""),
     }[sort] || ((a, b) => prem(a) - prem(b));
@@ -290,10 +365,12 @@
     if (s.control) bits.push(esc(s.control));
     if (s.enrollment) bits.push(Number(s.enrollment).toLocaleString() + " undergraduates");
     const website = s.url ? ` · <a href="${/^https?:/.test(s.url) ? s.url : "https://" + s.url}" target="_blank" rel="noopener">website ↗</a>` : "";
+    const roiSection = roiModule(progs, s.threshold, s.net_price);
+    const hasRoi = roiSection !== "";
     const modules = [
       { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
       { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
-      { name: "ROI", live: false, blurb: "Earnings vs debt, payback" },
+      { name: "ROI", live: hasRoi, anchor: "roi", blurb: "Earnings vs debt, payback" },
       { name: "Mobility", live: false, blurb: "Moving students up" },
       { name: "Careers", live: false, blurb: "Where a major leads" },
     ];
@@ -364,6 +441,7 @@
               <option value="premium">Sort: Premium</option>
               <option value="earnings">Sort: Earnings</option>
               <option value="debt">Sort: Debt</option>
+              <option value="payback">Sort: Payback</option>
               <option value="grads">Sort: Graduates</option>
               <option value="name">Sort: A to Z</option>
             </select>
@@ -372,6 +450,7 @@
         <div id="proglist"></div>
       </section>
       ${affordSection}
+      ${roiSection}
       <div class="caveats">
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal

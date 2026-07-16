@@ -46,6 +46,7 @@ COLUMNS = [
     "value_flag",
     "debt_median",
     "debt_to_earnings_ratio",
+    "debt_payback_years",
 ]
 
 

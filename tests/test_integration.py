@@ -91,6 +91,10 @@ def test_site_generator(built, tmp_path, monkeypatch):
     assert decided["0101"]["flag"] == "passes_earnings_premium"
     assert decided["0101"]["earnings"] == 60000
     assert decided["0101"]["program"] == "Computer Science"  # trailing period stripped
+    # ROI: debt payback ships for a passing program (20000 debt / (60000-35000) premium = 0.8y)
+    assert decided["0101"]["payback"] == 0.8
+    # a failing program has no premium, so payback is null, never negative
+    assert decided["0202"]["payback"] is None
     # suppressed programs are listed by name (no cip) for the "Not enough data" pill
     suppressed = [p for p in tx["100"] if p["flag"] == "insufficient"]
     assert any(p["program"] == "Tiny Program" for p in suppressed)

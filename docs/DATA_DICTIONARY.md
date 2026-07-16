@@ -27,6 +27,7 @@ small-cohort values are `null` (never imputed). Distributed as `value_check.parq
 | `value_flag` | string | `passes_earnings_premium` / `fails_earnings_premium` / `insufficient_data`. |
 | `debt_median` | number | Median debt at graduation for the program, USD. |
 | `debt_to_earnings_ratio` | number | `debt_median ÷ earnings`. A plain ratio, **not** the federal amortized debt-to-earnings rate. |
+| `debt_payback_years` | number | Years for the yearly earnings premium over a HS grad to recoup the borrowed debt: `debt_median ÷ earnings_premium_state`. Null where there is no premium to recoup (fails the earnings-premium test or missing data) or no debt, so it is never negative. |
 
 See [METHODOLOGY.md](METHODOLOGY.md) for how the flag is computed and [AUDIT.md](AUDIT.md)
 for verification against ED's live site.

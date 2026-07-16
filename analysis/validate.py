@@ -111,6 +111,18 @@ def _earnings_pos(con):
     return bad == 0, f"{bad} rows with non-positive earnings"
 
 
+@check("debt_payback_sane")
+def _payback(con):
+    # Debt payback must be positive and finite where present, and only ever set on a
+    # passing program (a fail or insufficient row has no premium to recoup the debt).
+    bad = _scalar(
+        con,
+        "SELECT count(*) FROM vc WHERE debt_payback_years IS NOT NULL "
+        "AND (debt_payback_years <= 0 OR value_flag != 'passes_earnings_premium')",
+    )
+    return bad == 0, f"{bad} rows with an invalid debt_payback_years"
+
+
 @check("flag_matches_premium")
 def _consistency(con):
     bad = _scalar(

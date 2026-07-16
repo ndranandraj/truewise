@@ -160,6 +160,43 @@ def test_debt_to_earnings_ratio_and_null_safety():
     )
 
 
+def test_debt_payback_years_and_guards():
+    con = _con_with_fos(
+        [
+            # passes with a premium: payback = debt / (earnings - threshold) = 20000 / 15000
+            _row(
+                unitid="pays",
+                earnings_median_1yr=45000,
+                earnings_threshold_state=30000,
+                debt_median=20000,
+            ),
+            # fails the earnings premium: no premium to recoup -> NULL
+            _row(
+                unitid="nofail",
+                earnings_median_1yr=22000,
+                earnings_threshold_state=30000,
+                debt_median=20000,
+            ),
+            # passes but no debt reported -> NULL
+            _row(
+                unitid="nodebt",
+                earnings_median_1yr=45000,
+                earnings_threshold_state=30000,
+            ),
+        ]
+    )
+    build_value_check(con)
+
+    def payback(u):
+        return con.execute(
+            "SELECT debt_payback_years FROM value_check WHERE unitid = ?", [u]
+        ).fetchone()[0]
+
+    assert payback("pays") == pytest.approx(20000 / 15000, abs=0.05)  # ~1.3 years
+    assert payback("nofail") is None  # fails EP, no premium
+    assert payback("nodebt") is None  # no debt to pay off
+
+
 def test_national_premium_independent_of_state():
     con = _con_with_fos(
         [
