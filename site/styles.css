@@ -161,6 +161,8 @@ body {
 .live-card p { margin: 0; color: var(--ink-soft); }
 .live-cta { display: inline-block; margin-top: 14px; color: var(--brand); font-weight: 600; }
 .soon-label { text-transform: uppercase; letter-spacing: .06em; font-size: .78rem; font-weight: 700; color: #6b7688; margin: 26px 0 10px; }
+.group-label { text-transform: uppercase; letter-spacing: .06em; font-size: .8rem; font-weight: 700; color: var(--brand); margin: 24px 0 12px; }
+.group-label:first-of-type { margin-top: 8px; }
 .soon-list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px 24px; }
 .soon-list li { color: var(--ink-soft); font-size: .95rem; padding: 6px 0; border-top: 1px solid var(--line); }
 .soon-list b { color: var(--ink); }
