@@ -25,34 +25,10 @@ from __future__ import annotations
 
 import duckdb
 
-from pipeline.build_spine import resolve_columns
 from pipeline.config import PARQUET_DIR, RAW_DIR
 
 TOP_N = 6  # occupations listed per field, most annual openings first
-
-# Candidate column names in each raw file (first present wins), resilient to release renames.
-XWALK_CANDIDATES = {
-    "cip": ["CIP2020Code", "CIPCode", "CIP2020", "CIPCODE"],
-    "soc": ["SOC2018Code", "SOCCode", "SOC2018", "SOCCODE"],
-}
-OEWS_CANDIDATES = {
-    "soc": ["OCC_CODE", "SOC", "occ_code"],
-    "title": ["OCC_TITLE", "occ_title"],
-    "wage": ["A_MEDIAN", "a_median", "MEDIAN_WAGE"],
-}
-EP_CANDIDATES = {
-    "soc": ["Occupation Code", "SOC Code", "occ_code", "OCC_CODE"],
-    "growth": [
-        "Employment Percent Change, 2023-2033",
-        "Employment Percent Change",
-        "pct_change",
-    ],
-    "openings": [
-        "Occupational Openings, 2023-2033 Annual Average",
-        "Annual Average Openings",
-        "annual_openings",
-    ],
-}
+OEWS_WAGE_CAP = 239200  # BLS reports '#' for annual wages at or above this cap
 
 
 def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
@@ -105,51 +81,47 @@ def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
     )
 
 
-def _load_raw(con: duckdb.DuckDBPyConnection) -> None:
-    """Load the three raw CSVs and normalize them into xwalk/oews/ep tables."""
-    files = {
-        "xwalk_raw": ("cip_soc_crosswalk", XWALK_CANDIDATES, ["cip", "soc"]),
-        "oews_raw": ("oews_national", OEWS_CANDIDATES, ["soc", "wage"]),
-        "ep_raw": ("ep_projections", EP_CANDIDATES, ["soc"]),
-    }
-    resolved = {}
-    for tbl, (needle, cands, required) in files.items():
-        hits = sorted(RAW_DIR.glob(f"*{needle}*.csv"))
-        if not hits:
-            raise SystemExit(
-                f"Missing {needle}*.csv in {RAW_DIR}. Run `python -m pipeline.download_bls` "
-                "first (on a machine with network access)."
-            )
-        con.execute(
-            f"CREATE OR REPLACE TABLE {tbl} AS "
-            "SELECT * FROM read_csv(?, all_varchar=true, header=true, sample_size=-1)",
-            [str(hits[-1])],
+def _csv(name: str) -> str:
+    hits = sorted(RAW_DIR.glob(f"*{name}*.csv"))
+    if not hits:
+        raise SystemExit(
+            f"Missing {name}*.csv in {RAW_DIR}. Run `python -m pipeline.download_bls` "
+            "first (on a machine with network access)."
         )
-        cols = [r[0] for r in con.execute(f"DESCRIBE {tbl}").fetchall()]
-        resolved[tbl] = resolve_columns(cols, cands, required)
+    return str(hits[-1])
 
-    x = resolved["xwalk_raw"]
+
+def _load_raw(con: duckdb.DuckDBPyConnection) -> None:
+    """Load the three canonical CSVs from download_bls and normalize into xwalk/oews/ep.
+
+    download_bls has already reduced each messy source to simple columns:
+      cip_soc_crosswalk.csv (cip, soc)  oews_national.csv (soc, title, wage)
+      ep_projections.csv (soc, growth, openings)
+    Here we only normalize the code formats and units: CIP to 4 digits (no dot), SOC to 6
+    digits, the OEWS '#' wage cap to a number, and EP openings from thousands to a count.
+    """
     con.execute(
         f"""CREATE OR REPLACE TABLE xwalk AS
-        SELECT DISTINCT substr(replace("{x["cip"]}", '.', ''), 1, 4) AS cip,
-                        substr("{x["soc"]}", 1, 7) AS soc
-        FROM xwalk_raw
-        WHERE "{x["cip"]}" IS NOT NULL AND "{x["soc"]}" IS NOT NULL"""
+        SELECT DISTINCT substr(replace(cip, '.', ''), 1, 4) AS cip, substr(soc, 1, 7) AS soc
+        FROM read_csv('{_csv("cip_soc_crosswalk")}', all_varchar=true, header=true)
+        WHERE cip IS NOT NULL AND soc IS NOT NULL"""
     )
-    o = resolved["oews_raw"]
     con.execute(
         f"""CREATE OR REPLACE TABLE oews AS
-        SELECT substr("{o["soc"]}", 1, 7) AS soc, any_value("{o["title"]}") AS title,
-               TRY_CAST(replace(replace("{o["wage"]}", ',', ''), '*', '') AS DOUBLE) AS wage
-        FROM oews_raw GROUP BY 1"""
+        SELECT substr(soc, 1, 7) AS soc, any_value(title) AS title,
+               any_value(CASE WHEN trim(wage) = '#' THEN {OEWS_WAGE_CAP}
+                              ELSE TRY_CAST(replace(replace(wage, ',', ''), '*', '') AS DOUBLE)
+                         END) AS wage
+        FROM read_csv('{_csv("oews_national")}', all_varchar=true, header=true)
+        GROUP BY 1"""
     )
-    e = resolved["ep_raw"]
     con.execute(
         f"""CREATE OR REPLACE TABLE ep AS
-        SELECT substr("{e["soc"]}", 1, 7) AS soc,
-               TRY_CAST("{e["growth"]}" AS DOUBLE) AS growth,
-               TRY_CAST(replace("{e["openings"]}", ',', '') AS DOUBLE) AS openings
-        FROM ep_raw"""
+        SELECT substr(soc, 1, 7) AS soc,
+               any_value(TRY_CAST(growth AS DOUBLE)) AS growth,
+               any_value(TRY_CAST(replace(openings, ',', '') AS DOUBLE) * 1000) AS openings
+        FROM read_csv('{_csv("ep_projections")}', all_varchar=true, header=true)
+        GROUP BY 1"""
     )
 
 
