@@ -127,6 +127,28 @@ outcomes view built only from public Scorecard fields. Completion is institution
 program-level; some schools do not report all three measures, and are simply not eligible to be
 flagged. As everywhere in Truewise, suppressed values are shown as missing, never imputed.
 
+## Careers (what a major pays, and where it leads)
+
+The Careers view is field-centric rather than school-centric. For each **4-digit CIP x credential**
+we pool the program-level earnings across all schools and report the national median, the middle-half
+spread (25th to 75th percentile of school-level medians, which shows how much the same major varies by
+where you study), how many programs and schools report it, and the Value Check pass rate. Only fields
+with at least five decided programs nationwide are shown, so a single small program cannot define a
+major. Each school profile also carries a Careers section comparing that school's majors with the
+national median for the **same** field and degree.
+
+**Demand (occupation outlook)** is a separate layer joined from public labor-market data:
+
+- the **NCES CIP-to-SOC crosswalk** maps a field of study to the occupations it commonly leads to,
+- **BLS OEWS** supplies each occupation's median annual wage,
+- **BLS Employment Projections (2023-2033)** supply projected percent change and annual openings.
+
+Because a major maps to several occupations and vice-versa, the demand layer is descriptive: each field
+lists the occupations it leads to with their pay and outlook, plus a summary (median projected growth and
+total annual openings across them). It is **not** a claim that a given graduate will enter a given job.
+Earnings ship with or without this layer; when the labor-market sources are unavailable the profile says
+the outlook is on the way rather than guessing.
+
 ## Known limitations
 
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.

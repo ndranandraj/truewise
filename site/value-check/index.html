@@ -91,6 +91,14 @@
     .gem .badge-gem { font-weight: 800; color: #92610a; white-space: nowrap; }
     .gem p { margin: 0; color: var(--ink); font-size: .96rem; line-height: 1.5; }
 
+    /* Careers (per-school) */
+    .cr-sub { font-size: 1rem; margin: 18px 0 4px; color: var(--ink); }
+    #careers .prog-table td.cname { white-space: normal; min-width: 220px; font-weight: 500; }
+    #careers .prog-table td.cname a { color: var(--brand); text-decoration: none; }
+    #careers .prog-table td.cname a:hover { text-decoration: underline; }
+    #careers .prog-table .deg { color: var(--ink-soft); font-size: .85rem; }
+    #careers .pos { color: #067647; font-weight: 600; } #careers .neg { color: #b42318; font-weight: 600; }
+
     /* Program table + controls */
     .vc-controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
     .vc-tools { display: flex; gap: 8px; }
@@ -147,6 +155,7 @@
       <a class="brand" href="/">true<span>wise</span></a>
       <nav aria-label="Primary">
         <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/careers/">Careers</a>
         <a href="/#data">Data</a>
         <a href="/#methodology">Methodology</a>
       </nav>
@@ -163,6 +172,7 @@
   const app = document.getElementById("app");
   let SCHOOLS = null;                 // school index
   let BENCH = {};                     // national benchmarks (mobility medians)
+  let NATL = null;                    // national field medians (Careers), cip|credential -> field
   const stateCache = {};              // state -> {unitid: [programs]}
 
   const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
@@ -183,6 +193,15 @@
     const r = await fetch("data/programs/" + state + ".json");
     stateCache[state] = r.ok ? await r.json() : {};
     return stateCache[state];
+  }
+  async function loadFields() {              // national field medians for the Careers section
+    if (NATL) return NATL;
+    NATL = {};
+    try {
+      const r = await fetch("/careers/data/fields.json");
+      if (r.ok) (await r.json()).fields.forEach(f => { NATL[f.cip + "|" + f.credential] = f; });
+    } catch (e) { /* Careers section simply won't render */ }
+    return NATL;
   }
 
   function go(params, push = true) {
@@ -350,6 +369,41 @@
       </section>`;
   }
 
+  // Careers section: how this school's majors pay against the same major nationally.
+  function careersModule(progs, natl) {
+    const decided = progs.filter(p =>
+      p.flag === "passes_earnings_premium" || p.flag === "fails_earnings_premium");
+    const withNatl = [];
+    decided.forEach(p => {
+      const nf = natl[p.cip + "|" + p.credential];
+      if (nf && nf.med != null && p.earnings != null) withNatl.push({ p, nf, diff: p.earnings - nf.med });
+    });
+    if (withNatl.length < 3) return "";
+    const above = withNatl.filter(x => x.diff > 0).sort((a, b) => b.diff - a.diff).slice(0, 5);
+    const below = withNatl.filter(x => x.diff < 0).sort((a, b) => a.diff - b.diff).slice(0, 5);
+    const row = x => `<tr>
+      <td class="cname"><a href="/careers/?field=${x.p.cip}&cred=${x.nf.cred}" target="_blank" rel="noopener">${esc(x.p.program)}</a>
+        <span class="deg">${esc(credShort(x.p.credential))}</span></td>
+      <td class="num">${money(x.p.earnings)}</td>
+      <td class="num">${money(x.nf.med)}</td>
+      <td class="num"><span class="${x.diff >= 0 ? "pos" : "neg"}">${x.diff >= 0 ? "+" : "−"}${money(Math.abs(x.diff))}</span></td></tr>`;
+    const tbl = (title, rows) => rows.length ? `<h3 class="cr-sub">${title}</h3>
+      <div class="table-wrap"><table class="prog-table"><thead><tr><th>Major</th>
+        <th class="num">This school</th><th class="num">Typical nationally</th><th class="num">Difference</th>
+      </tr></thead><tbody>${rows.map(row).join("")}</tbody></table></div>` : "";
+    return `
+      <section id="careers" class="module">
+        <h2>Careers: how this school's majors pay against the same major elsewhere</h2>
+        <p class="prose-line">The same major can pay very differently depending on where you study. These compare
+          this school's graduate earnings with the national median for the <em>same</em> field and degree.</p>
+        ${tbl("Pays more than the typical program", above)}
+        ${tbl("Pays less than the typical program", below)}
+        <p class="afford-note">National medians pool every school reporting each major (four years after completing
+          where available); only majors with enough programs nationwide to compare appear here. Browse any field in
+          <a href="/careers/">Careers</a>. Descriptive of past graduates, not a promise.</p>
+      </section>`;
+  }
+
   function programRow(p, threshold, maxEarn, highlight) {
     const fail = p.flag === "fails_earnings_premium";
     const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
@@ -403,6 +457,7 @@
     const s = SCHOOLS.find(x => x.unitid === unitid);
     if (!s) { app.innerHTML = `<a class="backlink" href="#" id="back">← Search</a><p class="empty">School not found.</p>`; wireBack(); return; }
     const byId = await loadState(s.state);
+    await loadFields();
     let progs = (byId[unitid] || []).slice();
     // fails first, then passes, each by descending |premium| then name
     progs.sort((a,b) => {
@@ -420,12 +475,14 @@
     const hasRoi = roiSection !== "";
     const mobilitySection = mobilityModule(s, BENCH);
     const hasMob = mobilitySection !== "";
+    const careersSection = careersModule(progs, NATL || {});
+    const hasCareers = careersSection !== "";
     const modules = [
       { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
       { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
       { name: "ROI", live: hasRoi, anchor: "roi", blurb: "Earnings vs debt, payback" },
       { name: "Mobility", live: hasMob, anchor: "mobility", blurb: "Moving students up" },
-      { name: "Careers", live: false, blurb: "Where a major leads" },
+      { name: "Careers", live: hasCareers, anchor: "careers", blurb: "Where a major leads" },
     ];
     const totI = s.n_insufficient || 0;
     const iparts = [];
@@ -505,6 +562,7 @@
       ${affordSection}
       ${roiSection}
       ${mobilitySection}
+      ${careersSection}
       <div class="caveats">
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal

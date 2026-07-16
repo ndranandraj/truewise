@@ -37,6 +37,11 @@ jobs:
           python -m pipeline.value_check
           python -m pipeline.build_package_data
 
+      - name: Refresh Careers demand layer (best-effort; BLS/NCES URLs can drift)
+        run: |
+          python -m pipeline.download_bls && python -m pipeline.build_careers_demand \
+            || echo "Careers demand refresh skipped (source unavailable); wages unaffected."
+
       - name: Data-quality gate (fails the run on a bad refresh)
         run: python -m analysis.validate
 
@@ -44,7 +49,9 @@ jobs:
         run: python -m pipeline.monitor_diff || echo "No prior snapshot yet, diff skipped."
 
       - name: Refresh the committed parquet build-source
-        run: cp data/parquet/value_check.parquet data/parquet/institutions.parquet published/
+        run: |
+          cp data/parquet/value_check.parquet data/parquet/institutions.parquet published/
+          cp data/parquet/careers_demand.parquet published/ 2>/dev/null || true
 
       - name: Commit snapshot + parquet source + package data if changed
         run: |

@@ -2,7 +2,7 @@
 # The download step needs open network (your Mac or GitHub Actions), not the
 # restricted build sandbox. The build/flags/test steps run anywhere.
 
-.PHONY: install data spine flags value-check test lint format all
+.PHONY: install data spine flags value-check site careers careers-demand bls package-data value test lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -23,12 +23,22 @@ flags value-check:
 site:
 	python -m pipeline.build_site
 
-# 5) Refresh the data bundled inside the truewise-data pip package.
+# 5) Generate the Careers field-of-study data (what a major pays).
+careers:
+	python -m pipeline.build_careers
+
+# 5b) Download BLS/NCES sources + build the Careers demand layer (needs network).
+bls:
+	python -m pipeline.download_bls
+careers-demand:
+	python -m pipeline.build_careers_demand
+
+# 6) Refresh the data bundled inside the truewise-data pip package.
 package-data:
 	python -m pipeline.build_package_data
 
 # Full local build (assumes `make data` already ran on a networked machine).
-value: spine flags site package-data
+value: spine flags site careers package-data
 
 test:
 	pytest

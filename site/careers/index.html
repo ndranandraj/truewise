@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>What a major pays | Truewise</title>
+  <meta name="description" content="What college majors typically pay: median graduate earnings by field of study and degree, from the U.S. Department of Education's own data." />
+  <meta property="og:title" content="What a major pays | Truewise" />
+  <meta property="og:description" content="Median graduate earnings by field of study and degree, from federal data." />
+  <meta property="og:url" content="https://truewise.dev/careers/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .cr-head { padding: 44px 0 6px; }
+    .cr-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .cr-head p.lede { font-size: 1.1rem; }
+    .cr-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 6px; }
+    .cr-controls input, .cr-controls select { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; font-size: .95rem; background: #fff; color: var(--ink); }
+    .cr-controls input { flex: 1; min-width: 220px; }
+    .cr-count { color: var(--ink-soft); font-size: .9rem; margin: 6px 0 0; }
+    .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .cr-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+    .cr-table th, .cr-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .cr-table thead th { background: var(--bg-alt); font-weight: 600; color: var(--ink-soft); position: sticky; top: 64px; cursor: pointer; }
+    .cr-table th.num, .cr-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .cr-table tbody tr:last-child td { border-bottom: 0; }
+    .cr-table tbody tr { cursor: pointer; }
+    .cr-table tbody tr:hover { background: rgba(31,111,235,.06); }
+    .cr-table td.mname { white-space: normal; min-width: 230px; font-weight: 500; }
+    .cr-table td.fam { color: var(--ink-soft); font-size: .84rem; }
+    .rangebar { position: relative; height: 7px; background: #eef1f6; border-radius: 4px; min-width: 120px; margin-top: 5px; }
+    .rangebar > i { position: absolute; top: 0; height: 100%; background: #bcd3f5; border-radius: 4px; }
+    .rangebar > b { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--brand-deep); border-radius: 2px; }
+    .clearbar { display: inline-block; min-width: 44px; }
+    .clearbar.hi { color: #067647; font-weight: 700; } .clearbar.lo { color: #b42318; font-weight: 700; }
+
+    .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
+    .backlink:hover { text-decoration: underline; }
+    .fld-head { padding: 8px 0 4px; }
+    .fld-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+    .fld-head .sub { color: var(--ink-soft); }
+    .headline { display: flex; gap: 26px; flex-wrap: wrap; margin: 18px 0 6px; padding: 18px 20px; border: 1px solid var(--brand); border-radius: 14px; background: #fff; box-shadow: 0 6px 22px rgba(31,111,235,.08); max-width: 760px; }
+    .headline .big { font-size: 2rem; font-weight: 800; color: var(--brand-deep); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+    .headline .lbl { color: var(--ink-soft); font-size: .9rem; }
+    .module h2 { font-size: 1.3rem; letter-spacing: -.02em; margin: 28px 0 8px; }
+    .cred-table { width: 100%; border-collapse: collapse; font-size: .93rem; max-width: 760px; }
+    .cred-table th, .cred-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
+    .cred-table th.num, .cred-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .demand { margin: 12px 0; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt); border: 1px solid var(--line); max-width: 760px; }
+    .demand.soon { color: var(--ink-soft); font-size: .95rem; }
+    .demand h3 { margin: 0 0 8px; font-size: 1.05rem; }
+    .occ { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    .occ th, .occ td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+    .occ th.num, .occ td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .grow-pos { color: #067647; } .grow-neg { color: #b42318; }
+    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 760px; color: var(--ink-soft); font-size: .9rem; }
+    .caveats a { color: var(--brand); }
+    .empty { color: var(--ink-soft); padding: 20px 0; }
+    @media (max-width: 560px) { .cr-table thead th { top: 0; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">true<span>wise</span></a>
+      <nav aria-label="Primary">
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/careers/">Careers</a>
+        <a href="/#data">Data</a>
+        <a href="/#methodology">Methodology</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap" id="app"><!-- rendered by JS --></main>
+  <button id="to-top" aria-label="Back to top" title="Back to top" style="position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;">↑</button>
+
+  <script>
+  const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
+  const app = document.getElementById("app");
+  let FIELDS = null;
+
+  const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+  async function load() {
+    if (FIELDS) return FIELDS;
+    const r = await fetch("data/fields.json");
+    FIELDS = (await r.json()).fields;
+    return FIELDS;
+  }
+  function go(params, push = true) {
+    const qs = new URLSearchParams(params).toString();
+    if (push) history.pushState(params, "", qs ? "?" + qs : location.pathname);
+    route(params);
+  }
+
+  // ---- Browse view ----
+  async function renderBrowse(preset = "") {
+    await load();
+    const families = [...new Set(FIELDS.map(f => f.family))].sort();
+    app.innerHTML = `
+      <section class="cr-head">
+        <h1>What a major pays</h1>
+        <p class="lede">Median earnings of graduates by field of study and degree, from the Department
+          of Education's own data. Pick a major to see how much its programs pay, how widely that varies,
+          and how often graduates out-earn a high-school graduate.</p>
+        <div class="cr-controls">
+          <input id="q" type="search" placeholder="Search a major, e.g. nursing, computer science…" value="${esc(preset)}" autocomplete="off" />
+          <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
+          <select id="sort">
+            <option value="med">Sort: Earnings</option>
+            <option value="pass">Sort: Clear the bar</option>
+            <option value="schools">Sort: Most common</option>
+            <option value="name">Sort: A to Z</option>
+          </select>
+        </div>
+        <p class="cr-count" id="count"></p>
+        <div id="list"></div>
+      </section>`;
+    const q = document.getElementById("q"), fam = document.getElementById("fam"), sort = document.getElementById("sort");
+    const list = document.getElementById("list"), count = document.getElementById("count");
+    const maxP75 = Math.max(...FIELDS.map(f => f.p75 || 0));
+    const draw = () => {
+      const term = q.value.trim().toLowerCase();
+      let rows = FIELDS.filter(f =>
+        (!fam.value || f.family === fam.value) &&
+        (term.length < 2 || (f.name || "").toLowerCase().includes(term)));
+      const s = sort.value;
+      rows.sort({
+        med: (a, b) => (b.med ?? -1) - (a.med ?? -1),
+        pass: (a, b) => (b.pass_pct ?? -1) - (a.pass_pct ?? -1),
+        schools: (a, b) => (b.schools ?? -1) - (a.schools ?? -1),
+        name: (a, b) => (a.name || "").localeCompare(b.name || ""),
+      }[s]);
+      count.textContent = `${rows.length.toLocaleString()} major-and-degree combinations`;
+      if (!rows.length) { list.innerHTML = `<p class="empty">No majors match.</p>`; return; }
+      list.innerHTML = `<div class="table-wrap"><table class="cr-table">
+        <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th>
+          <th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
+        <tbody>${rows.slice(0, 400).map(f => {
+          const left = maxP75 ? Math.round((f.p25 || 0) / maxP75 * 100) : 0;
+          const width = maxP75 ? Math.max(2, Math.round(((f.p75 || 0) - (f.p25 || 0)) / maxP75 * 100)) : 0;
+          const medPos = maxP75 ? Math.round((f.med || 0) / maxP75 * 100) : 0;
+          const cls = (f.pass_pct ?? 0) >= 50 ? "hi" : "lo";
+          return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
+            <td class="mname">${esc(f.name)}<div class="fam">${esc(f.family)}</div></td>
+            <td>${esc(f.cred_short)}</td>
+            <td class="num">${money(f.med)}</td>
+            <td><div class="rangebar"><i style="left:${left}%;width:${width}%"></i><b style="left:${medPos}%"></b></div></td>
+            <td class="num"><span class="clearbar ${cls}">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</span></td>
+            <td class="num">${(f.schools || 0).toLocaleString()}</td></tr>`;
+        }).join("")}</tbody></table></div>
+        ${rows.length > 400 ? `<p class="cr-count">Showing the first 400. Narrow with search or a field filter.</p>` : ""}`;
+      list.querySelectorAll("tbody tr").forEach(tr =>
+        tr.addEventListener("click", () => go({ field: tr.dataset.cip, cred: tr.dataset.cred })));
+    };
+    let t;
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(draw, 120); });
+    fam.addEventListener("change", draw);
+    sort.addEventListener("change", draw);
+    draw();
+    q.focus();
+  }
+
+  // ---- Field detail view ----
+  function growthTxt(g) {
+    if (g == null) return "n/a";
+    const c = g >= 0 ? "grow-pos" : "grow-neg";
+    return `<span class="${c}">${g >= 0 ? "+" : ""}${g}%</span>`;
+  }
+  async function renderField(cip, cred) {
+    await load();
+    const all = FIELDS.filter(f => f.cip === cip);
+    const f = all.find(x => x.cred === cred) || all[0];
+    if (!f) { app.innerHTML = `<a class="backlink" href="/careers/" id="back">← All majors</a><p class="empty">Major not found.</p>`; wireBack(); return; }
+    const creds = all.slice().sort((a, b) => (a.cred || "").localeCompare(b.cred || ""));
+    const d = f.demand;
+    const demandHtml = d && d.occupations && d.occupations.length ? `
+      <div class="demand">
+        <h3>Where it leads, and the outlook</h3>
+        <p class="cr-count">${d.summary || "Occupations this field commonly leads to, with Bureau of Labor Statistics pay and 10-year outlook."}</p>
+        <table class="occ"><thead><tr><th>Occupation</th><th class="num">Median pay</th><th class="num">Projected growth</th><th class="num">Annual openings</th></tr></thead>
+          <tbody>${d.occupations.map(o => `<tr><td>${esc(o.title)}</td><td class="num">${money(o.wage)}</td><td class="num">${growthTxt(o.growth)}</td><td class="num">${o.openings == null ? "n/a" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+      </div>` : `
+      <div class="demand soon"><b>Occupation outlook is on the way.</b> Job growth and annual openings for the
+        careers this field leads to are being added from the Bureau of Labor Statistics, mapped through the
+        federal CIP-to-occupation crosswalk. Earnings above are live now.</div>`;
+    app.innerHTML = `
+      <a class="backlink" href="/careers/" id="back">← All majors</a>
+      <div class="fld-head">
+        <h1>${esc(f.name)}</h1>
+        <div class="sub">${esc(f.family)}</div>
+      </div>
+      <div class="headline">
+        <div><div class="big">${money(f.med)}</div><div class="lbl">median earnings, ${esc(f.cred_short)}</div></div>
+        <div><div class="big">${money(f.p25)} – ${money(f.p75)}</div><div class="lbl">typical range across schools</div></div>
+        <div><div class="big">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
+      </div>
+      <p class="cr-count">Based on ${f.programs.toLocaleString()} programs at ${f.schools.toLocaleString()} schools reporting this degree.</p>
+      ${creds.length > 1 ? `
+        <section class="module">
+          <h2>By degree level</h2>
+          <table class="cred-table"><thead><tr><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
+            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background:rgba(31,111,235,.07)"' : ""}>
+              <td><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
+              <td class="num">${money(c.med)}</td><td>${money(c.p25)} – ${money(c.p75)}</td>
+              <td class="num">${c.pass_pct == null ? "n/a" : c.pass_pct + "%"}</td><td class="num">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+        </section>` : ""}
+      <section class="module">
+        <h2>Outlook</h2>
+        ${demandHtml}
+      </section>
+      <div class="caveats"><strong>How to read this.</strong> Figures are median earnings of graduates in this
+        field, pooled across schools, measured four years after completing where available. The typical range is
+        the middle half (25th to 75th percentile) of school-level medians, so it shows how much the same major
+        varies by where you study. "Clear the bar" is the share of programs whose graduates out-earn a typical
+        high-school graduate (the federal earnings-premium test). These describe past graduates, not a promise.
+        Source: ${DATA_VINTAGE}. <a href="/#methodology">Methodology</a>.</div>`;
+    app.querySelectorAll(".credlink").forEach(a =>
+      a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
+    wireBack();
+    window.scrollTo({ top: 0 });
+  }
+
+  function wireBack() {
+    const b = document.getElementById("back");
+    if (b) b.addEventListener("click", e => { e.preventDefault(); go({}); });
+  }
+
+  function route(params) {
+    if (params.field) renderField(params.field, params.cred || null);
+    else renderBrowse(params.q || "");
+  }
+  window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
+  route(Object.fromEntries(new URLSearchParams(location.search)));
+
+  const toTop = document.getElementById("to-top");
+  toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+  addEventListener("scroll", () => toTop.classList.toggle("show", scrollY > 500), { passive: true });
+  addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
+  </script>
+</body>
+</html>
