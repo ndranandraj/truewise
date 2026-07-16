@@ -134,7 +134,8 @@ def main() -> None:
             for r in con.execute(
                 f"""SELECT unitid, city, school_url, enrollment, net_price_avg,
                        net_price_0_30k, net_price_30_48k, net_price_48_75k,
-                       net_price_75_110k, net_price_110k_plus
+                       net_price_75_110k, net_price_110k_plus,
+                       pell_share, first_gen_share, completion_rate
                     FROM read_parquet('{inst_path}')"""
             ).fetchall()
         }
@@ -142,20 +143,67 @@ def main() -> None:
             row = ident.get(s["unitid"])
             if not row:
                 continue
-            city, url, enr, npa, b1, b2, b3, b4, b5 = row
+            city, url, enr, npa, b1, b2, b3, b4, b5, pell, first_gen, compl = row
             s["city"] = city
             s["url"] = url
             s["enrollment"] = int(enr) if enr else None
             brackets = [_round(b1), _round(b2), _round(b3), _round(b4), _round(b5)]
             if npa is not None or any(b is not None for b in brackets):
                 s["net_price"] = {"avg": _round(npa), "brackets": brackets}
+            # Mobility: access (Pell / first-gen share) + completion. Stored as fractions.
+            if pell is not None:
+                s["pell"] = round(pell, 3)
+            if first_gen is not None:
+                s["first_gen"] = round(first_gen, 3)
+            if compl is not None:
+                s["completion"] = round(compl, 3)
+
+    # Rule-based "hidden gem": a school that beats the national median on all three of
+    # access (Pell share), completion, and the earnings-premium pass rate. Transparent
+    # thresholds, no weighted index. Benchmarks are shipped so the site can explain them.
+    def _pass_rate(s):
+        decided = s["n_pass"] + s["n_fail"]
+        return s["n_pass"] / decided if decided else None
+
+    pell_vals = sorted(s["pell"] for s in schools.values() if s.get("pell") is not None)
+    compl_vals = sorted(
+        s["completion"] for s in schools.values() if s.get("completion") is not None
+    )
+    pr_vals = sorted(v for s in schools.values() if (v := _pass_rate(s)) is not None)
+
+    def _median(v):
+        if not v:
+            return None
+        m = len(v) // 2
+        return v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2
+
+    med_pell, med_compl, med_pr = _median(pell_vals), _median(compl_vals), _median(pr_vals)
+    benchmarks = {
+        "pell_median": round(med_pell, 3) if med_pell is not None else None,
+        "completion_median": round(med_compl, 3) if med_compl is not None else None,
+        "pass_rate_median": round(med_pr, 3) if med_pr is not None else None,
+    }
+    for s in schools.values():
+        pr = _pass_rate(s)
+        s["hidden_gem"] = bool(
+            med_pell is not None
+            and s.get("pell") is not None
+            and s.get("completion") is not None
+            and pr is not None
+            and s["pell"] >= med_pell
+            and s["completion"] >= med_compl
+            and pr >= med_pr
+        )
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "programs").mkdir(exist_ok=True)
 
     index = sorted(schools.values(), key=lambda x: (x["name"] or "").lower())
     (OUT_DIR / "schools.json").write_text(
-        json.dumps({"generated": True, "schools": index}, separators=(",", ":"))
+        json.dumps(
+            {"generated": True, "benchmarks": benchmarks, "schools": index},
+            separators=(",", ":"),
+        )
     )
     prog_dir = OUT_DIR / "programs"
     for state, by_school in by_state.items():

@@ -101,6 +101,32 @@ illustration on the site rather than shipped in the dataset.
 
 Both are descriptive summaries of past graduates. They never tell anyone whether to attend.
 
+## Mobility (access and outcomes)
+
+Whether a college moves people up depends on who it enrolls and whether those students finish
+and earn a living. The Mobility view puts three College Scorecard institution measures side by
+side, each against the national median:
+
+- **Pell share** (`PCTPELL`): the share of undergraduates who received a Pell grant, a standard
+  proxy for enrolling low-income students.
+- **Completion rate** (`C150_4` for four-year schools, `C150_L4` for shorter programs, coalesced):
+  the share who finished within 150% of normal time.
+- **Earnings outcome**: the share of the school's decided programs whose graduates clear the
+  earnings-premium bar, reusing the Value Check flag.
+- First-generation share (`PAR_ED_PCT_1STGEN`) is shown as supporting context where reported.
+
+**Hidden gem** is a transparent rule, not a weighted index or ranking: a school is flagged only
+when it beats the **national median on all three** measures at once (enrolls more low-income
+students than most, graduates more of them than most, and its graduates out-earn a high-school
+graduate more often than most). The three national medians are computed across all schools with
+data and shipped alongside the site data so the thresholds are auditable.
+
+**This is deliberately not the income-mobility rate.** We do not have the Opportunity Insights
+(Chetty) bottom-to-top-quintile measure, which needs linked tax data; this is an access-and-
+outcomes view built only from public Scorecard fields. Completion is institution-wide, not
+program-level; some schools do not report all three measures, and are simply not eligible to be
+flagged. As everywhere in Truewise, suppressed values are shown as missing, never imputed.
+
 ## Known limitations
 
 - The debt-to-earnings ratio here is a plain ratio, not the amortized federal D/E rate.

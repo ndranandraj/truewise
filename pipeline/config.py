@@ -67,6 +67,13 @@ INST_FIELD_CANDIDATES: dict[str, list[str]] = {
     "school_url": ["INSTURL"],
     "earnings_threshold_state": ["EARN_THR_STATE"],
     "earnings_threshold_national": ["EARN_THR_NAT"],
+    # Mobility: access (share of low-income / first-gen students) + completion.
+    "pell_share": ["PCTPELL"],
+    "first_gen_share": ["PAR_ED_PCT_1STGEN"],
+    # Completion (150% of normal time). A school reports either the 4-year (C150_4) or
+    # the less-than-4-year (C150_L4) rate; build_spine coalesces the two.
+    "completion_4yr": ["C150_4"],
+    "completion_l4": ["C150_L4"],
 }
 INST_REQUIRED = ["unitid", "earnings_threshold_state", "earnings_threshold_national"]
 

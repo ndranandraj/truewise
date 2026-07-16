@@ -80,6 +80,17 @@
     .afford-note { color: var(--ink-soft); font-size: .85rem; max-width: 760px; margin: 12px 0 0; line-height: 1.55; }
     .afford-note a { color: var(--brand); }
 
+    /* Mobility */
+    .mob-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin: 16px 0 6px; max-width: 760px; }
+    .mob-stat { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fff; }
+    .mob-stat .v { font-size: 1.7rem; font-weight: 800; color: var(--brand-deep); font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+    .mob-stat .k { font-size: .92rem; color: var(--ink); margin-top: 3px; line-height: 1.4; }
+    .mob-stat .k .sub { color: var(--ink-soft); font-size: .82rem; }
+    .mob-stat .ctx { font-size: .8rem; color: var(--ink-soft); margin-top: 6px; }
+    .gem { display: flex; gap: 14px; align-items: flex-start; margin: 16px 0; padding: 14px 18px; border-radius: 12px; background: #fffaf0; border: 1px solid #f2d98a; max-width: 760px; }
+    .gem .badge-gem { font-weight: 800; color: #92610a; white-space: nowrap; }
+    .gem p { margin: 0; color: var(--ink); font-size: .96rem; line-height: 1.5; }
+
     /* Program table + controls */
     .vc-controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
     .vc-tools { display: flex; gap: 8px; }
@@ -151,6 +162,7 @@
   const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
   const app = document.getElementById("app");
   let SCHOOLS = null;                 // school index
+  let BENCH = {};                     // national benchmarks (mobility medians)
   const stateCache = {};              // state -> {unitid: [programs]}
 
   const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
@@ -161,7 +173,9 @@
   async function loadSchools() {
     if (SCHOOLS) return SCHOOLS;
     const r = await fetch("data/schools.json");
-    SCHOOLS = (await r.json()).schools;
+    const j = await r.json();
+    SCHOOLS = j.schools;
+    BENCH = j.benchmarks || {};
     return SCHOOLS;
   }
   async function loadState(state) {
@@ -299,6 +313,43 @@
       </section>`;
   }
 
+  // Mobility module: access (Pell / first-gen share) + completion + the earnings outcome,
+  // each next to the national median, plus a rule-based hidden-gem badge.
+  const pct = x => x == null ? null : Math.round(x * 100) + "%";
+  function mobilityModule(s, bench) {
+    const decided = s.n_pass + s.n_fail;
+    const passRate = decided ? s.n_pass / decided : null;
+    if (s.pell == null && s.completion == null && passRate == null) return "";
+    const stat = (val, key, medianVal) => val == null ? "" :
+      `<div class="mob-stat"><div class="v">${pct(val)}</div><div class="k">${key}</div>
+       <div class="ctx">${medianVal != null ? "National median: " + pct(medianVal) : ""}</div></div>`;
+    const stats = [
+      stat(s.pell, "received a Pell grant<br><span class='sub'>low-income undergraduates</span>", bench.pell_median),
+      stat(s.completion, "finished their program<br><span class='sub'>within 150% of normal time</span>", bench.completion_median),
+      stat(passRate, "of programs clear the earnings bar<br><span class='sub'>graduates out-earn a HS grad</span>", bench.pass_rate_median),
+    ].filter(Boolean).join("");
+    const gem = s.hidden_gem ? `
+      <div class="gem"><span class="badge-gem">★ Hidden gem</span>
+        <p>This school enrolls <b>more low-income students</b> than most, <b>graduates more of them</b>, and its
+          graduates <b>out-earn a high-school graduate more often</b> than most, beating the national median on all
+          three. Colleges like this move students up without the selective-admissions spotlight.</p></div>` : "";
+    const fg = s.first_gen != null
+      ? ` About <b>${pct(s.first_gen)}</b> of students here are the first in their family to go to college.` : "";
+    return `
+      <section id="mobility" class="module">
+        <h2>Mobility: who this school serves, and whether they get ahead</h2>
+        <p class="prose-line">Whether a college moves people up comes down to two things: who it enrolls, and
+          whether those students finish and earn a living.${fg}</p>
+        ${gem}
+        <div class="mob-stats">${stats}</div>
+        <p class="afford-note">This is an access-and-outcomes view from College Scorecard, not the federal or
+          Opportunity Insights income-mobility rate. Pell share is the share of undergraduates who received a Pell
+          grant; completion is measured institution-wide at 150% of normal time; the earnings bar is the same one
+          used in Value Check. Some schools don't report all three. "Hidden gem" means only that a school beats the
+          national median on all three measures, a transparent rule, not a ranking.</p>
+      </section>`;
+  }
+
   function programRow(p, threshold, maxEarn, highlight) {
     const fail = p.flag === "fails_earnings_premium";
     const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
@@ -367,11 +418,13 @@
     const website = s.url ? ` · <a href="${/^https?:/.test(s.url) ? s.url : "https://" + s.url}" target="_blank" rel="noopener">website ↗</a>` : "";
     const roiSection = roiModule(progs, s.threshold, s.net_price);
     const hasRoi = roiSection !== "";
+    const mobilitySection = mobilityModule(s, BENCH);
+    const hasMob = mobilitySection !== "";
     const modules = [
       { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
       { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
       { name: "ROI", live: hasRoi, anchor: "roi", blurb: "Earnings vs debt, payback" },
-      { name: "Mobility", live: false, blurb: "Moving students up" },
+      { name: "Mobility", live: hasMob, anchor: "mobility", blurb: "Moving students up" },
       { name: "Careers", live: false, blurb: "Where a major leads" },
     ];
     const totI = s.n_insufficient || 0;
@@ -451,6 +504,7 @@
       </section>
       ${affordSection}
       ${roiSection}
+      ${mobilitySection}
       <div class="caveats">
         <strong>How to read this.</strong> Figures are median earnings of a program's graduates,
         compared with the earnings of a typical high-school graduate in the school's state (the federal

@@ -153,6 +153,16 @@ def check_net_price(inst_path) -> tuple[bool, str]:
     return bad == 0, f"{bad} schools with implausible net price"
 
 
+def check_mobility(inst_path) -> tuple[bool, str]:
+    """Mobility sanity: Pell / first-gen / completion shares are fractions in 0..1."""
+    con = duckdb.connect()
+    con.execute(f"CREATE VIEW inst AS SELECT * FROM read_parquet('{inst_path}')")
+    cols = ["pell_share", "first_gen_share", "completion_rate"]
+    conds = " OR ".join(f"({c} IS NOT NULL AND ({c} < 0 OR {c} > 1))" for c in cols)
+    bad = con.execute(f"SELECT count(*) FROM inst WHERE {conds}").fetchone()[0]
+    return bad == 0, f"{bad} schools with a mobility share outside 0..1"
+
+
 def main() -> None:
     from pipeline.config import PARQUET_DIR
 
@@ -165,6 +175,7 @@ def main() -> None:
     inst_path = PARQUET_DIR / "institutions.parquet"
     if inst_path.exists():
         results.append(("net_price_within_bounds", *check_net_price(inst_path)))
+        results.append(("mobility_shares_within_bounds", *check_mobility(inst_path)))
     failed = 0
     for name, ok, detail in results:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name:32s} {detail}")
