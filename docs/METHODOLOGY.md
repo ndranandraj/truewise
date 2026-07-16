@@ -153,10 +153,18 @@ the outlook is on the way rather than guessing.
 
 The high-school view comes from the U.S. Department of Education's **Civil Rights Data Collection
 (CRDC)**, which every public school reports to. For each high school (any school serving grades
-9-12) we show whether it offers **Advanced Placement, calculus, and physics**, how many students
-take each, the **participation rate** (share of the school's students taking the course), and how
-many of the three advanced tracks it offers at all. Many high schools offer none, which is the
-core access story.
+9-12) we show which advanced courses and programs it offers, how many students take each, the
+**participation rate** (share of the school's students taking the course), and its support
+staffing. Courses covered: **calculus, physics, chemistry, computer science** (advanced math and
+science) and **Advanced Placement, International Baccalaureate, dual enrollment, and gifted &
+talented** (college-level programs). A headline flag tracks how many of the three core tracks
+(AP, calculus, physics) a school offers, many offer none, which is the core access story.
+
+**Staffing** comes from the CRDC School Support file: the **student-to-counselor ratio** (students
+per full-time-equivalent counselor), whether a school reported **no counselor** at all, whether it
+has a **sworn police officer** and/or security guards, and the share of teachers who are **not
+fully certified**. A notable civil-rights signal is a school that has a police officer but no
+counselor. These describe reported staffing, not judgments about a school.
 
 Counts are summed from the CRDC race-by-sex cells rather than the published totals on purpose: the
 CRDC sometimes suppresses a total (e.g. `TOT_ENR_F = -11`) while the underlying cells are present,

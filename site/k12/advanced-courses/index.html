@@ -42,7 +42,8 @@
     .sch-head { padding: 8px 0 4px; }
     .sch-head h1 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); letter-spacing: -0.02em; margin: 0 0 6px; }
     .sch-head .sub { color: var(--ink-soft); }
-    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 16px 0 6px; max-width: 800px; }
+    .sec-h { font-size: 1.15rem; letter-spacing: -.02em; margin: 26px 0 6px; }
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0 6px; max-width: 820px; }
     .course { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; background: #fff; }
     .course h3 { margin: 0 0 4px; font-size: 1.05rem; }
     .course .status { font-weight: 700; font-size: .95rem; }
@@ -120,8 +121,9 @@
     app.innerHTML = `
       <section class="k-head">
         <h1>Advanced courses at your high school</h1>
-        <p class="lede">Does a US public high school offer AP, calculus, and physics, and how many students take them?
-          Many high schools offer none at all. From the federal Civil Rights Data Collection.</p>
+        <p class="lede">What does a US public high school actually offer, AP, calculus, physics, chemistry, computer
+          science, dual enrollment, IB, and gifted programs, how many students take them, and who's on staff
+          (counselors, security)? From the federal Civil Rights Data Collection.</p>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" placeholder="Search ${INDEX.length.toLocaleString()} public high schools by name…" value="${esc(preset)}" />
@@ -155,10 +157,16 @@
   }
 
   // ---- School detail ----
-  function courseCard(title, offered, detail) {
+  function courseCard(title, c) {
+    const detail = (c.courses != null ? `${c.courses} course${c.courses === 1 ? "" : "s"}; ` : "")
+      + `${num(c.enroll)} students${c.rate != null ? ` (${c.rate}% of students)` : ""}.`;
     return `<div class="course"><h3>${title}</h3>
-      <div class="status ${offered ? "yes" : "no"}">${offered ? "Offered" : "Not offered"}</div>
-      ${offered && detail ? `<div class="detail">${detail}</div>` : ""}</div>`;
+      <div class="status ${c.offered ? "yes" : "no"}">${c.offered ? "Offered" : "Not offered"}</div>
+      ${c.offered && c.enroll != null ? `<div class="detail">${detail}</div>` : ""}</div>`;
+  }
+  function staffCard(title, cls, status, detail) {
+    return `<div class="course"><h3>${title}</h3><div class="status ${cls}">${status}</div>
+      ${detail ? `<div class="detail">${detail}</div>` : ""}</div>`;
   }
   async function renderSchool(combokey) {
     await loadIndex();
@@ -166,27 +174,32 @@
     if (!ref) { app.innerHTML = `<a class="backlink" href="/k12/advanced-courses/" id="back">← Search</a><p class="empty">School not found.</p>`; wireBack(); return; }
     const s = (await loadState(ref.s))[combokey];
     if (!s) { app.innerHTML = `<a class="backlink" href="/k12/advanced-courses/" id="back">← Search</a><p class="empty">No data for this school.</p>`; wireBack(); return; }
+    const c = s.courses, st = s.staff;
 
-    const rate = r => r != null ? ` (${r}% of students)` : "";
-    const apDetail = s.ap.offered
-      ? `${s.ap.courses != null ? s.ap.courses + " AP course" + (s.ap.courses === 1 ? "" : "s") + "; " : ""}${num(s.ap.enroll)} students in AP${rate(s.ap.rate)}.`
+    // Headline: how many of the three core advanced tracks the school offers.
+    const core = [["AP", c.ap.offered], ["calculus", c.calc.offered], ["physics", c.phys.offered]];
+    const on = core.filter(x => x[1]).map(x => x[0]), off = core.filter(x => !x[1]).map(x => x[0]);
+    const breadthMsg = s.breadth3 === 3
+      ? `Offers <b>all three</b> core advanced tracks: AP, calculus, and physics.`
+      : s.breadth3 === 0
+        ? `Offers <b>none</b> of the three core advanced tracks (AP, calculus, or physics).`
+        : `Offers <b>${s.breadth3} of 3</b> core advanced tracks (${on.join(" and ")}), but not ${off.join(" or ")}.`;
+    const breadthCls = s.breadth3 === 3 ? "over" : s.breadth3 === 0 ? "under" : "";
+
+    // Staff cards.
+    const counselor = st.no_counselor
+      ? staffCard("Counselors", "no", "None reported", "This school reported having no school counselors.")
+      : st.counselor_ratio != null
+        ? staffCard("Counselors", "yes", `${st.counselor_ratio}:1`, `About one counselor per ${st.counselor_ratio} students. A common professional benchmark is 250:1.`)
+        : staffCard("Counselors", "", "Not reported", "");
+    const secOn = st.police || st.guard;
+    const secWho = st.police && st.guard ? "A sworn police officer and security guards." : st.police ? "A sworn police officer." : st.guard ? "Security guards." : "None reported.";
+    const security = staffCard("Security staff", secOn ? "" : "no", secOn ? "On staff" : "None reported", secWho);
+    const teachers = st.uncert_pct != null
+      ? staffCard("Teacher certification", st.uncert_pct <= 5 ? "yes" : "no", `${st.uncert_pct}% not certified`, `${st.uncert_pct}% of this school's teachers are not fully certified.`)
       : "";
-    const calcDetail = s.calc.offered ? `${num(s.calc.enroll)} students enrolled${rate(s.calc.rate)}.` : "";
-    const physDetail = s.phys.offered ? `${num(s.phys.enroll)} students enrolled${rate(s.phys.rate)}.` : "";
-
-    // Breadth of advanced-course access: how many of the three tracks the school offers.
-    const have = [["AP", s.ap.offered], ["calculus", s.calc.offered], ["physics", s.phys.offered]];
-    const on = have.filter(x => x[1]).map(x => x[0]);
-    const off = have.filter(x => !x[1]).map(x => x[0]);
-    const breadthMsg = s.breadth === 3
-      ? `This school offers <b>all three</b> advanced tracks: AP, calculus, and physics.`
-      : s.breadth === 0
-        ? `This school offers <b>none</b> of the three advanced tracks (AP, calculus, or physics).`
-        : `This school offers <b>${s.breadth} of 3</b> advanced tracks (${on.join(" and ")}), but not ${off.join(" or ")}.`;
-    const breadthCls = s.breadth === 3 ? "over" : s.breadth === 0 ? "under" : "";
-    const summary = `
-      <div class="equity"><h2>Advanced-course access</h2>
-        <p class="read"><span class="gap ${breadthCls}">${breadthMsg}</span></p></div>`;
+    const callout = st.police && st.no_counselor
+      ? `<p class="read" style="margin-top:12px"><span class="gap under">This school has a sworn police officer but no school counselor.</span></p>` : "";
 
     const tags = [];
     if (s.charter) tags.push("Charter");
@@ -197,18 +210,35 @@
         <h1>${esc(s.name)}</h1>
         <div class="sub">${esc(s.district || "")}${s.district ? " · " : ""}${esc(s.state)}${tags.length ? " · " + tags.join(" · ") : ""} · ${num(s.enroll)} students</div>
       </div>
-      ${summary}
+      <div class="equity"><h2>Advanced-course access</h2>
+        <p class="read"><span class="gap ${breadthCls}">${breadthMsg}</span></p></div>
+      <h2 class="sec-h">Advanced math & science</h2>
       <div class="course-grid">
-        ${courseCard("Advanced Placement", s.ap.offered, apDetail)}
-        ${courseCard("Calculus", s.calc.offered, calcDetail)}
-        ${courseCard("Physics", s.phys.offered, physDetail)}
+        ${courseCard("Calculus", c.calc)}
+        ${courseCard("Physics", c.phys)}
+        ${courseCard("Chemistry", c.chem)}
+        ${courseCard("Computer science", c.cs)}
       </div>
-      <div class="caveats"><strong>How to read this.</strong> Whether a school offers AP, calculus, and physics, and
-        how many students take them, is reported by the school to the U.S. Department of Education's Office for Civil
-        Rights. The participation rate is the share of the school's students (grades 9-12) taking the course. Counts a
-        school withheld or that were too small to report are shown as unavailable, never guessed. Data is from the
-        <b>2020-21</b> collection, a pandemic year when course-taking was disrupted, so read participation counts with
-        that in mind. Source: ${VINTAGE}.</div>`;
+      <h2 class="sec-h">College-level programs</h2>
+      <div class="course-grid">
+        ${courseCard("Advanced Placement", c.ap)}
+        ${courseCard("International Baccalaureate", c.ib)}
+        ${courseCard("Dual enrollment (college credit)", c.dual)}
+        ${courseCard("Gifted & talented", c.gt)}
+      </div>
+      <h2 class="sec-h">Counselors & staff</h2>
+      <div class="course-grid">
+        ${counselor}
+        ${security}
+        ${teachers}
+      </div>
+      ${callout}
+      <div class="caveats"><strong>How to read this.</strong> Course offerings, participation, and staffing are reported
+        by each school to the U.S. Department of Education's Office for Civil Rights. Participation rates are the share of
+        the school's students (grades 9-12) taking a course; the counselor ratio is students per full-time-equivalent
+        counselor. Counts a school withheld or that were too small to report are shown as unavailable, never guessed. Data
+        is from the <b>2020-21</b> collection, a pandemic year when course-taking was disrupted, so read participation and
+        staffing with that in mind. Source: ${VINTAGE}.</div>`;
     wireBack();
     window.scrollTo({ top: 0 });
   }

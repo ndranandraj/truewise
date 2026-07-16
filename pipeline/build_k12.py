@@ -35,78 +35,72 @@ def main() -> None:
     if not src.exists():
         raise SystemExit("No k12.parquet, run `python -m pipeline.build_k12_source` first.")
     con = duckdb.connect()
-    rows = con.execute(
+    cur = con.execute(
         f"""
-        SELECT combokey, coalesce(state, 'ZZ') AS state, name, district, charter, magnet,
-               enroll_total, offers_ap, ap_courses, ap_enroll,
-               offers_calc, calc_enroll, offers_physics, phys_enroll
-        FROM read_parquet('{src}')
+        SELECT * FROM read_parquet('{src}')
         WHERE name IS NOT NULL AND enroll_total > 0
         ORDER BY name
         """
-    ).fetchall()
+    )
+    cols = [d[0] for d in cur.description]
+    rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
 
     def _rate(part, whole):
         # Share of students taking a course, only where it is offered and has enrollment.
         return round(100 * part / whole) if part and whole else None
 
+    def _course(offered, enroll, whole, courses=None):
+        d = {"offered": bool(offered), "enroll": _int(enroll), "rate": _rate(enroll, whole)}
+        if courses is not None:
+            d["courses"] = _int(courses)
+        return d
+
     index = []
     by_state: dict[str, dict] = defaultdict(dict)
     for r in rows:
-        (
-            combokey,
-            state,
-            name,
-            district,
-            charter,
-            magnet,
-            enroll,
-            offers_ap,
-            ap_courses,
-            ap_enroll,
-            offers_calc,
-            calc_enroll,
-            offers_phys,
-            phys_enroll,
-        ) = r
-
-        # How many of the three advanced tracks the school offers (0-3).
-        breadth = int(bool(offers_ap)) + int(bool(offers_calc)) + int(bool(offers_phys))
-
-        by_state[state][combokey] = {
-            "name": name,
-            "district": district,
+        state = r["state"] or "ZZ"
+        enroll = r["enroll_total"]
+        couns, teach, uncert = r["fte_counselors"], r["fte_teachers"], r["fte_teach_uncert"]
+        staff = {
+            # student-to-counselor ratio; a real reported 0 counselors is meaningful.
+            "counselor_ratio": round(enroll / couns) if (couns and enroll) else None,
+            "no_counselor": couns == 0,
+            "police": bool(r["fte_police"] and r["fte_police"] > 0),
+            "guard": bool(r["fte_guards"] and r["fte_guards"] > 0),
+            "uncert_pct": round(100 * uncert / teach) if (uncert is not None and teach) else None,
+        }
+        by_state[state][r["combokey"]] = {
+            "name": r["name"],
+            "district": r["district"],
             "state": state,
-            "charter": bool(charter),
-            "magnet": bool(magnet),
+            "charter": bool(r["charter"]),
+            "magnet": bool(r["magnet"]),
             "enroll": _int(enroll),
-            "breadth": breadth,
-            "ap": {
-                "offered": bool(offers_ap),
-                "courses": _int(ap_courses),
-                "enroll": _int(ap_enroll),
-                "rate": _rate(ap_enroll, enroll),  # % of students taking at least one AP course
+            # How many of the three core advanced tracks the school offers (0-3).
+            "breadth3": int(bool(r["offers_ap"]))
+            + int(bool(r["offers_calc"]))
+            + int(bool(r["offers_physics"])),
+            "courses": {
+                "ap": _course(r["offers_ap"], r["ap_enroll"], enroll, r["ap_courses"]),
+                "calc": _course(r["offers_calc"], r["calc_enroll"], enroll),
+                "phys": _course(r["offers_physics"], r["phys_enroll"], enroll),
+                "chem": _course(r["offers_chem"], r["chem_enroll"], enroll),
+                "cs": _course(r["offers_cs"], r["cs_enroll"], enroll),
+                "dual": _course(r["offers_dual"], r["dual_enroll"], enroll),
+                "ib": _course(r["offers_ib"], r["ib_enroll"], enroll),
+                "gt": _course(r["offers_gt"], r["gt_enroll"], enroll),
             },
-            "calc": {
-                "offered": bool(offers_calc),
-                "enroll": _int(calc_enroll),
-                "rate": _rate(calc_enroll, enroll),
-            },
-            "phys": {
-                "offered": bool(offers_phys),
-                "enroll": _int(phys_enroll),
-                "rate": _rate(phys_enroll, enroll),
-            },
+            "staff": staff,
         }
         index.append(
             {
-                "k": combokey,
-                "n": name,
+                "k": r["combokey"],
+                "n": r["name"],
                 "s": state,
-                "d": district,
-                "ap": bool(offers_ap),
-                "c": bool(offers_calc),
-                "p": bool(offers_phys),
+                "d": r["district"],
+                "ap": bool(r["offers_ap"]),
+                "c": bool(r["offers_calc"]),
+                "p": bool(r["offers_physics"]),
             }
         )
 

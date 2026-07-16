@@ -1,8 +1,8 @@
-"""Tests for the K-12 (CRDC advanced-course-access) extractor and site builder.
+"""Tests for the K-12 (CRDC) extractor and site builder.
 
-No download: tiny synthetic CRDC CSVs exercise the real extraction SQL (including the
-suppressed-total handling and the high-school filter), and a synthetic k12 parquet exercises
-the access-gap math in build_k12.
+No download: tiny synthetic CRDC CSVs exercise the real extraction SQL (suppressed-total
+handling, the high-school filter, all eight courses, and the support-staff fields), then the
+full k12.parquet is run through build_k12 to check the site JSON (courses, staff, breadth).
 """
 
 from __future__ import annotations
@@ -27,17 +27,19 @@ def _write(path, rows):
             w.writerow({c: r.get(c, "0") for c in cols})
 
 
-def _enr(**vals):
-    r = {"COMBOKEY": vals["COMBOKEY"]}
-    for race in RACES:
-        for s in ("M", "F"):
-            r[f"SCH_ENR_{race}_{s}"] = "0"
-    r.update({k: v for k, v in vals.items() if k != "COMBOKEY"})
-    return r
+def _race_cols(prefix, **over):
+    d = {f"{prefix}_{r}_{s}": "0" for r in RACES for s in ("M", "F")}
+    d.update(over)
+    return d
+
+
+def _course_file(folder, fname, offer_col, hs_offer, enr_prefix, hs_enr):
+    hs = {"COMBOKEY": "HS1", offer_col: hs_offer, **_race_cols(enr_prefix, **hs_enr)}
+    es = {"COMBOKEY": "ES1", offer_col: "0", **_race_cols(enr_prefix)}
+    _write(folder / fname, [hs, es])
 
 
 def _mk_crdc(folder):
-    # One high school (grade 12) that is 50% Black/Hispanic, with a suppressed female total.
     _write(
         folder / "School Characteristics.csv",
         [
@@ -67,83 +69,129 @@ def _mk_crdc(folder):
             },
         ],
     )
-    # 100 White + 50 Black + 50 Hispanic = 200 total, 100 Black/Hispanic. TOT_ENR_F suppressed.
+    # 200 students, TOT_ENR_F suppressed but race cells present.
     _write(
         folder / "Enrollment.csv",
         [
-            _enr(
-                COMBOKEY="HS1",
-                SCH_ENR_WH_M="100",
-                SCH_ENR_BL_M="50",
-                SCH_ENR_HI_M="50",
-                TOT_ENR_M="200",
-                TOT_ENR_F="-11",
-            ),
-            _enr(COMBOKEY="ES1", SCH_ENR_WH_M="300"),
+            {
+                "COMBOKEY": "HS1",
+                **_race_cols("SCH_ENR", SCH_ENR_WH_M="100", SCH_ENR_BL_M="50", SCH_ENR_HI_M="50"),
+                "TOT_ENR_M": "200",
+                "TOT_ENR_F": "-11",
+            },
+            {"COMBOKEY": "ES1", **_race_cols("SCH_ENR", SCH_ENR_WH_M="300")},
         ],
     )
-    # AP: 40 students in AP out of 200 enrolled -> 20% participation.
-    ap = {
-        "COMBOKEY": "HS1",
-        "SCH_APENR_IND": "Yes",
-        "SCH_APCOURSES": "8",
-        "SCH_APENR_WH_M": "30",
-        "SCH_APENR_BL_M": "5",
-        "SCH_APENR_HI_M": "5",
-    }
-    for race in RACES:
-        for s in ("M", "F"):
-            ap.setdefault(f"SCH_APENR_{race}_{s}", "0")
-    _write(
-        folder / "Advanced Placement.csv",
-        [ap, {"COMBOKEY": "ES1", "SCH_APENR_IND": "No", "SCH_APCOURSES": "-9"}],
+    _course_file(
+        folder,
+        "Advanced Placement.csv",
+        "SCH_APENR_IND",
+        "Yes",
+        "SCH_APENR",
+        {"SCH_APENR_WH_M": "40", "SCH_APCOURSES": "8"},
     )
-    calc = {"COMBOKEY": "HS1", "SCH_MATHCLASSES_CALC": "2", "SCH_MATHENR_CALC_WH_M": "20"}
-    for race in RACES:
-        for s in ("M", "F"):
-            calc.setdefault(f"SCH_MATHENR_CALC_{race}_{s}", "0")
-    _write(folder / "Calculus.csv", [calc, {"COMBOKEY": "ES1", "SCH_MATHCLASSES_CALC": "0"}])
-    phys = {"COMBOKEY": "HS1", "SCH_SCICLASSES_PHYS": "0"}
-    for race in RACES:
-        for s in ("M", "F"):
-            phys.setdefault(f"SCH_SCIENR_PHYS_{race}_{s}", "0")
-    _write(folder / "Physics.csv", [phys, {"COMBOKEY": "ES1", "SCH_SCICLASSES_PHYS": "0"}])
+    _course_file(
+        folder,
+        "Calculus.csv",
+        "SCH_MATHCLASSES_CALC",
+        "2",
+        "SCH_MATHENR_CALC",
+        {"SCH_MATHENR_CALC_WH_M": "20"},
+    )
+    _course_file(folder, "Physics.csv", "SCH_SCICLASSES_PHYS", "0", "SCH_SCIENR_PHYS", {})
+    _course_file(
+        folder,
+        "Chemistry.csv",
+        "SCH_SCICLASSES_CHEM",
+        "1",
+        "SCH_SCIENR_CHEM",
+        {"SCH_SCIENR_CHEM_WH_M": "30"},
+    )
+    _course_file(
+        folder,
+        "Computer Science.csv",
+        "SCH_COMPCLASSES_CSCI",
+        "2",
+        "SCH_COMPENR_CSCI",
+        {"SCH_COMPENR_CSCI_WH_M": "15"},
+    )
+    _course_file(
+        folder,
+        "Dual Enrollment.csv",
+        "SCH_DUAL_IND",
+        "Yes",
+        "SCH_DUALENR",
+        {"SCH_DUALENR_WH_M": "25"},
+    )
+    _course_file(folder, "International Baccalaureate.csv", "SCH_IBENR_IND", "No", "SCH_IBENR", {})
+    _course_file(
+        folder,
+        "Gifted and Talented.csv",
+        "SCH_GT_IND",
+        "Yes",
+        "SCH_GTENR",
+        {"SCH_GTENR_WH_M": "18"},
+    )
+    _write(
+        folder / "School Support.csv",
+        [
+            {
+                "COMBOKEY": "HS1",
+                "SCH_FTECOUNSELORS": "2",
+                "SCH_FTESECURITY_LEO": "1",
+                "SCH_FTESECURITY_GUA": "0",
+                "SCH_FTETEACH_TOT": "10",
+                "SCH_FTETEACH_NOTCERT": "1",
+            },
+            {
+                "COMBOKEY": "ES1",
+                "SCH_FTECOUNSELORS": "1",
+                "SCH_FTESECURITY_LEO": "0",
+                "SCH_FTESECURITY_GUA": "0",
+                "SCH_FTETEACH_TOT": "20",
+                "SCH_FTETEACH_NOTCERT": "0",
+            },
+        ],
+    )
 
 
-def test_source_extracts_high_schools_with_suppressed_total(tmp_path):
-    _mk_crdc(tmp_path)
+def _build_k12_table(folder):
     con = duckdb.connect()
-    bks.build(con, tmp_path)
+    bks.build(con, folder)
+    return con
+
+
+def test_source_extracts_courses_and_staff(tmp_path):
+    _mk_crdc(tmp_path)
+    con = _build_k12_table(tmp_path)
     rows = con.execute("SELECT * FROM k12").fetchdf().to_dict("records")
     assert len(rows) == 1  # elementary excluded
     hs = rows[0]
-    assert hs["combokey"] == "HS1"
-    assert hs["enroll_total"] == 200  # summed from race components, not the suppressed total
+    assert hs["enroll_total"] == 200  # from race cells, not the suppressed total
     assert hs["offers_ap"] and hs["ap_courses"] == 8 and hs["ap_enroll"] == 40
-    assert hs["offers_calc"] and hs["calc_enroll"] == 20
-    assert not hs["offers_physics"]
+    assert hs["offers_calc"] and not hs["offers_physics"]
+    assert hs["offers_chem"] and hs["offers_cs"] and hs["offers_dual"] and hs["offers_gt"]
+    assert not hs["offers_ib"]
+    assert hs["fte_counselors"] == 2 and hs["fte_police"] == 1 and hs["fte_guards"] == 0
+    assert hs["fte_teachers"] == 10 and hs["fte_teach_uncert"] == 1
 
 
-def test_build_k12_participation_and_breadth(tmp_path, monkeypatch):
+def test_build_k12_site(tmp_path, monkeypatch):
+    _mk_crdc(tmp_path)
     pq = tmp_path / "parquet"
     pq.mkdir()
-    con = duckdb.connect()
-    con.execute(
-        """CREATE TABLE k12 AS SELECT * FROM (VALUES
-        ('HS1','TX','Test High','Test ISD',false,false,200.0,true,8.0,40.0,true,20.0,false,0.0))
-        t(combokey,state,name,district,charter,magnet,enroll_total,offers_ap,
-          ap_courses,ap_enroll,offers_calc,calc_enroll,offers_physics,phys_enroll)"""
-    )
+    con = _build_k12_table(tmp_path)
     con.execute(f"COPY k12 TO '{pq / 'k12.parquet'}' (FORMAT PARQUET)")
     monkeypatch.setattr(bk, "PARQUET_DIR", pq)
     monkeypatch.setattr(bk, "OUT_DIR", tmp_path / "k12-data")
     bk.main()
 
-    tx = json.loads((tmp_path / "k12-data" / "schools" / "TX.json").read_text())
-    s = tx["HS1"]
-    assert s["ap"]["enroll"] == 40 and s["ap"]["courses"] == 8
-    assert s["ap"]["rate"] == 20  # 40 of 200 students take AP
-    assert s["calc"]["offered"] and s["calc"]["rate"] == 10 and not s["phys"]["offered"]
-    assert s["breadth"] == 2  # AP + calculus, no physics
+    s = json.loads((tmp_path / "k12-data" / "schools" / "TX.json").read_text())["HS1"]
+    assert s["breadth3"] == 2  # AP + calculus, not physics
+    assert s["courses"]["ap"]["rate"] == 20 and s["courses"]["ap"]["courses"] == 8
+    assert s["courses"]["cs"]["offered"] and not s["courses"]["ib"]["offered"]
+    assert s["staff"]["counselor_ratio"] == 100  # 200 students / 2 counselors
+    assert s["staff"]["police"] is True and s["staff"]["guard"] is False
+    assert s["staff"]["uncert_pct"] == 10  # 1 of 10 teachers
     idx = json.loads((tmp_path / "k12-data" / "index.json").read_text())
     assert idx["vintage"] == "2020-21" and idx["schools"][0]["k"] == "HS1"

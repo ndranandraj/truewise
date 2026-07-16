@@ -9,8 +9,8 @@ Inputs (place the CRDC "School" CSVs in data/raw/crdc/, or pass the folder as ar
   * School Characteristics.csv  -> identity + grade span (to keep high schools)
   * Enrollment.csv              -> total enrollment (the participation denominator)
   * Advanced Placement.csv      -> offers-AP flag, # AP courses, AP enrollment
-  * Calculus.csv                -> # calculus classes + calculus enrollment
-  * Physics.csv                 -> # physics classes + physics enrollment
+  * Calculus.csv / Physics.csv / Chemistry.csv / Computer Science.csv -> offer flag + enrollment
+  * Dual Enrollment.csv / International Baccalaureate.csv / Gifted and Talented.csv -> offer + enrollment
 
 Every count uses CRDC's convention that a negative value means suppressed / not applicable,
 so negatives are treated as "no data", never as zero data. Offering flags come from the
@@ -75,6 +75,12 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
     view("ap", "Advanced Placement")
     view("calc", "Calculus")
     view("phys", "Physics")
+    view("cs", "Computer Science")
+    view("chem", "Chemistry")
+    view("dual", "Dual Enrollment")
+    view("ib", "International Baccalaureate")
+    view("gt", "Gifted and Talented")
+    view("ss", "School Support")
 
     con.execute(
         f"""
@@ -93,12 +99,34 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
             ({_pos("m.SCH_MATHCLASSES_CALC")} > 0)       AS offers_calc,
             {_sum_races("m", "SCH_MATHENR_CALC")}                 AS calc_enroll,
             ({_pos("p.SCH_SCICLASSES_PHYS")} > 0)        AS offers_physics,
-            {_sum_races("p", "SCH_SCIENR_PHYS")}                  AS phys_enroll
+            {_sum_races("p", "SCH_SCIENR_PHYS")}                  AS phys_enroll,
+            ({_pos("cs.SCH_COMPCLASSES_CSCI")} > 0)      AS offers_cs,
+            {_sum_races("cs", "SCH_COMPENR_CSCI")}                AS cs_enroll,
+            ({_pos("ch.SCH_SCICLASSES_CHEM")} > 0)       AS offers_chem,
+            {_sum_races("ch", "SCH_SCIENR_CHEM")}                 AS chem_enroll,
+            (upper(d.SCH_DUAL_IND) = 'YES')              AS offers_dual,
+            {_sum_races("d", "SCH_DUALENR")}                      AS dual_enroll,
+            (upper(ib.SCH_IBENR_IND) = 'YES')            AS offers_ib,
+            {_sum_races("ib", "SCH_IBENR")}                       AS ib_enroll,
+            (upper(g.SCH_GT_IND) = 'YES')                AS offers_gt,
+            {_sum_races("g", "SCH_GTENR")}                        AS gt_enroll,
+            -- Support staff (FTE; NULL when the school did not report, so a true 0 is meaningful).
+            {_posn("ss.SCH_FTECOUNSELORS")}              AS fte_counselors,
+            {_posn("ss.SCH_FTESECURITY_LEO")}            AS fte_police,
+            {_posn("ss.SCH_FTESECURITY_GUA")}            AS fte_guards,
+            {_posn("ss.SCH_FTETEACH_TOT")}               AS fte_teachers,
+            {_posn("ss.SCH_FTETEACH_NOTCERT")}           AS fte_teach_uncert
         FROM chars c
         LEFT JOIN enr  e USING (COMBOKEY)
         LEFT JOIN ap   a USING (COMBOKEY)
         LEFT JOIN calc m USING (COMBOKEY)
         LEFT JOIN phys p USING (COMBOKEY)
+        LEFT JOIN cs   cs USING (COMBOKEY)
+        LEFT JOIN chem ch USING (COMBOKEY)
+        LEFT JOIN dual d USING (COMBOKEY)
+        LEFT JOIN ib   ib USING (COMBOKEY)
+        LEFT JOIN gt   g USING (COMBOKEY)
+        LEFT JOIN ss   ss USING (COMBOKEY)
         -- High schools only: offers any of grades 9-12.
         WHERE upper(c.SCH_GRADE_G09) = 'YES' OR upper(c.SCH_GRADE_G10) = 'YES'
            OR upper(c.SCH_GRADE_G11) = 'YES' OR upper(c.SCH_GRADE_G12) = 'YES'
@@ -119,14 +147,20 @@ def main() -> None:
     out = PARQUET_DIR / "k12.parquet"
     con.execute(f"COPY k12 TO '{out}' (FORMAT PARQUET)")
 
-    n, ap, calc, phys = con.execute(
-        "SELECT count(*), count(*) FILTER (WHERE offers_ap), "
-        "count(*) FILTER (WHERE offers_calc), count(*) FILTER (WHERE offers_physics) FROM k12"
-    ).fetchone()
+    n = con.execute("SELECT count(*) FROM k12").fetchone()[0]
     print(f"high schools: {n:,}")
-    print(f"  offer AP: {ap:,} ({100 * ap / n:.0f}%)")
-    print(f"  offer calculus: {calc:,} ({100 * calc / n:.0f}%)")
-    print(f"  offer physics: {phys:,} ({100 * phys / n:.0f}%)")
+    for label, col in [
+        ("AP", "offers_ap"),
+        ("calculus", "offers_calc"),
+        ("physics", "offers_physics"),
+        ("chemistry", "offers_chem"),
+        ("computer science", "offers_cs"),
+        ("dual enrollment", "offers_dual"),
+        ("IB", "offers_ib"),
+        ("gifted/talented", "offers_gt"),
+    ]:
+        k = con.execute(f"SELECT count(*) FILTER (WHERE {col}) FROM k12").fetchone()[0]
+        print(f"  offer {label}: {k:,} ({100 * k / n:.0f}%)")
     print("\nSample (largest AP programs):")
     for r in con.execute(
         "SELECT name, state, enroll_total, ap_enroll, ap_courses FROM k12 "
