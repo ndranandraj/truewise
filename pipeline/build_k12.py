@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict
+from statistics import median
 
 import duckdb
 
@@ -104,8 +105,57 @@ def main() -> None:
             }
         )
 
+    # Per-state aggregates for the State report cards view.
+    COURSE_COLS = ["ap", "calc", "phys", "chem", "cs", "dual", "ib", "gt"]
+    agg: dict[str, dict] = defaultdict(
+        lambda: {"n": 0, "none3": 0, "no_couns": 0, "ratios": [], **dict.fromkeys(COURSE_COLS, 0)}
+    )
+    offer_map = {
+        "ap": "offers_ap",
+        "calc": "offers_calc",
+        "phys": "offers_physics",
+        "chem": "offers_chem",
+        "cs": "offers_cs",
+        "dual": "offers_dual",
+        "ib": "offers_ib",
+        "gt": "offers_gt",
+    }
+    for r in rows:
+        a = agg[r["state"] or "ZZ"]
+        a["n"] += 1
+        for c in COURSE_COLS:
+            if r[offer_map[c]]:
+                a[c] += 1
+        if not (r["offers_ap"] or r["offers_calc"] or r["offers_physics"]):
+            a["none3"] += 1
+        if r["fte_counselors"] == 0:
+            a["no_couns"] += 1
+        elif r["fte_counselors"] and r["enroll_total"]:
+            a["ratios"].append(r["enroll_total"] / r["fte_counselors"])
+    states = []
+    for st, a in agg.items():
+        n = a["n"]
+        if n < 20:  # skip territories with too few high schools to compare
+            continue
+        states.append(
+            {
+                "state": st,
+                "n": n,
+                "offer": {c: round(100 * a[c] / n) for c in COURSE_COLS},
+                "pct_none3": round(100 * a["none3"] / n),
+                "pct_no_counselor": round(100 * a["no_couns"] / n),
+                "median_ratio": round(median(a["ratios"])) if a["ratios"] else None,
+            }
+        )
+    states.sort(key=lambda x: x["state"])
+
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "schools").mkdir(exist_ok=True)
+    (OUT_DIR / "states.json").write_text(
+        json.dumps(
+            {"generated": True, "vintage": "2020-21", "states": states}, separators=(",", ":")
+        )
+    )
     (OUT_DIR / "index.json").write_text(
         json.dumps(
             {"generated": True, "vintage": "2020-21", "schools": index}, separators=(",", ":")

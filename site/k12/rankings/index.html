@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>State report cards | Truewise</title>
+  <meta name="description" content="How US states compare on high-school opportunity: which states' high schools offer AP, calculus, physics, computer science, and have counselors. Federal data." />
+  <meta property="og:title" content="State report cards: high-school opportunity | Truewise" />
+  <meta property="og:description" content="How states rank on whether their high schools offer advanced courses and have counselors." />
+  <meta property="og:url" content="https://truewise.dev/k12/rankings/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 20; }
+    .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
+    .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+    .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
+    .subnav a.active { color: var(--brand-deep); border-bottom-color: var(--brand); }
+    .subnav span { color: #98a1b0; }
+    .r-head { padding: 44px 0 6px; }
+    .r-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .r-head p.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 62ch; }
+    .metric-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0 4px; }
+    .metric-row label { font-weight: 600; color: var(--ink); }
+    .metric-row select { border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
+    .bars { list-style: none; padding: 0; margin: 18px 0; max-width: 760px; }
+    .bars li { display: grid; grid-template-columns: 150px 1fr 56px; align-items: center; gap: 10px; padding: 4px 0; }
+    .bars .st { font-size: .92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bars .track { height: 16px; background: #eef1f6; border-radius: 5px; overflow: hidden; }
+    .bars .fill { height: 100%; background: var(--brand); border-radius: 5px; }
+    .bars li.hi .fill { background: #b42318; }
+    .bars .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: .92rem; }
+    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 760px; color: var(--ink-soft); font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">true<span>wise</span></a>
+      <nav aria-label="Primary">
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/#data">Data</a>
+        <a href="/#methodology">Methodology</a>
+      </nav>
+    </div>
+  </header>
+  <nav class="subnav" aria-label="High-school views">
+    <div class="wrap">
+      <a href="/k12/">Overview</a>
+      <a href="/k12/advanced-courses/">Courses &amp; staff</a>
+      <a href="/k12/rankings/" class="active">State report cards</a>
+      <a href="/k12/compare/">Compare</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section class="r-head">
+      <h1>State report cards</h1>
+      <p class="lede">How US states compare on high-school opportunity: which states' public high schools
+        offer advanced courses, and where students go without a counselor. Pick a measure to rank the states.</p>
+      <div class="metric-row">
+        <label for="metric">Rank states by high schools that</label>
+        <select id="metric"></select>
+      </div>
+      <p id="sub" class="lede" style="font-size:.95rem;margin:4px 0 0"></p>
+      <ul class="bars" id="bars"></ul>
+      <div class="caveats"><strong>How to read this.</strong> Each bar is the share of a state's public high
+        schools reporting the selected measure to the U.S. Department of Education's Office for Civil Rights
+        (or, for the counselor ratio, the state median students per full-time counselor). States and territories
+        with fewer than 20 high schools are omitted. Data is from the <b>2020-21</b> collection, a pandemic year;
+        course offerings are stable year to year, so this reflects real access differences. Source: U.S. Dept. of
+        Education, Civil Rights Data Collection, 2020-21.</div>
+    </section>
+  </main>
+
+  <script>
+  const NAMES = {AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",PR:"Puerto Rico"};
+  // metric: how to read a state's value; hiWorst = a high value is the "bad"/notable end (colored red).
+  const METRICS = [
+    {id:"calc", label:"offer calculus", get:s=>s.offer.calc, unit:"%", hiWorst:false},
+    {id:"ap", label:"offer Advanced Placement", get:s=>s.offer.ap, unit:"%", hiWorst:false},
+    {id:"phys", label:"offer physics", get:s=>s.offer.phys, unit:"%", hiWorst:false},
+    {id:"chem", label:"offer chemistry", get:s=>s.offer.chem, unit:"%", hiWorst:false},
+    {id:"cs", label:"offer computer science", get:s=>s.offer.cs, unit:"%", hiWorst:false},
+    {id:"dual", label:"offer dual enrollment (college credit)", get:s=>s.offer.dual, unit:"%", hiWorst:false},
+    {id:"none3", label:"offer none of AP, calculus, or physics", get:s=>s.pct_none3, unit:"%", hiWorst:true},
+    {id:"nocouns", label:"have no school counselor", get:s=>s.pct_no_counselor, unit:"%", hiWorst:true},
+    {id:"ratio", label:"students per counselor (state median)", get:s=>s.median_ratio, unit:":1", hiWorst:true},
+  ];
+
+  let STATES = [];
+  const sel = document.getElementById("metric");
+  const bars = document.getElementById("bars");
+  const sub = document.getElementById("sub");
+  METRICS.forEach((m,i)=>{ const o=document.createElement("option"); o.value=i; o.textContent=m.label; sel.appendChild(o); });
+
+  function draw() {
+    const m = METRICS[+sel.value];
+    const rows = STATES.map(s => ({ st: s.state, v: m.get(s) })).filter(r => r.v != null);
+    rows.sort((a,b) => m.hiWorst ? b.v - a.v : b.v - a.v); // always descending
+    const max = Math.max(...rows.map(r => r.v), 1);
+    sub.textContent = m.hiWorst
+      ? `States where the most high schools ${m.label} are at the top.`
+      : `States where the most high schools ${m.label} are at the top.`;
+    bars.innerHTML = rows.map((r, idx) => {
+      const w = Math.round(r.v / max * 100);
+      const hi = m.hiWorst && idx < 5;
+      const val = m.unit === ":1" ? `${r.v.toLocaleString()}:1` : `${r.v}%`;
+      return `<li class="${hi ? "hi" : ""}"><span class="st">${idx+1}. ${NAMES[r.st] || r.st}</span>
+        <span class="track"><span class="fill" style="width:${w}%"></span></span>
+        <span class="v">${val}</span></li>`;
+    }).join("");
+  }
+  sel.addEventListener("change", draw);
+
+  fetch("/k12/data/states.json").then(r=>r.json()).then(j => { STATES = j.states; draw(); });
+  </script>
+</body>
+</html>

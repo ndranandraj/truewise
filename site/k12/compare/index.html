@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compare high schools | Truewise</title>
+  <meta name="description" content="Put US public high schools side by side on the advanced courses they offer and their staffing, from federal Civil Rights Data Collection data." />
+  <meta property="og:title" content="Compare high schools | Truewise" />
+  <meta property="og:description" content="Compare public high schools side by side on courses offered and staffing." />
+  <meta property="og:url" content="https://truewise.dev/k12/compare/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 20; }
+    .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
+    .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
+    .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
+    .subnav a.active { color: var(--brand-deep); border-bottom-color: var(--brand); }
+    .c-head { padding: 44px 0 6px; }
+    .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .c-head p.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 62ch; }
+    .searchbox { display: flex; align-items: center; gap: 10px; margin: 18px 0 6px; border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px; max-width: 620px; background: #fff; transition: border-color .15s; }
+    .searchbox:focus-within { border-color: var(--brand); }
+    .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.05rem; padding: 11px 0; background: transparent; }
+    .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
+    .results li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; cursor: pointer; background: #fff; }
+    .results li:hover { border-color: var(--brand); }
+    .results li .meta { color: var(--ink-soft); font-size: .86rem; }
+    .hint { color: var(--ink-soft); font-size: .9rem; }
+    .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; }
+    table.cmp { border-collapse: collapse; width: 100%; font-size: .93rem; }
+    table.cmp th, table.cmp td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    table.cmp thead th { background: var(--bg-alt); position: sticky; top: 64px; }
+    table.cmp tbody th { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+    table.cmp .schname { font-weight: 700; }
+    table.cmp .schmeta { color: var(--ink-soft); font-size: .82rem; font-weight: 400; }
+    table.cmp .rm { color: #b42318; cursor: pointer; font-size: .8rem; font-weight: 600; }
+    .yes { color: #067647; font-weight: 700; } .no { color: #98a1b0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .empty { color: var(--ink-soft); padding: 16px 0; }
+    @media (max-width: 560px) { table.cmp thead th { top: 0; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="/">true<span>wise</span></a>
+      <nav aria-label="Primary">
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/#data">Data</a>
+        <a href="/#methodology">Methodology</a>
+      </nav>
+    </div>
+  </header>
+  <nav class="subnav" aria-label="High-school views">
+    <div class="wrap">
+      <a href="/k12/">Overview</a>
+      <a href="/k12/advanced-courses/">Courses &amp; staff</a>
+      <a href="/k12/rankings/">State report cards</a>
+      <a href="/k12/compare/" class="active">Compare</a>
+    </div>
+  </nav>
+
+  <main class="wrap">
+    <section class="c-head">
+      <h1>Compare high schools</h1>
+      <p class="lede">Put schools side by side, your options, or a school and the one across town, on the advanced
+        courses they offer and who's on staff. Add up to four.</p>
+      <div class="searchbox">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="search" autocomplete="off" placeholder="Search a public high school to add…" />
+      </div>
+      <ul class="results" id="results"></ul>
+      <div id="cmp"></div>
+    </section>
+  </main>
+
+  <script>
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num = n => n == null ? "n/a" : Number(n).toLocaleString();
+  const yn = b => b ? `<span class="yes">Offered</span>` : `<span class="no">&mdash;</span>`;
+  let INDEX = null;
+  const stateCache = {};
+  const picked = [];          // {k, rec}
+  const MAX = 4;
+
+  const COURSES = [["calc","Calculus"],["phys","Physics"],["chem","Chemistry"],["cs","Computer science"],
+                   ["ap","Advanced Placement"],["ib","International Baccalaureate"],["dual","Dual enrollment"],["gt","Gifted & talented"]];
+
+  async function loadIndex() {
+    if (INDEX) return INDEX;
+    INDEX = (await (await fetch("/k12/data/index.json")).json()).schools;
+    return INDEX;
+  }
+  async function loadState(st) {
+    if (!stateCache[st]) stateCache[st] = await (await fetch("/k12/data/schools/" + st + ".json")).json();
+    return stateCache[st];
+  }
+
+  const q = document.getElementById("q"), results = document.getElementById("results"), cmp = document.getElementById("cmp");
+  let t;
+  q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
+  async function search() {
+    await loadIndex();
+    const term = q.value.trim().toLowerCase();
+    if (term.length < 3) { results.innerHTML = ""; return; }
+    const hits = INDEX.filter(s => (s.n || "").toLowerCase().includes(term)).slice(0, 8);
+    results.innerHTML = hits.length ? hits.map(s =>
+      `<li data-k="${s.k}" data-s="${s.s}"><b>${esc(s.n)}</b> <span class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</span></li>`).join("")
+      : `<li class="empty">No high schools match.</li>`;
+    results.querySelectorAll("li[data-k]").forEach(li =>
+      li.addEventListener("click", () => add(li.dataset.k, li.dataset.s)));
+  }
+  async function add(k, st) {
+    if (picked.length >= MAX || picked.some(p => p.k === k)) return;
+    const rec = (await loadState(st))[k];
+    if (rec) { picked.push({ k, rec }); q.value = ""; results.innerHTML = ""; render(); }
+  }
+  function remove(k) { const i = picked.findIndex(p => p.k === k); if (i > -1) { picked.splice(i, 1); render(); } }
+
+  function render() {
+    if (!picked.length) { cmp.innerHTML = `<p class="hint">Search above to add schools to compare.</p>`; return; }
+    const cols = picked.map(p => p.rec);
+    const head = `<tr><th></th>${picked.map(p => {
+      const s = p.rec;
+      return `<th><div class="schname">${esc(s.name)}</div><div class="schmeta">${esc(s.district || "")} · ${esc(s.state)}</div>
+        <div class="rm" data-k="${p.k}">remove</div></th>`;
+    }).join("")}</tr>`;
+    const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+    const rows = [];
+    rows.push(row("Students", cols.map(s => `<span class="num">${num(s.enroll)}</span>`)));
+    COURSES.forEach(([key, label]) => rows.push(row(label, cols.map(s => yn(s.courses[key].offered)))));
+    rows.push(row("Students per counselor", cols.map(s =>
+      s.staff.no_counselor ? `<span class="no">No counselor</span>` : s.staff.counselor_ratio != null ? `<span class="num">${s.staff.counselor_ratio}:1</span>` : "n/a")));
+    rows.push(row("Police officer on staff", cols.map(s => s.staff.police ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
+    rows.push(row("Security guards", cols.map(s => s.staff.guard ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
+    rows.push(row("Teachers not certified", cols.map(s => s.staff.uncert_pct != null ? `<span class="num">${s.staff.uncert_pct}%</span>` : "n/a")));
+    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.querySelectorAll(".rm").forEach(b => b.addEventListener("click", () => remove(b.dataset.k)));
+  }
+  render();
+  </script>
+</body>
+</html>
