@@ -1,74 +1,72 @@
 # Truewise
 
-A public-data platform that turns scattered US federal education data into clear, honest
-guidance for students and families. Mission: replace the scary or hidden number (sticker
-price, anecdote, unclaimed aid) with the real one, drawn from public data.
+Open, honest US education data for students and families. Truewise turns scattered public
+federal data into clear answers: does a college program's graduates out-earn a high-school
+graduate, what do families actually pay, what does a major lead to, and what do public high
+schools offer. Live at **[truewise.dev](https://truewise.dev)**. Not affiliated with the
+U.S. Department of Education.
 
-- **Name:** Truewise
-- **Domain:** [truewise.dev](https://truewise.dev) (registered 2026-07-13)
-- **Stage:** **Value Check is live** at [truewise.dev/value-check](https://truewise.dev/value-check/)
- , look up any US college program and see whether its graduates out-earn a typical
-  high-school graduate, using ED's own figures.
-- **Nature:** Portfolio / skills / social-impact project. ~$0 direct revenue expected.
+## The headline finding
 
-## Use the data
+Of the college programs with reported earnings, about **1 in 11 (9%)** leave graduates
+earning less than a typical high-school graduate, measured up to four years after finishing,
+using the Department of Education's own College Scorecard figures. Only about **26% of
+programs** have earnings data (the rest are privacy-suppressed by ED for small cohorts); we
+compute the rate on the reported set and say so. Among cosmetology programs specifically,
+**96%** fall short.
 
-The cleaned, joined dataset ships as a Python package (data licensed CC-BY-4.0):
+Full derivation, denominators, and caveats: [truewise.dev/methodology](https://truewise.dev/methodology/)
+and [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md). We also publish the audit that caught our own
+one-year-vs-four-year earnings bug: [`docs/AUDIT.md`](docs/AUDIT.md).
+
+## What's live
+
+- **Value Check**, per-program earnings vs the state high-school-graduate benchmark, with debt.
+- **Affordability**, net price by family-income bracket, on every school profile.
+- **ROI**, years for the earnings premium to recoup typical debt.
+- **Mobility**, Pell share, completion, and earnings outcomes with a transparent hidden-gem rule.
+- **Careers** ([/careers](https://truewise.dev/careers/)), what a major pays plus BLS occupation
+  pay and outlook.
+- **High schools** ([/k12](https://truewise.dev/k12/)), advanced-course access, staffing, and
+  state report cards, from the Civil Rights Data Collection.
+
+## Reproduce the numbers
+
+The joined dataset is committed under `published/` and the headline script is
+`analysis/summary.py`:
 
 ```bash
-pip install truewise-data
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+mkdir -p data/parquet && cp published/value_check.parquet data/parquet/   # committed build source
+python -m analysis.summary                                                # prints + writes the headline numbers
+python -m analysis.validate                                               # data-quality gate
+pytest                                                                    # unit + integration tests
+```
+
+To rebuild from the raw Scorecard files (needs network to download them), see `pipeline/README.md`
+and the `Makefile` targets (`make data && make spine && make flags`).
+
+## Use the dataset
+
+The cleaned, joined program-level dataset is CC-BY-4.0. It lives in
+[`packages/truewise-data/`](packages/truewise-data/) and `published/`. Column definitions are in
+[`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md). Until the PyPI release, install from source:
+
+```bash
+pip install ./packages/truewise-data
 ```
 ```python
 import truewise_data as tw
 df = tw.load_value_check(decided_only=True)   # earnings vs a HS-grad benchmark, per program
 ```
 
-Source in [`packages/truewise-data/`](packages/truewise-data/); columns in
-[`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md).
+## Data sources
 
-## Read these first
-1. **docs/BRIEF.md**, one-page product brief (mission, modules, principles).
-2. **DATA_SOURCES.md**, dataset URLs, grain, key fields, join keys.
+- U.S. Dept. of Education **College Scorecard** (Field-of-Study + Institution), release 2026-06-10.
+- **NCES CIP-to-SOC crosswalk**, **BLS OEWS** (May 2023) and **Employment Projections** (2023-33).
+- **Civil Rights Data Collection (CRDC)**, 2020-21.
 
-## Quick start (for the takeover session)
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-# Get a free College Scorecard API key: https://api.data.gov/signup/
-# Then follow pipeline/load_scorecard.py (has TODOs marking the first steps)
-python pipeline/load_scorecard.py
-```
+## License
 
-## Repo layout
-```
-.
-├── README.md  CLAUDE.md  PLAN.md  HANDOFF.md  DATA_SOURCES.md
-├── LICENSE                    # MIT (code); published datasets are CC-BY
-├── pyproject.toml             # ruff + pytest config
-├── requirements.txt           # pipeline deps
-├── requirements-dev.txt       # ruff, pytest, pre-commit
-├── .pre-commit-config.yaml
-├── .github/workflows/ci.yml   # lint → test → build → deploy (placeholder)
-├── pipeline/                  # download + load + transform (the shared spine)
-│   └── load_scorecard.py      # starter stub for the Scorecard loader
-├── site/                      # static frontend (index.html + styles.css)
-├── tests/                     # pytest (smoke tests today; validation later)
-├── docs/                      # BRIEF.md, IMPACT_LOG.md, GO_PUBLIC.md
-├── analysis/                  # reproducible analysis scripts (STATS what-if, etc.)
-├── archive/fvt/               # dated FVT/GE snapshots (Iteration 2)
-└── data/                      # gitignored: raw/ and parquet/ working sets
-```
-
-## Dev quick start
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements-dev.txt
-pre-commit install
-ruff check . && ruff format --check . && pytest
-```
-
-## First milestone (M1, news-window MVP)
-Data spine (College Scorecard) → **Value Check** (flagship) + FVT/GE monitor → published
-dataset + `truewise-data` package + methodology write-up + press. See the v2 plan and the
-Iteration Plan checklist. Iterations 0–4 target well before the 2026-10-01 FVT reporting cycle
-close.
+Code is MIT (see `LICENSE`). The published dataset is CC-BY-4.0.

@@ -14,6 +14,10 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# FUSE mount artifacts (must never be committed)
+.fuse_hidden*
+**/.fuse_hidden*
+
 # OS / editor
 .DS_Store
 .idea/
@@ -29,6 +33,10 @@ __pycache__/
 /College ROI Analyzer - Project Plan.pdf
 /docs/IMPACT_LOG.md
 /docs/GO_PUBLIC.md
+# Internal review / design working files, never publish
+truewise-authenticity-review*.md
+Truewise.dev design review.zip
+truewise-design-improvement-plan.md
 
 # FVT Monitor: keep provenance + the compact dated snapshot, ignore the bulky raw dumps
 archive/**/*.zip

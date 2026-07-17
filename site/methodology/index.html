@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Methodology | Truewise</title>
+  <meta name="description" content="How Truewise computes every number: the federal earnings-premium test, the exact denominators and horizons behind the headline, the audit that caught our own bug, and each module's method." />
+  <meta property="og:title" content="Methodology | Truewise" />
+  <meta property="og:description" content="How Truewise computes every number, with the denominators, caveats, and the audit behind it." />
+  <meta property="og:url" content="https://truewise.dev/methodology/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .doc { max-width: 760px; padding: 40px 0 64px; }
+    .doc h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 8px; }
+    .doc .updated { color: var(--ink-faint); font-size: .9rem; margin: 0 0 28px; }
+    .doc h2 { font-size: 1.35rem; letter-spacing: -0.02em; margin: 34px 0 8px; }
+    .doc h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+    .doc p, .doc li { color: var(--ink-soft); line-height: 1.65; font-size: 1rem; }
+    .doc b, .doc strong { color: var(--ink); }
+    .doc ul { padding-left: 22px; }
+    .doc a { color: var(--brand); }
+    .doc code, .doc .mono { font-family: var(--mono); font-size: .88rem; background: var(--bg-alt); padding: 2px 6px; border-radius: 5px; }
+    .callout { border-left: 3px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 18px 0; }
+    .callout.audit { border-left-color: var(--good); }
+    .repro { font-size: .9rem; color: var(--ink-faint); margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand-group"><a class="brand" href="/">true<span>wise</span></a></div>
+      <nav aria-label="Primary">
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap doc">
+    <h1>Methodology</h1>
+    <p class="updated">How every number on Truewise is computed. Last updated 2026-07-17. Data vintages: College
+      Scorecard release 2026-06-10; BLS OEWS May 2023 + Employment Projections 2023-33; CRDC 2020-21.</p>
+
+    <h2>Sources</h2>
+    <p>Everything comes from public U.S. federal data. College outcomes use two College Scorecard bulk files
+      (most recent release, 2026-06-10), joined on the IPEDS <span class="mono">UNITID</span>: the
+      <b>Field-of-Study file</b> (per program: median earnings after completion, median debt) and the
+      <b>Institution file</b> (the state and national high-school-graduate earnings thresholds). Careers demand
+      adds the <b>NCES CIP-to-SOC crosswalk</b>, <b>BLS OEWS</b> wages, and <b>BLS Employment Projections</b>.
+      High-school data comes from the <b>Civil Rights Data Collection (CRDC)</b>.</p>
+
+    <h2>The earnings-premium test (Value Check)</h2>
+    <p>For each program (school × 4-digit CIP × credential) we take median earnings <b>four years after
+      completion</b>, the same figure the Department of Education displays on the public College Scorecard site,
+      falling back to the one-year figure only where the four-year value is suppressed, and compare it to the
+      state high-school-graduate earnings threshold:</p>
+    <ul>
+      <li><b>Passes</b>: median earnings are at or above the state threshold.</li>
+      <li><b>Falls short</b>: median earnings are below it.</li>
+      <li><b>Insufficient data</b>: earnings are suppressed (small cohort) or no threshold is available. These are
+        shown as "not enough data", never guessed.</li>
+    </ul>
+
+    <h2>The headline number, in full</h2>
+    <p>Our headline is that <b>1 in 11 college programs with reported earnings</b> leave graduates earning less
+      than a typical high-school graduate. Here is exactly what is behind it, including the parts most coverage
+      leaves out:</p>
+    <ul>
+      <li><b>Denominator.</b> Of 227,980 programs, only <b>60,202 (about 26%)</b> have earnings data; the rest
+        are privacy-suppressed by ED for small cohorts. The 1-in-11 rate is computed on the reported-earnings set:
+        5,396 of 60,202 fall short (8.96%, or 1 in 11.2).</li>
+      <li><b>Horizon.</b> Earnings are measured up to four years after completing. Where the four-year figure is
+        suppressed we fall back to the one-year figure, and about 27% of the failing programs use that fallback.
+        On strictly four-year rows the rate is 7.0% (3,914 of 55,539), roughly <b>1 in 14</b>. We report the
+        broader 1-in-11 figure and tag one-year rows with a visible "1-yr" marker so you can weigh them.</li>
+      <li><b>Cosmetology.</b> Among cosmetology programs (CIP 12.04) specifically, <b>96%</b> fall short
+        (1,078 of 1,120 with data).</li>
+    </ul>
+    <p class="repro">Reproduce these numbers: the dataset lives in <code>published/value_check.parquet</code> and
+      the exact script is <code>analysis/summary.py</code> in the
+      <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>
+
+    <h2>Principles</h2>
+    <ul>
+      <li><b>Never impute.</b> Suppressed values (<span class="mono">PS</span>, <span class="mono">NA</span>)
+        become null and render as "insufficient data", never guessed. This rule is enforced by a data-quality
+        gate (<code>analysis/validate.py</code>) with unit tests.</li>
+      <li><b>Every figure carries its source and cohort year.</b> Earnings reflect the recent past; we frame them
+        as "graduates typically earned", never as a promise.</li>
+      <li><b>A flag describes the data.</b> It never tells anyone whether to attend a program.</li>
+    </ul>
+
+    <div class="callout audit">
+      <h3 style="margin-top:0">The audit that caught our own bug</h3>
+      <p style="margin:0">When we checked Value Check against ED's live College Scorecard site, we found we had
+        originally used <b>one-year</b> earnings while ED publishes the <b>four-year</b> figure. We fixed it to
+        prefer four-year earnings (falling back to one-year only when suppressed), which changed the headline fail
+        rate from 33% to 9% and now matches ED to the dollar (for example UCLA Economics $95,440, Psychology
+        $61,050, Sociology $64,692). We publish this because finding and fixing your own error is the honest thing
+        to do. Full write-up: <a href="https://github.com/ndranandraj/truewise/blob/main/docs/AUDIT.md">AUDIT.md</a>.</p>
+    </div>
+
+    <h2>Why do other studies say 1 in 4?</h2>
+    <p>Some coverage (for example a widely cited HEA Group study) reports that attendees of about 1 in 4 higher-ed
+      programs earn less than high-school graduates. The difference from our 1 in 11 is not a contradiction, it is
+      three definitional choices:</p>
+    <ul>
+      <li><b>Who counts.</b> Studies that count <i>attendees</i> (including non-completers) show higher failure
+        rates than ones that count <i>graduates</i>, as we do here.</li>
+      <li><b>The benchmark.</b> A national high-school-earnings line, a state line, or an age-adjusted line each
+        move the bar. We use ED's own state threshold.</li>
+      <li><b>The denominator.</b> Including or excluding privacy-suppressed programs changes the base. We are
+        explicit that ours is the 27% of programs with reported earnings.</li>
+    </ul>
+    <p>All three are defensible; we state ours plainly so the number is reproducible.</p>
+
+    <h2>The other modules, in brief</h2>
+    <p><b>Affordability</b> shows net price by family-income bracket (College Scorecard <span class="mono">NPT41</span>
+      to <span class="mono">NPT45</span>), coalesced across a school's sector; suppressed brackets show as "not
+      reported". <b>ROI</b> divides a program's median federal debt by its yearly earnings premium over a
+      high-school graduate (years to recoup what was borrowed); it is null when there is no premium or no debt.
+      <b>Mobility</b> puts Pell share, completion, and the earnings-premium pass rate side by side against the
+      national median, with a transparent "hidden gem" rule (beats all three medians); it is an access-and-outcomes
+      view, not the Chetty income-mobility rate. <b>Careers</b> pools program earnings to the field level and joins
+      BLS occupation pay and outlook through the NCES CIP-to-SOC crosswalk. <b>High schools</b> report, from the
+      CRDC, which advanced courses a school offers, participation, and staffing (counselors, security).</p>
+    <p>Full detail for every module is in
+      <a href="https://github.com/ndranandraj/truewise/blob/main/docs/METHODOLOGY.md">METHODOLOGY.md</a> and the
+      <a href="https://github.com/ndranandraj/truewise/blob/main/docs/DATA_DICTIONARY.md">data dictionary</a>.</p>
+
+    <h2>Known limitations</h2>
+    <ul>
+      <li>Earnings cohorts predate the current year; figures describe past graduates.</li>
+      <li>The debt-to-earnings ratio shown is a plain ratio, not the amortized federal D/E rate.</li>
+      <li>High-school data is the <b>2020-21</b> CRDC, a pandemic year; course offerings are fairly stable year to
+        year but participation counts should be read with that in mind. The collection year is labeled on every
+        high-school page.</li>
+      <li>The Careers occupation layer uses a many-to-many CIP-to-occupation crosswalk, so it lists the
+        occupations a field commonly leads to rather than predicting any one graduate's job.</li>
+    </ul>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a></p>
+      <p class="muted">A portfolio &amp; social-impact project · Not affiliated with the US Department of Education.</p>
+    </div>
+  </footer>
+</body>
+</html>

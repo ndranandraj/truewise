@@ -43,12 +43,15 @@ def main() -> None:
         """
     ).fetchall()
 
+    # Group at the 4-digit CIP so the label matches the field (grouping at 2 digits and
+    # labelling with any member's description mislabelled families, e.g. tagging the whole
+    # CIP-12 family as "cosmetology").
     worst_cip = con.execute(
         """
-        SELECT left(cip_code, 2) AS cip2, any_value(cip_desc) AS example,
+        SELECT cip_code AS cip, any_value(cip_desc) AS example,
                count(*) FILTER (WHERE value_flag = 'fails_earnings_premium') AS fails,
                count(*) FILTER (WHERE value_flag != 'insufficient_data')      AS decided
-        FROM v WHERE cip_code IS NOT NULL GROUP BY cip2
+        FROM v WHERE cip_code IS NOT NULL GROUP BY cip_code
         HAVING decided >= 100 ORDER BY fails * 1.0 / decided DESC LIMIT 10
         """
     ).fetchall()
@@ -66,7 +69,7 @@ def main() -> None:
             for s, f, d in by_state
         ],
         "highest_fail_rate_fields": [
-            {"cip2": c, "example": ex, "fails": f, "decided": d, "fail_rate": round(f / d, 4)}
+            {"cip": c, "example": ex, "fails": f, "decided": d, "fail_rate": round(f / d, 4)}
             for c, ex, f, d in worst_cip
         ],
     }

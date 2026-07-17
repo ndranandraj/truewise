@@ -71,7 +71,7 @@
         <a href="/careers/">Careers</a>
         <a href="/k12/">High schools</a>
         <a href="/#data">Data</a>
-        <a href="/#methodology">Methodology</a>
+        <a href="/methodology/">Methodology</a>
       </nav>
     </div>
   </header>
@@ -220,7 +220,8 @@
         the middle half (25th to 75th percentile) of school-level medians, so it shows how much the same major
         varies by where you study. "Clear the bar" is the share of programs whose graduates out-earn a typical
         high-school graduate (the federal earnings-premium test). These describe past graduates, not a promise.
-        Source: ${DATA_VINTAGE}. <a href="/#methodology">Methodology</a>.</div>`;
+        Earnings source: ${DATA_VINTAGE}. Occupation pay and outlook: U.S. Bureau of Labor Statistics, OEWS
+        May 2023 wages and Employment Projections 2023-33. <a href="/methodology/">Methodology</a>.</div>`;
     app.querySelectorAll(".credlink").forEach(a =>
       a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     wireBack();

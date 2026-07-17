@@ -20,6 +20,24 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Truewise Value Check dataset",
+    "description": "A clean, joined dataset of US college program earnings vs the state high-school-graduate earnings benchmark (the federal earnings-premium test), plus debt and net price, derived from the U.S. Department of Education College Scorecard.",
+    "license": "https://creativecommons.org/licenses/by/4.0/",
+    "url": "https://truewise.dev",
+    "creator": { "@type": "Organization", "name": "Truewise" },
+    "isBasedOn": "https://collegescorecard.ed.gov/data",
+    "datePublished": "2026-06-10",
+    "temporalCoverage": "2026-06-10",
+    "keywords": ["college earnings", "college ROI", "financial value transparency", "College Scorecard"],
+    "distribution": [
+      { "@type": "DataDownload", "encodingFormat": "application/x-parquet", "contentUrl": "https://raw.githubusercontent.com/ndranandraj/truewise/main/published/value_check.parquet" }
+    ]
+  }
+  </script>
 </head>
 <body>
   <header class="site-header">
@@ -32,7 +50,8 @@
         <a href="/careers/">Careers</a>
         <a href="/k12/">High schools</a>
         <a href="#data">Data</a>
-        <a href="#methodology">Methodology</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
         <a class="nav-cta" href="/value-check/">Find a college</a>
         <details class="nav-toggle">
           <summary aria-label="Menu">&#9776;</summary>
@@ -40,7 +59,8 @@
             <a href="/careers/">Careers</a>
             <a href="/k12/">High schools</a>
             <a href="#data">Data</a>
-            <a href="#methodology">Methodology</a>
+            <a href="/methodology/">Methodology</a>
+            <a href="/about/">About</a>
           </div>
         </details>
       </nav>
@@ -55,7 +75,7 @@
           <h1>The honest number behind US&nbsp;education.</h1>
           <p class="lede">
             Look up any US college and see, program by program, whether its graduates out-earn a
-            high-school graduate — and what families actually pay.
+            high-school graduate, and what families actually pay.
           </p>
           <form class="hero-search" action="/value-check/" method="get" role="search">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b95a7" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -72,21 +92,21 @@
           </header>
           <div class="example-row">
             <div>
-              <p class="program">Psychology, BA — Baylor University</p>
-              <p class="earned">Graduates 4 yrs out earned roughly <b>$48,700</b></p>
+              <p class="program">Psychology, BA, Baylor University</p>
+              <p class="earned">Graduates 4 yrs out earned roughly <b>$65,090</b></p>
             </div>
-            <span class="verdict up">&#9650; +42%</span>
+            <span class="verdict up">&#9650; +87%</span>
           </div>
           <div class="example-row">
             <div>
-              <p class="program">Nursing, ADN — (your local CC)</p>
+              <p class="program">Nursing, ADN, (your local CC)</p>
               <p class="earned">Graduates 4 yrs out earned roughly <b>$61,200</b></p>
             </div>
             <span class="verdict up">&#9650; +78%</span>
           </div>
           <div class="example-row">
             <div>
-              <p class="program">Cosmetology, Cert. — (example)</p>
+              <p class="program">Cosmetology, Cert., (example)</p>
               <p class="earned">Graduates 4 yrs out earned roughly <b>$24,100</b></p>
             </div>
             <span class="verdict down">&#9660; &minus;30%</span>
@@ -106,10 +126,11 @@
           </div>
         </div>
         <div>
-          <p class="finding-stat"><b>1 in 11</b> college programs leave graduates earning less than a typical high-school graduate.</p>
+          <p class="finding-stat"><b>1 in 11</b> college programs with reported earnings leave graduates earning less than a typical high-school graduate.</p>
           <p class="finding-body">
-            Even four years after finishing — from the Department of Education's own 2026 data.
-            Among cosmetology programs it rises to <b>86%</b>.
+            Measured up to four years after finishing, from the Department of Education's own 2026 data.
+            Only about a quarter of programs have reported earnings (the rest are privacy-suppressed by ED);
+            among cosmetology programs, <b>96%</b> fall short.
           </p>
         </div>
         <a class="cta" href="/value-check/">Look one up &rarr;</a>
@@ -143,8 +164,8 @@
           <a class="live-card" href="/k12/">
             <h3>High schools</h3>
             <p>
-              Which US public high schools offer AP, calculus, and physics — about 1 in 4 offer
-              none — with financial-aid views on the way.
+              Which US public high schools offer AP, calculus, and physics (about 1 in 4 offer none),
+              plus counselors, staffing, and how states compare. Federal data, 2020-21.
             </p>
             <span class="live-cta">Open the high-school hub &rarr;</span>
           </a>
@@ -172,13 +193,13 @@
         <div>
           <h2>Open data, not another comparison site</h2>
           <p class="prose">
-            Truewise is open data infrastructure researchers and journalists can build on — the
+            Truewise is open data infrastructure researchers and journalists can build on, the
             website is the demo layer. Everything comes from public federal sources (College
             Scorecard, IPEDS, Federal Student Aid), cleaned into one documented dataset with a
             reproducible pipeline, published under an open license.
           </p>
           <div class="data-actions">
-            <span class="pip">$ pip install truewise-data</span>
+            <span class="pip">truewise-data · open CC-BY dataset</span>
             <a href="https://github.com/ndranandraj/truewise">Source &amp; data on GitHub &rarr;</a>
           </div>
         </div>
@@ -186,8 +207,8 @@
           <h3>How we stay honest</h3>
           <ul>
             <li>Every number carries its <b>source and cohort year</b></li>
-            <li>We never impute — thin data says <b>&ldquo;insufficient data&rdquo;</b></li>
-            <li>Figures are framed as <b>&ldquo;students like you earned roughly&rdquo;</b> — never a promise</li>
+            <li>We never impute, thin data says <b>&ldquo;insufficient data&rdquo;</b></li>
+            <li>Figures are framed as <b>&ldquo;students like you earned roughly&rdquo;</b>, never a promise</li>
           </ul>
         </div>
       </div>
@@ -196,7 +217,7 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <span id="data-vintage">data vintages shown per page</span></p>
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <span id="data-vintage">College Scorecard 2026-06-10 · CRDC 2020-21 · checked monthly</span></p>
       <p class="muted">A portfolio &amp; social-impact project · Not affiliated with the US Department of Education.</p>
     </div>
   </footer>
