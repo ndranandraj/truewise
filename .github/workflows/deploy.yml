@@ -41,6 +41,11 @@ jobs:
           [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
 
+      - name: Data-quality gate + tests (block deploy on failure)
+        run: |
+          python -m analysis.validate
+          pytest -q
+
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:
