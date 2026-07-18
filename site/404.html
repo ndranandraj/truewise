@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Page not found | Truewise</title>
+  <meta name="description" content="That page could not be found. Search for a US college, or head back to the Truewise home page." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .nf { max-width: 640px; padding: 72px 0 80px; text-align: center; margin: 0 auto; }
+    .nf .code { font-family: var(--mono); color: var(--ink-faint); letter-spacing: .1em; font-size: .9rem; }
+    .nf h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 8px 0 10px; }
+    .nf p { color: var(--ink-soft); font-size: 1.08rem; line-height: 1.6; margin: 0 auto 24px; max-width: 52ch; }
+    .nf form { display: flex; gap: 8px; max-width: 440px; margin: 0 auto 22px; }
+    .nf input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 1rem; color: var(--ink); }
+    .nf button { border: 0; border-radius: 10px; padding: 12px 18px; font-size: 1rem; font-weight: 700; background: var(--brand); color: #fff; cursor: pointer; }
+    .nf .links { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; font-size: .98rem; }
+    .nf .links a { color: var(--brand); text-decoration: none; font-weight: 600; }
+    .nf .links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand-group"><a class="brand" href="/">true<span>wise</span></a></div>
+      <nav aria-label="Primary">
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="nf">
+      <p class="code">404</p>
+      <h1>That page is not here</h1>
+      <p>The link may be old or mistyped. If you were looking for a college, search for it below.
+        Everything on Truewise comes from public federal data.</p>
+      <form action="/value-check/" method="get">
+        <input type="search" name="q" placeholder="Search for a US college" aria-label="Search for a US college" autofocus />
+        <button type="submit">Search</button>
+      </form>
+      <div class="links">
+        <a href="/">Home</a>
+        <a href="/value-check/">Find a college</a>
+        <a href="/k12/">High schools</a>
+        <a href="/methodology/">Methodology</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+      <p class="muted">A portfolio &amp; social-impact project &middot; Not affiliated with the US Department of Education.</p>
+    </div>
+  </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
+</body>
+</html>

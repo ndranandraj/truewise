@@ -16,6 +16,34 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://truewise.dev/#website",
+        "name": "Truewise",
+        "url": "https://truewise.dev",
+        "description": "Open, honest US federal education data for students and families.",
+        "inLanguage": "en-US",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "@type": "Person",
+        "@id": "https://truewise.dev/about/#anandraj",
+        "name": "Anandraj",
+        "description": "Independent data practitioner; builder and maintainer of Truewise.",
+        "url": "https://ndranandraj.com",
+        "sameAs": [
+          "https://ndranandraj.com",
+          "https://www.linkedin.com/in/ndranandraj",
+          "https://github.com/ndranandraj"
+        ]
+      }
+    ]
+  }
+  </script>
   <style>
     .doc { max-width: 720px; padding: 40px 0 64px; }
     .doc h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 8px; }
@@ -48,22 +76,36 @@
       offer. It is <b>free, ad-free, and open</b>, and it always shows its work.</p>
 
     <h2>Who builds it</h2>
-    <p>Truewise is built and maintained by <b>Anand</b>, an independent data practitioner, as a
+    <p>Truewise is built and maintained by <b>Anandraj</b>, an independent data practitioner, as a
       portfolio and public-interest project. The source, the pipeline, and the data are all public
       on <a href="https://github.com/ndranandraj/truewise">GitHub</a>, so any journalist or
-      researcher can check, reproduce, or build on every number. Questions, corrections, and data
-      requests are welcome via <a href="https://github.com/ndranandraj/truewise/issues">GitHub
+      researcher can check, reproduce, or build on every number. More about the maintainer at
+      <a href="https://ndranandraj.com">ndranandraj.com</a> and on
+      <a href="https://www.linkedin.com/in/ndranandraj">LinkedIn</a>. Questions, corrections, and
+      data requests are welcome via <a href="https://github.com/ndranandraj/truewise/issues">GitHub
       issues</a>.</p>
 
     <h2>Independence</h2>
     <ul>
       <li>Not affiliated with the U.S. Department of Education or any government agency.</li>
       <li>No ads, no sponsorships, no paid placements, and roughly zero revenue by design.</li>
+      <li>No cookies and no cross-site or advertising trackers. The only measurement is Cloudflare
+        Web Analytics, which is cookieless and aggregate, so we can see whether the work is reaching
+        people; it stores no personal data and never identifies a visitor.</li>
       <li>Every figure carries its source and cohort year; nothing is imputed, and thin data is
         shown as "insufficient data", never guessed.</li>
       <li>When we find our own mistakes we publish the fix, see the audit note in the
         <a href="/methodology/">methodology</a>.</li>
     </ul>
+
+    <h2>Corrections</h2>
+    <p>If a number looks wrong, please say so. Every page has a <b>Report an error</b> link in the
+      footer that opens a prefilled <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&amp;title=Correction&amp;body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">GitHub
+      issue</a>; reporters or anyone who does not use GitHub can email
+      <a href="mailto:contact@truewise.dev">contact@truewise.dev</a>. Confirmed data errors
+      are corrected promptly, usually within a few days, and every fix is public in the repository
+      history. The audit note in the <a href="/methodology/">methodology</a> is an example of that in
+      practice.</p>
 
     <h2>Why</h2>
     <p>Most college and school comparison tools hide the number that matters behind a sticker price,
@@ -74,9 +116,11 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a></p>
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
       <p class="muted">A portfolio &amp; social-impact project · Not affiliated with the US Department of Education.</p>
     </div>
   </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
 </body>
 </html>

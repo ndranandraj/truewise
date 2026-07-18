@@ -1,0 +1,5 @@
+# Truewise is open public-interest data; crawling is welcome.
+User-agent: *
+Allow: /
+
+Sitemap: https://truewise.dev/sitemap.xml

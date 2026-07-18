@@ -46,6 +46,28 @@ jobs:
           python -m analysis.validate
           pytest -q
 
+      - name: Publish downloadable datasets on the domain
+        # Serve the parquet(s) from truewise.dev/data/ so downloads hit Cloudflare and are
+        # counted in the zone's request analytics. Kept out of the repo (built at deploy).
+        run: |
+          mkdir -p site/data
+          cp published/value_check.parquet site/data/
+          cp published/institutions.parquet site/data/ 2>/dev/null || true
+          cp published/careers_demand.parquet site/data/ 2>/dev/null || true
+          cp published/k12.parquet site/data/ 2>/dev/null || true
+
+      - name: Inject Cloudflare Web Analytics token (or strip the beacon if unset)
+        env:
+          CF_BEACON_TOKEN: ${{ secrets.CF_BEACON_TOKEN }}
+        run: |
+          if [ -n "$CF_BEACON_TOKEN" ]; then
+            find site -name '*.html' -exec sed -i "s/CF_BEACON_TOKEN/${CF_BEACON_TOKEN}/g" {} +
+            echo "Injected Web Analytics token into site HTML."
+          else
+            find site -name '*.html' -exec sed -i '/cloudflareinsights\.com\/beacon/d' {} +
+            echo "CF_BEACON_TOKEN not set; stripped the beacon tag (no analytics until the secret is added)."
+          fi
+
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v3
         with:

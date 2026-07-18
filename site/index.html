@@ -34,7 +34,7 @@
     "temporalCoverage": "2026-06-10",
     "keywords": ["college earnings", "college ROI", "financial value transparency", "College Scorecard"],
     "distribution": [
-      { "@type": "DataDownload", "encodingFormat": "application/x-parquet", "contentUrl": "https://raw.githubusercontent.com/ndranandraj/truewise/main/published/value_check.parquet" }
+      { "@type": "DataDownload", "encodingFormat": "application/x-parquet", "contentUrl": "https://truewise.dev/data/value_check.parquet" }
     ]
   }
   </script>
@@ -200,6 +200,7 @@
           </p>
           <div class="data-actions">
             <span class="pip">truewise-data · open CC-BY dataset</span>
+            <a href="/data/value_check.parquet" download>Download the dataset (Parquet) &darr;</a>
             <a href="https://github.com/ndranandraj/truewise">Source &amp; data on GitHub &rarr;</a>
           </div>
         </div>
@@ -217,9 +218,11 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <span id="data-vintage">College Scorecard 2026-06-10 · CRDC 2020-21 · checked monthly</span></p>
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a> · <span id="data-vintage">College Scorecard 2026-06-10 · CRDC 2020-21 · checked monthly</span></p>
       <p class="muted">A portfolio &amp; social-impact project · Not affiliated with the US Department of Education.</p>
     </div>
   </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
 </body>
 </html>

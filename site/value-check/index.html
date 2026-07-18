@@ -415,7 +415,7 @@
       ? ` <span class="tag1yr" title="Earnings measured 1 year after completing, not 4">1-yr</span>` : "";
     const paybackCell = p.payback != null
       ? `<span title="Years of the earnings premium over a HS grad needed to recoup the debt">${p.payback} yrs</span>`
-      : (fail ? `<span title="No earnings premium over a HS grad, so the debt does not pay back on this measure">—</span>` : "n/a");
+      : (fail ? `<span title="No earnings premium over a HS grad, so the debt does not pay back on this measure">none</span>` : "n/a");
     return `<tr id="${anchorFor(p)}" class="${highlight ? "hl " : ""}${fail ? "row-fail" : "row-pass"}">
       <td class="pname">${esc(p.program)}${tag}</td>
       <td class="deg">${esc(credShort(p.credential))}</td>
@@ -667,5 +667,12 @@
   // Subtle header shadow once scrolled
   addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
   </script>
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Truewise · built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+    </div>
+  </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
 </body>
 </html>

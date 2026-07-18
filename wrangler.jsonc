@@ -5,6 +5,8 @@
   "name": "truewise",
   "compatibility_date": "2026-07-01",
   "assets": {
-    "directory": "./site"
+    "directory": "./site",
+    // Serve site/404.html for any unknown path (mistyped school URLs, dead links).
+    "not_found_handling": "404-page"
   }
 }

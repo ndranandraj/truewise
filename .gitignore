@@ -59,6 +59,8 @@ site/value-check/data/
 site/careers/data/
 site/k12/data/
 site/data/value_check_summary.json
+# Downloadable datasets are copied into site/data/ at deploy time (already ignored by *.parquet):
+site/data/*.parquet
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md
