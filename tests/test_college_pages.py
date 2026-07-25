@@ -126,13 +126,10 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     assert "—" not in h  # no em-dash
 
 
-def test_state_index_and_sitemap(tmp_path, monkeypatch):
+def test_state_index_and_national(tmp_path, monkeypatch):
     site = _setup(tmp_path, monkeypatch)
     tx = (site / "colleges" / "tx" / "index.html").read_text()
     assert "Colleges in Texas" in tx
     assert "test-state-university" in tx
     nat = (site / "colleges" / "index.html").read_text()
     assert 'href="/colleges/tx/"' in nat
-    sm = (site / "sitemap.xml").read_text()
-    assert "https://truewise.dev/college/test-state-university/" in sm
-    assert "https://truewise.dev/colleges/tx/" in sm

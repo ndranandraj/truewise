@@ -26,9 +26,11 @@ flags value-check:
 site:
 	$(PYTHON) -m pipeline.build_site
 
-# 4b) Generate the pre-rendered college + state HTML pages (SEO volume engine) + sitemap.
+# 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
 	$(PYTHON) -m pipeline.build_college_pages
+	$(PYTHON) -m pipeline.build_majors_pages
+	$(PYTHON) -m pipeline.build_sitemap
 
 # 5) Generate the Careers field-of-study data (what a major pays).
 careers:

@@ -92,11 +92,15 @@ def _round(x):
     return None if x is None else int(round(x))
 
 
-def main() -> None:
+def build_fields(con) -> list[dict]:
+    """Aggregate the Value Check table into per-field (CIP x credential) rows.
+
+    Shared by the JSON builder (this module) and the static /majors/ page builder
+    (build_majors_pages), so every major page shows the same numbers as the app.
+    """
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
         raise SystemExit("No value_check.parquet, run the pipeline first.")
-    con = duckdb.connect()
     rows = con.execute(
         f"""
         SELECT
@@ -157,10 +161,17 @@ def main() -> None:
                 f["demand"] = json.loads(d)
                 n_demand += 1
 
+    return fields
+
+
+def main() -> None:
+    con = duckdb.connect()
+    fields = build_fields(con)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "fields.json").write_text(
         json.dumps({"generated": True, "fields": fields}, separators=(",", ":"))
     )
+    n_demand = sum(1 for f in fields if "demand" in f)
     print(f"careers fields: {len(fields):,}  |  with demand: {n_demand:,}")
     print(f"wrote -> {OUT_DIR / 'fields.json'}")
 

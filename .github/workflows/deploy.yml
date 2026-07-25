@@ -40,8 +40,10 @@ jobs:
           python -m pipeline.build_careers
           [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
-          # Pre-rendered college + state pages (SEO volume engine) + full sitemap.xml.
+          # Pre-rendered pages (SEO volume engine): college + state, then majors, then sitemap.
           python -m pipeline.build_college_pages
+          python -m pipeline.build_majors_pages
+          python -m pipeline.build_sitemap
 
       - name: Data-quality gate + tests (block deploy on failure)
         run: |

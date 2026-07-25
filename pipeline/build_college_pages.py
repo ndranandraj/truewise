@@ -475,35 +475,9 @@ def main() -> None:
         (d / "index.html").write_text(state_index(st, lst))
     (colleges_dir / "index.html").write_text(national_index(states_present.keys()))
 
-    _write_sitemap(slugs, states_present.keys())
-
     print(f"college pages: {len(qualified):,}  |  state indexes: {len(states_present)}")
     print(f"wrote -> {col_dir} and {colleges_dir}")
-
-
-def _write_sitemap(slugs, states) -> None:
-    static = [
-        "/",
-        "/value-check/",
-        "/careers/",
-        "/k12/",
-        "/k12/advanced-courses/",
-        "/k12/rankings/",
-        "/k12/compare/",
-        "/methodology/",
-        "/about/",
-        "/colleges/",
-    ]
-    urls = [f"{BASE}{p}" for p in static]
-    urls += [f"{BASE}/colleges/{st.lower()}/" for st in states]
-    urls += [f"{BASE}/college/{slug}/" for slug in slugs.values()]
-    body = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
-    (SITE / "sitemap.xml").write_text(
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-        f"{body}\n</urlset>\n"
-    )
-    print(f"sitemap: {len(urls):,} urls")
+    print("run pipeline.build_sitemap after the page builders to refresh sitemap.xml")
 
 
 if __name__ == "__main__":
