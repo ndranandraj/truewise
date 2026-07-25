@@ -12,15 +12,15 @@ pip install truewise-data
 ```python
 import truewise_data as tw
 
-df = tw.load_value_check()          # one row per school x field of study x credential
-df = tw.load_value_check(decided_only=True)   # drop insufficient-data rows
+df = tw.load_value_check()  # one row per school x field of study x credential
+df = tw.load_value_check(decided_only=True)  # drop insufficient-data rows
 
 # Which programs leave graduates earning less than a typical HS grad?
 fails = df[df.value_flag == "fails_earnings_premium"]
 fails.groupby("cip_desc").size().sort_values(ascending=False).head(10)
 
-tw.load_summary()   # national + state summary stats
-tw.meta()           # dataset version, source release, license
+tw.load_summary()  # national + state summary stats
+tw.meta()  # dataset version, source release, license
 ```
 
 ## What's in it

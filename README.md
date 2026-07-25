@@ -58,7 +58,8 @@ pip install ./packages/truewise-data
 ```
 ```python
 import truewise_data as tw
-df = tw.load_value_check(decided_only=True)   # earnings vs a HS-grad benchmark, per program
+
+df = tw.load_value_check(decided_only=True)  # earnings vs a HS-grad benchmark, per program
 ```
 
 ## Data sources
