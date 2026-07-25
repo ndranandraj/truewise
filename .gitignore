@@ -37,6 +37,7 @@ __pycache__/
 truewise-authenticity-review*.md
 Truewise.dev design review.zip
 truewise-design-improvement-plan.md
+truewise-reach-maximization-plan.md
 
 # FVT Monitor: keep provenance + the compact dated snapshot, ignore the bulky raw dumps
 archive/**/*.zip
@@ -61,6 +62,9 @@ site/k12/data/
 site/data/value_check_summary.json
 # Downloadable datasets are copied into site/data/ at deploy time (already ignored by *.parquet):
 site/data/*.parquet
+# Pre-rendered college/state pages are generated at deploy (build_college_pages), not committed:
+site/college/
+site/colleges/
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md

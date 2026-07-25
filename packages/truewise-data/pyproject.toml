@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "truewise-data"
 version = "0.1.0"
-description = "Clean, ready-to-use US college program value data — median earnings vs a high-school-graduate benchmark — derived from the Dept. of Education's College Scorecard."
+description = "Clean, ready-to-use US college program value data: median earnings vs a high-school-graduate benchmark, derived from the Dept. of Education's College Scorecard."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-authors = [{ name = "Anand Raj" }]
+authors = [{ name = "Anandraj" }]
 keywords = ["education", "college", "scorecard", "earnings", "gainful-employment", "open-data"]
 classifiers = [
     "Programming Language :: Python :: 3",

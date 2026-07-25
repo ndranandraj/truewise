@@ -30,11 +30,15 @@ def _round(x, n=0):
     return int(round(x)) if n == 0 else round(x, n)
 
 
-def main() -> None:
+def build_model(con) -> tuple[dict, dict, dict]:
+    """Read the parquet source and return (schools, by_state, benchmarks).
+
+    Shared by the JSON builder (this module) and the static-HTML page builder
+    (build_college_pages), so every page shows the same aggregates as the app.
+    """
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
         raise SystemExit("No value_check.parquet, run the pipeline first.")
-    con = duckdb.connect()
     # Real institutions only (numeric UNITID); Scorecard also carries national
     # aggregate rows we don't want as "schools".
     rows = con.execute(
@@ -194,6 +198,13 @@ def main() -> None:
             and s["completion"] >= med_compl
             and pr >= med_pr
         )
+
+    return schools, by_state, benchmarks
+
+
+def main() -> None:
+    con = duckdb.connect()
+    schools, by_state, benchmarks = build_model(con)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "programs").mkdir(exist_ok=True)

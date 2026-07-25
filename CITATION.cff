@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use Truewise data or code, please cite it as below."
+title: "Truewise: open US college program value data from the College Scorecard"
+abstract: >-
+  A clean, joined, reproducible dataset and toolkit derived from public U.S. federal
+  education data (Department of Education College Scorecard, plus BLS and CRDC), including
+  the federal earnings-premium test that flags college programs whose graduates earn less
+  than a typical high-school graduate.
+type: software
+authors:
+  - family-names: Anandraj
+    website: "https://ndranandraj.com"
+url: "https://truewise.dev"
+repository-code: "https://github.com/ndranandraj/truewise"
+license: MIT
+version: 0.1.0
+date-released: "2026-07-17"
+keywords:
+  - college-scorecard
+  - education-data
+  - open-data
+  - higher-education
+  - earnings-premium
+  - civic-tech
+# After the first tagged GitHub release is archived to Zenodo, add the minted DOI here, e.g.:
+# doi: 10.5281/zenodo.XXXXXXX

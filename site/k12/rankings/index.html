@@ -63,6 +63,7 @@
       <h1>State report cards</h1>
       <p class="lede">How US states compare on high-school opportunity: which states' public high schools
         offer advanced courses, and where students go without a counselor. Pick a measure to rank the states.</p>
+      <noscript><p class="lede" style="font-size:.95rem">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
       <div class="metric-row">
         <label for="metric">Rank states by high schools that</label>
         <select id="metric"></select>
@@ -119,6 +120,23 @@
   sel.addEventListener("change", draw);
 
   fetch("/k12/data/states.json").then(r=>r.json()).then(j => { STATES = j.states; draw(); });
+  // No blank pages: if a data file fails to load, show a clear, retryable message.
+  window.addEventListener("unhandledrejection", function () {
+    var host;
+    if (document.getElementById("app")) {
+      if (!document.getElementById("boot-fallback")) return; // a view already rendered
+      host = document.getElementById("app");
+    } else {
+      host = document.getElementById("bars") || document.getElementById("cmp");
+    }
+    if (!host) return;
+    host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
+      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
+      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
+  });
+
   </script>
   <footer class="site-footer">
     <div class="wrap">

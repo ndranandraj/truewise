@@ -76,7 +76,13 @@
     </div>
   </header>
 
-  <main class="wrap" id="app"><!-- rendered by JS --></main>
+  <main class="wrap" id="app">
+    <div id="boot-fallback">
+      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">What a major pays</h1>
+      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Median earnings by field of study from the U.S. Department of Education College Scorecard: what graduates of each major typically earn, the pay range across programs, the degree ladder from certificate to doctorate, and the federal job outlook. Loading the data now.</p>
+      <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
+    </div>
+  </main>
   <button id="to-top" aria-label="Back to top" title="Back to top" style="position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;">↑</button>
 
   <script>
@@ -244,6 +250,23 @@
   toTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   addEventListener("scroll", () => toTop.classList.toggle("show", scrollY > 500), { passive: true });
   addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
+  // No blank pages: if a data file fails to load, show a clear, retryable message.
+  window.addEventListener("unhandledrejection", function () {
+    var host;
+    if (document.getElementById("app")) {
+      if (!document.getElementById("boot-fallback")) return; // a view already rendered
+      host = document.getElementById("app");
+    } else {
+      host = document.getElementById("bars") || document.getElementById("cmp");
+    }
+    if (!host) return;
+    host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
+      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
+      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
+  });
+
   </script>
   <footer class="site-footer">
     <div class="wrap">

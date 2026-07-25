@@ -1,0 +1,400 @@
+"""Generate static, crawlable HTML pages: one per college, one per state, plus a
+national index. This is the search-volume engine: a family searching a school's name
+lands on a pre-rendered page with the real facts baked into HTML, then can open the
+interactive tool for the full breakdown.
+
+Pages written under site/ (generated at deploy, not committed):
+  * /college/<slug>/index.html    one per school with at least one earnings verdict
+  * /colleges/<state>/index.html  that state's schools, with verdict summaries
+  * /colleges/index.html          national A-Z index (the crawl path)
+  * /sitemap.xml                  regenerated to include every page above
+
+Reuses build_site.build_model so every page shows the same aggregates as the app.
+
+Usage (from repo root, after the pipeline has produced value_check.parquet):
+    python -m pipeline.build_college_pages
+"""
+
+from __future__ import annotations
+
+import html
+import re
+from collections import defaultdict
+
+import duckdb
+
+from pipeline.build_site import build_model
+from pipeline.config import ROOT
+
+SITE = ROOT / "site"
+BASE = "https://truewise.dev"
+
+STATE_NAMES = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California",
+    "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois",
+    "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana",
+    "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota",
+    "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon",
+    "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota",
+    "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia",
+    "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+    "PR": "Puerto Rico", "GU": "Guam", "VI": "U.S. Virgin Islands", "AS": "American Samoa",
+    "MP": "Northern Mariana Islands", "FM": "Micronesia", "MH": "Marshall Islands",
+    "PW": "Palau",
+}
+
+BEACON = (
+    '  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. '
+    "Token injected at deploy from the CF_BEACON_TOKEN secret. -->\n"
+    "  <script defer src=\"https://static.cloudflareinsights.com/beacon.min.js\" "
+    "data-cf-beacon='{\"token\": \"CF_BEACON_TOKEN\"}'></script>\n"
+)
+
+
+def esc(s) -> str:
+    return html.escape(str(s if s is not None else ""), quote=True)
+
+
+def slugify(name: str) -> str:
+    s = re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")
+    return s or "school"
+
+
+def money(n) -> str:
+    return "n/a" if n is None else "$" + f"{int(round(n)):,}"
+
+
+def head(title, desc, canonical, extra_ld="") -> str:
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{esc(title)}</title>
+  <meta name="description" content="{esc(desc)}" />
+  <link rel="canonical" href="{esc(canonical)}" />
+  <meta property="og:title" content="{esc(title)}" />
+  <meta property="og:description" content="{esc(desc)}" />
+  <meta property="og:url" content="{esc(canonical)}" />
+  <meta property="og:image" content="{BASE}/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="{BASE}/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+{extra_ld}  <style>
+    .pg {{ max-width: 860px; padding: 8px 0 64px; }}
+    .crumbs {{ font-size: .85rem; color: var(--ink-faint); margin: 18px 0 6px; }}
+    .crumbs a {{ color: var(--ink-soft); text-decoration: none; }}
+    .pg h1 {{ font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
+    .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
+    .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 16px 0; font-size: 1.05rem; line-height: 1.6; }}
+    .verdict b {{ color: var(--ink); }}
+    .gem {{ display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
+    .cta-row {{ margin: 18px 0 8px; }}
+    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: 10px; }}
+    h2.sec {{ font-size: 1.2rem; letter-spacing: -0.02em; margin: 30px 0 8px; }}
+    table.t {{ width: 100%; border-collapse: collapse; font-size: .93rem; }}
+    table.t th, table.t td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }}
+    table.t th {{ color: var(--ink-soft); font-weight: 600; }}
+    table.t td.num, table.t th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+    .pass {{ color: var(--good); font-weight: 600; }}
+    .fail {{ color: var(--bad); font-weight: 600; }}
+    .np td.num {{ font-variant-numeric: tabular-nums; }}
+    .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}
+    .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
+    .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
+    ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
+    ul.schoollist li {{ padding: 10px 0; border-bottom: 1px solid var(--line); }}
+    ul.schoollist a {{ color: var(--brand); text-decoration: none; font-weight: 600; }}
+    ul.schoollist .meta {{ color: var(--ink-soft); font-size: .9rem; }}
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand-group"><a class="brand" href="/">true<span>wise</span></a></div>
+      <nav aria-label="Primary">
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+      </nav>
+    </div>
+  </header>
+"""
+
+
+FOOTER = """  <footer class="site-footer">
+    <div class="wrap">
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+    </div>
+  </footer>
+"""
+
+
+def _program_rows(programs, threshold):
+    """Top programs for a school, decided ones first, by completers."""
+    decided = [p for p in programs if p.get("flag") in ("passes_earnings_premium", "fails_earnings_premium")]
+    decided.sort(key=lambda p: (p.get("completers") or 0), reverse=True)
+    out = []
+    for p in decided[:15]:
+        earn = p.get("earnings")
+        prem = (earn - threshold) if (earn is not None and threshold is not None) else None
+        prem_txt = "n/a"
+        if prem is not None:
+            prem_txt = ("+$" if prem >= 0 else "-$") + f"{int(round(abs(prem))):,}"
+        verdict = '<span class="pass">clears the bar</span>' if p.get("flag") == "passes_earnings_premium" else '<span class="fail">falls short</span>'
+        payback = p.get("payback")
+        if payback is None:
+            pay_txt = "n/a"
+        elif p.get("flag") != "passes_earnings_premium":
+            pay_txt = "none"
+        else:
+            pay_txt = f"{payback:g} yr" + ("" if payback == 1 else "s")
+        out.append(
+            f"<tr><td>{esc(p.get('program'))}</td><td>{esc(p.get('credential'))}</td>"
+            f"<td class='num'>{money(earn)}</td><td class='num'>{prem_txt}</td>"
+            f"<td>{verdict}</td><td class='num'>{money(p.get('debt'))}</td>"
+            f"<td class='num'>{pay_txt}</td></tr>"
+        )
+    return out
+
+
+def college_page(s, programs, slug) -> str:
+    name = s["name"]
+    st = s["state"]
+    st_name = STATE_NAMES.get(st, st)
+    canonical = f"{BASE}/college/{slug}/"
+    decided = s["n_pass"] + s["n_fail"]
+    fail, passed = s["n_fail"], s["n_pass"]
+    threshold = s.get("threshold")
+
+    # Identity line.
+    bits = []
+    if s.get("city"):
+        bits.append(f"{esc(s['city'])}, {esc(st_name)}")
+    else:
+        bits.append(esc(st_name))
+    if s.get("control"):
+        bits.append(esc(s["control"]))
+    if s.get("enrollment"):
+        bits.append(f"{s['enrollment']:,} undergraduates")
+    idline = " &middot; ".join(bits)
+
+    # Headline verdict + meta description (with a real number).
+    thr_txt = money(threshold)
+    if decided and fail:
+        desc = (f"At {name}, {fail} of {decided} programs with reported earnings leave graduates "
+                f"earning less than a typical {st_name} high-school graduate. See net price by income "
+                f"and program-by-program earnings, from federal data.")
+        verdict = (f"Of <b>{decided}</b> programs with reported earnings, <b>{passed}</b> leave graduates "
+                   f"out-earning a typical {esc(st_name)} high-school graduate (about {thr_txt}/yr) and "
+                   f"<b>{fail}</b> fall short.")
+    elif decided:
+        desc = (f"At {name}, all {decided} programs with reported earnings leave graduates out-earning a "
+                f"typical {st_name} high-school graduate. Net price by income and program earnings, from federal data.")
+        verdict = (f"All <b>{decided}</b> programs with reported earnings leave graduates out-earning a typical "
+                   f"{esc(st_name)} high-school graduate (about {thr_txt}/yr).")
+    else:
+        desc = f"{name}: net price by income and program data from the U.S. Department of Education."
+        verdict = "Earnings data is privacy-suppressed for this school's programs."
+    if s.get("n_insufficient"):
+        verdict += f" Another <b>{s['n_insufficient']}</b> programs did not have enough data to judge."
+
+    gem = ' <span class="gem">★ Hidden gem</span>' if s.get("hidden_gem") else ""
+    title = f"{name}: what families pay and what graduates earn"
+
+    # Structured data.
+    addr = f'"address": {{"@type": "PostalAddress", "addressLocality": "{esc(s.get("city") or "")}", "addressRegion": "{esc(st)}", "addressCountry": "US"}},' if s.get("city") else ""
+    ld = f"""  <script type="application/ld+json">
+  {{"@context":"https://schema.org","@type":"CollegeOrUniversity","name":{_json(name)},{addr}"url":"{canonical}"}}
+  </script>
+  <script type="application/ld+json">
+  {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {{"@type":"ListItem","position":1,"name":"Colleges","item":"{BASE}/colleges/"}},
+    {{"@type":"ListItem","position":2,"name":{_json(st_name)},"item":"{BASE}/colleges/{st.lower()}/"}},
+    {{"@type":"ListItem","position":3,"name":{_json(name)},"item":"{canonical}"}}
+  ]}}
+  </script>
+"""
+
+    parts = [head(title, desc, canonical, ld)]
+    parts.append('  <main class="wrap pg">\n')
+    parts.append(f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; <a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n')
+    parts.append(f"    <h1>{esc(name)}{gem}</h1>\n")
+    parts.append(f'    <p class="idline">{idline}</p>\n')
+    parts.append(f'    <div class="verdict">{verdict}</div>\n')
+    parts.append(f'    <div class="cta-row"><a class="primary" href="/value-check/?school={esc(s["unitid"])}">See the full breakdown &rarr;</a></div>\n')
+
+    # Net price by income.
+    np = s.get("net_price")
+    if np and (np.get("avg") is not None or any(np.get("brackets") or [])):
+        labels = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$110k and up"]
+        parts.append('    <h2 class="sec">What families actually pay</h2>\n')
+        parts.append('    <table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n')
+        for lab, b in zip(labels, np.get("brackets") or [None] * 5, strict=False):
+            if b is not None:
+                parts.append(f'      <tr><td>{lab}</td><td class="num">{money(b)}</td></tr>\n')
+        if np.get("avg") is not None:
+            parts.append(f'      <tr><td><b>All families (average)</b></td><td class="num"><b>{money(np["avg"])}</b></td></tr>\n')
+        parts.append("    </tbody></table>\n")
+        parts.append('    <p class="src">Net price is the yearly cost after grants and scholarships, by family income (College Scorecard). Credit: TuitionTracker.</p>\n')
+
+    # Program earnings table.
+    rows = _program_rows(programs, threshold)
+    if rows:
+        parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
+        parts.append('    <table class="t"><thead><tr><th>Program</th><th>Credential</th><th class="num">Median earnings</th><th class="num">vs HS grad</th><th>Verdict</th><th class="num">Median debt</th><th class="num">Payback</th></tr></thead><tbody>\n')
+        parts.append("      " + "\n      ".join(rows) + "\n")
+        parts.append("    </tbody></table>\n")
+        if decided > len(rows):
+            parts.append(f'    <p class="src">Showing the {len(rows)} largest programs by graduates. See all {decided} on the <a href="/value-check/?school={esc(s["unitid"])}">full profile</a>.</p>\n')
+
+    # Mobility line.
+    mob = []
+    if s.get("pell") is not None:
+        mob.append(f"{round(s['pell'] * 100)}% of students receive Pell grants")
+    if s.get("completion") is not None:
+        mob.append(f"{round(s['completion'] * 100)}% complete their program")
+    if mob:
+        parts.append(f'    <p class="src">Access and outcomes: {" &middot; ".join(mob)}.</p>\n')
+
+    parts.append('    <p class="src">Source: U.S. Department of Education College Scorecard (release 2026-06-10). Earnings are median earnings of graduates measured up to four years after completing, compared to the state high-school-graduate earnings threshold. Figures describe past graduates and are never a promise. Method: <a href="/methodology/">methodology</a>. Something look wrong? <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">Report it</a>.</p>\n')
+    parts.append("  </main>\n")
+    parts.append(FOOTER)
+    parts.append(BEACON)
+    parts.append("</body>\n</html>\n")
+    return "".join(parts)
+
+
+def _json(s) -> str:
+    import json as _j
+    return _j.dumps(s if s is not None else "")
+
+
+def state_index(st, schools_in_state) -> str:
+    st_name = STATE_NAMES.get(st, st)
+    canonical = f"{BASE}/colleges/{st.lower()}/"
+    n = len(schools_in_state)
+    total_fail = sum(s["n_fail"] for _, s, _ in schools_in_state)
+    title = f"Colleges in {st_name}: what graduates earn vs a high-school grad"
+    desc = (f"{n} {st_name} colleges by what families pay and whether graduates out-earn a typical "
+            f"high-school graduate. Program-level earnings from federal data.")
+    ld = f"""  <script type="application/ld+json">
+  {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {{"@type":"ListItem","position":1,"name":"Colleges","item":"{BASE}/colleges/"}},
+    {{"@type":"ListItem","position":2,"name":{_json(st_name)},"item":"{canonical}"}}
+  ]}}
+  </script>
+"""
+    parts = [head(title, desc, canonical, ld)]
+    parts.append('  <main class="wrap pg">\n')
+    parts.append('    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; ' + esc(st_name) + "</nav>\n")
+    parts.append(f"    <h1>Colleges in {esc(st_name)}</h1>\n")
+    parts.append(f'    <p class="idline">{n} schools with earnings data, {total_fail} programs statewide leave graduates earning less than a typical high-school graduate.</p>\n')
+    parts.append('    <ul class="schoollist">\n')
+    for slug, s, _ in sorted(schools_in_state, key=lambda x: (x[1]["name"] or "").lower()):
+        decided = s["n_pass"] + s["n_fail"]
+        summ = f'{decided} programs with earnings data, {s["n_fail"]} fall short'
+        city = f'{esc(s["city"])} &middot; ' if s.get("city") else ""
+        parts.append(f'      <li><a href="/college/{slug}/">{esc(s["name"])}</a><div class="meta">{city}{summ}</div></li>\n')
+    parts.append("    </ul>\n")
+    parts.append("  </main>\n")
+    parts.append(FOOTER)
+    parts.append(BEACON)
+    parts.append("</body>\n</html>\n")
+    return "".join(parts)
+
+
+def national_index(states_present) -> str:
+    canonical = f"{BASE}/colleges/"
+    title = "All US colleges: what families pay and what graduates earn"
+    desc = ("Browse every US college by state to see net price by income and whether each program's "
+            "graduates out-earn a typical high-school graduate. Built on public federal data.")
+    parts = [head(title, desc, canonical)]
+    parts.append('  <main class="wrap pg">\n')
+    parts.append("    <nav class=\"crumbs\">Colleges</nav>\n")
+    parts.append("    <h1>All US colleges</h1>\n")
+    parts.append('    <p class="idline">Pick a state, or <a href="/value-check/">search for a school by name</a>. Every page shows net price by income and whether graduates out-earn a typical high-school graduate.</p>\n')
+    parts.append('    <div class="statecols">\n')
+    for st in sorted(states_present, key=lambda s: STATE_NAMES.get(s, s)):
+        parts.append(f'      <a href="/colleges/{st.lower()}/">{esc(STATE_NAMES.get(st, st))}</a>\n')
+    parts.append("    </div>\n")
+    parts.append("  </main>\n")
+    parts.append(FOOTER)
+    parts.append(BEACON)
+    parts.append("</body>\n</html>\n")
+    return "".join(parts)
+
+
+def main() -> None:
+    con = duckdb.connect()
+    schools, by_state, _ = build_model(con)
+
+    # Only schools with at least one earnings verdict get a page (skip thin, all-suppressed schools).
+    qualified = {u: s for u, s in schools.items() if (s["n_pass"] + s["n_fail"]) >= 1}
+
+    # Stable, unique slugs: name; on collision add state, then unitid.
+    slugs: dict[str, str] = {}
+    used: set[str] = set()
+    for u, s in sorted(qualified.items(), key=lambda kv: (kv[1]["name"] or "").lower()):
+        base = slugify(s["name"])
+        cand = base
+        if cand in used:
+            cand = f"{base}-{s['state'].lower()}"
+        if cand in used:
+            cand = f"{base}-{u}"
+        used.add(cand)
+        slugs[u] = cand
+
+    col_dir = SITE / "college"
+    col_dir.mkdir(parents=True, exist_ok=True)
+    states_present: dict[str, list] = defaultdict(list)
+    for u, s in qualified.items():
+        slug = slugs[u]
+        programs = by_state.get(s["state"], {}).get(u, [])
+        d = col_dir / slug
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(college_page(s, programs, slug))
+        states_present[s["state"]].append((slug, s, u))
+
+    colleges_dir = SITE / "colleges"
+    colleges_dir.mkdir(parents=True, exist_ok=True)
+    for st, lst in states_present.items():
+        d = colleges_dir / st.lower()
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(state_index(st, lst))
+    (colleges_dir / "index.html").write_text(national_index(states_present.keys()))
+
+    _write_sitemap(slugs, states_present.keys())
+
+    print(f"college pages: {len(qualified):,}  |  state indexes: {len(states_present)}")
+    print(f"wrote -> {col_dir} and {colleges_dir}")
+
+
+def _write_sitemap(slugs, states) -> None:
+    static = [
+        "/", "/value-check/", "/careers/", "/k12/", "/k12/advanced-courses/",
+        "/k12/rankings/", "/k12/compare/", "/methodology/", "/about/", "/colleges/",
+    ]
+    urls = [f"{BASE}{p}" for p in static]
+    urls += [f"{BASE}/colleges/{st.lower()}/" for st in states]
+    urls += [f"{BASE}/college/{slug}/" for slug in slugs.values()]
+    body = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
+    (SITE / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{body}\n</urlset>\n"
+    )
+    print(f"sitemap: {len(urls):,} urls")
+
+
+if __name__ == "__main__":
+    main()

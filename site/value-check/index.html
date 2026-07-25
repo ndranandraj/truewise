@@ -164,7 +164,11 @@
   </header>
 
   <main class="wrap" id="app">
-    <!-- rendered by JS -->
+    <div id="boot-fallback">
+      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">Look up any US college</h1>
+      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US college to see, program by program, whether graduates out-earn a typical high-school graduate (the federal earnings-premium test), what families actually pay by income, median debt and how long it takes to pay back, and where each major leads. Built on public College Scorecard data. Loading the data now.</p>
+      <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
+    </div>
   </main>
   <button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
 
@@ -666,6 +670,23 @@
   addEventListener("scroll", () => toTop.classList.toggle("show", scrollY > 500), { passive: true });
   // Subtle header shadow once scrolled
   addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
+  // No blank pages: if a data file fails to load, show a clear, retryable message.
+  window.addEventListener("unhandledrejection", function () {
+    var host;
+    if (document.getElementById("app")) {
+      if (!document.getElementById("boot-fallback")) return; // a view already rendered
+      host = document.getElementById("app");
+    } else {
+      host = document.getElementById("bars") || document.getElementById("cmp");
+    }
+    if (!host) return;
+    host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
+      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
+      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
+  });
+
   </script>
   <footer class="site-footer">
     <div class="wrap">

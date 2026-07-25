@@ -71,6 +71,7 @@
       <h1>Compare high schools</h1>
       <p class="lede">Put schools side by side, your options, or a school and the one across town, on the advanced
         courses they offer and who's on staff. Add up to four.</p>
+      <noscript><p class="lede" style="font-size:.95rem">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
       <div class="searchbox">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="q" type="search" autocomplete="off" placeholder="Search a public high school to add…" />
@@ -83,7 +84,7 @@
   <script>
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const num = n => n == null ? "n/a" : Number(n).toLocaleString();
-  const yn = b => b ? `<span class="yes">Offered</span>` : `<span class="no">&mdash;</span>`;
+  const yn = b => b ? `<span class="yes">Offered</span>` : `<span class="no">No</span>`;
   let INDEX = null;
   const stateCache = {};
   const picked = [];          // {k, rec}
@@ -144,6 +145,23 @@
     cmp.querySelectorAll(".rm").forEach(b => b.addEventListener("click", () => remove(b.dataset.k)));
   }
   render();
+  // No blank pages: if a data file fails to load, show a clear, retryable message.
+  window.addEventListener("unhandledrejection", function () {
+    var host;
+    if (document.getElementById("app")) {
+      if (!document.getElementById("boot-fallback")) return; // a view already rendered
+      host = document.getElementById("app");
+    } else {
+      host = document.getElementById("bars") || document.getElementById("cmp");
+    }
+    if (!host) return;
+    host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
+      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
+      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
+  });
+
   </script>
   <footer class="site-footer">
     <div class="wrap">
