@@ -24,8 +24,11 @@ from pipeline.config import PARQUET_DIR, ROOT
 
 SITE = ROOT / "site"
 GRAD_LEVELS = ("4", "5", "6", "7", "8")  # post-bacc cert, master's, doctoral, first-prof, grad cert
-BENCHMARKS = [45000, 50000, 55000, 60000, 62000, 65000, 70000]
-BAND = (55000, 62000)  # plausible bachelor's-holder benchmark band (see Census anchor in the page)
+BENCHMARKS = [50000, 55000, 58000, 60000, 62000, 64000, 66000, 70000]
+# Plausible bachelor's-holder benchmark band. Upper bound: NCES median earnings of 25-34 bachelor's
+# holders working full-time year-round, $66,600 in 2022. Lower bound: the rule's broader "working"
+# population (part-time included) runs below the full-time figure. See the citation on the page.
+BAND = (58000, 66000)
 REF = 60000  # illustrative reference benchmark for the breakdowns
 
 
@@ -190,10 +193,11 @@ def render_page(s) -> str:
         f"earnings figure: {s['denom']:,} of {s['total']:,}. The rest are privacy-suppressed and never "
         "guessed.</li>\n"
         "      <li><b>The benchmark.</b> The rule compares graduate programs to the median earnings of a "
-        "working bachelor's-degree holder aged 25 to 34. ED has not published the exact figure. Census "
-        "and NCES put bachelor's-holder earnings for that age group at roughly $60,000 to $62,000 "
-        "(full-time, year-round); the rule's broader 'working' population likely runs somewhat lower, so "
-        "we show a $55,000 to $62,000 likely band and the full curve.</li>\n"
+        "working bachelor's-degree holder aged 25 to 34. ED has not published the exact figure. NCES puts "
+        "the median for that group at <b>$66,600</b> for those working full-time year-round (2022); the "
+        "rule's broader 'working' population includes part-time workers and so runs below the full-time "
+        "figure. We therefore use a likely band of $58,000 to $66,000, and show the full curve so the "
+        "number updates the moment ED sets the benchmark.</li>\n"
         "      <li><b>The horizon.</b> Earnings are median earnings in the fourth tax year after "
         "completing, the same measure the rule uses.</li>\n"
         "      <li><b>Not a verdict.</b> A program only loses Direct Loan eligibility after failing two of "
