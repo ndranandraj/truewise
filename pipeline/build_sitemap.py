@@ -20,6 +20,7 @@ STATIC = [
     "/value-check/",
     "/careers/",
     "/colleges/",
+    "/compare/",
     "/majors/",
     "/k12/",
     "/k12/advanced-courses/",

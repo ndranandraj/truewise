@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Compare colleges side by side | Truewise</title>
+  <meta name="description" content="Put up to four US colleges side by side on what families actually pay by income, whether graduates out-earn a high-school graduate, debt payback, and who the school serves. Federal data." />
+  <link rel="canonical" href="https://truewise.dev/compare/" />
+  <meta property="og:title" content="Compare colleges side by side | Truewise" />
+  <meta property="og:description" content="Compare colleges on net price by income, graduate earnings, and outcomes. Built on public federal data." />
+  <meta property="og:url" content="https://truewise.dev/compare/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .c-head { padding: 40px 0 4px; }
+    .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 10px; }
+    .c-head p.lede { font-size: 1.08rem; color: var(--ink-soft); max-width: 64ch; line-height: 1.6; }
+    .searchbox { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; max-width: 620px; margin: 20px 0 6px; background: #fff; }
+    .searchbox input { border: 0; outline: 0; font-size: 1rem; flex: 1; color: var(--ink); }
+    .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
+    .results li { padding: 10px 12px; border: 1px solid var(--line); border-top: 0; cursor: pointer; }
+    .results li:first-child { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; }
+    .results li:last-child { border-radius: 0 0 8px 8px; }
+    .results li:hover { background: var(--bg-alt); }
+    .results .meta { color: var(--ink-soft); font-size: .88rem; }
+    .results li.empty { cursor: default; color: var(--ink-soft); }
+    .income-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 22px 0 2px; }
+    .income-row label { font-weight: 600; }
+    .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
+    .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
+    table.cmp { border-collapse: collapse; min-width: 560px; width: 100%; }
+    table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
+    table.cmp thead th { border-bottom: 2px solid var(--line); }
+    table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
+    table.cmp td { font-variant-numeric: tabular-nums; }
+    .schname { font-weight: 700; }
+    .schname a { color: var(--brand); text-decoration: none; }
+    .schmeta { color: var(--ink-soft); font-size: .85rem; font-weight: 400; margin-top: 2px; }
+    .rm { color: var(--bad); font-size: .82rem; cursor: pointer; margin-top: 6px; font-weight: 600; }
+    .good { color: var(--good); font-weight: 600; }
+    .bad { color: var(--bad); font-weight: 600; }
+    .gem { display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 1px 8px; font-size: .76rem; font-weight: 700; }
+    .hint { color: var(--ink-soft); }
+    .caveats { margin: 24px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 780px; color: var(--ink-soft); font-size: .9rem; line-height: 1.55; }
+    .caveats a { color: var(--brand); }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand-group"><a class="brand" href="/">true<span>wise</span></a></div>
+      <nav aria-label="Primary">
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="c-head">
+      <h1>Compare colleges side by side</h1>
+      <p class="lede">Put up to four colleges next to each other on the things that decide whether a degree
+        pays off: what families at your income actually pay, whether graduates out-earn a typical
+        high-school graduate, and who the school serves. All from public federal data.</p>
+      <div class="searchbox">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="q" type="search" autocomplete="off" placeholder="Search a college to add, try Baylor or UCLA" aria-label="Search a college to add" />
+      </div>
+      <ul class="results" id="results"></ul>
+      <noscript><p class="lede" style="font-size:.95rem">This comparison tool needs JavaScript. You can still
+        browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
+      <div class="income-row" id="income-row" style="display:none">
+        <label for="income">Show net price for families earning</label>
+        <select id="income">
+          <option value="-1">All families (average)</option>
+          <option value="0">Under $30k</option>
+          <option value="1">$30k to $48k</option>
+          <option value="2">$48k to $75k</option>
+          <option value="3">$75k to $110k</option>
+          <option value="4">$110k and up</option>
+        </select>
+      </div>
+      <div id="cmp"></div>
+      <div class="caveats"><strong>How to read this.</strong> "Programs clearing the bar" is the share of a
+        school's programs whose graduates out-earn a typical high-school graduate in that state (the federal
+        earnings-premium test), counted only on programs with reported earnings; the rest are
+        privacy-suppressed by the Department of Education and never guessed. Net price is the yearly cost
+        after grants and scholarships. Figures describe past graduates and are never a promise. Source: U.S.
+        Department of Education College Scorecard, release 2026-06-10. Full method:
+        <a href="/methodology/">methodology</a>.</div>
+    </section>
+  </main>
+
+  <script>
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const money = n => n == null ? "not reported" : "$" + Math.round(n).toLocaleString();
+  const pct = f => f == null ? "n/a" : Math.round(f * 100) + "%";
+  const MAX = 4;
+
+  let SCHOOLS = null;
+  const picked = [];   // {unitid, s}
+
+  // Slug must match the pre-rendered /college/<slug>/ pages (name; collision adds state, then unitid).
+  function slugify(name) {
+    return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
+  }
+  let SLUGS = null;
+  function buildSlugs(list) {
+    const used = new Set(), out = {};
+    [...list].sort((a, b) => (a.name || "").toLowerCase() < (b.name || "").toLowerCase() ? -1 : 1)
+      .forEach(s => {
+        if ((s.n_pass + s.n_fail) < 1) return;      // only schools that have a page
+        const base = slugify(s.name);
+        let cand = base;
+        if (used.has(cand)) cand = base + "-" + (s.state || "").toLowerCase();
+        if (used.has(cand)) cand = base + "-" + s.unitid;
+        used.add(cand);
+        out[s.unitid] = cand;
+      });
+    return out;
+  }
+
+  async function load() {
+    if (SCHOOLS) return SCHOOLS;
+    const r = await fetch("/value-check/data/schools.json");
+    SCHOOLS = (await r.json()).schools;
+    SLUGS = buildSlugs(SCHOOLS);
+    return SCHOOLS;
+  }
+
+  const q = document.getElementById("q"), results = document.getElementById("results"),
+        cmp = document.getElementById("cmp"), incomeRow = document.getElementById("income-row"),
+        income = document.getElementById("income");
+  let t;
+  q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
+  income.addEventListener("change", render);
+
+  async function search() {
+    await load();
+    const term = q.value.trim().toLowerCase();
+    if (term.length < 2) { results.innerHTML = ""; return; }
+    const hits = SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 8);
+    results.innerHTML = hits.length
+      ? hits.map(s => `<li data-u="${esc(s.unitid)}"><b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}</span></li>`).join("")
+      : `<li class="empty">No colleges match that search.</li>`;
+    results.querySelectorAll("li[data-u]").forEach(li =>
+      li.addEventListener("click", () => add(li.dataset.u)));
+  }
+
+  async function add(unitid) {
+    if (picked.length >= MAX || picked.some(p => p.unitid === unitid)) return;
+    await load();
+    const s = SCHOOLS.find(x => x.unitid === unitid);
+    if (!s) return;
+    picked.push({ unitid, s });
+    q.value = ""; results.innerHTML = ""; render();
+    history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+  }
+  function remove(unitid) {
+    const i = picked.findIndex(p => p.unitid === unitid);
+    if (i > -1) { picked.splice(i, 1); render();
+      history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname); }
+  }
+
+  function passRate(s) {
+    const decided = s.n_pass + s.n_fail;
+    return decided ? s.n_pass / decided : null;
+  }
+
+  function render() {
+    if (!picked.length) {
+      incomeRow.style.display = "none";
+      cmp.innerHTML = `<p class="hint">Search above to add colleges, up to four at a time.</p>`;
+      return;
+    }
+    incomeRow.style.display = "flex";
+    const bracket = parseInt(income.value, 10);
+    const cols = picked.map(p => p.s);
+
+    const head = `<tr><th></th>${picked.map(p => {
+      const s = p.s, slug = SLUGS[p.unitid];
+      const nameHtml = slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name);
+      return `<th><div class="schname">${nameHtml}</div>
+        <div class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}${s.control ? " &middot; " + esc(s.control) : ""}</div>
+        <div class="rm" data-rm="${esc(p.unitid)}">remove</div></th>`;
+    }).join("")}</tr>`;
+
+    const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+    const rows = [];
+
+    rows.push(row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported")));
+
+    rows.push(row(bracket < 0 ? "Net price, all families" : "Net price at this income",
+      cols.map(s => {
+        if (!s.net_price) return "not reported";
+        const v = bracket < 0 ? s.net_price.avg : (s.net_price.brackets || [])[bracket];
+        return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
+      })));
+
+    rows.push(row("Programs clearing the bar", cols.map(s => {
+      const r = passRate(s), decided = s.n_pass + s.n_fail;
+      if (r == null) return "not enough data";
+      const cls = r >= 0.9 ? "good" : (r < 0.6 ? "bad" : "");
+      return `<span class="${cls}">${Math.round(r * 100)}%</span> <span class="schmeta">of ${decided} measured</span>`;
+    })));
+
+    rows.push(row("Programs falling short", cols.map(s =>
+      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data")));
+
+    rows.push(row("Typical HS-grad benchmark", cols.map(s => money(s.threshold))));
+
+    rows.push(row("Students on Pell grants", cols.map(s => pct(s.pell))));
+    rows.push(row("Complete their program", cols.map(s => pct(s.completion))));
+    rows.push(row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no")));
+    rows.push(row("Full profile", cols.map(s =>
+      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`)));
+
+    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
+  }
+
+  // Shareable URLs: /compare/?schools=110662,223232
+  (async function init() {
+    const preset = new URLSearchParams(location.search).get("schools");
+    if (preset) { for (const u of preset.split(",").slice(0, MAX)) await add(u.trim()); }
+    else render();
+  })();
+
+  // No blank page if the data file fails to load.
+  window.addEventListener("unhandledrejection", function () {
+    cmp.innerHTML = '<section style="padding:24px 0;max-width:560px">'
+      + '<h2 style="font-size:1.3rem;margin:0 0 8px">Data did not load</h2>'
+      + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the college data. '
+      + 'This is usually temporary, please retry.</p>'
+      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
+  });
+  </script>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>Truewise &middot; built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+    </div>
+  </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
+</body>
+</html>
