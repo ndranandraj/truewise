@@ -43,6 +43,7 @@ jobs:
           # Pre-rendered pages (SEO volume engine): college + state, then majors, then sitemap.
           python -m pipeline.build_college_pages
           python -m pipeline.build_majors_pages
+          python -m pipeline.build_lists
           python -m pipeline.build_stats_exposure
           python -m pipeline.build_sitemap
 

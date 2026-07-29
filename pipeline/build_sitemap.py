@@ -28,6 +28,7 @@ STATIC = [
     "/methodology/",
     "/about/",
     "/findings/",
+    "/lists/",
 ]
 
 
@@ -40,6 +41,7 @@ def main() -> None:
         ("colleges", "/colleges/"),
         ("majors", "/majors/"),
         ("findings", "/findings/"),
+        ("lists", "/lists/"),
     ):
         base = SITE / parent
         if not base.is_dir():

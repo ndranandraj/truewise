@@ -30,6 +30,7 @@ site:
 college-pages:
 	$(PYTHON) -m pipeline.build_college_pages
 	$(PYTHON) -m pipeline.build_majors_pages
+	$(PYTHON) -m pipeline.build_lists
 	$(PYTHON) -m pipeline.build_stats_exposure
 	$(PYTHON) -m pipeline.build_sitemap
 

@@ -436,14 +436,16 @@ def national_index(states_present) -> str:
     return "".join(parts)
 
 
-def main() -> None:
-    con = duckdb.connect()
-    schools, by_state, _ = build_model(con)
+def qualifying_schools(schools: dict) -> dict:
+    """Schools that get a page: at least one earnings verdict (skip all-suppressed schools)."""
+    return {u: s for u, s in schools.items() if (s["n_pass"] + s["n_fail"]) >= 1}
 
-    # Only schools with at least one earnings verdict get a page (skip thin, all-suppressed schools).
-    qualified = {u: s for u, s in schools.items() if (s["n_pass"] + s["n_fail"]) >= 1}
 
-    # Stable, unique slugs: name; on collision add state, then unitid.
+def build_slugs(qualified: dict) -> dict[str, str]:
+    """Stable, unique college slugs: name; on collision add state, then unitid.
+
+    Shared with build_lists so ranked-list rows link to URLs that actually exist.
+    """
     slugs: dict[str, str] = {}
     used: set[str] = set()
     for u, s in sorted(qualified.items(), key=lambda kv: (kv[1]["name"] or "").lower()):
@@ -455,6 +457,15 @@ def main() -> None:
             cand = f"{base}-{u}"
         used.add(cand)
         slugs[u] = cand
+    return slugs
+
+
+def main() -> None:
+    con = duckdb.connect()
+    schools, by_state, _ = build_model(con)
+
+    qualified = qualifying_schools(schools)
+    slugs = build_slugs(qualified)
 
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
