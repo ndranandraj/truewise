@@ -11,6 +11,12 @@ Usage (from repo root, after the pipeline has produced value_check.parquet):
 
 from __future__ import annotations
 
+import csv
+import html
+import io
+import json as _j
+import re
+
 import duckdb
 
 from pipeline.build_college_pages import (
@@ -52,7 +58,48 @@ def _views(con) -> None:
     )
 
 
-def _page(title, desc, canonical, h1, lede, headers, rows, note) -> str:
+def _strip_tags(cell) -> str:
+    """Plain text for a CSV cell: drop markup, decode the few entities we emit."""
+    txt = re.sub(r"<[^>]*>", "", str(cell))
+    return html.unescape(txt).strip()
+
+
+def _csv_text(headers, rows) -> str:
+    """Build the CSV from the same rows the table renders, so the two cannot disagree."""
+    buf = io.StringIO()
+    w = csv.writer(buf, lineterminator="\n")
+    w.writerow(["rank", *[_strip_tags(h) for h in headers]])
+    for i, cells in enumerate(rows, 1):
+        w.writerow([i, *[_strip_tags(c) for c in cells]])
+    return buf.getvalue()
+
+
+def _download_block(slug, headers, rows) -> str:
+    """A client-side CSV download button. No server, no tracking, no new data."""
+    payload = _j.dumps(_csv_text(headers, rows))
+    fname = f"truewise-{slug}-scorecard-2026-06-10.csv"
+    return (
+        f'    <script type="application/json" id="csv-data">{payload}</script>\n'
+        '    <p class="dl"><button type="button" id="dl-csv" class="dl-btn">Download this table (CSV)</button>'
+        '<span class="dl-note"> Free to reuse with attribution (CC BY 4.0).</span></p>\n'
+        "    <script>\n"
+        "    (function () {\n"
+        '      var el = document.getElementById("csv-data"), btn = document.getElementById("dl-csv");\n'
+        "      if (!el || !btn) return;\n"
+        '      btn.addEventListener("click", function () {\n'
+        '        var blob = new Blob([JSON.parse(el.textContent)], { type: "text/csv;charset=utf-8" });\n'
+        '        var a = document.createElement("a");\n'
+        "        a.href = URL.createObjectURL(blob);\n"
+        f'        a.download = "{fname}";\n'
+        "        document.body.appendChild(a); a.click(); document.body.removeChild(a);\n"
+        "        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);\n"
+        "      });\n"
+        "    })();\n"
+        "    </script>\n"
+    )
+
+
+def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
     p = [head(title, desc, canonical)]
     p.append('  <main class="wrap pg">\n')
     p.append(f'    <nav class="crumbs"><a href="/lists/">Lists</a> &rsaquo; {esc(h1)}</nav>\n')
@@ -69,6 +116,7 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note) -> str:
             p.append("<td" + (num_attr if j else "") + ">" + str(c) + "</td>")
         p.append("</tr>\n")
     p.append("    </tbody></table>\n")
+    p.append(_download_block(slug, headers, rows))
     p.append(f'    <p class="src">{note}</p>\n')
     p.append(
         '    <p class="src">Source: U.S. Department of Education College Scorecard (release '
@@ -119,6 +167,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 f"Ranked on one number: the median of program-level median earnings for that major. "
                 f"Majors need at least {MIN_PROGRAMS} programs with reported earnings to appear, so "
                 "small or heavily suppressed fields are excluded rather than shown on thin data.",
+                "highest-paying-majors",
             ),
         )
     )
@@ -146,6 +195,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 f"{MIN_PROGRAMS} reported programs. Earnings are measured a few years after "
                 "finishing, so fields where graduates commonly continue to further study can look "
                 "lower here than their long-run pay.",
+                "lowest-paying-majors",
             ),
         )
     )
@@ -172,6 +222,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 "Payback is median federal debt divided by the yearly earnings premium over a "
                 "typical high-school graduate. It is a plain ratio, not the amortized federal "
                 "debt-to-earnings rate, and it ignores interest and time to degree.",
+                "fastest-debt-payback-majors",
             ),
         )
     )
@@ -199,6 +250,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 "Counted across all credential levels: programs flagged as falling short of the "
                 "state high-school-graduate earnings benchmark that also report median debt. A "
                 "program appearing here is a signal to ask questions, not a verdict on any student.",
+                "programs-where-debt-does-not-pay-back",
             ),
         )
     )
@@ -251,6 +303,7 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
                     "health-science centres, for example) often rank at the top because their "
                     "programs are almost all high-earning; the 'programs measured' column and each "
                     "school's page give the context.",
+                    f"best-value-colleges-{st.lower()}",
                 ),
             )
         )
@@ -317,10 +370,10 @@ def main() -> None:
     entries = build_major_lists(con, cip_slugs) + build_state_lists(con, slugs_by_unitid)
     lists_dir = SITE / "lists"
     lists_dir.mkdir(parents=True, exist_ok=True)
-    for slug, _, html in entries:
+    for slug, _, page_html in entries:
         d = lists_dir / slug
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(html)
+        (d / "index.html").write_text(page_html)
     (lists_dir / "index.html").write_text(render_index(entries))
     print(f"lists: {len(entries):,} pages -> {lists_dir}")
 

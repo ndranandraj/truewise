@@ -157,6 +157,10 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .calc-controls select {{ border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: .98rem; background: #fff; color: var(--ink); }}
     .calc-big {{ font-size: 1.12rem; margin: 14px 0 6px; line-height: 1.5; }}
     .calc-note {{ color: var(--ink-soft); font-size: .86rem; line-height: 1.5; margin: 6px 0 0; }}
+    .dl {{ margin: 14px 0 4px; }}
+    .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 9px 14px; font-size: .92rem; font-weight: 600; cursor: pointer; }}
+    .dl-btn:hover {{ background: var(--bg-alt); }}
+    .dl-note {{ color: var(--ink-faint); font-size: .85rem; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
