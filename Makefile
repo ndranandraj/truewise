@@ -60,6 +60,10 @@ value: spine flags site careers package-data
 test:
 	pytest
 
+# Headless check of the /compare/ page against the generated schools.json (needs `make site` first).
+test-compare:
+	node tests/compare_smoke.js
+
 lint:
 	ruff check . && ruff format --check .
 
