@@ -152,6 +152,11 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .fail {{ color: var(--bad); font-weight: 600; }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
     .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}
+    .calc {{ border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
+    .calc-controls {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .98rem; }}
+    .calc-controls select {{ border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: .98rem; background: #fff; color: var(--ink); }}
+    .calc-big {{ font-size: 1.12rem; margin: 14px 0 6px; line-height: 1.5; }}
+    .calc-note {{ color: var(--ink-soft); font-size: .86rem; line-height: 1.5; margin: 6px 0 0; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
@@ -218,6 +223,85 @@ def _program_rows(programs, threshold):
             f"<td class='num'>{pay_txt}</td></tr>"
         )
     return out
+
+
+def _median(vals):
+    v = sorted(x for x in vals if x is not None)
+    if not v:
+        return None
+    m = len(v) // 2
+    return v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2
+
+
+def _calculator(s, np_, brackets, labels, programs) -> str:
+    """An income + years calculator built only from this school's real federal figures.
+
+    Every input is published data (net price by income bracket; the school's median debt
+    payback in years). The multi-year total is an explicit arithmetic illustration, and the
+    page states the assumptions rather than implying a forecast.
+    """
+    import json as _j
+
+    payback = _median(
+        [p.get("payback") for p in programs if p.get("flag") == "passes_earnings_premium"]
+    )
+    data = {
+        "brackets": brackets,
+        "avg": np_.get("avg"),
+        "payback": payback,
+    }
+    opts = "".join(
+        f'<option value="{i}"{"" if b is not None else " disabled"}>{lab}'
+        f"{'' if b is not None else ' (not reported)'}</option>"
+        for i, (lab, b) in enumerate(zip(labels, brackets, strict=False))
+    )
+    return (
+        '    <div class="calc">\n'
+        f'      <script type="application/json" id="calc-data">{_j.dumps(data)}</script>\n'
+        '      <div class="calc-controls">\n'
+        '        <label for="calc-income">My family earns</label>\n'
+        f'        <select id="calc-income">{opts}<option value="-1">Not sure, show the average</option></select>\n'
+        '        <label for="calc-years">and I expect to take</label>\n'
+        '        <select id="calc-years">'
+        '<option value="2">2 years</option>'
+        '<option value="4" selected>4 years</option>'
+        '<option value="5">5 years</option>'
+        '<option value="6">6 years</option></select>\n'
+        "      </div>\n"
+        '      <div class="calc-out" id="calc-out"></div>\n'
+        "    </div>\n"
+        "    <script>\n"
+        "    (function () {\n"
+        '      var el = document.getElementById("calc-data"); if (!el) return;\n'
+        "      var D = JSON.parse(el.textContent);\n"
+        '      var inc = document.getElementById("calc-income"), yrs = document.getElementById("calc-years"),\n'
+        '          out = document.getElementById("calc-out");\n'
+        '      var money = function (n) { return n == null ? "not reported" : "$" + Math.round(n).toLocaleString(); };\n'
+        "      function render() {\n"
+        "        var i = parseInt(inc.value, 10), y = parseInt(yrs.value, 10);\n"
+        "        var per = i < 0 ? D.avg : D.brackets[i];\n"
+        "        if (per == null) { out.innerHTML = "
+        "\"<p class='calc-note'>Net price is not reported for that income band at this school.</p>\"; return; }\n"
+        "        var total = per * y;\n"
+        "        var h = '<p class=\"calc-big\">About <b>' + money(per) + '</b> per year, "
+        "or <b>' + money(total) + '</b> over ' + y + ' years.</p>';\n"
+        "        if (D.payback != null) {\n"
+        '          h += \'<p class="calc-note">Graduates of this school\\u2019s programs that clear the '
+        "earnings bar typically recoup what they borrowed in about <b>' + D.payback + ' year' + "
+        "(D.payback == 1 ? '' : 's') + '</b> of their earnings premium over a typical high-school graduate.</p>';\n"
+        "        }\n"
+        '        h += \'<p class="calc-note">This is arithmetic on published figures, not a quote or a '
+        "prediction: it multiplies the reported net price for that income band by the number of years you "
+        "choose. It assumes aid and price stay flat, and it does not include interest, living costs beyond "
+        "those already in net price, or your odds of finishing. Net price reflects students who received "
+        "federal aid, in the most recent reported year.</p>';\n"
+        "        out.innerHTML = h;\n"
+        "      }\n"
+        '      inc.addEventListener("change", render); yrs.addEventListener("change", render);\n'
+        "      render();\n"
+        "    })();\n"
+        "    </script>\n"
+    )
 
 
 def college_page(s, programs, slug) -> str:
@@ -306,15 +390,18 @@ def college_page(s, programs, slug) -> str:
         f'    <div class="cta-row"><a class="primary" href="/value-check/?school={esc(s["unitid"])}">See the full breakdown &rarr;</a></div>\n'
     )
 
-    # Net price by income.
+    # Net price by income, plus a "what would this cost me" calculator.
     np = s.get("net_price")
     if np and (np.get("avg") is not None or any(np.get("brackets") or [])):
         labels = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$110k and up"]
-        parts.append('    <h2 class="sec">What families actually pay</h2>\n')
+        brackets = list(np.get("brackets") or [None] * 5)
+        parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
+        parts.append(_calculator(s, np, brackets, labels, programs))
+        # The table doubles as the no-JS fallback and the full picture.
         parts.append(
             '    <table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
-        for lab, b in zip(labels, np.get("brackets") or [None] * 5, strict=False):
+        for lab, b in zip(labels, brackets, strict=False):
             if b is not None:
                 parts.append(f'      <tr><td>{lab}</td><td class="num">{money(b)}</td></tr>\n')
         if np.get("avg") is not None:
