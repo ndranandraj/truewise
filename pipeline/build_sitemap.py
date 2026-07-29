@@ -30,6 +30,7 @@ STATIC = [
     "/about/",
     "/findings/",
     "/lists/",
+    "/updates/",
 ]
 
 

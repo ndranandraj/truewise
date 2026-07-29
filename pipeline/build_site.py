@@ -133,13 +133,30 @@ def build_model(con) -> tuple[dict, dict, dict]:
     # Merge school identity + net-price-by-income (Affordability) from the institutions table.
     inst_path = PARQUET_DIR / "institutions.parquet"
     if inst_path.exists():
+        # Repayment columns arrived later than the rest; a snapshot taken before that still
+        # builds, it just has no repayment section. Select them only when present.
+        have = {
+            r[0]
+            for r in con.execute(f"DESCRIBE SELECT * FROM read_parquet('{inst_path}')").fetchall()
+        }
+        repay_cols = [
+            "repay_completers_n",
+            "repay_default",
+            "repay_default_is_max",
+            "repay_paid_in_full",
+            "repay_paid_in_full_is_max",
+            "repay_3yr_declining",
+            "repay_3yr_declining_is_max",
+        ]
+        sel_repay = ", ".join(c if c in have else f"NULL AS {c}" for c in repay_cols)
         ident = {
             r[0]: r[1:]
             for r in con.execute(
                 f"""SELECT unitid, city, school_url, enrollment, net_price_avg,
                        net_price_0_30k, net_price_30_48k, net_price_48_75k,
                        net_price_75_110k, net_price_110k_plus,
-                       pell_share, first_gen_share, completion_rate
+                       pell_share, first_gen_share, completion_rate,
+                       {sel_repay}
                     FROM read_parquet('{inst_path}')"""
             ).fetchall()
         }
@@ -147,7 +164,44 @@ def build_model(con) -> tuple[dict, dict, dict]:
             row = ident.get(s["unitid"])
             if not row:
                 continue
-            city, url, enr, npa, b1, b2, b3, b4, b5, pell, first_gen, compl = row
+            (
+                city,
+                url,
+                enr,
+                npa,
+                b1,
+                b2,
+                b3,
+                b4,
+                b5,
+                pell,
+                first_gen,
+                compl,
+                rep_n,
+                rep_dflt,
+                rep_dflt_max,
+                rep_paid,
+                rep_paid_max,
+                rep_dec,
+                rep_dec_max,
+            ) = row
+            # Loan repayment. ED censors small rates as "<= x", so each value ships with a
+            # flag saying it is an upper bound; the site renders those as "x% or less" and
+            # never averages or ranks them as if exact.
+            repay = {}
+            if rep_n is not None:
+                repay["n"] = int(rep_n)
+            for key, val, is_max in (
+                ("default", rep_dflt, rep_dflt_max),
+                ("paid_in_full", rep_paid, rep_paid_max),
+                ("declining_3yr", rep_dec, rep_dec_max),
+            ):
+                if val is not None:
+                    repay[key] = round(val, 4)
+                    if is_max:
+                        repay[key + "_is_max"] = True
+            if repay:
+                s["repayment"] = repay
             s["city"] = city
             s["url"] = url
             s["enrollment"] = int(enr) if enr else None

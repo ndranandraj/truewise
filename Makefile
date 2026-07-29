@@ -32,6 +32,7 @@ college-pages:
 	$(PYTHON) -m pipeline.build_majors_pages
 	$(PYTHON) -m pipeline.build_lists
 	$(PYTHON) -m pipeline.build_stats_exposure
+	$(PYTHON) -m pipeline.build_updates
 	$(PYTHON) -m pipeline.build_sitemap
 
 # 5) Generate the Careers field-of-study data (what a major pays).

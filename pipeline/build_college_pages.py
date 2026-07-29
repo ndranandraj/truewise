@@ -161,6 +161,11 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 9px 14px; font-size: .92rem; font-weight: 600; cursor: pointer; }}
     .dl-btn:hover {{ background: var(--bg-alt); }}
     .dl-note {{ color: var(--ink-faint); font-size: .85rem; }}
+    .upd {{ border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }}
+    .upd h2.sec {{ margin: 4px 0 6px; font-size: 1.1rem; }}
+    .upd-meta {{ color: var(--ink-soft); font-size: .92rem; line-height: 1.55; margin: 4px 0; }}
+    .upd-src {{ color: var(--ink-faint); font-size: .8rem; margin: 3px 0; word-break: break-all; }}
+    .mono {{ font-family: var(--mono); font-size: .82rem; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
@@ -430,6 +435,41 @@ def college_page(s, programs, slug) -> str:
             parts.append(
                 f'    <p class="src">Showing the {len(rows)} largest programs by graduates. See all {decided} on the <a href="/value-check/?school={esc(s["unitid"])}">full profile</a>.</p>\n'
             )
+
+    # Loan repayment: do borrowers actually pay it down?
+    rep = s.get("repayment") or {}
+    if rep.get("default") is not None or rep.get("declining_3yr") is not None:
+
+        def _rate(key):
+            v = rep.get(key)
+            if v is None:
+                return None
+            pct = round(v * 100)
+            return f"{pct}% or less" if rep.get(key + "_is_max") else f"{pct}%"
+
+        parts.append('    <h2 class="sec">Do borrowers pay the debt down?</h2>\n')
+        bits = []
+        if _rate("default"):
+            bits.append(f"<b>{_rate('default')}</b> had defaulted")
+        if _rate("paid_in_full"):
+            bits.append(f"<b>{_rate('paid_in_full')}</b> had already paid in full")
+        if bits:
+            n_txt = f" of the {rep['n']:,} graduates who borrowed," if rep.get("n") else ""
+            parts.append(
+                f'    <p class="idline">Two years into repayment,{n_txt} {" and ".join(bits)}.</p>\n'
+            )
+        if _rate("declining_3yr"):
+            parts.append(
+                f'    <p class="idline"><b>{_rate("declining_3yr")}</b> of all borrowers from this '
+                "school were paying their balance down three years in.</p>\n"
+            )
+        parts.append(
+            '    <p class="src">Loan repayment status of students who <b>completed</b> and borrowed '
+            "federally, two years after entering repayment (College Scorecard). Where a figure reads "
+            '"or less", the Department of Education censored the exact rate because the group was '
+            "small, so the true rate is at or below that number; we show the bound rather than guess "
+            "or hide it. The three-year figure counts all borrowers, not only completers.</p>\n"
+        )
 
     # Mobility line.
     mob = []

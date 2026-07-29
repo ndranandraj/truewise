@@ -74,6 +74,20 @@ INST_FIELD_CANDIDATES: dict[str, list[str]] = {
     # the less-than-4-year (C150_L4) rate; build_spine coalesces the two.
     "completion_4yr": ["C150_4"],
     "completion_l4": ["C150_L4"],
+    # Loan repayment, borrower-based, two years after entering repayment, for students who
+    # COMPLETED (graduates), which matches how the rest of the site counts people. These are
+    # shares of borrowers in each status and sum to about 1 across the status categories.
+    "repay_completers_n": ["BBRR2_FED_UGCOMP_N"],
+    "repay_default": ["BBRR2_FED_UGCOMP_DFLT"],
+    "repay_delinquent": ["BBRR2_FED_UGCOMP_DLNQ"],
+    "repay_forbearance": ["BBRR2_FED_UGCOMP_FBR"],
+    "repay_deferment": ["BBRR2_FED_UGCOMP_DFR"],
+    "repay_not_progressing": ["BBRR2_FED_UGCOMP_NOPROG"],
+    "repay_progressing": ["BBRR2_FED_UGCOMP_MAKEPROG"],
+    "repay_paid_in_full": ["BBRR2_FED_UGCOMP_PAIDINFULL"],
+    # Share of all borrowers whose balance is declining three years in (a different, older
+    # measure ED also publishes; kept for context, not mixed with the status shares above).
+    "repay_3yr_declining": ["RPY_3YR_RT"],
 }
 INST_REQUIRED = ["unitid", "earnings_threshold_state", "earnings_threshold_national"]
 

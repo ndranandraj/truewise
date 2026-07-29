@@ -70,6 +70,7 @@ site/colleges/
 site/majors/
 site/findings/
 site/lists/
+site/updates/
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md

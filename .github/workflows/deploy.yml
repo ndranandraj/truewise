@@ -45,6 +45,7 @@ jobs:
           python -m pipeline.build_majors_pages
           python -m pipeline.build_lists
           python -m pipeline.build_stats_exposure
+          python -m pipeline.build_updates
           python -m pipeline.build_sitemap
 
       - name: Data-quality gate + tests (block deploy on failure)
