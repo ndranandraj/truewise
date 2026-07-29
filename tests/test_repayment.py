@@ -27,6 +27,15 @@ def test_suppressed_and_junk_become_null_never_guessed():
         assert parse_rate(token) == (None, False), token
 
 
+def test_missing_values_never_leak_through_as_numbers():
+    # pandas represents an empty cell as float NaN; that is missing data, not a rate.
+    # Caught in a cross-check against ED's raw file, where NaN was passing through as a float.
+    assert parse_rate(float("nan")) == (None, False)
+    assert parse_rate("NaN") == (None, False)
+    assert parse_rate("nan") == (None, False)
+    assert parse_rate("None") == (None, False)
+
+
 def test_formatting_never_overstates_precision():
     assert format_rate(0.02, False) == "2%"
     assert format_rate(0.02, True) == "2% or less"

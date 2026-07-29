@@ -28,8 +28,11 @@ def parse_rate(raw) -> tuple[float | None, bool]:
     """
     if raw is None:
         return None, False
+    # A float NaN (how pandas represents an empty cell) is missing data, not a number.
+    if isinstance(raw, float) and raw != raw:
+        return None, False
     s = str(raw).strip()
-    if s in SUPPRESSED:
+    if s in SUPPRESSED or s.lower() in {"nan", "none"}:
         return None, False
     bounded = False
     if s.startswith("<="):
