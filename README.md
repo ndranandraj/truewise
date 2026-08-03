@@ -53,10 +53,10 @@ and the `Makefile` targets (`make data && make spine && make flags`).
 
 The cleaned, joined program-level dataset is CC-BY-4.0. It lives in
 [`packages/truewise-data/`](packages/truewise-data/) and `published/`. Column definitions are in
-[`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md). Until the PyPI release, install from source:
+[`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md). Install it from PyPI:
 
 ```bash
-pip install ./packages/truewise-data
+pip install truewise-data
 ```
 ```python
 import truewise_data as tw
