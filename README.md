@@ -1,5 +1,7 @@
 # Truewise
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21781702.svg)](https://doi.org/10.5281/zenodo.21781702)
+
 Open, honest US education data for students and families. Truewise turns scattered public
 federal data into clear answers: does a college program's graduates out-earn a high-school
 graduate, what do families actually pay, what does a major lead to, and what do public high
@@ -67,6 +69,17 @@ df = tw.load_value_check(decided_only=True)  # earnings vs a HS-grad benchmark, 
 - U.S. Dept. of Education **College Scorecard** (Field-of-Study + Institution), release 2026-06-10.
 - **NCES CIP-to-SOC crosswalk**, **BLS OEWS** (May 2023) and **Employment Projections** (2023-33).
 - **Civil Rights Data Collection (CRDC)**, 2020-21.
+
+## Cite this
+
+Every release is archived on Zenodo with its data files and checksums:
+
+> Anandraj. (2026). Truewise: open US college program value data from the College Scorecard
+> (Version 0.1.0) [Data set and software]. Zenodo. https://doi.org/10.5281/zenodo.21781702
+
+`10.5281/zenodo.21781702` always resolves to the latest version. To cite the exact version you
+used, v0.1.0 is `10.5281/zenodo.21781703`. `CITATION.cff` in this repository is machine-readable,
+and GitHub's "Cite this repository" button reads from it.
 
 ## License
 

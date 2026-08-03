@@ -14,7 +14,16 @@ url: "https://truewise.dev"
 repository-code: "https://github.com/ndranandraj/truewise"
 license: MIT
 version: 0.1.0
-date-released: "2026-07-17"
+date-released: "2026-08-04"
+# Concept DOI: always resolves to the latest version.
+doi: 10.5281/zenodo.21781702
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21781702
+    description: Concept DOI for all versions
+  - type: doi
+    value: 10.5281/zenodo.21781703
+    description: DOI for version 0.1.0
 keywords:
   - college-scorecard
   - education-data
