@@ -159,6 +159,19 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     table.t a:hover {{ color: var(--brand); text-decoration: underline; }}
     .pass {{ color: var(--good); font-weight: 600; }}
     .fail {{ color: var(--bad); font-weight: 600; }}
+    /* Diverging "vs a high-school grad" bar: the centre line is the benchmark, green to the
+       right means graduates out-earn it, red to the left means they fall short. Bars in a table
+       share one scale (the row with the biggest gap fills its half), so lengths are comparable. */
+    .prem-cell {{ min-width: 132px; }}
+    .prem-val {{ display: block; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }}
+    .prem-val.pos {{ color: var(--good); }}
+    .prem-val.neg {{ color: var(--bad); }}
+    .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: 4px; }}
+    .pbar::before {{ content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--line); }}
+    .pbar i {{ position: absolute; top: 0; height: 100%; min-width: 2px; }}
+    .pbar i.pos {{ left: 50%; background: linear-gradient(90deg, #17936a, var(--good)); border-radius: 0 4px 4px 0; }}
+    .pbar i.neg {{ right: 50%; background: linear-gradient(270deg, #c23522, var(--bad)); border-radius: 4px 0 0 4px; }}
+    @media (prefers-reduced-motion: no-preference) {{ .pbar i {{ transition: width .3s ease; }} }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
     .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}
     .calc {{ border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
@@ -229,13 +242,29 @@ def _program_rows(programs, threshold):
         if p.get("flag") in ("passes_earnings_premium", "fails_earnings_premium")
     ]
     decided.sort(key=lambda p: p.get("completers") or 0, reverse=True)
+    shown = decided[:15]
+    # One shared scale for all the bars in this table: the largest gap (either direction) fills
+    # its half, so a reader can compare row lengths directly. Guard against an all-zero table.
+    prems = [
+        (p["earnings"] - threshold)
+        for p in shown
+        if p.get("earnings") is not None and threshold is not None
+    ]
+    max_abs = max((abs(v) for v in prems), default=0) or 1
     out = []
-    for p in decided[:15]:
+    for p in shown:
         earn = p.get("earnings")
         prem = (earn - threshold) if (earn is not None and threshold is not None) else None
-        prem_txt = "n/a"
+        prem_cell = "<td class='num'>n/a</td>"
         if prem is not None:
+            sign_cls = "pos" if prem >= 0 else "neg"
             prem_txt = ("+$" if prem >= 0 else "-$") + f"{int(round(abs(prem))):,}"
+            width = round(abs(prem) / max_abs * 50, 1)
+            prem_cell = (
+                f"<td class='prem-cell'><span class='prem-val {sign_cls}'>{prem_txt}</span>"
+                f"<span class='pbar' aria-hidden='true'><i class='{sign_cls}' "
+                f"style='width:{width}%'></i></span></td>"
+            )
         verdict = (
             '<span class="pass">clears the bar</span>'
             if p.get("flag") == "passes_earnings_premium"
@@ -262,7 +291,7 @@ def _program_rows(programs, threshold):
         out.append(
             f"<tr><td>{prog_cell}</td><td>{esc(p.get('credential'))}</td>"
             f"<td class='num'>{n_txt}</td>"
-            f"<td class='num'>{money(earn)}</td><td class='num'>{prem_txt}</td>"
+            f"<td class='num'>{money(earn)}</td>{prem_cell}"
             f"<td>{verdict}</td><td class='num'>{money(p.get('debt'))}</td>"
             f"<td class='num'>{pay_txt}</td></tr>"
         )
@@ -496,7 +525,7 @@ def college_page(s, programs, slug) -> str:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
             '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
-            '<th class="num">Graduates</th><th class="num">Median earnings</th><th class="num">vs HS grad</th>'
+            '<th class="num">Graduates</th><th class="num">Median earnings</th><th>vs a high-school grad</th>'
             '<th>Verdict</th><th class="num">Median debt</th>'
             '<th class="num">Years of premium to repay</th></tr></thead><tbody>\n'
         )

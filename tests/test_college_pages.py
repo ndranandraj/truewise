@@ -131,6 +131,11 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     )
     card = site / "og" / "college" / "test-state-university.png"
     assert card.exists() and card.stat().st_size > 1000, "per-college OG card missing"
+    # The "vs a high-school grad" column renders a diverging bar: the passing program a green
+    # bar right of the benchmark line, the failing one a red bar to the left.
+    assert ">vs a high-school grad</th>" in h
+    assert "class='prem-val pos'" in h and "class='prem-val neg'" in h
+    assert "<i class='pos' style='width:" in h and "<i class='neg' style='width:" in h
 
 
 def test_state_index_and_national(tmp_path, monkeypatch):
