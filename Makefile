@@ -28,6 +28,7 @@ site:
 
 # 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
+	$(PYTHON) -m pipeline.og_images
 	$(PYTHON) -m pipeline.build_college_pages
 	$(PYTHON) -m pipeline.build_majors_pages
 	$(PYTHON) -m pipeline.build_lists

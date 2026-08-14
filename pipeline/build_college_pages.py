@@ -26,6 +26,8 @@ import duckdb
 from pipeline.build_site import build_model
 from pipeline.cip_names import has_plain_name, plain_name, tidy_official
 from pipeline.config import ROOT
+from pipeline.og_images import BRAND_DEEP, GOOD
+from pipeline.og_images import card as render_card
 
 SITE = ROOT / "site"
 BASE = "https://truewise.dev"
@@ -113,7 +115,8 @@ def money(n) -> str:
     return "n/a" if n is None else "$" + f"{int(round(n)):,}"
 
 
-def head(title, desc, canonical, extra_ld="") -> str:
+def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
+    og = f"{BASE}{og_image}" if og_image.startswith("/") else og_image
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,9 +128,9 @@ def head(title, desc, canonical, extra_ld="") -> str:
   <meta property="og:title" content="{esc(title)}" />
   <meta property="og:description" content="{esc(desc)}" />
   <meta property="og:url" content="{esc(canonical)}" />
-  <meta property="og:image" content="{BASE}/og.png" />
+  <meta property="og:image" content="{og}" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:image" content="{BASE}/og.png" />
+  <meta name="twitter:image" content="{og}" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -437,7 +440,22 @@ def college_page(s, programs, slug) -> str:
   </script>
 """
 
-    parts = [head(title, desc, canonical, ld)]
+    # A share card carrying this school's real pass/fail split, so a posted link is not generic.
+    if decided and fail:
+        card_big, card_color = f"{passed} of {decided} pay off", BRAND_DEEP
+    elif decided:
+        card_big, card_color = f"All {decided} pay off", GOOD
+    else:
+        card_big, card_color = None, BRAND_DEEP
+    render_card(
+        SITE / "og" / "college" / f"{slug}.png",
+        "College · does it pay off?",
+        name,
+        big=card_big,
+        big_color=card_color,
+        sub=f"Programs whose graduates out-earn a typical {st_name} high-school graduate.",
+    )
+    parts = [head(title, desc, canonical, ld, og_image=f"/og/college/{slug}.png")]
     parts.append('  <main class="wrap pg">\n')
     parts.append(
         f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; <a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n'

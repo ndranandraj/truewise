@@ -21,6 +21,7 @@ from pipeline.build_careers import build_fields
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
 from pipeline.config import ROOT
+from pipeline.og_images import card as render_card
 
 SITE = ROOT / "site"
 
@@ -77,7 +78,16 @@ def major_page(cip, name, family, creds, slug) -> str:
   ]}}
   </script>
 """
-    parts = [head(title, desc, canonical, ld)]
+    # A share card carrying this field's real figure, so a posted link is not a generic card.
+    og_path = SITE / "og" / "majors" / f"{slug}.png"
+    render_card(
+        og_path,
+        "College major · median graduate earnings",
+        short_label(cip, name),
+        big=lead_earn,
+        sub="Median salary a few years after graduating, across US programs.",
+    )
+    parts = [head(title, desc, canonical, ld, og_image=f"/og/majors/{slug}.png")]
     parts.append('  <main class="wrap pg">\n')
     parts.append(
         f'    <nav class="crumbs"><a href="/majors/">Majors</a> &rsaquo; {esc(plain)}</nav>\n'

@@ -33,6 +33,7 @@ from pipeline.build_college_pages import (
 )
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
+from pipeline.og_images import card as render_card
 
 SITE = ROOT / "site"
 MIN_PROGRAMS = 10  # a major needs this many reported programs to be ranked
@@ -100,7 +101,16 @@ def _download_block(slug, headers, rows) -> str:
 
 
 def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
-    p = [head(title, desc, canonical)]
+    # A share card whose hook is the #1 entry, so a posted ranking is not a generic card.
+    top = _strip_tags(rows[0][0]) if rows else ""
+    render_card(
+        SITE / "og" / "lists" / f"{slug}.png",
+        "Ranked list · US education data",
+        h1,
+        big=None,
+        sub=(f"#1: {top}." if top else _strip_tags(lede)),
+    )
+    p = [head(title, desc, canonical, og_image=f"/og/lists/{slug}.png")]
     p.append('  <main class="wrap pg">\n')
     p.append(f'    <nav class="crumbs"><a href="/lists/">Lists</a> &rsaquo; {esc(h1)}</nav>\n')
     p.append(f"    <h1>{esc(h1)}</h1>\n")

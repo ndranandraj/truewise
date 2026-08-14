@@ -21,6 +21,8 @@ import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
 from pipeline.config import PARQUET_DIR, ROOT
+from pipeline.og_images import BAD as OG_BAD
+from pipeline.og_images import card as render_card
 
 SITE = ROOT / "site"
 GRAD_LEVELS = ("4", "5", "6", "7", "8")  # post-bacc cert, master's, doctoral, first-prof, grad cert
@@ -107,7 +109,15 @@ def render_page(s) -> str:
   ]}}
   </script>
 """
-    p = [head(title, desc, canonical, ld)]
+    render_card(
+        SITE / "og" / "findings" / "stats-grad-exposure.png",
+        "Finding · federal earnings-accountability rule",
+        "Which graduate programs are exposed?",
+        big=f"{lo:,}-{hi:,}",
+        big_color=OG_BAD,
+        sub="US graduate programs fall below a typical bachelor's-holder's earnings.",
+    )
+    p = [head(title, desc, canonical, ld, og_image="/og/findings/stats-grad-exposure.png")]
     p.append('  <main class="wrap pg">\n')
     p.append(
         '    <nav class="crumbs"><a href="/findings/">Findings</a> &rsaquo; STATS graduate-program exposure</nav>\n'

@@ -7,6 +7,7 @@ requests>=2.31.0       # downloading bulk files / API calls
 pyarrow>=15.0.0        # Parquet read/write
 openpyxl>=3.1.0        # read BLS / NCES .xlsx sources for the Careers demand layer
 python-dotenv>=1.0.0   # load API key from .env
+Pillow>=10.0.0         # render per-page social share cards (Open Graph images)
 
 # Analysis / modeling (add when needed)
 # scikit-learn>=1.4.0  # earnings estimation for thin cohorts

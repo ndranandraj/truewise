@@ -40,6 +40,8 @@ jobs:
           python -m pipeline.build_careers
           [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
+          # Per-page social share cards (homepage; majors + findings cards render inside their builders).
+          python -m pipeline.og_images
           # Pre-rendered pages (SEO volume engine): college + state, then majors, then sitemap.
           python -m pipeline.build_college_pages
           python -m pipeline.build_majors_pages

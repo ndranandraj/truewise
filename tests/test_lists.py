@@ -95,6 +95,10 @@ def test_highest_paying_ranks_correctly_and_excludes_thin_majors(tmp_path, monke
     # The page must state its metric and sample rule.
     assert "at least 10 programs" in h
     assert "—" not in h and "&mdash;" not in h
+    # A per-list social card is rendered and the page points its og:image at it.
+    assert '<meta property="og:image" content="https://truewise.dev/og/lists/highest-paying-majors.png"' in h
+    card = site / "og" / "lists" / "highest-paying-majors.png"
+    assert card.exists() and card.stat().st_size > 1000, "per-list OG card missing"
 
 
 def test_index_and_state_list_exist(tmp_path, monkeypatch):

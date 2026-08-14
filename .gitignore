@@ -72,6 +72,8 @@ site/majors/
 site/findings/
 site/lists/
 site/updates/
+# Per-page social share cards are rendered at deploy by the page builders (homepage og.png IS tracked):
+site/og/
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md

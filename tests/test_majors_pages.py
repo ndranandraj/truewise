@@ -60,6 +60,10 @@ def test_major_page_bakes_degree_ladder(tmp_path, monkeypatch):
     assert '<link rel="canonical" href="https://truewise.dev/majors/registered-nursing/"' in h
     assert "BreadcrumbList" in h
     assert "—" not in h and "&mdash;" not in h
+    # A per-major social card is rendered and the page points its og:image at it (not the generic one).
+    assert '<meta property="og:image" content="https://truewise.dev/og/majors/registered-nursing.png"' in h
+    card = site / "og" / "majors" / "registered-nursing.png"
+    assert card.exists() and card.stat().st_size > 1000, "per-major OG card missing"
     # Index lists the major.
     idx = (site / "majors" / "index.html").read_text()
     assert 'href="/majors/registered-nursing/"' in idx
