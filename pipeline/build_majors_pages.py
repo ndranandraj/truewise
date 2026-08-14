@@ -37,6 +37,112 @@ CRED_ORDER = {
     "First Professional Degree": 7,
 }
 
+# Compact labels for the range chart's left axis (the full names are too long for it).
+CRED_SHORT = {
+    "Undergraduate Certificate or Diploma": "Certificate",
+    "Associate's Degree": "Associate's",
+    "Bachelor's Degree": "Bachelor's",
+    "Post-baccalaureate Certificate": "Post-bacc cert",
+    "Graduate/Professional Certificate": "Grad cert",
+    "Master's Degree": "Master's",
+    "Doctoral Degree": "Doctoral",
+    "First Professional Degree": "First prof",
+    "Non-Credential Program (Preparatory Coursework/Teacher Certification)": "Non-credential",
+}
+
+
+def _cred_short(cred: str) -> str:
+    """Compact label for the chart axis, with a safe fallback so an unmapped credential can
+    never overflow the label column."""
+    return CRED_SHORT.get(cred) or (cred[:13] + "…" if len(cred) > 14 else cred)
+
+
+def _k(v) -> str:
+    """A compact dollar axis label, e.g. 85000 -> $85k."""
+    return f"${round(v / 1000)}k"
+
+
+def _ladder_chart(creds) -> str:
+    """A horizontal range plot: one row per credential, showing the middle-half earnings band
+    (25th to 75th percentile of school medians) and the median as a dot, on a shared axis. It
+    makes the spread across schools visible, which a column of numbers cannot. Build-time inline
+    SVG so it needs no JavaScript and the values live in the accessible description."""
+    rows = [
+        c
+        for c in sorted(creds, key=lambda c: CRED_ORDER.get(c["credential"], 9))
+        if c.get("med") is not None and c.get("p25") is not None and c.get("p75") is not None
+    ]
+    if not rows:
+        return ""
+
+    lo = min(c["p25"] for c in rows)
+    hi = max(c["p75"] for c in rows)
+    if hi <= lo:
+        hi = lo + 1
+    # A little breathing room on each side.
+    pad = (hi - lo) * 0.06
+    lo, hi = lo - pad, hi + pad
+
+    W = 640
+    x0, x1 = 132, 556  # plot bounds; labels sit left of x0, median value right of x1
+    top, row_h = 20, 30
+    plot_b = top + len(rows) * row_h
+    H = plot_b + 34
+
+    def sx(v):
+        return round(x0 + (v - lo) / (hi - lo) * (x1 - x0), 1)
+
+    BAND, DOT, INK, SOFT, FAINT, LINE = (
+        "#dbe7fb",
+        "#1f6feb",
+        "#14203a",
+        "#45526b",
+        "#6b7688",
+        "#dde4ee",
+    )
+    p = [
+        f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '
+        'aria-labelledby="ladderT ladderD" style="max-width:640px;height:auto;margin:4px 0 2px">',
+        '<title id="ladderT">Earnings range across schools, by degree level</title>',
+        '<desc id="ladderD">Each row is a degree level: the bar is the middle half of schools\' '
+        "program medians (25th to 75th percentile) and the dot is the overall median. "
+        + "; ".join(
+            f"{_cred_short(c['credential'])} median {money(c['med'])}, "
+            f"{money(c['p25'])} to {money(c['p75'])}"
+            for c in rows
+        )
+        + ".</desc>",
+    ]
+    # Vertical gridlines + axis labels at lo/mid/hi.
+    for v in (lo + pad, (lo + hi) / 2, hi - pad):
+        x = sx(v)
+        p.append(
+            f'<line x1="{x}" y1="{top - 6}" x2="{x}" y2="{plot_b}" stroke="{LINE}" stroke-width="1"/>'
+        )
+        p.append(
+            f'<text x="{x}" y="{plot_b + 16}" text-anchor="middle" font-size="10" fill="{FAINT}">{_k(v)}</text>'
+        )
+    # Rows.
+    for i, c in enumerate(rows):
+        cy = top + i * row_h + row_h / 2
+        bx, bw = sx(c["p25"]), max(sx(c["p75"]) - sx(c["p25"]), 3)
+        p.append(
+            f'<rect x="{bx}" y="{cy - 5:.1f}" width="{bw:.1f}" height="10" rx="5" fill="{BAND}"/>'
+        )
+        p.append(
+            f'<circle cx="{sx(c["med"])}" cy="{cy:.1f}" r="4.5" fill="{DOT}" stroke="#fff" stroke-width="1.5"/>'
+        )
+        p.append(
+            f'<text x="{x0 - 10}" y="{cy + 3.5:.1f}" text-anchor="end" font-size="11" fill="{SOFT}">'
+            f"{esc(_cred_short(c['credential']))}</text>"
+        )
+        p.append(
+            f'<text x="{x1 + 10}" y="{cy + 3.5:.1f}" font-size="11" font-weight="600" '
+            f'fill="{INK}" style="font-variant-numeric:tabular-nums">{money(c["med"])}</text>'
+        )
+    p.append("</svg>")
+    return f'    <figure class="ladder-chart" style="margin:8px 0 4px">{"".join(p)}</figure>\n'
+
 
 def _json(s) -> str:
     import json as _j
@@ -107,8 +213,9 @@ def major_page(cip, name, family, creds, slug) -> str:
         "Explore this major &rarr;</a></div>\n"
     )
 
-    # Degree ladder.
+    # Degree ladder: a range chart (the visual) above the exact table (the detail).
     parts.append('    <h2 class="sec">Median earnings by degree level</h2>\n')
+    parts.append(_ladder_chart(creds))
     parts.append(
         '    <div class="tscroll"><table class="t"><thead><tr><th>Degree</th><th class="num">Median earnings</th>'
         '<th class="num">Typical range</th><th class="num">Schools</th>'
