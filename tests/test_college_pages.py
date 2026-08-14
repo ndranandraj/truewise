@@ -145,3 +145,34 @@ def test_state_index_and_national(tmp_path, monkeypatch):
     assert "test-state-university" in tx
     nat = (site / "colleges" / "index.html").read_text()
     assert 'href="/colleges/tx/"' in nat
+
+
+def _school(name, city, npass=3, nfail=1):
+    return {"name": name, "city": city, "state": "TX", "n_pass": npass, "n_fail": nfail}
+
+
+def test_state_index_disambiguates_duplicate_names():
+    """Two federal records sharing a name in a state read like a bug; where a name repeats the
+    city is folded into the link text (and dropped from the meta so it is not said twice)."""
+    from pipeline.build_college_pages import state_index
+
+    rows = [
+        ("maestro-college", _school("Maestro College", "Dallas"), None),
+        ("maestro-college-tx", _school("Maestro College", "Austin"), None),
+        ("rice-university", _school("Rice University", "Houston"), None),
+    ]
+    html = state_index("TX", rows)
+    assert "Maestro College (Dallas)" in html and "Maestro College (Austin)" in html
+    # A non-duplicated name keeps a plain link, with its city in the meta line.
+    assert ">Rice University</a>" in html and "Houston" in html
+
+
+def test_national_index_explains_coverage_gap():
+    """The directory profiles only schools with a judgeable program; the line states how many
+    more are searchable but suppressed, computed from the model so it cannot drift."""
+    from pipeline.build_college_pages import national_index
+
+    html = national_index(["TX", "CA"], profiled=4949, searchable=6127)
+    assert "4,949" in html and "1,178" in html  # profiled and the searchable-but-suppressed gap
+    # No gap sentence when every school in the data is profiled.
+    assert "have no full profile" not in national_index(["TX"], profiled=10, searchable=10)

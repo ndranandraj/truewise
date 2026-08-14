@@ -631,13 +631,21 @@ def state_index(st, schools_in_state) -> str:
     parts.append(
         f'    <p class="idline">{n} schools with earnings data, {total_fail} programs statewide leave graduates earning less than a typical high-school graduate.</p>\n'
     )
+    # Some federal records share a name within a state (branch campuses, chains like "Maestro
+    # College"). Two identical links read like a bug, so where a name repeats we fold the city
+    # into the link text itself (and drop it from the meta line to avoid saying it twice).
+    name_counts: dict[str, int] = defaultdict(int)
+    for _, s, _ in schools_in_state:
+        name_counts[s["name"]] += 1
     parts.append('    <ul class="schoollist">\n')
     for slug, s, _ in sorted(schools_in_state, key=lambda x: (x[1]["name"] or "").lower()):
         decided = s["n_pass"] + s["n_fail"]
         summ = f"{decided} programs with earnings data, {s['n_fail']} fall short"
-        city = f"{esc(s['city'])} &middot; " if s.get("city") else ""
+        dup_city = name_counts[s["name"]] > 1 and s.get("city")
+        label = esc(s["name"]) + (f" ({esc(s['city'])})" if dup_city else "")
+        city = "" if dup_city else (f"{esc(s['city'])} &middot; " if s.get("city") else "")
         parts.append(
-            f'      <li><a href="/college/{slug}/">{esc(s["name"])}</a><div class="meta">{city}{summ}</div></li>\n'
+            f'      <li><a href="/college/{slug}/">{label}</a><div class="meta">{city}{summ}</div></li>\n'
         )
     parts.append("    </ul>\n")
     parts.append("  </main>\n")
@@ -647,7 +655,7 @@ def state_index(st, schools_in_state) -> str:
     return "".join(parts)
 
 
-def national_index(states_present) -> str:
+def national_index(states_present, profiled=None, searchable=None) -> str:
     canonical = f"{BASE}/colleges/"
     title = "All US colleges: what families pay and what graduates earn"
     desc = (
@@ -661,6 +669,16 @@ def national_index(states_present) -> str:
     parts.append(
         '    <p class="idline">Pick a state, or <a href="/value-check/">search for a school by name</a>. Every page shows net price by income and whether graduates out-earn a typical high-school graduate.</p>\n'
     )
+    # Explain the coverage gap up front: the directory profiles schools with at least one program
+    # we can judge on earnings; the rest are searchable but privacy-suppressed, so they have no
+    # full page. Counts are passed in from the model so they cannot drift from the data.
+    if profiled and searchable and searchable > profiled:
+        parts.append(
+            f'    <p class="src">We profile the <b>{profiled:,}</b> colleges that have at least one '
+            f"program we can judge on earnings. Another <b>{searchable - profiled:,}</b> are searchable "
+            f"but have no full profile because all of their programs are privacy-suppressed by the "
+            f"Department of Education for small cohorts.</p>\n"
+        )
     parts.append('    <div class="statecols">\n')
     for st in sorted(states_present, key=lambda s: STATE_NAMES.get(s, s)):
         parts.append(
@@ -722,7 +740,9 @@ def main() -> None:
         d = colleges_dir / st.lower()
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(state_index(st, lst))
-    (colleges_dir / "index.html").write_text(national_index(states_present.keys()))
+    (colleges_dir / "index.html").write_text(
+        national_index(states_present.keys(), profiled=len(qualified), searchable=len(schools))
+    )
 
     print(f"college pages: {len(qualified):,}  |  state indexes: {len(states_present)}")
     print(f"wrote -> {col_dir} and {colleges_dir}")
