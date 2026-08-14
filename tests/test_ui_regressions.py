@@ -173,17 +173,81 @@ def test_every_page_shares_one_header_nav():
 
 
 def test_search_is_hardened_with_tokens_ranking_aliases_and_empty_state():
-    """The college search must not regress to a bare substring filter. Guard the token
-    ranking, the alias map, the routed empty state, and the a11y wiring."""
+    """The college search must not regress to a bare substring filter. The ranked matcher and
+    alias map now live in the shared module; Value Check keeps the routed empty state + a11y."""
+    mod = (SITE / "assets" / "college-search.js").read_text()
+    assert "ALIASES" in mod, "alias map missing from shared module"
+    assert "function searchSchools" in mod, "ranked search function missing from shared module"
+    assert "scored.sort" in mod, "ranking (scored sort) missing from shared module"
+
     vc = (SITE / "value-check" / "index.html").read_text()
-    assert "SEARCH_ALIASES" in vc, "alias map missing"
-    assert "function searchSchools" in vc, "ranked search function missing"
     assert "function detectState" in vc and "emptyStateHTML" in vc, "routed empty state missing"
     assert "best-value-colleges-" in vc, "empty state should link the per-state best-value list"
-    # Ranking, not just filtering: a scored sort must be present.
-    assert "scored.sort" in vc
     # Accessibility + progressive load.
     assert 'role="combobox"' in vc and 'role="listbox"' in vc
     assert "aria-activedescendant" in vc
     # The old naive one-liner must be gone.
     assert 'SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 40)' not in vc
+
+
+def test_all_college_pickers_share_one_search_module():
+    """Value Check and Compare must both load the shared matcher, and neither may keep its own
+    inline alias map, so a nickname like "UCLA" resolves identically in every picker (the audit
+    caught Compare returning nothing for an alias the homepage advertised)."""
+    for rel in ("value-check/index.html", "compare/index.html"):
+        html = (SITE / rel).read_text()
+        assert "/assets/college-search.js" in html, f"{rel} does not load the shared search module"
+        assert "SEARCH_ALIASES = {" not in html, f"{rel} still defines an inline alias map"
+        assert "ALIASES = {" not in html, f"{rel} still defines an inline alias map"
+
+
+def test_compare_remove_control_is_an_accessible_button():
+    """The Compare remove control was a click-only <div> (no keyboard, no name). It must be a
+    real button with an accessible label, and the page must expose a polite live region."""
+    html = (SITE / "compare" / "index.html").read_text()
+    assert '<button type="button" class="rm"' in html, "remove must be a <button>"
+    assert 'aria-label="Remove ' in html, "remove button needs an accessible name"
+    assert '<div class="rm"' not in html, "the old inaccessible div.rm must be gone"
+    assert 'aria-live="polite"' in html, "removals should be announced via a live region"
+
+
+def test_home_and_hubs_have_self_canonical():
+    """The homepage and hub pages had no canonical, so query-string and duplicate variants could
+    split search equity. Each must self-reference; Value Check's canonical also collapses the
+    dynamic ?school= URLs onto one indexable page."""
+    expected = {
+        "index.html": "https://truewise.dev/",
+        "value-check/index.html": "https://truewise.dev/value-check/",
+        "careers/index.html": "https://truewise.dev/careers/",
+        "k12/index.html": "https://truewise.dev/k12/",
+        "methodology/index.html": "https://truewise.dev/methodology/",
+        "about/index.html": "https://truewise.dev/about/",
+    }
+    for rel, url in expected.items():
+        html = (SITE / rel).read_text()
+        assert f'<link rel="canonical" href="{url}" />' in html, (
+            f"{rel} missing self-canonical {url}"
+        )
+
+
+def test_security_headers_present_and_csp_allows_site_resources():
+    """A baseline security-header block must apply to every path, and the CSP must permit the
+    resources the site actually loads (Google Fonts, the Cloudflare beacon) or it would break."""
+    headers = (SITE / "_headers").read_text()
+    for h in (
+        "Strict-Transport-Security:",
+        "X-Content-Type-Options: nosniff",
+        "X-Frame-Options: DENY",
+        "Referrer-Policy:",
+        "Permissions-Policy:",
+        "Content-Security-Policy:",
+    ):
+        assert h in headers, f"missing security header: {h}"
+    csp = next(ln for ln in headers.splitlines() if "Content-Security-Policy:" in ln)
+    for src in (
+        "https://fonts.gstatic.com",
+        "https://fonts.googleapis.com",
+        "https://static.cloudflareinsights.com",
+    ):
+        assert src in csp, f"CSP would block a resource the site uses: {src}"
+    assert "frame-ancestors 'none'" in csp

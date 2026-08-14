@@ -45,6 +45,11 @@ def test_headline_figures_match_data():
         "FROM v WHERE earnings_horizon = '4yr_after_completion'"
     ).fetchone()
     strict = round(d4 / f4)  # 1 in 14
+    # Reported-earnings split: has earnings vs of-those-judgeable (the precise wording fix).
+    has_earn, no_bench = con.execute(
+        "SELECT count(*) FILTER (WHERE earnings IS NOT NULL), "
+        "count(*) FILTER (WHERE earnings IS NOT NULL AND earnings_threshold_state IS NULL) FROM v"
+    ).fetchone()  # 62,902 and 2,700
 
     home = HOME.read_text()
     meth = METH.read_text()
@@ -58,6 +63,9 @@ def test_headline_figures_match_data():
     assert f"{total:,}" in meth, f"methodology missing total {total:,}"
     assert f"about {share}%" in meth, f"methodology missing 'about {share}%'"
     assert f"1 in {strict}" in meth, f"methodology missing strict-4yr '1 in {strict}'"
+    # Reported-earnings wording fix: both the has-earnings and unjudgeable counts must be exact.
+    assert f"{has_earn:,}" in meth, f"methodology missing has-earnings count {has_earn:,}"
+    assert f"{no_bench:,}" in meth, f"methodology missing no-benchmark count {no_bench:,}"
 
 
 def test_baylor_example_card_matches_data():

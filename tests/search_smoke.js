@@ -15,13 +15,15 @@ const region = js.slice(
 
 const SCHOOLS = JSON.parse(fs.readFileSync("site/value-check/data/schools.json", "utf8")).schools;
 const esc = (s) => (s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+// The alias map + matcher now live in the shared module both pickers load.
+const TWSearch = require("../site/assets/college-search.js");
 
-// Wrap the region in a function so its declarations stay local (SCHOOLS + esc are injected),
-// then return the functions under test.
+// Wrap the region in a function so its declarations stay local (SCHOOLS + esc + TWSearch are
+// injected), then return the functions under test.
 const factory = eval(
-  "(function (SCHOOLS, esc) {\n" + region + "\nreturn { searchSchools, detectState, emptyStateHTML };\n})",
+  "(function (SCHOOLS, esc, TWSearch) {\n" + region + "\nreturn { searchSchools, detectState, emptyStateHTML };\n})",
 );
-const { searchSchools, detectState, emptyStateHTML } = factory(SCHOOLS, esc);
+const { searchSchools, detectState, emptyStateHTML } = factory(SCHOOLS, esc, TWSearch);
 
 let fails = 0;
 const ck = (name, cond) => {

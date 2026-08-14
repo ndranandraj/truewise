@@ -42,7 +42,10 @@
     .schname { font-weight: 700; }
     .schname a { color: var(--brand); text-decoration: none; }
     .schmeta { color: var(--ink-soft); font-size: .85rem; font-weight: 400; margin-top: 2px; }
-    .rm { color: var(--bad); font-size: .82rem; cursor: pointer; margin-top: 6px; font-weight: 600; }
+    .rm { display: inline-block; margin-top: 6px; padding: 2px 4px; border: 0; background: none; color: var(--bad); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; border-radius: 6px; }
+    .rm:hover { text-decoration: underline; }
+    .rm:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .good { color: var(--good); font-weight: 600; }
     .bad { color: var(--bad); font-weight: 600; }
     .gem { display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 1px 8px; font-size: .76rem; font-weight: 700; }
@@ -90,6 +93,7 @@
         <input id="q" type="search" autocomplete="off" placeholder="Search a college to add, try Baylor or UCLA" aria-label="Search a college to add" />
       </div>
       <ul class="results" id="results"></ul>
+      <p id="live" class="sr-only" role="status" aria-live="polite"></p>
       <noscript><p class="lede" style="font-size:.95rem">This comparison tool needs JavaScript. You can still
         browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
       <div class="income-row" id="income-row" style="display:none">
@@ -114,6 +118,7 @@
     </section>
   </main>
 
+  <script src="/assets/college-search.js"></script>
   <script>
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const money = n => n == null ? "not reported" : "$" + Math.round(n).toLocaleString();
@@ -153,16 +158,18 @@
 
   const q = document.getElementById("q"), results = document.getElementById("results"),
         cmp = document.getElementById("cmp"), incomeRow = document.getElementById("income-row"),
-        income = document.getElementById("income");
+        income = document.getElementById("income"), live = document.getElementById("live");
+  const announce = msg => { if (live) live.textContent = msg; };
   let t;
   q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
   income.addEventListener("change", render);
 
   async function search() {
     await load();
-    const term = q.value.trim().toLowerCase();
-    if (term.length < 2) { results.innerHTML = ""; return; }
-    const hits = SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 8);
+    const term = q.value.trim();
+    if (TWSearch.normalize(term).length < 2) { results.innerHTML = ""; return; }
+    // Same normalized alias index as Value Check, so "UCLA" resolves here too.
+    const hits = TWSearch.searchSchools(SCHOOLS, term).slice(0, 8);
     results.innerHTML = hits.length
       ? hits.map(s => `<li data-u="${esc(s.unitid)}"><b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}</span></li>`).join("")
       : `<li class="empty">No colleges match that search.</li>`;
@@ -181,8 +188,15 @@
   }
   function remove(unitid) {
     const i = picked.findIndex(p => p.unitid === unitid);
-    if (i > -1) { picked.splice(i, 1); render();
-      history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname); }
+    if (i > -1) {
+      const name = picked[i].s.name;
+      picked.splice(i, 1); render();
+      announce(`${name} removed. ${picked.length} of ${MAX} colleges selected.`);
+      // Return focus predictably: next remove button, else back to the search box.
+      const next = cmp.querySelector("[data-rm]");
+      (next || q).focus();
+      history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+    }
   }
 
   function passRate(s) {
@@ -205,7 +219,7 @@
       const nameHtml = slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name);
       return `<th><div class="schname">${nameHtml}</div>
         <div class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}${s.control ? " &middot; " + esc(s.control) : ""}</div>
-        <div class="rm" data-rm="${esc(p.unitid)}">remove</div></th>`;
+        <button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></th>`;
     }).join("")}</tr>`;
 
     const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;

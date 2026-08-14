@@ -10,19 +10,25 @@ const data = JSON.parse(fs.readFileSync("site/value-check/data/schools.json", "u
 const mk = () => ({
   innerHTML: "",
   value: "",
+  textContent: "",
   style: {},
   addEventListener() {},
   querySelectorAll: () => [],
+  querySelector: () => null,
+  focus() {},
 });
 const els = {
   q: mk(),
   results: mk(),
   cmp: mk(),
+  live: mk(),
   "income-row": mk(),
   income: Object.assign(mk(), { value: "-1" }),
 };
 global.document = { getElementById: (id) => els[id] || mk() };
 global.window = { addEventListener() {} };
+// The shared alias/search module both pickers load; inject it as the page would.
+global.TWSearch = require("../site/assets/college-search.js");
 global.history = { replaceState() {} };
 global.location = { search: "", pathname: "/compare/" };
 global.fetch = async () => ({ json: async () => ({ schools: data }) });
@@ -94,6 +100,15 @@ const ck = (name, cond) => {
       h.includes(amp.name.replace(/&/g, "&amp;")) && !h.includes(amp.name),
     );
   }
+
+  // The advertised aliases must resolve in Compare's picker (the audit's "UCLA" defect).
+  const topName = (query) => {
+    const hits = TWSearch.searchSchools(data, query);
+    return hits[0] ? hits[0].name : "(none)";
+  };
+  ck('Compare resolves "UCLA" (advertised on the page)', topName("ucla").includes("California-Los Angeles"));
+  ck('Compare resolves "Baylor" to the University', topName("baylor") === "Baylor University");
+  ck('Compare resolves "ut austin" to UT Austin', topName("ut austin").includes("Texas at Austin"));
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL COMPARE CHECKS PASSED");
   process.exit(fails ? 1 : 0);

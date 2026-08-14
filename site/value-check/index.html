@@ -8,6 +8,7 @@
   <meta property="og:title" content="Value Check | Truewise" />
   <meta property="og:description" content="Does a college program's graduates out-earn a typical high-school graduate? Look it up." />
   <meta property="og:url" content="https://truewise.dev/value-check/" />
+  <link rel="canonical" href="https://truewise.dev/value-check/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
@@ -204,6 +205,7 @@
   </main>
   <button id="to-top" aria-label="Back to top" title="Back to top">↑</button>
 
+  <script src="/assets/college-search.js"></script>
   <script>
   const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
   const app = document.getElementById("app");
@@ -249,66 +251,14 @@
   }
 
   // ---- Search matching: tokens, ranking, and common aliases ----
-  // People rarely type a school's exact legal name. We tokenize the query, require every
-  // token to match somewhere in the name, then RANK (exact, prefix, word-prefix, contains)
-  // and break ties by size, so "baylor" surfaces Baylor University over Baylor College of
-  // Medicine and "texas austin" finds UT Austin. A small alias map rewrites the nicknames
-  // people actually type into words that appear in the official name.
-  const SEARCH_ALIASES = {
-    "ut austin": "texas at austin", "u t austin": "texas at austin",
-    "uc berkeley": "university of california berkeley", "cal berkeley": "university of california berkeley",
-    "ucla": "university of california los angeles", "uc la": "university of california los angeles",
-    "ucsd": "university of california san diego", "uc san diego": "university of california san diego",
-    "ucsb": "university of california santa barbara", "uc davis": "university of california davis",
-    "uc irvine": "university of california irvine", "uci": "university of california irvine",
-    "ucsf": "university of california san francisco", "uc riverside": "university of california riverside",
-    "usc": "university of southern california", "nyu": "new york university",
-    "mit": "massachusetts institute of technology", "caltech": "california institute of technology",
-    "upenn": "pennsylvania", "penn state": "pennsylvania state",
-    "psu": "pennsylvania state", "osu": "ohio state",
-    "umich": "michigan ann arbor", "u mich": "michigan ann arbor",
-    "unc": "north carolina chapel hill", "uconn": "connecticut",
-    "umass": "massachusetts amherst", "asu": "arizona state",
-    "fsu": "florida state", "lsu": "louisiana state",
-    "byu": "brigham young", "smu": "southern methodist",
-    "tcu": "texas christian", "ucf": "central florida",
-    "usf": "south florida", "vt": "virginia polytechnic",
-    "virginia tech": "virginia polytechnic", "georgia tech": "georgia institute of technology",
-    "gt": "georgia institute of technology", "texas a&m": "texas a m university",
-    "texas a and m": "texas a m university", "a&m": "texas a m university",
-    "pitt": "pittsburgh", "cal poly": "california polytechnic",
-    "rpi": "rensselaer", "wustl": "washington university st louis"
-  };
+  // The matcher and its alias map live in /assets/college-search.js so this page and the
+  // Compare picker resolve nicknames like "UCLA" identically. Thin local bindings keep the
+  // rest of this file (detectState, run()) unchanged.
+  const normalize = TWSearch.normalize;
+  const searchSchools = raw => TWSearch.searchSchools(SCHOOLS, raw);
 
   const STATE_TO_ABBR = { alabama:"AL", alaska:"AK", arizona:"AZ", arkansas:"AR", california:"CA", colorado:"CO", connecticut:"CT", delaware:"DE", florida:"FL", georgia:"GA", hawaii:"HI", idaho:"ID", illinois:"IL", indiana:"IN", iowa:"IA", kansas:"KS", kentucky:"KY", louisiana:"LA", maine:"ME", maryland:"MD", massachusetts:"MA", michigan:"MI", minnesota:"MN", mississippi:"MS", missouri:"MO", montana:"MT", nebraska:"NE", nevada:"NV", "new hampshire":"NH", "new jersey":"NJ", "new mexico":"NM", "new york":"NY", "north carolina":"NC", "north dakota":"ND", ohio:"OH", oklahoma:"OK", oregon:"OR", pennsylvania:"PA", "rhode island":"RI", "south carolina":"SC", "south dakota":"SD", tennessee:"TN", texas:"TX", utah:"UT", vermont:"VT", virginia:"VA", washington:"WA", "west virginia":"WV", wisconsin:"WI", wyoming:"WY" };
   const ABBR_TO_STATE = { AL:"Alabama", AK:"Alaska", AZ:"Arizona", AR:"Arkansas", CA:"California", CO:"Colorado", CT:"Connecticut", DE:"Delaware", DC:"District of Columbia", FL:"Florida", GA:"Georgia", HI:"Hawaii", ID:"Idaho", IL:"Illinois", IN:"Indiana", IA:"Iowa", KS:"Kansas", KY:"Kentucky", LA:"Louisiana", ME:"Maine", MD:"Maryland", MA:"Massachusetts", MI:"Michigan", MN:"Minnesota", MS:"Mississippi", MO:"Missouri", MT:"Montana", NE:"Nebraska", NV:"Nevada", NH:"New Hampshire", NJ:"New Jersey", NM:"New Mexico", NY:"New York", NC:"North Carolina", ND:"North Dakota", OH:"Ohio", OK:"Oklahoma", OR:"Oregon", PA:"Pennsylvania", RI:"Rhode Island", SC:"South Carolina", SD:"South Dakota", TN:"Tennessee", TX:"Texas", UT:"Utah", VT:"Vermont", VA:"Virginia", WA:"Washington", WV:"West Virginia", WI:"Wisconsin", WY:"Wyoming" };
-
-  const normalize = str => (str || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-
-  function searchSchools(raw) {
-    const term = normalize(raw);
-    if (!SCHOOLS || term.length < 2) return [];
-    const expanded = SEARCH_ALIASES[term] || term;
-    const tokens = expanded.split(" ").filter(Boolean);
-    const scored = [];
-    for (const s of SCHOOLS) {
-      const name = normalize(s.name);
-      const words = name.split(" ");
-      // Every query token must prefix-match a word, or appear as a substring of the name.
-      if (!tokens.every(t => words.some(w => w.startsWith(t)) || name.includes(t))) continue;
-      let sc;
-      if (name === expanded) sc = 0;                               // exact
-      else if (name.startsWith(expanded)) sc = 1;                  // name starts with query
-      else if (words[0] && words[0].startsWith(tokens[0])) sc = 2; // first word starts with first token
-      else if (tokens.every(t => words.some(w => w.startsWith(t)))) sc = 3; // all tokens are word-prefixes
-      else sc = 4;                                                 // substring only
-      scored.push({ s, sc });
-    }
-    scored.sort((a, b) => a.sc - b.sc
-      || (b.s.enrollment || 0) - (a.s.enrollment || 0)
-      || (a.s.name || "").localeCompare(b.s.name || ""));
-    return scored.map(x => x.s);
-  }
 
   function detectState(raw) {
     const term = normalize(raw);

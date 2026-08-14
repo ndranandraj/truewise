@@ -6,6 +6,20 @@
 # Note: Workers _headers allows only ONE splat (*) per URL pattern, so each data path is
 # listed explicitly rather than /*/data/*.
 
+# Baseline security headers on every response. The CSP is matched to the resources the site
+# actually loads: inline <script>/<style> (hence 'unsafe-inline'), Google Fonts, and the
+# cookieless Cloudflare beacon. 'unsafe-inline' is a real weakening, but the pages are static
+# and load no third-party scripts beyond the beacon, so the practical risk is low and the
+# frame-ancestors/nosniff/HSTS protections are the meaningful wins. Revisit CSP if inline JS
+# is ever moved to external files.
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), browsing-topics=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+
 # Stylesheet and icons: change rarely, safe to hold for an hour.
 /styles.css
   Cache-Control: public, max-age=3600

@@ -8,6 +8,7 @@
   <meta property="og:title" content="Methodology | Truewise" />
   <meta property="og:description" content="How Truewise computes every number, with the denominators, caveats, and the audit behind it." />
   <meta property="og:url" content="https://truewise.dev/methodology/" />
+  <link rel="canonical" href="https://truewise.dev/methodology/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
@@ -90,9 +91,11 @@
       than a typical high-school graduate. Here is exactly what is behind it, including the parts most coverage
       leaves out:</p>
     <ul>
-      <li><b>Denominator.</b> Of 227,980 programs, only <b>60,202 (about 26%)</b> have earnings data; the rest
-        are privacy-suppressed by ED for small cohorts. The 1-in-11 rate is computed on the reported-earnings set:
-        5,396 of 60,202 fall short (8.96%, or 1 in 11.2).</li>
+      <li><b>Denominator.</b> Of 227,980 programs, <b>62,902</b> have reported earnings. Of those, <b>60,202
+        (about 26%)</b> also have the state high-school-graduate benchmark needed for the earnings-premium
+        comparison, and the 1-in-11 rate is computed on that judgeable set: 5,396 fall short (8.96%, or 1 in 11.2).
+        The other 2,700 report earnings but cannot be judged because that state benchmark is unavailable, so they
+        count as "insufficient data"; the remaining rows are mainly privacy-suppressed by ED for small cohorts.</li>
       <li><b>Horizon.</b> Earnings are measured up to four years after completing. Where the four-year figure is
         suppressed we fall back to the one-year figure, and about 27% of the failing programs use that fallback.
         On strictly four-year rows the rate is 7.0% (3,914 of 55,539), roughly <b>1 in 14</b>. We report the
