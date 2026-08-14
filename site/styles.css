@@ -216,6 +216,8 @@ a:hover { color: var(--brand-deep); }
 .dots { display: grid; grid-template-columns: repeat(11, 22px); gap: 7px; }
 .dots span { width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
 .dots .dot-hi { background: var(--band-accent); box-shadow: 0 0 0 4px rgba(255, 140, 122, .22); }
+.home-dist { margin: 0; }
+.home-dist svg { display: block; }
 .finding-stat {
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   line-height: 1.2;

@@ -42,6 +42,8 @@ jobs:
           python -m analysis.summary
           # Per-page social share cards (homepage; majors + findings cards render inside their builders).
           python -m pipeline.og_images
+          # Homepage outcome-distribution chart (recomputed from the parquet, injected in place).
+          python -m pipeline.build_home_chart
           # Pre-rendered pages (SEO volume engine): college + state, then majors, then sitemap.
           python -m pipeline.build_college_pages
           python -m pipeline.build_majors_pages

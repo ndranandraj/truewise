@@ -68,6 +68,43 @@ def test_headline_figures_match_data():
     assert f"{no_bench:,}" in meth, f"methodology missing no-benchmark count {no_bench:,}"
 
 
+def test_home_distribution_chart_matches_data():
+    """The homepage histogram is generated from the parquet by build_home_chart. Recompute the
+    seven bucket counts, the fall-short total, and the judged total here, and assert each appears
+    in the committed SVG, so the chart can never drift from the data it claims to show."""
+    from pipeline.build_home_chart import EDGES, LABELS
+
+    con = _con()
+    case = (
+        "CASE "
+        + " ".join(
+            f"WHEN pct >= {EDGES[i]} AND pct < {EDGES[i + 1]} THEN {i}" for i in range(len(LABELS))
+        )
+        + " END"
+    )
+    rows = con.execute(
+        f"""
+        WITH d AS (
+          SELECT earnings_premium_state * 100.0 / earnings_threshold_state AS pct FROM v
+          WHERE value_flag IN ('passes_earnings_premium','fails_earnings_premium')
+            AND earnings_threshold_state IS NOT NULL
+        )
+        SELECT {case} AS b, count(*) FROM d GROUP BY b ORDER BY b
+        """
+    ).fetchall()
+    counts = [0] * len(LABELS)
+    for b, n in rows:
+        counts[b] = n
+    total = sum(counts)
+
+    home = HOME.read_text()
+    assert home.count("HOME_CHART_START") == 1 and home.count("HOME_CHART_END") == 1
+    for c in counts:
+        assert f'data-count="{c}"' in home, f"home chart missing bar for count {c}"
+    # The fall-short bucket and judged total must be spelled out in the accessible description.
+    assert f"{counts[0]:,}" in home and f"{total:,}" in home
+
+
 def test_baylor_example_card_matches_data():
     bay = (
         _con()
