@@ -163,6 +163,22 @@ def check_mobility(inst_path) -> tuple[bool, str]:
     return bad == 0, f"{bad} schools with a mobility share outside 0..1"
 
 
+def check_completion_not_zero(inst_path) -> tuple[bool, str]:
+    """A completion rate of exactly 0 is missing data, and must never reach a page.
+
+    ED publishes literal 0 in C150_4 for institutions with no first-time full-time cohort
+    (online, transfer-heavy, graduate-serving), rather than leaving it blank. Read at face
+    value that becomes "0% complete their program" on a real school's page. It is also self-
+    contradictory: those same schools report earnings for thousands of graduates, and a school
+    cannot graduate nobody while having graduates. The 0..1 bounds check above accepts 0, so
+    this needs its own gate. build_spine NULLIFs these; this asserts the result.
+    """
+    con = duckdb.connect()
+    con.execute(f"CREATE VIEW inst AS SELECT * FROM read_parquet('{inst_path}')")
+    bad = con.execute("SELECT count(*) FROM inst WHERE completion_rate = 0").fetchone()[0]
+    return bad == 0, f"{bad} schools with completion_rate exactly 0 (should be null)"
+
+
 def main() -> None:
     from pipeline.config import PARQUET_DIR
 
@@ -176,6 +192,7 @@ def main() -> None:
     if inst_path.exists():
         results.append(("net_price_within_bounds", *check_net_price(inst_path)))
         results.append(("mobility_shares_within_bounds", *check_mobility(inst_path)))
+        results.append(("completion_rate_never_zero", *check_completion_not_zero(inst_path)))
     failed = 0
     for name, ok, detail in results:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name:32s} {detail}")

@@ -72,6 +72,28 @@ def test_headers_file_sets_cache_control_with_single_splat_paths():
             assert ln.count("*") == 1, f"Workers _headers allows only one splat per URL: {ln}"
 
 
+def test_completion_rate_zero_is_treated_as_missing():
+    """ED writes literal 0 in C150_4 for schools with no first-time full-time cohort, which we
+    once published as "0% complete their program" on 56 real institutions, one of which reports
+    earnings for 14,229 graduates on the same page. build_spine must NULLIF it away, and the
+    published parquet must contain no zeros."""
+    spine = (PIPELINE / "build_spine.py").read_text()
+    assert "NULLIF" in spine and "completion_4yr" in spine, "completion coalesce must NULLIF zeros"
+    validate = (ROOT / "analysis" / "validate.py").read_text()
+    assert "check_completion_not_zero" in validate, "the data-quality gate must assert this"
+    assert "completion_rate_never_zero" in validate, "the gate must be registered in main()"
+
+    parquet = ROOT / "published" / "institutions.parquet"
+    if parquet.exists():
+        import duckdb
+
+        con = duckdb.connect()
+        n = con.execute(
+            f"SELECT count(*) FROM read_parquet('{parquet}') WHERE completion_rate = 0"
+        ).fetchone()[0]
+        assert n == 0, f"{n} schools still carry a completion rate of exactly 0"
+
+
 def test_stylesheet_versioning_stamps_and_is_idempotent():
     """The deploy stamps styles.css with a content hash so a CSS change busts its own cache.
     Guard that it rewrites both relative and absolute refs and never double-stamps."""

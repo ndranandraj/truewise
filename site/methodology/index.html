@@ -100,6 +100,23 @@
       <li><b>Cosmetology.</b> Among cosmetology programs (CIP 12.04) specifically, <b>96%</b> fall short
         (1,078 of 1,120 with data).</li>
     </ul>
+
+    <h3>How sensitive is that number?</h3>
+    <p>The fair criticism of any rate built on the reported 26% is that suppression might not be random,
+      so the visible programs could be a flattering sample. Suppression is indeed <em>not</em> random:
+      undergraduate certificates are about 82% suppressed and fail at 38.6% where reported, while
+      bachelor's degrees are about 59% suppressed and fail at 4.5%. Reported programs have a median of 33
+      graduates; suppressed ones have 4. So we tested whether that changes the answer.</p>
+    <p>Assuming every suppressed program fails at the rate observed in its own credential-and-sector group,
+      and re-estimating across all 220,960 programs, the rate becomes <b>9.03%</b>, against the
+      <b>8.96%</b> we publish. The composition of the hidden programs moves the headline by seven
+      hundredths of a percentage point, so the figure is robust to the most likely objection to it.</p>
+    <p>One distinction worth stating plainly, because it is easy to conflate. Our headline counts
+      <em>programs</em>. Weighted by the number of graduates instead, the rate is <b>7.37%</b>. So: about
+      <b>1 in 11 programs</b>, but about <b>1 in 14 graduates</b>. Failing programs are somewhat smaller
+      than average. Both numbers are in
+      <code>site/data/value_check_summary.json</code> and are recomputed by
+      <code>analysis/summary.py</code> on every data refresh, so they cannot drift away from the data.</p>
     <p class="repro">Reproduce these numbers: the dataset lives in <code>published/value_check.parquet</code> and
       the exact script is <code>analysis/summary.py</code> in the
       <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>

@@ -148,7 +148,15 @@ def main() -> None:
             {_num(inst, "earnings_threshold_national")}   AS earnings_threshold_national,
             {_num(inst, "pell_share")}                    AS pell_share,
             {_num(inst, "first_gen_share")}               AS first_gen_share,
-            COALESCE({_num(inst, "completion_4yr")}, {_num(inst, "completion_l4")}) AS completion_rate,
+            -- A completion rate of exactly 0 is MISSING DATA, not a real rate. ED publishes
+            -- literal 0 in C150_4 for institutions with no first-time full-time cohort (online,
+            -- transfer-heavy and graduate-serving schools), with "NA" in the sibling C150_L4:
+            -- 39 such zeros in C150_4 and 17 in C150_L4 in the 2026-06-10 release. Taking them at
+            -- face value made us publish "0% complete their program" for 56 real institutions,
+            -- including one reporting earnings for 14,229 graduates on the same page. NULLIF lets
+            -- a 0 fall through to the sibling column, and yields NULL when both are unusable, so
+            -- the page says "not reported" instead of inventing a devastating statistic.
+            COALESCE(NULLIF({_num(inst, "completion_4yr")}, 0), NULLIF({_num(inst, "completion_l4")}, 0)) AS completion_rate,
             {_net_price(icols, "")}                       AS net_price_avg,
             {_net_price(icols, "1")}                      AS net_price_0_30k,
             {_net_price(icols, "2")}                      AS net_price_30_48k,

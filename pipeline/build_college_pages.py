@@ -242,8 +242,13 @@ def _program_rows(programs, threshold):
             pay_txt = "none"
         else:
             pay_txt = f"{payback:g} yr" + ("" if payback == 1 else "s")
+        # Sample size belongs next to the median. A median over 11 graduates and one over 800
+        # otherwise render identically, which is the biggest thing a reader needs to weigh.
+        n = p.get("completers")
+        n_txt = f"{int(n):,}" if n else "n/a"
         out.append(
             f"<tr><td>{esc(p.get('program'))}</td><td>{esc(p.get('credential'))}</td>"
+            f"<td class='num'>{n_txt}</td>"
             f"<td class='num'>{money(earn)}</td><td class='num'>{prem_txt}</td>"
             f"<td>{verdict}</td><td class='num'>{money(p.get('debt'))}</td>"
             f"<td class='num'>{pay_txt}</td></tr>"
@@ -383,6 +388,24 @@ def college_page(s, programs, slug) -> str:
             f" Another <b>{s['n_insufficient']}</b> programs did not have enough data to judge."
         )
 
+    # Survivorship, stated where the judgement is made rather than in a footnote.
+    # Every earnings figure above describes students who FINISHED. At a school where most
+    # students do not finish, the verdict describes a surviving minority, and the people who
+    # left with debt and no credential are invisible in it. We measured this across the data:
+    # at every completion level from 0% to 33%, roughly 85-99% of programs still "clear the
+    # bar", so the verdict barely moves with completion. That is precisely why the two belong
+    # in the same sentence. Below 50% we name the number; above it we still say "graduates".
+    comp = s.get("completion")
+    if decided:
+        if comp is not None and comp < 0.5:
+            verdict += (
+                f" These figures describe students who finished, and at this school about "
+                f"<b>{round(comp * 100)}%</b> of students complete their program, so they do not "
+                f"describe the majority who leave without a credential."
+            )
+        else:
+            verdict += " These figures describe students who finished, not those who left early."
+
     gem = ' <span class="gem">★ Hidden gem</span>' if s.get("hidden_gem") else ""
     title = f"{name}: what families pay and what graduates earn"
 
@@ -444,7 +467,10 @@ def college_page(s, programs, slug) -> str:
     if rows:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
-            '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th><th class="num">Median earnings</th><th class="num">vs HS grad</th><th>Verdict</th><th class="num">Median debt</th><th class="num">Payback</th></tr></thead><tbody>\n'
+            '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
+            '<th class="num">Graduates</th><th class="num">Median earnings</th><th class="num">vs HS grad</th>'
+            '<th>Verdict</th><th class="num">Median debt</th>'
+            '<th class="num">Years of premium to repay</th></tr></thead><tbody>\n'
         )
         parts.append("      " + "\n      ".join(rows) + "\n")
         parts.append("    </tbody></table></div>\n")
@@ -498,7 +524,14 @@ def college_page(s, programs, slug) -> str:
         parts.append(f'    <p class="src">Access and outcomes: {" &middot; ".join(mob)}.</p>\n')
 
     parts.append(
-        '    <p class="src">Source: U.S. Department of Education College Scorecard (release 2026-06-10). Earnings are median earnings of graduates measured up to four years after completing, compared to the state high-school-graduate earnings threshold. Figures describe past graduates and are never a promise. Method: <a href="/methodology/">methodology</a>. Something look wrong? <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">Report it</a>.</p>\n'
+        '    <p class="src">Source: U.S. Department of Education College Scorecard, release 2026-06-10 '
+        "(the release date; the graduates described finished several years earlier, which is the most "
+        "recent cohort ED publishes). Earnings are median earnings of graduates measured up to four years "
+        "after completing, compared to the state high-school-graduate earnings threshold. Debt is federal "
+        "student loans only, so private and Parent PLUS borrowing is not included and the true total is "
+        "higher. Figures describe past graduates and are never a promise. Method: "
+        '<a href="/methodology/">methodology</a>. Something look wrong? '
+        '<a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">Report it</a>.</p>\n'
     )
     parts.append("  </main>\n")
     parts.append(FOOTER)

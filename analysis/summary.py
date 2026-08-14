@@ -56,6 +56,37 @@ def main() -> None:
         """
     ).fetchall()
 
+    # Sensitivity of the headline to the obvious criticism: we only observe ~26% of programs,
+    # and suppression is NOT random (undergraduate certificates are ~82% suppressed and fail at
+    # ~39%; bachelor's are ~59% suppressed and fail at ~4.5%). So: post-stratify. Assume each
+    # suppressed program fails at the rate observed in its own credential x sector cell, and
+    # re-estimate across all programs. Also report the rate weighted by graduates rather than by
+    # programs, because "1 in 11 programs" and "1 in 11 graduates" are different claims that the
+    # public will otherwise conflate.
+    strat = con.execute(
+        """
+        WITH cell AS (
+          SELECT credential_desc, control,
+                 count(*) FILTER (WHERE value_flag != 'insufficient_data') AS rep,
+                 count(*) FILTER (WHERE value_flag = 'fails_earnings_premium') AS fail,
+                 count(*) FILTER (WHERE value_flag = 'insufficient_data') AS sup
+          FROM v WHERE control IS NOT NULL AND regexp_matches(unitid, '^[0-9]+$')
+          GROUP BY 1, 2)
+        SELECT sum(fail + sup * (fail * 1.0 / nullif(rep, 0))) AS est_fail,
+               sum(rep + sup) AS all_prog
+        FROM cell WHERE rep > 0
+        """
+    ).fetchone()
+    students = con.execute(
+        """
+        SELECT sum(completers_count) FILTER (WHERE value_flag = 'fails_earnings_premium'),
+               sum(completers_count) FILTER (WHERE value_flag != 'insufficient_data')
+        FROM v WHERE completers_count IS NOT NULL AND regexp_matches(unitid, '^[0-9]+$')
+        """
+    ).fetchone()
+    poststrat_rate = (strat[0] / strat[1]) if strat and strat[1] else None
+    student_rate = (students[0] / students[1]) if students and students[1] else None
+
     summary = {
         "generated_from": "College Scorecard Field-of-Study + Institution (most recent)",
         "programs_total": total,
@@ -64,6 +95,13 @@ def main() -> None:
         "programs_fail_earnings_premium": fails,
         "programs_pass_earnings_premium": passes,
         "fail_rate_among_decided": round(fails / decided, 4) if decided else None,
+        # Robustness of the headline (see the comment above for the method).
+        "fail_rate_poststratified_all_programs": (
+            round(poststrat_rate, 4) if poststrat_rate is not None else None
+        ),
+        "fail_rate_weighted_by_graduates": (
+            round(student_rate, 4) if student_rate is not None else None
+        ),
         "by_state": [
             {"state": s, "fails": f, "decided": d, "fail_rate": round(f / d, 4)}
             for s, f, d in by_state
