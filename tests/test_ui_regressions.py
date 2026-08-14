@@ -72,6 +72,39 @@ def test_headers_file_sets_cache_control_with_single_splat_paths():
             assert ln.count("*") == 1, f"Workers _headers allows only one splat per URL: {ln}"
 
 
+def test_cip_plain_names_are_used_without_moving_urls():
+    """Public-facing labels use human names; slugs still derive from the official CIP label so
+    indexed URLs do not move; and the official label stays visible as provenance."""
+    from pipeline.build_college_pages import slugify
+    from pipeline.cip_names import PLAIN, has_plain_name, plain_name, short_label, tidy_official
+
+    assert plain_name("5138", "Registered Nursing, Nursing Administration, ...") == "Nursing"
+    assert plain_name("4201", "Psychology, General.") == "Psychology"
+    # Unmapped fields fall back to the tidied official label, never to an invented one.
+    assert plain_name("9999", "Some Unmapped Field.") == "Some Unmapped Field"
+    assert plain_name(None, None) == ""
+    # The trailing period in the federal file is stripped for display only.
+    assert tidy_official("Biology, General.") == "Biology, General"
+    assert has_plain_name("5138") and not has_plain_name("9999")
+
+    # short_label trims a long enumerated label to its head term, but never mangles a short one
+    # and never overrides a curated name.
+    long_label = "Homeland Security, Law Enforcement, Firefighting and Related Protective Services"
+    assert short_label("9998", long_label) == "Homeland Security"
+    assert short_label("4201", "Psychology, General.") == "Psychology"
+    assert short_label("9997", "Social Work.") == "Social Work"
+
+    # URL stability: the slug must come from the OFFICIAL name, not the plain one.
+    official = "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing"
+    assert slugify(official).startswith("registered-nursing")
+    assert slugify(official) != slugify(plain_name("5138", official))
+
+    # No curated name may be blank or accidentally identical to a bare CIP code.
+    for code, nm in PLAIN.items():
+        assert nm.strip(), f"empty plain name for {code}"
+        assert not nm.strip().isdigit(), f"numeric plain name for {code}"
+
+
 def test_completion_rate_zero_is_treated_as_missing():
     """ED writes literal 0 in C150_4 for schools with no first-time full-time cohort, which we
     once published as "0% complete their program" on 56 real institutions, one of which reports

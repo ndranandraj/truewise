@@ -19,6 +19,7 @@ import duckdb
 
 from pipeline.build_careers import build_fields
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
+from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
 from pipeline.config import ROOT
 
 SITE = ROOT / "site"
@@ -55,27 +56,39 @@ def major_page(cip, name, family, creds, slug) -> str:
     head_row = _headline(creds)
     lead_earn = money(head_row["med"])
     lead_cred = head_row["cred_short"]
-    title = f"What a {name} degree pays"
+    # Speak the visitor's language in the title and headings, keep the federal label as
+    # provenance. The slug is deliberately still built from the official name, so existing
+    # indexed URLs do not move.
+    plain = plain_name(cip, name)
+    official = tidy_official(name)
+    show_official = has_plain_name(cip) and official.lower() != plain.lower()
+    # The figure and the year are what earn the click in a search result.
+    # Keep this near 60 characters so search results do not truncate it. The credential lives in
+    # the description and on the page; the figure and the year are what earn the click.
+    title = f"{short_label(cip, name)} degree salary: {lead_earn} median (2026 federal data)"
     desc = (
-        f"{name} graduates typically earn about {lead_earn} ({lead_cred}). See median earnings by "
+        f"{plain} graduates typically earn about {lead_earn} ({lead_cred}). See median earnings by "
         f"degree level, the range across schools, and the job outlook. From federal data."
     )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
     {{"@type":"ListItem","position":1,"name":"Majors","item":"{BASE}/majors/"}},
-    {{"@type":"ListItem","position":2,"name":{_json(name)},"item":"{canonical}"}}
+    {{"@type":"ListItem","position":2,"name":{_json(plain)},"item":"{canonical}"}}
   ]}}
   </script>
 """
     parts = [head(title, desc, canonical, ld)]
     parts.append('  <main class="wrap pg">\n')
     parts.append(
-        f'    <nav class="crumbs"><a href="/majors/">Majors</a> &rsaquo; {esc(name)}</nav>\n'
+        f'    <nav class="crumbs"><a href="/majors/">Majors</a> &rsaquo; {esc(plain)}</nav>\n'
     )
-    parts.append(f"    <h1>{esc(name)}</h1>\n")
-    parts.append(f'    <p class="idline">{esc(family)}</p>\n')
+    parts.append(f"    <h1>{esc(plain)}</h1>\n")
+    idline = esc(family)
+    if show_official:
+        idline += f' &middot; federal classification: <span class="offname">{esc(official)}</span>'
+    parts.append(f'    <p class="idline">{idline}</p>\n')
     parts.append(
-        f'    <div class="verdict">{esc(name)} graduates with a {esc(lead_cred.lower())} typically '
+        f'    <div class="verdict">{esc(plain)} graduates with a {esc(lead_cred.lower())} typically '
         f"earned about <b>{lead_earn}</b>, measured a few years after finishing (median across US "
         f"programs, College Scorecard).</div>\n"
     )
@@ -218,7 +231,11 @@ def main() -> None:
         d = majors_dir / slug
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(major_page(cip, m["name"], m["family"], m["creds"], slug))
-        by_family[m["family"]].append((m["name"], slug, _headline(m["creds"])["med"]))
+        # Index by the plain name so the A-Z reads like a person wrote it, while the slug (and
+        # therefore the URL) still derives from the official federal label.
+        by_family[m["family"]].append(
+            (plain_name(cip, m["name"]), slug, _headline(m["creds"])["med"])
+        )
 
     (majors_dir / "index.html").write_text(majors_index(by_family))
     print(f"major pages: {len(majors):,}  |  families: {len(by_family)}")

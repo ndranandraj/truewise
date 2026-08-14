@@ -24,6 +24,7 @@ from collections import defaultdict
 import duckdb
 
 from pipeline.build_site import build_model
+from pipeline.cip_names import has_plain_name, plain_name, tidy_official
 from pipeline.config import ROOT
 
 SITE = ROOT / "site"
@@ -138,6 +139,8 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .crumbs a {{ color: var(--ink-soft); text-decoration: none; }}
     .pg h1 {{ font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
     .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
+    .offname {{ color: var(--ink-faint); }}
+    .progsub {{ color: var(--ink-faint); font-size: .82rem; display: block; margin-top: 2px; }}
     .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 16px 0; font-size: 1.05rem; line-height: 1.6; }}
     .verdict b {{ color: var(--ink); }}
     .gem {{ display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
@@ -246,8 +249,15 @@ def _program_rows(programs, threshold):
         # otherwise render identically, which is the biggest thing a reader needs to weigh.
         n = p.get("completers")
         n_txt = f"{int(n):,}" if n else "n/a"
+        # Lead with the name a person would use; keep the federal label underneath so the row is
+        # still traceable to the CIP it came from.
+        prog_official = tidy_official(p.get("program"))
+        prog_plain = plain_name(p.get("cip"), p.get("program"))
+        prog_cell = esc(prog_plain)
+        if has_plain_name(p.get("cip")) and prog_official.lower() != prog_plain.lower():
+            prog_cell += f'<span class="progsub">{esc(prog_official)}</span>'
         out.append(
-            f"<tr><td>{esc(p.get('program'))}</td><td>{esc(p.get('credential'))}</td>"
+            f"<tr><td>{prog_cell}</td><td>{esc(p.get('credential'))}</td>"
             f"<td class='num'>{n_txt}</td>"
             f"<td class='num'>{money(earn)}</td><td class='num'>{prem_txt}</td>"
             f"<td>{verdict}</td><td class='num'>{money(p.get('debt'))}</td>"
