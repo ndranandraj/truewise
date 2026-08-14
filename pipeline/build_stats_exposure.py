@@ -130,7 +130,7 @@ def render_page(s) -> str:
     # Exposure curve.
     p.append('    <h2 class="sec">Exposure by benchmark</h2>\n')
     p.append(
-        '    <table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
+        '    <div class="tscroll"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
         '<th class="num">Grad programs below</th><th class="num">Share of grad programs with earnings</th>'
         "</tr></thead><tbody>\n"
     )
@@ -142,7 +142,7 @@ def render_page(s) -> str:
             f"{' &nbsp;<b>(likely range)</b>' if inband else ''}</td>"
             f"<td class='num'>{row['n_below']:,}</td><td class='num'>{row['pct']}%</td></tr>\n"
         )
-    p.append("    </tbody></table>\n")
+    p.append("    </tbody></table></div>\n")
     p.append(
         f'    <p class="src">Grad-program four-year earnings run higher than undergraduate: median '
         f"<b>{money(s['median'])}</b> (10th percentile {money(s['p10'])}, 75th {money(s['p75'])}). "
@@ -155,7 +155,7 @@ def render_page(s) -> str:
         f'    <h2 class="sec">By credential (at an illustrative {money(REF)} benchmark)</h2>\n'
     )
     p.append(
-        '    <table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
+        '    <div class="tscroll"><table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
         '<th class="num">Below benchmark</th></tr></thead><tbody>\n'
     )
     for cred, with_earn, below in s["by_cred"]:
@@ -163,14 +163,14 @@ def render_page(s) -> str:
             f"      <tr><td>{esc(cred)}</td><td class='num'>{with_earn:,}</td>"
             f"<td class='num'>{below:,}</td></tr>\n"
         )
-    p.append("    </tbody></table>\n")
+    p.append("    </tbody></table></div>\n")
 
     # Top exposed fields.
     p.append(
         f'    <h2 class="sec">Fields with the most exposed programs (below {money(REF)})</h2>\n'
     )
     p.append(
-        '    <table class="t"><thead><tr><th>Field of study</th>'
+        '    <div class="tscroll"><table class="t"><thead><tr><th>Field of study</th>'
         '<th class="num">Programs below</th><th class="num">Median earnings</th></tr></thead><tbody>\n'
     )
     for field, below, med in s["top_fields"]:
@@ -178,7 +178,7 @@ def render_page(s) -> str:
             f"      <tr><td>{esc(field)}</td><td class='num'>{below:,}</td>"
             f"<td class='num'>{money(med)}</td></tr>\n"
         )
-    p.append("    </tbody></table>\n")
+    p.append("    </tbody></table></div>\n")
     p.append(
         '    <p class="src">These are the classic high-debt, modest-pay graduate fields: master\'s '
         "degrees in teaching, counseling, psychology, social work, and the arts.</p>\n"

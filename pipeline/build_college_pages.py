@@ -144,6 +144,7 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .cta-row {{ margin: 18px 0 8px; }}
     .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: 10px; }}
     h2.sec {{ font-size: 1.2rem; letter-spacing: -0.02em; margin: 30px 0 8px; }}
+    .tscroll {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0; }}
     table.t {{ width: 100%; border-collapse: collapse; font-size: .93rem; }}
     table.t th, table.t td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }}
     table.t th {{ color: var(--ink-soft); font-weight: 600; }}
@@ -165,7 +166,7 @@ def head(title, desc, canonical, extra_ld="") -> str:
     .upd h2.sec {{ margin: 4px 0 6px; font-size: 1.1rem; }}
     .upd-meta {{ color: var(--ink-soft); font-size: .92rem; line-height: 1.55; margin: 4px 0; }}
     .upd-src {{ color: var(--ink-faint); font-size: .8rem; margin: 3px 0; word-break: break-all; }}
-    .mono {{ font-family: var(--mono); font-size: .82rem; }}
+    .mono {{ font-family: var(--mono); font-size: .82rem; overflow-wrap: anywhere; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
@@ -408,7 +409,7 @@ def college_page(s, programs, slug) -> str:
         parts.append(_calculator(s, np, brackets, labels, programs))
         # The table doubles as the no-JS fallback and the full picture.
         parts.append(
-            '    <table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
+            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
         for lab, b in zip(labels, brackets, strict=False):
             if b is not None:
@@ -417,7 +418,7 @@ def college_page(s, programs, slug) -> str:
             parts.append(
                 f'      <tr><td><b>All families (average)</b></td><td class="num"><b>{money(np["avg"])}</b></td></tr>\n'
             )
-        parts.append("    </tbody></table>\n")
+        parts.append("    </tbody></table></div>\n")
         parts.append(
             '    <p class="src">Net price is the yearly cost after grants and scholarships, by family income (College Scorecard). Credit: TuitionTracker.</p>\n'
         )
@@ -427,10 +428,10 @@ def college_page(s, programs, slug) -> str:
     if rows:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
-            '    <table class="t"><thead><tr><th>Program</th><th>Credential</th><th class="num">Median earnings</th><th class="num">vs HS grad</th><th>Verdict</th><th class="num">Median debt</th><th class="num">Payback</th></tr></thead><tbody>\n'
+            '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th><th class="num">Median earnings</th><th class="num">vs HS grad</th><th>Verdict</th><th class="num">Median debt</th><th class="num">Payback</th></tr></thead><tbody>\n'
         )
         parts.append("      " + "\n      ".join(rows) + "\n")
-        parts.append("    </tbody></table>\n")
+        parts.append("    </tbody></table></div>\n")
         if decided > len(rows):
             parts.append(
                 f'    <p class="src">Showing the {len(rows)} largest programs by graduates. See all {decided} on the <a href="/value-check/?school={esc(s["unitid"])}">full profile</a>.</p>\n'

@@ -1,0 +1,38 @@
+# Cloudflare Workers static-asset cache policy.
+# Without this file the platform default is "public, max-age=0, must-revalidate", i.e. no
+# real browser caching: styles.css, fonts, and the large JSON shards revalidate on every
+# navigation. Durations are kept modest so the monthly data refresh still lands promptly,
+# and the post-deploy cache purge already clears the edge on each deploy.
+# Note: Workers _headers allows only ONE splat (*) per URL pattern, so each data path is
+# listed explicitly rather than /*/data/*.
+
+# Stylesheet and icons: change rarely, safe to hold for an hour.
+/styles.css
+  Cache-Control: public, max-age=3600
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/og.png
+  Cache-Control: public, max-age=86400
+
+# Generated data shards (the heavy payloads): one day.
+/value-check/data/*
+  Cache-Control: public, max-age=86400
+/careers/data/*
+  Cache-Control: public, max-age=86400
+/k12/data/*
+  Cache-Control: public, max-age=86400
+
+# Downloadable datasets under /data/.
+/data/*
+  Cache-Control: public, max-age=86400
+
+# Pre-rendered HTML pages: an hour lets a repeat visitor navigate instantly while still
+# picking up the monthly rebuild within the day.
+/college/*
+  Cache-Control: public, max-age=3600
+/colleges/*
+  Cache-Control: public, max-age=3600
+/majors/*
+  Cache-Control: public, max-age=3600
+/lists/*
+  Cache-Control: public, max-age=3600

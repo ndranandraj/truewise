@@ -87,7 +87,7 @@ def major_page(cip, name, family, creds, slug) -> str:
     # Degree ladder.
     parts.append('    <h2 class="sec">Median earnings by degree level</h2>\n')
     parts.append(
-        '    <table class="t"><thead><tr><th>Degree</th><th class="num">Median earnings</th>'
+        '    <div class="tscroll"><table class="t"><thead><tr><th>Degree</th><th class="num">Median earnings</th>'
         '<th class="num">Typical range</th><th class="num">Schools</th>'
         '<th class="num">Clear the bar</th></tr></thead><tbody>\n'
     )
@@ -103,7 +103,7 @@ def major_page(cip, name, family, creds, slug) -> str:
             f"<td class='num'>{rng}</td><td class='num'>{c.get('schools') or 'n/a'}</td>"
             f"<td class='num'>{passp}</td></tr>\n"
         )
-    parts.append("    </tbody></table>\n")
+    parts.append("    </tbody></table></div>\n")
     parts.append(
         '    <p class="src">"Clear the bar" is the share of programs whose graduates out-earn a '
         "typical high-school graduate (the federal earnings-premium test). Typical range is the "
@@ -125,7 +125,7 @@ def major_page(cip, name, family, creds, slug) -> str:
         occ = demand.get("occupations") or []
         if occ:
             parts.append(
-                '    <table class="t"><thead><tr><th>Occupation</th><th class="num">Median pay</th>'
+                '    <div class="tscroll"><table class="t"><thead><tr><th>Occupation</th><th class="num">Median pay</th>'
                 '<th class="num">Growth</th><th class="num">Openings/yr</th></tr></thead><tbody>\n'
             )
             for o in occ:
@@ -136,7 +136,7 @@ def major_page(cip, name, family, creds, slug) -> str:
                     f"      <tr><td>{esc(o.get('title'))}</td><td class='num'>{w}</td>"
                     f"<td class='num'>{gr}</td><td class='num'>{op}</td></tr>\n"
                 )
-            parts.append("    </tbody></table>\n")
+            parts.append("    </tbody></table></div>\n")
             parts.append(
                 '    <p class="src">Occupation pay and outlook: U.S. Bureau of Labor Statistics '
                 "(OEWS wages, Employment Projections). A field maps to several occupations, so this "

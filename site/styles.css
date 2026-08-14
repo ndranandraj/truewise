@@ -184,15 +184,15 @@ a:hover { color: var(--brand-deep); }
 .example-row .program { font-size: .95rem; font-weight: 600; margin: 0; }
 .example-row .earned { font-size: .85rem; color: var(--ink-soft); margin: 2px 0 0; }
 .example-row .earned b { color: var(--ink); font-variant-numeric: tabular-nums; }
-.verdict {
+.verdict-pill {
   flex: 0 0 auto;
   font-size: .8rem; font-weight: 700;
   padding: 6px 12px; border-radius: 999px;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.verdict.up { background: var(--good-bg); color: var(--good); }
-.verdict.down { background: var(--bad-bg); color: var(--bad); }
+.verdict-pill.up { background: var(--good-bg); color: var(--good); }
+.verdict-pill.down { background: var(--bad-bg); color: var(--bad); }
 .example-card footer {
   font-size: .75rem; color: #8b95a7;
   padding: 10px 20px;

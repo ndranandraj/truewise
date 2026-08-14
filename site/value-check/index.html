@@ -38,6 +38,11 @@
     .mini .f { color: #b42318; font-weight: 700; }
     .mini .p { color: #067647; font-weight: 700; }
     .mini .i { color: #6b7688; }
+    .searchbox input:disabled { color: var(--ink-faint); cursor: progress; }
+    .results li.active .school-card, .school-card:focus-visible { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31,111,235,.12); outline: none; }
+    .rescount { color: var(--ink-faint); font-size: .85rem; margin: 14px 0 2px; }
+    .empty-help { max-width: 620px; margin: 16px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-alt); line-height: 1.6; }
+    .empty-help a { color: var(--brand); font-weight: 600; }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -216,9 +221,93 @@
     route(params);
   }
 
+  // ---- Search matching: tokens, ranking, and common aliases ----
+  // People rarely type a school's exact legal name. We tokenize the query, require every
+  // token to match somewhere in the name, then RANK (exact, prefix, word-prefix, contains)
+  // and break ties by size, so "baylor" surfaces Baylor University over Baylor College of
+  // Medicine and "texas austin" finds UT Austin. A small alias map rewrites the nicknames
+  // people actually type into words that appear in the official name.
+  const SEARCH_ALIASES = {
+    "ut austin": "texas at austin", "u t austin": "texas at austin",
+    "uc berkeley": "university of california berkeley", "cal berkeley": "university of california berkeley",
+    "ucla": "university of california los angeles", "uc la": "university of california los angeles",
+    "ucsd": "university of california san diego", "uc san diego": "university of california san diego",
+    "ucsb": "university of california santa barbara", "uc davis": "university of california davis",
+    "uc irvine": "university of california irvine", "uci": "university of california irvine",
+    "ucsf": "university of california san francisco", "uc riverside": "university of california riverside",
+    "usc": "university of southern california", "nyu": "new york university",
+    "mit": "massachusetts institute of technology", "caltech": "california institute of technology",
+    "upenn": "pennsylvania", "penn state": "pennsylvania state",
+    "psu": "pennsylvania state", "osu": "ohio state",
+    "umich": "michigan ann arbor", "u mich": "michigan ann arbor",
+    "unc": "north carolina chapel hill", "uconn": "connecticut",
+    "umass": "massachusetts amherst", "asu": "arizona state",
+    "fsu": "florida state", "lsu": "louisiana state",
+    "byu": "brigham young", "smu": "southern methodist",
+    "tcu": "texas christian", "ucf": "central florida",
+    "usf": "south florida", "vt": "virginia polytechnic",
+    "virginia tech": "virginia polytechnic", "georgia tech": "georgia institute of technology",
+    "gt": "georgia institute of technology", "texas a&m": "texas a m university",
+    "texas a and m": "texas a m university", "a&m": "texas a m university",
+    "pitt": "pittsburgh", "cal poly": "california polytechnic",
+    "rpi": "rensselaer", "wustl": "washington university st louis"
+  };
+
+  const STATE_TO_ABBR = { alabama:"AL", alaska:"AK", arizona:"AZ", arkansas:"AR", california:"CA", colorado:"CO", connecticut:"CT", delaware:"DE", florida:"FL", georgia:"GA", hawaii:"HI", idaho:"ID", illinois:"IL", indiana:"IN", iowa:"IA", kansas:"KS", kentucky:"KY", louisiana:"LA", maine:"ME", maryland:"MD", massachusetts:"MA", michigan:"MI", minnesota:"MN", mississippi:"MS", missouri:"MO", montana:"MT", nebraska:"NE", nevada:"NV", "new hampshire":"NH", "new jersey":"NJ", "new mexico":"NM", "new york":"NY", "north carolina":"NC", "north dakota":"ND", ohio:"OH", oklahoma:"OK", oregon:"OR", pennsylvania:"PA", "rhode island":"RI", "south carolina":"SC", "south dakota":"SD", tennessee:"TN", texas:"TX", utah:"UT", vermont:"VT", virginia:"VA", washington:"WA", "west virginia":"WV", wisconsin:"WI", wyoming:"WY" };
+  const ABBR_TO_STATE = { AL:"Alabama", AK:"Alaska", AZ:"Arizona", AR:"Arkansas", CA:"California", CO:"Colorado", CT:"Connecticut", DE:"Delaware", DC:"District of Columbia", FL:"Florida", GA:"Georgia", HI:"Hawaii", ID:"Idaho", IL:"Illinois", IN:"Indiana", IA:"Iowa", KS:"Kansas", KY:"Kentucky", LA:"Louisiana", ME:"Maine", MD:"Maryland", MA:"Massachusetts", MI:"Michigan", MN:"Minnesota", MS:"Mississippi", MO:"Missouri", MT:"Montana", NE:"Nebraska", NV:"Nevada", NH:"New Hampshire", NJ:"New Jersey", NM:"New Mexico", NY:"New York", NC:"North Carolina", ND:"North Dakota", OH:"Ohio", OK:"Oklahoma", OR:"Oregon", PA:"Pennsylvania", RI:"Rhode Island", SC:"South Carolina", SD:"South Dakota", TN:"Tennessee", TX:"Texas", UT:"Utah", VT:"Vermont", VA:"Virginia", WA:"Washington", WV:"West Virginia", WI:"Wisconsin", WY:"Wyoming" };
+
+  const normalize = str => (str || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+  function searchSchools(raw) {
+    const term = normalize(raw);
+    if (!SCHOOLS || term.length < 2) return [];
+    const expanded = SEARCH_ALIASES[term] || term;
+    const tokens = expanded.split(" ").filter(Boolean);
+    const scored = [];
+    for (const s of SCHOOLS) {
+      const name = normalize(s.name);
+      const words = name.split(" ");
+      // Every query token must prefix-match a word, or appear as a substring of the name.
+      if (!tokens.every(t => words.some(w => w.startsWith(t)) || name.includes(t))) continue;
+      let sc;
+      if (name === expanded) sc = 0;                               // exact
+      else if (name.startsWith(expanded)) sc = 1;                  // name starts with query
+      else if (words[0] && words[0].startsWith(tokens[0])) sc = 2; // first word starts with first token
+      else if (tokens.every(t => words.some(w => w.startsWith(t)))) sc = 3; // all tokens are word-prefixes
+      else sc = 4;                                                 // substring only
+      scored.push({ s, sc });
+    }
+    scored.sort((a, b) => a.sc - b.sc
+      || (b.s.enrollment || 0) - (a.s.enrollment || 0)
+      || (a.s.name || "").localeCompare(b.s.name || ""));
+    return scored.map(x => x.s);
+  }
+
+  function detectState(raw) {
+    const term = normalize(raw);
+    for (const [nm, ab] of Object.entries(STATE_TO_ABBR)) if (term.includes(nm)) return ab;
+    for (const tok of term.split(" ")) if (tok.length === 2 && ABBR_TO_STATE[tok.toUpperCase()]) return tok.toUpperCase();
+    return null;
+  }
+
+  // A dead end is a wasted visitor. Route "no match" into the state index and lists we already have.
+  function emptyStateHTML(raw) {
+    const ab = detectState(raw);
+    let onward;
+    if (ab) {
+      const nm = ABBR_TO_STATE[ab];
+      onward = ` or <a href="/colleges/${ab.toLowerCase()}/">browse ${esc(nm)} colleges</a>,`
+        + ` or see the <a href="/lists/best-value-colleges-${ab.toLowerCase()}/">best-value colleges in ${esc(nm)}</a>`;
+    } else {
+      onward = ` or <a href="/colleges/">browse every college by state</a>,`
+        + ` or explore the <a href="/lists/">rankings and lists</a>`;
+    }
+    return `<div class="empty-help">No colleges match &ldquo;${esc(raw)}&rdquo;.`
+      + ` Try a shorter name or just the city${onward}.</div>`;
+  }
+
   // ---- Search view ----
-  async function renderSearch(preset = "") {
-    await loadSchools();
+  function renderSearch(preset = "") {
     app.innerHTML = `
       <section class="vc-search">
         <h1>Look up any US college</h1>
@@ -227,35 +316,91 @@
           Department of Education's own data. More measures coming.</p>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input id="q" type="search" autocomplete="off" placeholder="Search ${SCHOOLS.length.toLocaleString()} colleges by name…" value="${esc(preset)}" />
+          <input id="q" type="search" autocomplete="off" role="combobox" aria-expanded="false"
+            aria-controls="results" aria-autocomplete="list"
+            placeholder="${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…" : "Loading colleges…"}"
+            value="${esc(preset)}" />
         </div>
-        <p class="hint">Try “Baylor”, “Long Beach”, or your local community college.</p>
-        <ul class="results" id="results"></ul>
+        <p class="hint" id="hint">Try &ldquo;Baylor&rdquo;, &ldquo;Long Beach&rdquo;, or your local community college.</p>
+        <p class="rescount" id="rescount" aria-live="polite" style="display:none"></p>
+        <ul class="results" id="results" role="listbox" aria-label="Search results"></ul>
       </section>`;
     const q = document.getElementById("q");
     const results = document.getElementById("results");
-    let t;
+    const hint = document.getElementById("hint");
+    const rescount = document.getElementById("rescount");
+    const LIMIT = 40;
+    let active = -1;      // keyboard-highlighted option
+    let current = [];     // schools currently shown
+
     const run = () => {
-      const term = q.value.trim().toLowerCase();
-      if (term.length < 2) { results.innerHTML = `<li class="empty">Type at least two letters to search.</li>`; return; }
-      const hits = SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 40);
-      if (!hits.length) { results.innerHTML = `<li class="empty">No colleges match “${esc(term)}”.</li>`; return; }
-      results.innerHTML = hits.map(s => `
-        <li><a class="school-card" href="?school=${s.unitid}" data-u="${s.unitid}">
-          <h3>${esc(s.name)}</h3>
-          <div class="meta">${s.city ? esc(s.city) + ", " : ""}${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
-          <div class="mini">
-            ${s.n_fail ? `<span class="f">${s.n_fail} fall short</span>` : ""}
-            ${s.n_pass ? `<span class="p">${s.n_pass} pass</span>` : ""}
-            ${s.n_insufficient ? `<span class="i">${s.n_insufficient} not enough data</span>` : ""}
-          </div>
-        </a></li>`).join("");
+      active = -1;
+      q.removeAttribute("aria-activedescendant");
+      const raw = q.value.trim();
+      if (!SCHOOLS) { hint.style.display = "none"; rescount.style.display = ""; rescount.textContent = "Loading colleges…"; return; }
+      if (normalize(raw).length < 2) {
+        current = []; results.innerHTML = ""; rescount.style.display = "none";
+        hint.style.display = ""; q.setAttribute("aria-expanded", "false");
+        return;
+      }
+      hint.style.display = "none";
+      const hits = searchSchools(raw);
+      current = hits.slice(0, LIMIT);
+      if (!hits.length) {
+        results.innerHTML = `<li class="empty" role="presentation">${emptyStateHTML(raw)}</li>`;
+        rescount.style.display = "none"; q.setAttribute("aria-expanded", "false");
+        return;
+      }
+      rescount.style.display = "";
+      rescount.textContent = hits.length > LIMIT
+        ? `Showing the top ${LIMIT} of ${hits.length} matches. Keep typing to narrow.`
+        : `${hits.length} college${hits.length === 1 ? "" : "s"} found.`;
+      q.setAttribute("aria-expanded", "true");
+      results.innerHTML = current.map((s, i) => `
+        <li role="option" id="opt-${i}" aria-selected="false">
+          <a class="school-card" href="?school=${s.unitid}" data-u="${s.unitid}">
+            <h3>${esc(s.name)}</h3>
+            <div class="meta">${s.city ? esc(s.city) + ", " : ""}${esc(s.state)}${s.control ? " · " + esc(s.control) : ""}</div>
+            <div class="mini">
+              ${s.n_fail ? `<span class="f">${s.n_fail} fall short</span>` : ""}
+              ${s.n_pass ? `<span class="p">${s.n_pass} pass</span>` : ""}
+              ${s.n_insufficient ? `<span class="i">${s.n_insufficient} not enough data</span>` : ""}
+            </div>
+          </a></li>`).join("");
       results.querySelectorAll("a.school-card").forEach(a =>
         a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.u }); }));
     };
-    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 120); });
+
+    const setActive = i => {
+      const items = results.querySelectorAll("li[role=option]");
+      if (!items.length) return;
+      active = (i + items.length) % items.length;
+      items.forEach((li, k) => {
+        const on = k === active;
+        li.classList.toggle("active", on);
+        li.setAttribute("aria-selected", on ? "true" : "false");
+        if (on) { q.setAttribute("aria-activedescendant", li.id); li.scrollIntoView({ block: "nearest" }); }
+      });
+    };
+
+    q.addEventListener("keydown", e => {
+      if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
+      else if (e.key === "Enter") {
+        const pick = active >= 0 ? current[active] : current[0];
+        if (pick) { e.preventDefault(); go({ school: pick.unitid }); }
+      } else if (e.key === "Escape") { q.value = ""; run(); }
+    });
+
+    let t;
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(run, 100); });
     q.focus();
-    if (preset) run();
+
+    // Progressive load: the search box is interactive immediately. Whatever the visitor types
+    // while the 445 KB index is still downloading is preserved in the field, and run() replays
+    // it the moment the data lands.
+    if (SCHOOLS) { if (preset) run(); }
+    else { run(); loadSchools().then(() => { q.placeholder = "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…"; run(); }); }
   }
 
   // ---- School view ----

@@ -105,7 +105,7 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
     p.append(f'    <nav class="crumbs"><a href="/lists/">Lists</a> &rsaquo; {esc(h1)}</nav>\n')
     p.append(f"    <h1>{esc(h1)}</h1>\n")
     p.append(f'    <p class="idline">{lede}</p>\n')
-    p.append('    <table class="t"><thead><tr><th class="num">#</th>')
+    p.append('    <div class="tscroll"><table class="t"><thead><tr><th class="num">#</th>')
     num_attr = " class='num'"
     for i, hd in enumerate(headers):
         p.append("<th" + (num_attr if i else "") + ">" + esc(hd) + "</th>")
@@ -115,7 +115,7 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
         for j, c in enumerate(cells):
             p.append("<td" + (num_attr if j else "") + ">" + str(c) + "</td>")
         p.append("</tr>\n")
-    p.append("    </tbody></table>\n")
+    p.append("    </tbody></table></div>\n")
     p.append(_download_block(slug, headers, rows))
     p.append(f'    <p class="src">{note}</p>\n')
     p.append(
