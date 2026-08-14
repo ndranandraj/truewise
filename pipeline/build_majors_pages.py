@@ -249,7 +249,7 @@ def major_page(cip, name, family, creds, slug) -> str:
         otxt = "n/a" if opn is None else f"{int(round(opn)):,}"
         parts.append('    <h2 class="sec">Job outlook</h2>\n')
         parts.append(
-            f'    <p class="idline">Projected employment growth <b>{gtxt}</b> (2023 to 2033), about '
+            f'    <p class="idline">Projected employment growth <b>{gtxt}</b> (2024 to 2034), about '
             f"<b>{otxt}</b> openings a year across the occupations this field commonly leads to.</p>\n"
         )
         occ = demand.get("occupations") or []

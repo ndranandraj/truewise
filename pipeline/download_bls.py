@@ -40,7 +40,7 @@ BROWSER_UA = (
 )
 SOURCE_PAGES = {
     "crosswalk": "https://nces.ed.gov/ipeds/cipcode/resources.aspx (CIP 2020 to SOC 2018 crosswalk)",
-    "oews": "https://www.bls.gov/oes/tables.htm (OEWS, May 2023, National, 'All data' zip)",
+    "oews": "https://www.bls.gov/oes/tables.htm (OEWS, May 2024, National, 'All data' zip)",
     "ep": "https://www.bls.gov/emp/tables/occupational-projections-and-openings.htm",
 }
 

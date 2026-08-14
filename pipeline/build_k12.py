@@ -153,12 +153,12 @@ def main() -> None:
     (OUT_DIR / "schools").mkdir(exist_ok=True)
     (OUT_DIR / "states.json").write_text(
         json.dumps(
-            {"generated": True, "vintage": "2020-21", "states": states}, separators=(",", ":")
+            {"generated": True, "vintage": "2021-22", "states": states}, separators=(",", ":")
         )
     )
     (OUT_DIR / "index.json").write_text(
         json.dumps(
-            {"generated": True, "vintage": "2020-21", "schools": index}, separators=(",", ":")
+            {"generated": True, "vintage": "2021-22", "schools": index}, separators=(",", ":")
         )
     )
     for state, schools in by_state.items():

@@ -173,10 +173,9 @@ used to reconstruct a school's overall enrollment and course counts; Truewise do
 figures out by student race or other demographics. Every negative CRDC code (suppressed or not
 applicable) is treated as missing, never as zero data.
 
-**Vintage.** This uses the **2020-21** CRDC, a pandemic school year when course-taking was
-disrupted; course *offerings* are fairly stable year to year, but participation counts should be
-read with that in mind. The collection year is labeled on every page. The pipeline reads the CRDC
-files by name, so refreshing to a newer collection (2021-22 and later) is a drop-in replacement.
+**Vintage.** This uses the **2021-22** CRDC, the most recent collection; course *offerings* are
+fairly stable year to year. The collection year is labeled on every page. The pipeline reads the CRDC
+files by name, so refreshing to a newer collection (2022-23 and later) is a drop-in replacement.
 
 ## Known limitations
 

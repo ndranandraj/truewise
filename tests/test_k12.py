@@ -194,4 +194,4 @@ def test_build_k12_site(tmp_path, monkeypatch):
     assert s["staff"]["police"] is True and s["staff"]["guard"] is False
     assert s["staff"]["uncert_pct"] == 10  # 1 of 10 teachers
     idx = json.loads((tmp_path / "k12-data" / "index.json").read_text())
-    assert idx["vintage"] == "2020-21" and idx["schools"][0]["k"] == "HS1"
+    assert idx["vintage"] == "2021-22" and idx["schools"][0]["k"] == "HS1"
