@@ -72,6 +72,22 @@ def test_headers_file_sets_cache_control_with_single_splat_paths():
             assert ln.count("*") == 1, f"Workers _headers allows only one splat per URL: {ln}"
 
 
+def test_stylesheet_versioning_stamps_and_is_idempotent():
+    """The deploy stamps styles.css with a content hash so a CSS change busts its own cache.
+    Guard that it rewrites both relative and absolute refs and never double-stamps."""
+    from pipeline import version_assets as va
+
+    ver = va.stylesheet_hash()
+    assert re.fullmatch(r"[0-9a-f]{10}", ver), "hash should be 10 hex chars"
+    once = va.stamp('<link rel="stylesheet" href="styles.css" /><link href="/styles.css">', ver)
+    assert f'href="styles.css?v={ver}"' in once
+    assert f'href="/styles.css?v={ver}"' in once
+    # Running it again must not append a second ?v=.
+    assert va.stamp(once, ver) == once
+    # A new hash replaces the old stamp rather than stacking.
+    assert va.stamp(once, "deadbeef01").count("?v=") == once.count("?v=")
+
+
 def _primary_nav_order(html: str) -> list[str]:
     """The hrefs of the primary nav, up to the mobile <details> menu (which repeats them)."""
     nav = re.search(r'<nav aria-label="Primary">(.*?)(?:<details|</nav>)', html, re.S)

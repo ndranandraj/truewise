@@ -47,6 +47,8 @@ jobs:
           python -m pipeline.build_stats_exposure
           python -m pipeline.build_updates
           python -m pipeline.build_sitemap
+          # Stamp styles.css with a content hash so a CSS change busts its own browser cache.
+          python -m pipeline.version_assets
 
       - name: Data-quality gate + tests (block deploy on failure)
         run: |
