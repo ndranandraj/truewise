@@ -30,7 +30,7 @@ UA = {"User-Agent": "truewise-og-check/1.0"}
 DEFAULT_PATHS = [
     "/",
     "/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/",
-    "/college/georgia-institute-of-technology/",
+    "/college/georgia-institute-of-technology-main-campus/",
     "/lists/highest-paying-majors/",
     "/findings/stats-grad-exposure/",
 ]
