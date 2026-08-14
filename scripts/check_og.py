@@ -35,12 +35,8 @@ DEFAULT_PATHS = [
     "/findings/stats-grad-exposure/",
 ]
 
-_OG = re.compile(
-    r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', re.I
-)
-_TW = re.compile(
-    r'<meta\s+name=["\']twitter:image["\']\s+content=["\']([^"\']+)["\']', re.I
-)
+_OG = re.compile(r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', re.I)
+_TW = re.compile(r'<meta\s+name=["\']twitter:image["\']\s+content=["\']([^"\']+)["\']', re.I)
 
 
 def _get(url: str) -> tuple[int, str, bytes]:

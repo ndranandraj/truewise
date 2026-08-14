@@ -125,7 +125,10 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     assert "CollegeOrUniversity" in h and "BreadcrumbList" in h
     assert "—" not in h  # no em-dash
     # A per-school social card is rendered and the page points its og:image at it.
-    assert '<meta property="og:image" content="https://truewise.dev/og/college/test-state-university.png"' in h
+    assert (
+        '<meta property="og:image" content="https://truewise.dev/og/college/test-state-university.png"'
+        in h
+    )
     card = site / "og" / "college" / "test-state-university.png"
     assert card.exists() and card.stat().st_size > 1000, "per-college OG card missing"
 
