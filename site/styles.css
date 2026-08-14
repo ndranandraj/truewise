@@ -19,13 +19,15 @@
   --line: #dde4ee;
   --line-soft: #eef2f8;
   --radius: 14px;
-  --wrap: 1080px;
+  --wrap: 1200px;
   --font: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
 
 body {
   margin: 0;
@@ -211,9 +213,9 @@ a:hover { color: var(--brand-deep); }
   font-size: .72rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .1em; color: #7d9bd0; margin: 0 0 14px;
 }
-.dots { display: grid; grid-template-columns: repeat(6, 32px); gap: 13px; }
-.dots span { width: 32px; height: 32px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
-.dots .dot-hi { background: var(--band-accent); box-shadow: 0 0 0 5px rgba(255, 140, 122, .22); }
+.dots { display: grid; grid-template-columns: repeat(11, 22px); gap: 7px; }
+.dots span { width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
+.dots .dot-hi { background: var(--band-accent); box-shadow: 0 0 0 4px rgba(255, 140, 122, .22); }
 .finding-stat {
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   line-height: 1.2;
@@ -289,8 +291,9 @@ a:hover { color: var(--brand-deep); }
 .panel.alt .wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 56px; }
 .panel.alt h2 { font-size: 1.6rem; }
 .prose { max-width: 58ch; color: var(--ink-soft); font-size: .98rem; margin: 12px 0 0; }
-.data-actions { display: flex; align-items: center; gap: 14px; margin-top: 20px; flex-wrap: wrap; }
+.data-actions { margin-top: 20px; }
 .pip {
+  display: inline-block;
   font-family: var(--mono);
   font-size: .85rem;
   background: var(--ink);
@@ -298,7 +301,11 @@ a:hover { color: var(--brand-deep); }
   border-radius: 8px;
   padding: 12px 18px;
 }
-.data-actions a { font-weight: 600; font-size: .92rem; text-decoration: none; }
+.data-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-top: 14px; }
+.data-card { border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px; text-decoration: none; background: #fff; transition: border-color .15s, box-shadow .15s; }
+.data-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31, 111, 235, .08); }
+.data-card b { display: block; color: var(--ink); font-size: .95rem; font-weight: 700; }
+.data-card span { color: var(--ink-soft); font-size: .84rem; }
 .honesty {
   border-left: 2px solid var(--brand);
   padding-left: 28px;

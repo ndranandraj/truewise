@@ -149,6 +149,8 @@ def head(title, desc, canonical, extra_ld="") -> str:
     table.t th, table.t td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }}
     table.t th {{ color: var(--ink-soft); font-weight: 600; }}
     table.t td.num, table.t th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
+    table.t a {{ color: var(--ink); text-decoration: none; }}
+    table.t a:hover {{ color: var(--brand); text-decoration: underline; }}
     .pass {{ color: var(--good); font-weight: 600; }}
     .fail {{ color: var(--bad); font-weight: 600; }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
@@ -178,13 +180,27 @@ def head(title, desc, canonical, extra_ld="") -> str:
 <body>
   <header class="site-header">
     <div class="wrap">
-      <div class="brand-group"><a class="brand" href="/">true<span>wise</span></a></div>
+      <div class="brand-group">
+        <a class="brand" href="/">true<span>wise</span></a>
+        <span class="brand-tagline">Honest US education data</span>
+      </div>
       <nav aria-label="Primary">
         <a href="/careers/">Careers</a>
         <a href="/k12/">High schools</a>
+        <a href="/#data">Data</a>
         <a href="/methodology/">Methodology</a>
         <a href="/about/">About</a>
         <a class="nav-cta" href="/value-check/">Find a college</a>
+        <details class="nav-toggle">
+          <summary aria-label="Menu">&#9776;</summary>
+          <div class="menu">
+            <a href="/careers/">Careers</a>
+            <a href="/k12/">High schools</a>
+            <a href="/#data">Data</a>
+            <a href="/methodology/">Methodology</a>
+            <a href="/about/">About</a>
+          </div>
+        </details>
       </nav>
     </div>
   </header>

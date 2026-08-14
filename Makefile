@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test lint format all
+.PHONY: install data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -64,6 +64,10 @@ test:
 # Headless check of the /compare/ page against the generated schools.json (needs `make site` first).
 test-compare:
 	node tests/compare_smoke.js
+
+# Headless check of the college search ranking against the generated schools.json (needs `make site`).
+test-search:
+	node tests/search_smoke.js
 
 lint:
 	ruff check . && ruff format --check .

@@ -43,6 +43,19 @@
     .rescount { color: var(--ink-faint); font-size: .85rem; margin: 14px 0 2px; }
     .empty-help { max-width: 620px; margin: 16px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-alt); line-height: 1.6; }
     .empty-help a { color: var(--brand); font-weight: 600; }
+    .landing { margin: 26px 0 8px; max-width: 860px; }
+    .landing h2 { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 26px 0 10px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: .9rem; color: var(--ink); text-decoration: none; background: #fff; transition: border-color .15s, color .15s; }
+    .chip:hover { border-color: var(--brand); color: var(--brand); }
+    .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 16px; }
+    .state-grid a { color: var(--ink-soft); text-decoration: none; font-size: .92rem; padding: 4px 0; }
+    .state-grid a:hover { color: var(--brand); }
+    .list-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+    .list-link { border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px; text-decoration: none; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .list-link:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31,111,235,.08); }
+    .list-link b { display: block; color: var(--ink); font-size: .98rem; }
+    .list-link span { color: var(--ink-soft); font-size: .85rem; }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -157,13 +170,27 @@
 <body>
   <header class="site-header">
     <div class="wrap">
-      <a class="brand" href="/">true<span>wise</span></a>
+      <div class="brand-group">
+        <a class="brand" href="/">true<span>wise</span></a>
+        <span class="brand-tagline">Honest US education data</span>
+      </div>
       <nav aria-label="Primary">
-        <a class="nav-cta" href="/value-check/">Find a college</a>
         <a href="/careers/">Careers</a>
         <a href="/k12/">High schools</a>
         <a href="/#data">Data</a>
         <a href="/methodology/">Methodology</a>
+        <a href="/about/">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <details class="nav-toggle">
+          <summary aria-label="Menu">&#9776;</summary>
+          <div class="menu">
+            <a href="/careers/">Careers</a>
+            <a href="/k12/">High schools</a>
+            <a href="/#data">Data</a>
+            <a href="/methodology/">Methodology</a>
+            <a href="/about/">About</a>
+          </div>
+        </details>
       </nav>
     </div>
   </header>
@@ -324,12 +351,43 @@
         <p class="hint" id="hint">Try &ldquo;Baylor&rdquo;, &ldquo;Long Beach&rdquo;, or your local community college.</p>
         <p class="rescount" id="rescount" aria-live="polite" style="display:none"></p>
         <ul class="results" id="results" role="listbox" aria-label="Search results"></ul>
+        <div class="landing" id="landing"></div>
       </section>`;
     const q = document.getElementById("q");
     const results = document.getElementById("results");
     const hint = document.getElementById("hint");
     const rescount = document.getElementById("rescount");
+    const landing = document.getElementById("landing");
     const LIMIT = 40;
+
+    // A landing worth arriving on: the largest schools, a state grid, and a few lists, so the
+    // page is never a blank room and every visit has somewhere to go. Shown only with no active
+    // query. "Largest" (by enrollment) is honest about what the sort produces, unlike "popular".
+    const buildLanding = () => {
+      if (!SCHOOLS || landing.dataset.built) return;
+      const popular = SCHOOLS.filter(s => (s.n_pass + s.n_fail) > 0)
+        .sort((a, b) => (b.enrollment || 0) - (a.enrollment || 0)).slice(0, 12);
+      const states = [...new Set(SCHOOLS.map(s => s.state))]
+        .filter(ab => ABBR_TO_STATE[ab]).sort((a, b) => ABBR_TO_STATE[a].localeCompare(ABBR_TO_STATE[b]));
+      const lists = [
+        ["/lists/highest-paying-majors/", "Highest-paying majors", "Ranked by median graduate earnings"],
+        ["/lists/fastest-debt-payback-majors/", "Fastest debt payback", "Where the earnings premium clears debt soonest"],
+        ["/lists/programs-where-debt-does-not-pay-back/", "Where debt does not pay back", "Programs whose graduates do not out-earn the bar"],
+      ];
+      landing.innerHTML =
+        `<h2>Largest colleges</h2><div class="chips">`
+        + popular.map(s => `<a class="chip" href="?school=${s.unitid}" data-u="${s.unitid}">${esc(s.name)}</a>`).join("")
+        + `</div>`
+        + `<h2>Browse by state</h2><div class="state-grid">`
+        + states.map(ab => `<a href="/colleges/${ab.toLowerCase()}/">${esc(ABBR_TO_STATE[ab])}</a>`).join("")
+        + `</div>`
+        + `<h2>Or start from a list</h2><div class="list-links">`
+        + lists.map(([href, t, d]) => `<a class="list-link" href="${href}"><b>${t}</b><span>${d}</span></a>`).join("")
+        + `</div>`;
+      landing.querySelectorAll("a.chip").forEach(a =>
+        a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.u }); }));
+      landing.dataset.built = "1";
+    };
     let active = -1;      // keyboard-highlighted option
     let current = [];     // schools currently shown
 
@@ -341,9 +399,11 @@
       if (normalize(raw).length < 2) {
         current = []; results.innerHTML = ""; rescount.style.display = "none";
         hint.style.display = ""; q.setAttribute("aria-expanded", "false");
+        buildLanding(); landing.style.display = "";
         return;
       }
       hint.style.display = "none";
+      landing.style.display = "none";
       const hits = searchSchools(raw);
       current = hits.slice(0, LIMIT);
       if (!hits.length) {
@@ -399,7 +459,7 @@
     // Progressive load: the search box is interactive immediately. Whatever the visitor types
     // while the 445 KB index is still downloading is preserved in the field, and run() replays
     // it the moment the data lands.
-    if (SCHOOLS) { if (preset) run(); }
+    if (SCHOOLS) { if (preset) run(); else { buildLanding(); landing.style.display = ""; } }
     else { run(); loadSchools().then(() => { q.placeholder = "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…"; run(); }); }
   }
 
@@ -835,7 +895,7 @@
   </script>
   <footer class="site-footer">
     <div class="wrap">
-      <p>Truewise · built on public data · <a href="/methodology/">Methodology</a> · <a href="/about/">About</a> · <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/compare/">Compare</a> &middot; <a href="/majors/">All majors</a> &middot; <a href="/lists/">Lists</a> &middot; <a href="/findings/">Findings</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
     </div>
   </footer>
   <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
