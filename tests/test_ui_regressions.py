@@ -150,6 +150,26 @@ def _primary_nav_order(html: str) -> list[str]:
     return re.findall(r'<a[^>]*href="([^"]+)"', nav.group(1))
 
 
+def test_homepage_has_brand_disambiguation_signals():
+    """ "Truewise" collides with unrelated brands, so the homepage carries entity signals that tie
+    the name to this specific product: an Organization + WebSite graph with the alternate name
+    "Truewise US education data", a SearchAction, and og:site_name. All JSON-LD must be valid."""
+    import json
+
+    home = (SITE / "index.html").read_text()
+    blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', home, re.S)
+    assert blocks, "homepage has no JSON-LD"
+    for b in blocks:
+        json.loads(b)  # malformed structured data is worse than none
+    assert '"@type": "Organization"' in home and '"@type": "WebSite"' in home
+    assert '"alternateName": "Truewise US education data"' in home
+    assert '"@type": "SearchAction"' in home
+    # Consistent site name in every social share: homepage and the shared generated-page template.
+    site_name = 'property="og:site_name" content="Truewise US education data"'
+    assert site_name in home
+    assert site_name in (PIPELINE / "build_college_pages.py").read_text()
+
+
 def test_every_page_shares_one_header_nav():
     """The primary CTA used to jump sides and About vanished on some pages. Every hand-written
     page and the generated-page template must now carry the same nav in the same order."""

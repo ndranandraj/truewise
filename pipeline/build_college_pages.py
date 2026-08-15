@@ -125,6 +125,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   <title>{esc(title)}</title>
   <meta name="description" content="{esc(desc)}" />
   <link rel="canonical" href="{esc(canonical)}" />
+  <meta property="og:site_name" content="Truewise US education data" />
   <meta property="og:title" content="{esc(title)}" />
   <meta property="og:description" content="{esc(desc)}" />
   <meta property="og:url" content="{esc(canonical)}" />

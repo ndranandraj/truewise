@@ -8,6 +8,7 @@
 
   <!-- Open Graph / social share -->
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Truewise US education data" />
   <meta property="og:title" content="Truewise: the honest number behind US education" />
   <meta property="og:description" content="Open, honest college and school data for students and families. Built on public federal data." />
   <meta property="og:url" content="https://truewise.dev" />
@@ -36,6 +37,42 @@
     "keywords": ["college earnings", "college ROI", "financial value transparency", "College Scorecard"],
     "distribution": [
       { "@type": "DataDownload", "encodingFormat": "application/x-parquet", "contentUrl": "https://truewise.dev/data/value_check.parquet" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://truewise.dev/#org",
+        "name": "Truewise",
+        "alternateName": "Truewise US education data",
+        "url": "https://truewise.dev",
+        "logo": "https://truewise.dev/og.png",
+        "description": "Open, honest US federal education data for students and families: program-level college earnings versus a high-school graduate, net price by income, debt payback, and public high-school course access.",
+        "sameAs": [
+          "https://github.com/ndranandraj/truewise",
+          "https://www.linkedin.com/in/anandraj-r-78b86198/",
+          "https://ndranandraj.com"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://truewise.dev/#website",
+        "name": "Truewise",
+        "alternateName": "Truewise US education data",
+        "url": "https://truewise.dev",
+        "description": "Open, honest US federal education data for students and families.",
+        "inLanguage": "en-US",
+        "publisher": { "@id": "https://truewise.dev/#org" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": { "@type": "EntryPoint", "urlTemplate": "https://truewise.dev/value-check/?q={search_term_string}" },
+          "query-input": "required name=search_term_string"
+        }
+      }
     ]
   }
   </script>
