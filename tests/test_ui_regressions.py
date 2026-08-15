@@ -270,4 +270,12 @@ def test_security_headers_present_and_csp_allows_site_resources():
         "https://static.cloudflareinsights.com",
     ):
         assert src in csp, f"CSP would block a resource the site uses: {src}"
-    assert "frame-ancestors 'none'" in csp
+    # Frame protection is X-Frame-Options, NOT a CSP frame-ancestors directive: Cloudflare appends
+    # (does not replace) a per-path CSP, so a global frame-ancestors 'none' could not be relaxed on
+    # /embed/. X-Frame-Options can be unset per-path with `!`, so the embed widget can opt out.
+    assert "frame-ancestors" not in csp, "global CSP must not set frame-ancestors (see /embed/)"
+    embed = headers.split("/embed/*", 1)
+    assert len(embed) == 2, "missing /embed/* rule"
+    assert "! X-Frame-Options" in embed[1], (
+        "/embed/ must unset X-Frame-Options so it can be iframed"
+    )

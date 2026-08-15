@@ -10,23 +10,27 @@
 # actually loads: inline <script>/<style> (hence 'unsafe-inline'), Google Fonts, and the
 # cookieless Cloudflare beacon. 'unsafe-inline' is a real weakening, but the pages are static
 # and load no third-party scripts beyond the beacon, so the practical risk is low and the
-# frame-ancestors/nosniff/HSTS protections are the meaningful wins. Revisit CSP if inline JS
-# is ever moved to external files.
+# nosniff/HSTS protections are the meaningful wins. Revisit CSP if inline JS is ever moved out.
+#
+# Frame protection is done with X-Frame-Options: DENY, NOT a CSP frame-ancestors directive. This
+# is deliberate: Cloudflare _headers APPENDS a per-path CSP rather than replacing it, so a global
+# `frame-ancestors 'none'` cannot be relaxed on /embed/ (the browser enforces the strictest of the
+# two CSPs). X-Frame-Options can be unset per-path with `!`, so it is the mechanism that lets the
+# embed widget opt out while every other page stays frame-denied.
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), browsing-topics=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; object-src 'none'
 
-# The /embed/ widget is meant to be iframed by other sites (journalists, schools), so it opts
-# OUT of the sitewide frame block: unset the legacy X-Frame-Options and set a CSP that allows any
-# frame-ancestor. This more-specific rule overrides the /* CSP for /embed/ paths. Everything else
-# on the site stays frame-denied. (There is no auth or state-changing action to clickjack here.)
+# The /embed/ widget is meant to be iframed by other sites (journalists, schools), so it opts OUT
+# of the sitewide frame block by unsetting X-Frame-Options. Nothing forbids framing it (the global
+# CSP sets no frame-ancestors), so it embeds anywhere; every other page keeps X-Frame-Options: DENY.
+# (There is no auth or state-changing action here to clickjack.)
 /embed/*
   ! X-Frame-Options
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors *; base-uri 'self'; object-src 'none'
 
 # Stylesheet and icons: change rarely, safe to hold for an hour.
 /styles.css
