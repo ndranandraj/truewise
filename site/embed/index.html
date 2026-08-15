@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Truewise embed — college value check</title>
+  <meta name="description" content="Embed a college's value check (do graduates out-earn a high-school graduate?) on your own site. Free, from public federal data." />
+  <!-- Embeds are fragments, not standalone pages: keep them out of the index but let crawlers
+       follow the backlink to the full profile. -->
+  <meta name="robots" content="noindex,follow" />
+  <link rel="canonical" href="https://truewise.dev/embed/" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <style>
+    /* Self-contained so the card renders the same inside any host page, with no dependency on
+       the host's CSS or our sitewide stylesheet. */
+    :root {
+      --brand: #1f6feb; --brand-deep: #123a7a; --ink: #14203a; --ink-soft: #45526b;
+      --good: #0b6b47; --bad: #a02012; --line: #dde4ee; --bg-alt: #f4f7fb;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; }
+    body { font-family: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); }
+    .card {
+      max-width: 460px; margin: 0 auto; background: #fff; border: 1px solid var(--line);
+      border-radius: 14px; padding: 18px 20px; line-height: 1.5;
+    }
+    .brandrow { display: flex; align-items: baseline; gap: 8px; margin-bottom: 12px; }
+    .wm { font-weight: 800; font-size: 1.05rem; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; }
+    .wm span { color: var(--brand); }
+    .kicker { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+    h1 { font-size: 1.22rem; letter-spacing: -0.02em; margin: 0 0 2px; }
+    .place { color: var(--ink-soft); font-size: .86rem; margin: 0 0 12px; }
+    .verdict { font-size: 1rem; margin: 0 0 12px; }
+    .verdict b { font-variant-numeric: tabular-nums; }
+    .pass { color: var(--good); font-weight: 700; }
+    .fail { color: var(--bad); font-weight: 700; }
+    .bar { position: relative; height: 8px; border-radius: 5px; background: var(--bg-alt); overflow: hidden; margin: 12px 0; }
+    .bar > i { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #17936a, var(--good)); border-radius: 5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: .9rem; color: var(--ink-soft); margin: 0 0 14px; }
+    .chips b { color: var(--ink); font-variant-numeric: tabular-nums; }
+    .more { display: inline-block; font-weight: 700; color: var(--brand); text-decoration: none; font-size: .92rem; }
+    .more:hover { text-decoration: underline; }
+    .src { margin: 12px 0 0; font-size: .74rem; color: var(--ink-soft); }
+    .src a { color: var(--brand-deep); }
+    /* Docs view (shown when no ?school= is given). */
+    .docs { max-width: 640px; margin: 0 auto; padding: 8px 4px; }
+    .docs h2 { font-size: 1.2rem; margin: 18px 0 8px; }
+    .docs p { color: var(--ink-soft); line-height: 1.6; }
+    .docs code, .snippet { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+    .snippet { display: block; white-space: pre-wrap; word-break: break-all; background: var(--bg-alt); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .82rem; color: var(--ink); margin: 8px 0 4px; }
+    .copy { border: 0; background: var(--brand); color: #fff; font-weight: 700; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <main id="app">
+    <div class="card"><p class="place">Loading…</p></div>
+  </main>
+  <noscript>
+    <div class="card"><p>This embed needs JavaScript. See the data at
+      <a href="https://truewise.dev/">truewise.dev</a>.</p></div>
+  </noscript>
+
+  <script>
+  const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const money = n => n == null ? "not reported" : "$" + Math.round(n).toLocaleString();
+  const app = document.getElementById("app");
+  const BASE = "https://truewise.dev";
+  const STATE = { AL:"Alabama",AK:"Alaska",AZ:"Arizona",AR:"Arkansas",CA:"California",CO:"Colorado",CT:"Connecticut",DE:"Delaware",DC:"District of Columbia",FL:"Florida",GA:"Georgia",HI:"Hawaii",ID:"Idaho",IL:"Illinois",IN:"Indiana",IA:"Iowa",KS:"Kansas",KY:"Kentucky",LA:"Louisiana",ME:"Maine",MD:"Maryland",MA:"Massachusetts",MI:"Michigan",MN:"Minnesota",MS:"Mississippi",MO:"Missouri",MT:"Montana",NE:"Nebraska",NV:"Nevada",NH:"New Hampshire",NJ:"New Jersey",NM:"New Mexico",NY:"New York",NC:"North Carolina",ND:"North Dakota",OH:"Ohio",OK:"Oklahoma",OR:"Oregon",PA:"Pennsylvania",RI:"Rhode Island",SC:"South Carolina",SD:"South Dakota",TN:"Tennessee",TX:"Texas",UT:"Utah",VT:"Vermont",VA:"Virginia",WA:"Washington",WV:"West Virginia",WI:"Wisconsin",WY:"Wyoming",PR:"Puerto Rico" };
+
+  // Slug must match the pre-rendered /college/<slug>/ pages (name; collision adds state, then unitid).
+  const slugify = n => (n || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
+  function buildSlugs(list) {
+    const used = new Set(), out = {};
+    [...list].sort((a, b) => (a.name || "").toLowerCase() < (b.name || "").toLowerCase() ? -1 : 1)
+      .forEach(s => {
+        if ((s.n_pass + s.n_fail) < 1) return;
+        let cand = slugify(s.name);
+        if (used.has(cand)) cand = slugify(s.name) + "-" + (s.state || "").toLowerCase();
+        if (used.has(cand)) cand = slugify(s.name) + "-" + s.unitid;
+        used.add(cand); out[s.unitid] = cand;
+      });
+    return out;
+  }
+
+  function card(s, slug) {
+    const decided = s.n_pass + s.n_fail;
+    const stateName = STATE[s.state] || s.state;
+    const rate = decided ? Math.round(100 * s.n_pass / decided) : null;
+    const profile = slug ? `${BASE}/college/${slug}/` : `${BASE}/value-check/?school=${encodeURIComponent(s.unitid)}`;
+    let verdict;
+    if (!decided) {
+      verdict = `Earnings are privacy-suppressed for this school's programs, so it cannot be judged yet.`;
+    } else if (s.n_fail) {
+      verdict = `<b class="pass">${s.n_pass}</b> of <b>${decided}</b> programs with reported earnings leave graduates out-earning a typical ${esc(stateName)} high-school graduate; <b class="fail">${s.n_fail}</b> fall short.`;
+    } else {
+      verdict = `All <b class="pass">${decided}</b> programs with reported earnings leave graduates out-earning a typical ${esc(stateName)} high-school graduate.`;
+    }
+    const bar = rate == null ? "" : `<div class="bar"><i style="width:${rate}%"></i></div>`;
+    const chips = [];
+    if (rate != null) chips.push(`<span><b>${rate}%</b> clear the bar</span>`);
+    if (s.net_price && s.net_price.avg != null) chips.push(`<span>Net price <b>${money(s.net_price.avg)}</b>/yr avg</span>`);
+    app.innerHTML = `<div class="card">
+      <div class="brandrow"><a class="wm" href="${BASE}/" target="_blank" rel="noopener">true<span>wise</span></a><span class="kicker">Value Check</span></div>
+      <h1>${esc(s.name)}</h1>
+      <p class="place">${esc(s.city || "")}${s.city ? ", " : ""}${esc(stateName)}</p>
+      <p class="verdict">${verdict}</p>
+      ${bar}
+      <div class="chips">${chips.join("")}</div>
+      <a class="more" href="${profile}" target="_blank" rel="noopener">See the full breakdown on Truewise &rarr;</a>
+      <p class="src">Source: U.S. Department of Education College Scorecard (2026-06-10), via
+        <a href="${BASE}/" target="_blank" rel="noopener">truewise.dev</a>. Earnings describe past graduates, not a promise.</p>
+    </div>`;
+  }
+
+  function docs() {
+    const snippet = `<iframe src="https://truewise.dev/embed/?school=223232"\n  width="480" height="330" style="border:0" loading="lazy"\n  title="Truewise value check"></iframe>`;
+    app.innerHTML = `<div class="docs">
+      <h2>Embed a college's value check</h2>
+      <p>Drop a Truewise value-check card into any article or page. It shows, for one college, how
+        many of its programs leave graduates out-earning a typical high-school graduate, from public
+        U.S. Department of Education data. Free to use with a link back.</p>
+      <p>Paste this where you want the card, changing <code>school=</code> to the college's ID. You
+        can find the ID in the address bar on any
+        <a href="${BASE}/value-check/" target="_blank" rel="noopener">Value Check</a> result
+        (the <code>?school=</code> number).</p>
+      <code class="snippet" id="snip">${esc(snippet)}</code>
+      <button class="copy" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('snip').textContent).then(()=>{this.textContent='Copied';})">Copy</button>
+      <h2>Live example</h2>
+      <iframe src="/embed/?school=223232" width="480" height="330" style="border:0;max-width:100%" title="Truewise value check example"></iframe>
+    </div>`;
+  }
+
+  (async function () {
+    const id = new URLSearchParams(location.search).get("school");
+    if (!id) { docs(); return; }
+    try {
+      const schools = (await (await fetch(`${BASE}/value-check/data/schools.json`)).json()).schools;
+      const s = schools.find(x => String(x.unitid) === String(id));
+      if (!s) { app.innerHTML = `<div class="card"><p class="place">No college found for that ID. Browse at <a href="${BASE}/">truewise.dev</a>.</p></div>`; return; }
+      card(s, buildSlugs(schools)[s.unitid]);
+    } catch (e) {
+      app.innerHTML = `<div class="card"><p class="place">Could not load the data just now. See <a href="${BASE}/">truewise.dev</a>.</p></div>`;
+    }
+  })();
+  </script>
+</body>
+</html>

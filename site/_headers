@@ -20,6 +20,14 @@
   Permissions-Policy: geolocation=(), microphone=(), camera=(), browsing-topics=()
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; object-src 'none'
 
+# The /embed/ widget is meant to be iframed by other sites (journalists, schools), so it opts
+# OUT of the sitewide frame block: unset the legacy X-Frame-Options and set a CSP that allows any
+# frame-ancestor. This more-specific rule overrides the /* CSP for /embed/ paths. Everything else
+# on the site stays frame-denied. (There is no auth or state-changing action to clickjack here.)
+/embed/*
+  ! X-Frame-Options
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; frame-ancestors *; base-uri 'self'; object-src 'none'
+
 # Stylesheet and icons: change rarely, safe to hold for an hour.
 /styles.css
   Cache-Control: public, max-age=3600
