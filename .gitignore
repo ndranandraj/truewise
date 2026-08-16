@@ -79,3 +79,9 @@ site/og/
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md
+
+# Design audit workbook + redesign plans (local, not published)
+design-audit-*/
+truewise-redesign-*.md
+truewise-audit-triage-*.md
+TRUEWISE_*.md

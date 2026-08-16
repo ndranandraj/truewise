@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import re as _re
 
 import pipeline.build_updates as bu
 
@@ -68,3 +69,34 @@ def test_no_snapshots_says_so_rather_than_implying_a_check(tmp_path, monkeypatch
     bu.main()
     html = (tmp_path / "site" / "updates" / "index.html").read_text()
     assert "No snapshots recorded yet" in html
+
+
+def test_footer_states_the_verified_date_not_a_cadence_promise():
+    """The footer used to read "checked monthly", a promise about cadence that silently becomes
+    false when a run is missed (an audit found it claiming monthly checks 32 days after the last
+    fetch). It must instead state the date of the newest archived check, which can only ever say
+    something provable and degrades honestly on its own."""
+    home = (bu.SITE / "index.html").read_text()
+    assert "checked monthly" not in home, "cadence promise must not return"
+    m = _re.search(r'<a href="/updates/">last verified (\d{4}-\d{2}-\d{2})</a>', home)
+    assert m, "footer must state the last verified date"
+    newest = bu.collect_snapshots()[0]["date"]
+    assert m.group(1) == newest, f"footer says {m.group(1)}, newest archived snapshot is {newest}"
+
+
+def test_stamping_the_verified_date_is_idempotent(tmp_path, monkeypatch):
+    """Re-running the builder must replace the date rather than append a second one."""
+    site = tmp_path / "site"
+    site.mkdir()
+    (site / "index.html").write_text('<p><a href="/updates/">checked monthly</a></p>')
+    monkeypatch.setattr(bu, "SITE", site)
+    snaps = [{"date": "2026-07-14"}]
+    bu.stamp_last_verified(snaps)
+    bu.stamp_last_verified(snaps)
+    html = (site / "index.html").read_text()
+    assert html.count("last verified") == 1
+    assert "last verified 2026-07-14" in html
+    # A newer check replaces the older stamp instead of stacking.
+    bu.stamp_last_verified([{"date": "2026-09-01"}])
+    html = (site / "index.html").read_text()
+    assert html.count("last verified") == 1 and "2026-09-01" in html

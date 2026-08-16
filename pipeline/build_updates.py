@@ -15,6 +15,7 @@ Usage:
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 
 import duckdb
@@ -179,12 +180,44 @@ def render(snaps: list[dict]) -> str:
     return "".join(p)
 
 
+def stamp_last_verified(snaps: list[dict]) -> str | None:
+    """Replace the homepage footer's freshness label with the real date of the newest check.
+
+    The footer used to read "checked monthly", which is a promise about cadence rather than a
+    statement of fact: if a monitor run is missed, the badge silently becomes untrue (an audit
+    caught it reading "checked monthly" 32 days after the last recorded fetch). Stamping the
+    actual date from archive/fvt/ means the label can only ever say something we can prove, and
+    it degrades honestly on its own when a run is skipped.
+    """
+    if not snaps:
+        return None
+    newest = snaps[0].get("date")
+    home = SITE / "index.html"
+    # The homepage is absent in unit tests that render the log into a temp tree; stamping is a
+    # side effect of the real build, not a precondition for producing the log.
+    if not newest or not home.exists():
+        return None
+    html = home.read_text()
+    new = re.sub(
+        r'(<a href="/updates/">)(?:checked monthly|last verified [0-9]{4}-[0-9]{2}-[0-9]{2})(</a>)',
+        rf"\1last verified {newest}\2",
+        html,
+    )
+    if new != html:
+        home.write_text(new)
+    return newest
+
+
 def main() -> None:
     snaps = collect_snapshots()
     out = SITE / "updates"
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render(snaps))
-    print(f"updates: {len(snaps)} snapshot(s) -> {out}")
+    verified = stamp_last_verified(snaps)
+    print(
+        f"updates: {len(snaps)} snapshot(s) -> {out}"
+        + (f" | last verified {verified}" if verified else "")
+    )
 
 
 if __name__ == "__main__":
