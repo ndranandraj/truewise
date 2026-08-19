@@ -32,6 +32,8 @@
     .cr-table tbody tr { cursor: pointer; }
     .cr-table tbody tr:hover { background: rgba(31,111,235,.06); }
     .cr-table td.mname { white-space: normal; min-width: 230px; font-weight: 500; }
+    .cr-table a.mlink { color: var(--ink); text-decoration: none; font-weight: 600; }
+    .cr-table a.mlink:hover { color: var(--brand); text-decoration: underline; }
     .cr-table td.fam { color: var(--ink-soft); font-size: .84rem; }
     .rangebar { position: relative; height: 7px; background: #eef1f6; border-radius: 4px; min-width: 120px; margin-top: 5px; }
     .rangebar > i { position: absolute; top: 0; height: 100%; background: #bcd3f5; border-radius: 4px; }
@@ -170,7 +172,7 @@
           const medPos = maxP75 ? Math.round((f.med || 0) / maxP75 * 100) : 0;
           const cls = (f.pass_pct ?? 0) >= 50 ? "hi" : "lo";
           return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
-            <td class="mname">${esc(f.name)}<div class="fam">${esc(f.family)}</div></td>
+            <td class="mname"><a href="?field=${f.cip}&cred=${f.cred}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
             <td>${esc(f.cred_short)}</td>
             <td class="num">${money(f.med)}</td>
             <td><div class="rangebar"><i style="left:${left}%;width:${width}%"></i><b style="left:${medPos}%"></b></div></td>
@@ -178,8 +180,10 @@
             <td class="num">${(f.schools || 0).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
         ${rows.length > 400 ? `<p class="cr-count">Showing the first 400. Narrow with search or a field filter.</p>` : ""}`;
-      list.querySelectorAll("tbody tr").forEach(tr =>
-        tr.addEventListener("click", () => go({ field: tr.dataset.cip, cred: tr.dataset.cred })));
+      // The major name is a real link (keyboard-focusable, works with JS off); the handler is
+      // progressive enhancement so the SPA route is used when JS is on.
+      list.querySelectorAll("a.mlink").forEach(a =>
+        a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     };
     let t;
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(draw, 120); });

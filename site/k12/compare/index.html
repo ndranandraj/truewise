@@ -26,9 +26,12 @@
     .searchbox:focus-within { border-color: var(--brand); }
     .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.05rem; padding: 11px 0; background: transparent; }
     .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
-    .results li { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; cursor: pointer; background: #fff; }
-    .results li:hover { border-color: var(--brand); }
+    .results li { margin-bottom: 6px; }
+    .results button.res { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #fff; font: inherit; color: inherit; }
+    .results button.res:hover { border-color: var(--brand); }
+    .results button.res:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .results li .meta { color: var(--ink-soft); font-size: .86rem; }
+    .results li.empty { padding: 9px 12px; color: var(--ink-soft); }
     .hint { color: var(--ink-soft); font-size: .9rem; }
     .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; }
     table.cmp { border-collapse: collapse; width: 100%; font-size: .93rem; }
@@ -113,10 +116,10 @@
     if (term.length < 3) { results.innerHTML = ""; return; }
     const hits = INDEX.filter(s => (s.n || "").toLowerCase().includes(term)).slice(0, 8);
     results.innerHTML = hits.length ? hits.map(s =>
-      `<li data-k="${s.k}" data-s="${s.s}"><b>${esc(s.n)}</b> <span class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</span></li>`).join("")
+      `<li><button type="button" class="res" data-k="${s.k}" data-s="${s.s}"><b>${esc(s.n)}</b> <span class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</span></button></li>`).join("")
       : `<li class="empty">No high schools match.</li>`;
-    results.querySelectorAll("li[data-k]").forEach(li =>
-      li.addEventListener("click", () => add(li.dataset.k, li.dataset.s)));
+    results.querySelectorAll("button[data-k]").forEach(b =>
+      b.addEventListener("click", () => add(b.dataset.k, b.dataset.s)));
   }
   async function add(k, st) {
     if (picked.length >= MAX || picked.some(p => p.k === k)) return;

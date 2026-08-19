@@ -25,12 +25,14 @@
     .searchbox { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; max-width: 620px; margin: 20px 0 6px; background: #fff; }
     .searchbox input { border: 0; outline: 0; font-size: 1rem; flex: 1; color: var(--ink); }
     .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
-    .results li { padding: 10px 12px; border: 1px solid var(--line); border-top: 0; cursor: pointer; }
+    .results li { border: 1px solid var(--line); border-top: 0; overflow: hidden; }
     .results li:first-child { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; }
     .results li:last-child { border-radius: 0 0 8px 8px; }
-    .results li:hover { background: var(--bg-alt); }
+    .results button.res { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+    .results button.res:hover { background: var(--bg-alt); }
+    .results button.res:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
     .results .meta { color: var(--ink-soft); font-size: .88rem; }
-    .results li.empty { cursor: default; color: var(--ink-soft); }
+    .results li.empty { padding: 10px 12px; cursor: default; color: var(--ink-soft); }
     .income-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 22px 0 2px; }
     .income-row label { font-weight: 600; }
     .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
@@ -172,10 +174,10 @@
     // Same normalized alias index as Value Check, so "UCLA" resolves here too.
     const hits = TWSearch.searchSchools(SCHOOLS, term).slice(0, 8);
     results.innerHTML = hits.length
-      ? hits.map(s => `<li data-u="${esc(s.unitid)}"><b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}</span></li>`).join("")
+      ? hits.map(s => `<li><button type="button" class="res" data-u="${esc(s.unitid)}"><b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}</span></button></li>`).join("")
       : `<li class="empty">No colleges match that search.</li>`;
-    results.querySelectorAll("li[data-u]").forEach(li =>
-      li.addEventListener("click", () => add(li.dataset.u)));
+    results.querySelectorAll("button[data-u]").forEach(b =>
+      b.addEventListener("click", () => add(b.dataset.u)));
   }
 
   async function add(unitid) {

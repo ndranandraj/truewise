@@ -170,6 +170,21 @@ def test_homepage_has_brand_disambiguation_signals():
     assert site_name in (PIPELINE / "build_college_pages.py").read_text()
 
 
+def test_interactive_lists_are_keyboard_operable():
+    """Careers rows and both compare-search result lists used click handlers on unfocusable <tr>/
+    <li> elements, so keyboard and screen-reader users could not select them (audit TW-03). They
+    must be real links/buttons, which are focusable and fire on Enter/Space natively."""
+    careers = (SITE / "careers" / "index.html").read_text()
+    assert 'a.mlink"' in careers or "a.mlink" in careers, "careers major name must be a link"
+    assert 'tr.addEventListener("click"' not in careers, "no click handler on unfocusable rows"
+
+    for rel, key in (("compare/index.html", "u"), ("k12/compare/index.html", "k")):
+        html = (SITE / rel).read_text()
+        assert f"button[data-{key}]" in html, f"{rel} results must be buttons"
+        assert f"li[data-{key}]" not in html, f"{rel} must not attach clicks to bare <li>"
+        assert 'li.addEventListener("click"' not in html, f"{rel} li click handler must be gone"
+
+
 def test_every_page_shares_one_header_nav():
     """The primary CTA used to jump sides and About vanished on some pages. Every hand-written
     page and the generated-page template must now carry the same nav in the same order."""
