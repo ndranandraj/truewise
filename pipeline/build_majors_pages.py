@@ -269,8 +269,9 @@ def major_page(cip, name, family, creds, slug) -> str:
             parts.append("    </tbody></table></div>\n")
             parts.append(
                 '    <p class="src">Occupation pay and outlook: U.S. Bureau of Labor Statistics '
-                "(OEWS wages, Employment Projections). A field maps to several occupations, so this "
-                "lists where the major commonly leads, not any one graduate's job.</p>\n"
+                "(OEWS wages, Employment Projections). A field maps to several occupations, and the same "
+                "occupations serve many majors, so these are the jobs this major commonly leads to, not "
+                "positions reserved for its graduates; the openings should not be added up across majors.</p>\n"
             )
 
     parts.append(

@@ -68,7 +68,9 @@ def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
                 'growth_pct': a.growth_pct,
                 'annual_openings': a.annual_openings,
                 'summary': 'Occupations this field commonly leads to, with BLS median pay and the '
-                    || '2024-2034 outlook. Openings are the annual average across those occupations.',
+                    || '2024-2034 outlook. Openings are the projected annual total across those '
+                    || 'occupations, which also serve other majors, so they are not jobs reserved '
+                    || 'for this field''s graduates.',
                 'occupations': (
                     SELECT list({{'soc': r.soc, 'title': r.title, 'wage': round(r.wage),
                                   'growth': r.growth, 'openings': round(r.openings)}}
