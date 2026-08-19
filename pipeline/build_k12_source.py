@@ -43,6 +43,24 @@ def _posn(col: str) -> str:
     return f"CASE WHEN TRY_CAST({col} AS DOUBLE) >= 0 THEN TRY_CAST({col} AS DOUBLE) END"
 
 
+# Course-offering flags are TRI-STATE: TRUE (offered), FALSE (reported none), NULL (not reported).
+# CRDC marks non-response with negative sentinels (-9 "did not report", -3 "not applicable") and
+# absent join rows. Collapsing those to FALSE would publish "does not offer AP" for a school that
+# merely didn't answer, which contradicts the site's "never guessed" promise, so unknown stays NULL
+# and is excluded from offer rates and the "offers none of three" count downstream.
+def _offer_ind(col: str) -> str:
+    """From a Yes/No indicator column: TRUE on 'Yes', FALSE on 'No', NULL otherwise (unknown)."""
+    return f"CASE WHEN upper({col}) = 'YES' THEN TRUE WHEN upper({col}) = 'NO' THEN FALSE END"
+
+
+def _offer_cnt(col: str) -> str:
+    """From a class-count column: TRUE when >0, FALSE on an observed 0, NULL on a negative sentinel."""
+    return (
+        f"CASE WHEN TRY_CAST({col} AS DOUBLE) > 0 THEN TRUE "
+        f"WHEN TRY_CAST({col} AS DOUBLE) = 0 THEN FALSE END"
+    )
+
+
 def _sum_races(alias: str, prefix: str, races=RACES) -> str:
     """Sum a metric across the given race codes and both sexes.
 
@@ -93,22 +111,22 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
             (upper(c.SCH_STATUS_CHARTER) = 'YES')        AS charter,
             (upper(c.SCH_STATUS_MAGNET) = 'YES')         AS magnet,
             {_sum_races("e", "SCH_ENR")}                          AS enroll_total,
-            (upper(a.SCH_APENR_IND) = 'YES')             AS offers_ap,
+            {_offer_ind("a.SCH_APENR_IND")}              AS offers_ap,
             {_posn("a.SCH_APCOURSES")}                   AS ap_courses,
             {_sum_races("a", "SCH_APENR")}                        AS ap_enroll,
-            ({_pos("m.SCH_MATHCLASSES_CALC")} > 0)       AS offers_calc,
+            {_offer_cnt("m.SCH_MATHCLASSES_CALC")}       AS offers_calc,
             {_sum_races("m", "SCH_MATHENR_CALC")}                 AS calc_enroll,
-            ({_pos("p.SCH_SCICLASSES_PHYS")} > 0)        AS offers_physics,
+            {_offer_cnt("p.SCH_SCICLASSES_PHYS")}        AS offers_physics,
             {_sum_races("p", "SCH_SCIENR_PHYS")}                  AS phys_enroll,
-            ({_pos("cs.SCH_COMPCLASSES_CSCI")} > 0)      AS offers_cs,
+            {_offer_cnt("cs.SCH_COMPCLASSES_CSCI")}      AS offers_cs,
             {_sum_races("cs", "SCH_COMPENR_CSCI")}                AS cs_enroll,
-            ({_pos("ch.SCH_SCICLASSES_CHEM")} > 0)       AS offers_chem,
+            {_offer_cnt("ch.SCH_SCICLASSES_CHEM")}       AS offers_chem,
             {_sum_races("ch", "SCH_SCIENR_CHEM")}                 AS chem_enroll,
-            (upper(d.SCH_DUAL_IND) = 'YES')              AS offers_dual,
+            {_offer_ind("d.SCH_DUAL_IND")}               AS offers_dual,
             {_sum_races("d", "SCH_DUALENR")}                      AS dual_enroll,
-            (upper(ib.SCH_IBENR_IND) = 'YES')            AS offers_ib,
+            {_offer_ind("ib.SCH_IBENR_IND")}             AS offers_ib,
             {_sum_races("ib", "SCH_IBENR")}                       AS ib_enroll,
-            (upper(g.SCH_GT_IND) = 'YES')                AS offers_gt,
+            {_offer_ind("g.SCH_GT_IND")}                 AS offers_gt,
             {_sum_races("g", "SCH_GTENR")}                        AS gt_enroll,
             -- Support staff (FTE; NULL when the school did not report, so a true 0 is meaningful).
             {_posn("ss.SCH_FTECOUNSELORS")}              AS fte_counselors,

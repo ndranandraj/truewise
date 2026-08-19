@@ -195,3 +195,44 @@ def test_build_k12_site(tmp_path, monkeypatch):
     assert s["staff"]["uncert_pct"] == 10  # 1 of 10 teachers
     idx = json.loads((tmp_path / "k12-data" / "index.json").read_text())
     assert idx["vintage"] == "2021-22" and idx["schools"][0]["k"] == "HS1"
+
+
+def test_negative_crdc_codes_are_unknown_not_no(tmp_path, monkeypatch):
+    """CRDC marks non-response with negative sentinels (-9 "did not report"). Those must become
+    NULL (unknown), never FALSE, so a school that did not report AP is not published as "does not
+    offer AP". This is the same missingness bug class as the 0%-completion sentinel, and it moved
+    a published K-12 headline before it was caught."""
+    _mk_crdc(tmp_path)
+    # AP indicator and the Calculus class-count are non-response (-9); physics stays an observed 0,
+    # which is a real "offers none".
+    _course_file(
+        tmp_path,
+        "Advanced Placement.csv",
+        "SCH_APENR_IND",
+        "-9",
+        "SCH_APENR",
+        {"SCH_APCOURSES": "-9"},
+    )
+    _course_file(tmp_path, "Calculus.csv", "SCH_MATHCLASSES_CALC", "-9", "SCH_MATHENR_CALC", {})
+    _course_file(tmp_path, "Physics.csv", "SCH_SCICLASSES_PHYS", "0", "SCH_SCIENR_PHYS", {})
+    con = _build_k12_table(tmp_path)
+    ap, calc, phys = con.execute(
+        "SELECT offers_ap, offers_calc, offers_physics FROM k12"
+    ).fetchone()
+    assert ap is None, "unreported AP indicator (-9) must be NULL, not False"
+    assert calc is None, "negative class-count sentinel (-9) must be NULL, not False"
+    assert phys is False, "an observed 0 classes is a real 'offers none'"
+
+    pq = tmp_path / "parquet"
+    pq.mkdir()
+    con.execute(f"COPY k12 TO '{pq / 'k12.parquet'}' (FORMAT PARQUET)")
+    monkeypatch.setattr(bk, "PARQUET_DIR", pq)
+    monkeypatch.setattr(bk, "OUT_DIR", tmp_path / "k12-data")
+    bk.main()
+    s = json.loads((tmp_path / "k12-data" / "schools" / "TX.json").read_text())["HS1"]
+    assert s["courses"]["ap"]["offered"] is None, "AP must render as 'not reported', not offered"
+    assert s["courses"]["calc"]["offered"] is None
+    assert s["courses"]["phys"]["offered"] is False
+    assert s["breadth3"] == 0  # nothing KNOWN offered among the three (unknowns are not counted)
+    idx = json.loads((tmp_path / "k12-data" / "index.json").read_text())["schools"][0]
+    assert idx["ap"] is None and idx["c"] is None and idx["p"] is False

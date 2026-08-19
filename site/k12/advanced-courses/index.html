@@ -36,6 +36,7 @@
     .chips { display: inline-flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .chip { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
     .chip.on { background: #ecfdf3; color: #067647; } .chip.off { background: #f4f5f7; color: #98a1b0; }
+    .chip.unk { background: #fff; color: #98a1b0; border: 1px dashed #d0d5dd; }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -150,9 +151,9 @@
           <h3>${esc(s.n)}</h3>
           <div class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</div>
           <div class="chips">
-            <span class="chip ${s.ap ? "on" : "off"}">${s.ap ? "AP" : "No AP"}</span>
-            <span class="chip ${s.c ? "on" : "off"}">${s.c ? "Calculus" : "No calculus"}</span>
-            <span class="chip ${s.p ? "on" : "off"}">${s.p ? "Physics" : "No physics"}</span>
+            <span class="chip ${s.ap === true ? "on" : s.ap === false ? "off" : "unk"}">${s.ap === true ? "AP" : s.ap === false ? "No AP" : "AP not reported"}</span>
+            <span class="chip ${s.c === true ? "on" : s.c === false ? "off" : "unk"}">${s.c === true ? "Calculus" : s.c === false ? "No calculus" : "Calculus not reported"}</span>
+            <span class="chip ${s.p === true ? "on" : s.p === false ? "off" : "unk"}">${s.p === true ? "Physics" : s.p === false ? "No physics" : "Physics not reported"}</span>
           </div>
         </a></li>`).join("");
       results.querySelectorAll("a.school-card").forEach(a =>
@@ -165,11 +166,15 @@
 
   // ---- School detail ----
   function courseCard(title, c) {
+    // offered is tri-state: true / false / null. Null means the school did not report, which is
+    // shown as "Not reported", never collapsed into "Not offered".
+    const cls = c.offered === true ? "yes" : c.offered === false ? "no" : "";
+    const label = c.offered === true ? "Offered" : c.offered === false ? "Not offered" : "Not reported";
     const detail = (c.courses != null ? `${c.courses} course${c.courses === 1 ? "" : "s"}; ` : "")
       + `${num(c.enroll)} students${c.rate != null ? ` (${c.rate}% of students)` : ""}.`;
     return `<div class="course"><h3>${title}</h3>
-      <div class="status ${c.offered ? "yes" : "no"}">${c.offered ? "Offered" : "Not offered"}</div>
-      ${c.offered && c.enroll != null ? `<div class="detail">${detail}</div>` : ""}</div>`;
+      <div class="status ${cls}">${label}</div>
+      ${c.offered === true && c.enroll != null ? `<div class="detail">${detail}</div>` : ""}</div>`;
   }
   function staffCard(title, cls, status, detail) {
     return `<div class="course"><h3>${title}</h3><div class="status ${cls}">${status}</div>
@@ -183,15 +188,27 @@
     if (!s) { app.innerHTML = `<a class="backlink" href="/k12/advanced-courses/" id="back">← Search</a><p class="empty">No data for this school.</p>`; wireBack(); return; }
     const c = s.courses, st = s.staff;
 
-    // Headline: how many of the three core advanced tracks the school offers.
+    // Headline: how many of the three core advanced tracks the school offers. Tri-state, so a
+    // school is only said to offer "none" when all three were reported and all three are absent;
+    // an unreported track is surfaced as "did not report", never counted as "not offered".
     const core = [["AP", c.ap.offered], ["calculus", c.calc.offered], ["physics", c.phys.offered]];
-    const on = core.filter(x => x[1]).map(x => x[0]), off = core.filter(x => !x[1]).map(x => x[0]);
-    const breadthMsg = s.breadth3 === 3
-      ? `Offers <b>all three</b> core advanced tracks: AP, calculus, and physics.`
-      : s.breadth3 === 0
-        ? `Offers <b>none</b> of the three core advanced tracks (AP, calculus, or physics).`
-        : `Offers <b>${s.breadth3} of 3</b> core advanced tracks (${on.join(" and ")}), but not ${off.join(" or ")}.`;
-    const breadthCls = s.breadth3 === 3 ? "over" : s.breadth3 === 0 ? "under" : "";
+    const on = core.filter(x => x[1] === true).map(x => x[0]);
+    const off = core.filter(x => x[1] === false).map(x => x[0]);
+    const unk = core.filter(x => x[1] == null).map(x => x[0]);
+    let breadthMsg, breadthCls = "";
+    if (on.length === 3) {
+      breadthMsg = `Offers <b>all three</b> core advanced tracks: AP, calculus, and physics.`;
+      breadthCls = "over";
+    } else if (off.length === 3) {
+      breadthMsg = `Offers <b>none</b> of the three core advanced tracks (AP, calculus, or physics).`;
+      breadthCls = "under";
+    } else {
+      const parts = [];
+      if (on.length) parts.push(`offers ${on.join(" and ")}`);
+      if (off.length) parts.push(`not ${off.join(" or ")}`);
+      if (unk.length) parts.push(`did not report ${unk.join(" or ")}`);
+      breadthMsg = `Of the three core advanced tracks, this school ${parts.join("; ")}.`;
+    }
 
     // Staff cards.
     const counselor = st.no_counselor
@@ -242,7 +259,7 @@
       ${callout}
       <div class="caveats"><strong>How to read this.</strong> Course offerings, participation, and staffing are reported
         by each school to the U.S. Department of Education's Office for Civil Rights. Participation rates are the share of
-        the school's students (grades 9-12) taking a course; the counselor ratio is students per full-time-equivalent
+        all students enrolled at the school taking a course (the CRDC does not break enrollment out by grade); the counselor ratio is students per full-time-equivalent
         counselor. Counts a school withheld or that were too small to report are shown as unavailable, never guessed. Data
         is from the <b>2021-22</b> collection, the most recent; course offerings are fairly stable year to year.
         Source: ${VINTAGE}.</div>`;

@@ -38,7 +38,7 @@
     table.cmp .schname { font-weight: 700; }
     table.cmp .schmeta { color: var(--ink-soft); font-size: .82rem; font-weight: 400; }
     table.cmp .rm { color: #b42318; cursor: pointer; font-size: .8rem; font-weight: 600; }
-    .yes { color: #067647; font-weight: 700; } .no { color: #98a1b0; }
+    .yes { color: #067647; font-weight: 700; } .no { color: #98a1b0; } .na { color: #98a1b0; font-style: italic; }
     .num { font-variant-numeric: tabular-nums; }
     .empty { color: var(--ink-soft); padding: 16px 0; }
     @media (max-width: 560px) { table.cmp thead th { top: 0; } }
@@ -84,7 +84,8 @@
   <script>
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const num = n => n == null ? "n/a" : Number(n).toLocaleString();
-  const yn = b => b ? `<span class="yes">Offered</span>` : `<span class="no">No</span>`;
+  // Tri-state: offered / not offered / not reported (null must not read as "No").
+  const yn = v => v === true ? `<span class="yes">Offered</span>` : v === false ? `<span class="no">No</span>` : `<span class="na">Not reported</span>`;
   let INDEX = null;
   const stateCache = {};
   const picked = [];          // {k, rec}

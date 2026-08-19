@@ -51,7 +51,10 @@ def main() -> None:
         return round(100 * part / whole) if part and whole else None
 
     def _course(offered, enroll, whole, courses=None):
-        d = {"offered": bool(offered), "enroll": _int(enroll), "rate": _rate(enroll, whole)}
+        # offered is tri-state: True (offers), False (reported none), None (did not report). Keep
+        # None distinct so the page can say "not reported" instead of implying "does not offer".
+        off = None if offered is None else bool(offered)
+        d = {"offered": off, "enroll": _int(enroll), "rate": _rate(enroll, whole)}
         if courses is not None:
             d["courses"] = _int(courses)
         return d
@@ -77,10 +80,11 @@ def main() -> None:
             "charter": bool(r["charter"]),
             "magnet": bool(r["magnet"]),
             "enroll": _int(enroll),
-            # How many of the three core advanced tracks the school offers (0-3).
-            "breadth3": int(bool(r["offers_ap"]))
-            + int(bool(r["offers_calc"]))
-            + int(bool(r["offers_physics"])),
+            # How many of the three core advanced tracks the school is known to offer (0-3).
+            # Unknown (unreported) tracks are not counted as offered.
+            "breadth3": sum(
+                1 for x in (r["offers_ap"], r["offers_calc"], r["offers_physics"]) if x is True
+            ),
             "courses": {
                 "ap": _course(r["offers_ap"], r["ap_enroll"], enroll, r["ap_courses"]),
                 "calc": _course(r["offers_calc"], r["calc_enroll"], enroll),
@@ -99,16 +103,28 @@ def main() -> None:
                 "n": r["name"],
                 "s": state,
                 "d": r["district"],
-                "ap": bool(r["offers_ap"]),
-                "c": bool(r["offers_calc"]),
-                "p": bool(r["offers_physics"]),
+                # Tri-state: true / false / null (not reported).
+                "ap": None if r["offers_ap"] is None else bool(r["offers_ap"]),
+                "c": None if r["offers_calc"] is None else bool(r["offers_calc"]),
+                "p": None if r["offers_physics"] is None else bool(r["offers_physics"]),
             }
         )
 
-    # Per-state aggregates for the State report cards view.
+    # Per-state aggregates for the State report cards view. Offer rates are computed only over
+    # schools that REPORTED the course (unknowns excluded from both numerator and denominator), so
+    # a state with many non-reporting schools is not made to look as if it does not offer a course.
+    # "Offers none of the three" is likewise counted only where all three were reported.
     COURSE_COLS = ["ap", "calc", "phys", "chem", "cs", "dual", "ib", "gt"]
     agg: dict[str, dict] = defaultdict(
-        lambda: {"n": 0, "none3": 0, "no_couns": 0, "ratios": [], **dict.fromkeys(COURSE_COLS, 0)}
+        lambda: {
+            "n": 0,
+            "none3": 0,
+            "known3": 0,
+            "no_couns": 0,
+            "ratios": [],
+            **dict.fromkeys(COURSE_COLS, 0),
+            **{f"{c}_known": 0 for c in COURSE_COLS},
+        }
     )
     offer_map = {
         "ap": "offers_ap",
@@ -124,10 +140,16 @@ def main() -> None:
         a = agg[r["state"] or "ZZ"]
         a["n"] += 1
         for c in COURSE_COLS:
-            if r[offer_map[c]]:
-                a[c] += 1
-        if not (r["offers_ap"] or r["offers_calc"] or r["offers_physics"]):
-            a["none3"] += 1
+            v = r[offer_map[c]]
+            if v is not None:  # reported one way or the other
+                a[f"{c}_known"] += 1
+                if v:
+                    a[c] += 1
+        ap, calc, phys = r["offers_ap"], r["offers_calc"], r["offers_physics"]
+        if ap is not None and calc is not None and phys is not None:
+            a["known3"] += 1
+            if not ap and not calc and not phys:
+                a["none3"] += 1
         if r["fte_counselors"] == 0:
             a["no_couns"] += 1
         elif r["fte_counselors"] and r["enroll_total"]:
@@ -141,8 +163,11 @@ def main() -> None:
             {
                 "state": st,
                 "n": n,
-                "offer": {c: round(100 * a[c] / n) for c in COURSE_COLS},
-                "pct_none3": round(100 * a["none3"] / n),
+                "offer": {
+                    c: (round(100 * a[c] / a[f"{c}_known"]) if a[f"{c}_known"] else None)
+                    for c in COURSE_COLS
+                },
+                "pct_none3": (round(100 * a["none3"] / a["known3"]) if a["known3"] else None),
                 "pct_no_counselor": round(100 * a["no_couns"] / n),
                 "median_ratio": round(median(a["ratios"])) if a["ratios"] else None,
             }
