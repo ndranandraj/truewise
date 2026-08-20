@@ -177,7 +177,7 @@ a:hover { color: var(--brand-deep); }
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: .08em; color: var(--ink-faint); margin: 0;
 }
-.example-card header small { font-size: .7rem; font-weight: 600; color: #8b95a7; }
+.example-card header small { font-size: .7rem; font-weight: 600; color: var(--ink-faint); }
 .example-row {
   display: flex; justify-content: space-between; align-items: center; gap: 16px;
   padding: 15px 20px;
@@ -196,7 +196,7 @@ a:hover { color: var(--brand-deep); }
 .verdict-pill.up { background: var(--good-bg); color: var(--good); }
 .verdict-pill.down { background: var(--bad-bg); color: var(--bad); }
 .example-card footer {
-  font-size: .75rem; color: #8b95a7;
+  font-size: .75rem; color: var(--ink-faint);
   padding: 10px 20px;
   background: #fbfcfe;
 }

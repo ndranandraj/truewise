@@ -14,7 +14,9 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 20; }
+    /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
+       sticky, so without the offset the subnav slides under the header while scrolling. */
+    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 65px; z-index: 20; }
     .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }

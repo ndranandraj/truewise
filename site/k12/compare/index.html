@@ -14,7 +14,9 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 20; }
+    /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
+       sticky, so without the offset the subnav slides under the header while scrolling. */
+    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 65px; z-index: 20; }
     .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
@@ -84,6 +86,7 @@
     </section>
   </main>
 
+  <script src="/assets/college-search.js"></script>
   <script>
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const num = n => n == null ? "n/a" : Number(n).toLocaleString();
@@ -112,9 +115,10 @@
   q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
   async function search() {
     await loadIndex();
-    const term = q.value.trim().toLowerCase();
+    const term = q.value.trim();
     if (term.length < 3) { results.innerHTML = ""; return; }
-    const hits = INDEX.filter(s => (s.n || "").toLowerCase().includes(term)).slice(0, 8);
+    // Same provider as the courses search, so a name typed here behaves identically there.
+    const hits = TWSearch.K12SearchProvider.search(term, { data: INDEX, limit: 8 }).map(r => r.raw);
     results.innerHTML = hits.length ? hits.map(s =>
       `<li><button type="button" class="res" data-k="${s.k}" data-s="${s.s}"><b>${esc(s.n)}</b> <span class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</span></button></li>`).join("")
       : `<li class="empty">No high schools match.</li>`;

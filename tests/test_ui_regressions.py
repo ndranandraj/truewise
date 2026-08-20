@@ -185,6 +185,47 @@ def test_interactive_lists_are_keyboard_operable():
         assert 'li.addEventListener("click"' not in html, f"{rel} li click handler must be gone"
 
 
+def test_k12_search_uses_the_provider_with_state_narrowing():
+    """K-12 names repeat heavily (261 matches for "central high school"), so both K-12 searches use
+    the shared provider and the courses page offers state narrowing rather than a long scroll."""
+    for rel in ("k12/advanced-courses/index.html", "k12/compare/index.html"):
+        html = (SITE / rel).read_text()
+        assert "/assets/college-search.js" in html, f"{rel} must load the shared module"
+        assert "K12SearchProvider" in html, f"{rel} must use the K-12 provider"
+        assert 'INDEX.filter(s => (s.n || "").toLowerCase().includes(term))' not in html, (
+            f"{rel} must not keep the old name-only substring filter"
+        )
+    courses = (SITE / "k12" / "advanced-courses" / "index.html").read_text()
+    assert "statesFor" in courses and "statebar" in courses, "state narrowing missing"
+    assert 'aria-live="polite"' in courses, "result count should be announced"
+
+
+def test_k12_subnav_clears_the_sticky_header():
+    """Both the site header and the K-12 subnav are sticky. Without an offset the subnav slides
+    underneath the header while scrolling, so every K-12 page pins it below the 64px header."""
+    for rel in (
+        "k12/index.html",
+        "k12/advanced-courses/index.html",
+        "k12/compare/index.html",
+        "k12/rankings/index.html",
+    ):
+        css = (SITE / rel).read_text()
+        assert ".subnav {" in css and "top: 65px" in css, f"{rel} subnav must clear the header"
+
+
+def test_compare_states_coverage_and_labels_are_honest():
+    """A pass rate over 89 measured programs must not read like one over 254. Coverage is computed
+    per school, and the completers column says what it actually counts."""
+    compare = (SITE / "compare" / "index.html").read_text()
+    assert "Programs measured" in compare, "coverage row missing from Compare"
+    assert "n_insufficient" in compare, "coverage must include the unmeasured programs"
+    # "Grads" implied the earnings-cohort sample size; it is a completions count.
+    vc = (SITE / "value-check" / "index.html").read_text()
+    assert "Recent completers" in vc and ">Grads<" not in vc
+    gen = (PIPELINE / "build_college_pages.py").read_text()
+    assert "Recent completers" in gen and '"num">Graduates<' not in gen
+
+
 def test_every_page_shares_one_header_nav():
     """The primary CTA used to jump sides and About vanished on some pages. Every hand-written
     page and the generated-page template must now carry the same nav in the same order."""

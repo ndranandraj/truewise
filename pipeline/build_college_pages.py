@@ -526,7 +526,7 @@ def college_page(s, programs, slug) -> str:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
             '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
-            '<th class="num">Graduates</th><th class="num">Median earnings</th><th>vs a high-school grad</th>'
+            '<th class="num">Recent completers</th><th class="num">Median earnings</th><th>vs a high-school grad</th>'
             '<th>Verdict</th><th class="num">Median debt</th>'
             '<th class="num">Years of premium to repay</th></tr></thead><tbody>\n'
         )
@@ -534,7 +534,10 @@ def college_page(s, programs, slug) -> str:
         parts.append("    </tbody></table></div>\n")
         if decided > len(rows):
             parts.append(
-                f'    <p class="src">Showing the {len(rows)} largest programs by graduates. See all {decided} on the <a href="/value-check/?school={esc(s["unitid"])}">full profile</a>.</p>\n'
+                f'    <p class="src">Showing the {len(rows)} largest programs by recent completers. '
+                f'"Recent completers" is the number who finished the program in the reporting period; it is '
+                f"not the size of the cohort behind the earnings figure. See all {decided} on the "
+                f'<a href="/value-check/?school={esc(s["unitid"])}">full profile</a>.</p>\n'
             )
 
     # Loan repayment: do borrowers actually pay it down?

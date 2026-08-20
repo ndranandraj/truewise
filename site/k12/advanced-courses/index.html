@@ -14,7 +14,9 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="/styles.css" />
   <style>
-    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 0; z-index: 20; }
+    /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
+       sticky, so without the offset the subnav slides under the header while scrolling. */
+    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 65px; z-index: 20; }
     .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
@@ -37,6 +39,13 @@
     .chip { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
     .chip.on { background: #ecfdf3; color: #067647; } .chip.off { background: #f4f5f7; color: #98a1b0; }
     .chip.unk { background: #fff; color: #98a1b0; border: 1px dashed #d0d5dd; }
+    .statebar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 4px; }
+    .statebar-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); margin-right: 4px; }
+    .stchip { font-size: .82rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; font: inherit; font-size: .82rem; }
+    .stchip:hover { border-color: var(--brand); color: var(--ink); }
+    .stchip.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .stchip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .rescount { margin: 6px 0 0; font-size: .86rem; color: var(--ink-soft); }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -96,6 +105,7 @@
     </div>
   </main>
 
+  <script src="/assets/college-search.js"></script>
   <script>
   const VINTAGE = "U.S. Dept. of Education, Civil Rights Data Collection, 2021-22";
   const app = document.getElementById("app");
@@ -137,14 +147,42 @@
           <input id="q" type="search" autocomplete="off" placeholder="Search ${INDEX.length.toLocaleString()} public high schools by name…" value="${esc(preset)}" />
         </div>
         <p class="hint">Try your high school, or a well-known one like “Lane Tech” or “Stuyvesant”.</p>
+        <div class="statebar" id="statebar" hidden></div>
+        <p class="rescount" id="rescount" role="status" aria-live="polite"></p>
         <ul class="results" id="results"></ul>
       </section>`;
     const q = document.getElementById("q"), results = document.getElementById("results");
-    let t;
+    const statebar = document.getElementById("statebar"), rescount = document.getElementById("rescount");
+    let t, stateFilter = null;
     const run = () => {
-      const term = q.value.trim().toLowerCase();
-      if (term.length < 3) { results.innerHTML = `<li class="empty">Type at least three letters to search.</li>`; return; }
-      const hits = INDEX.filter(s => (s.n || "").toLowerCase().includes(term)).slice(0, 40);
+      const term = q.value.trim();
+      stateFilter = stateFilter && term ? stateFilter : stateFilter;
+      if (term.length < 3) {
+        results.innerHTML = `<li class="empty">Type at least three letters to search.</li>`;
+        statebar.hidden = true; rescount.textContent = ""; return;
+      }
+      // School names repeat heavily: "Central High School" alone matches hundreds across the
+      // country. Offer the states the matches fall in so a person can narrow instead of scrolling.
+      const states = TWSearch.K12SearchProvider.statesFor(term, { data: INDEX });
+      const total = states.reduce((n, [, c]) => n + c, 0);
+      if (states.length > 1 && total > 12) {
+        statebar.hidden = false;
+        statebar.innerHTML = `<span class="statebar-label">Narrow by state</span>`
+          + `<button type="button" class="stchip ${stateFilter ? "" : "on"}" data-st="">All ${total}</button>`
+          + states.slice(0, 12).map(([st, c]) =>
+              `<button type="button" class="stchip ${stateFilter === st ? "on" : ""}" data-st="${esc(st)}">${esc(st)} ${c}</button>`).join("");
+        statebar.querySelectorAll("button[data-st]").forEach(b =>
+          b.addEventListener("click", () => { stateFilter = b.dataset.st || null; run(); }));
+      } else {
+        statebar.hidden = true; stateFilter = null;
+      }
+      const hits = TWSearch.K12SearchProvider
+        .search(term, { data: INDEX, state: stateFilter, limit: 40 })
+        .map(r => r.raw);
+      rescount.textContent = hits.length
+        ? `${hits.length}${hits.length === 40 ? "+" : ""} school${hits.length === 1 ? "" : "s"}`
+          + (stateFilter ? ` in ${stateFilter}` : "")
+        : "";
       if (!hits.length) { results.innerHTML = `<li class="empty">No high schools match “${esc(term)}”.</li>`; return; }
       results.innerHTML = hits.map(s => `
         <li><a class="school-card" href="?school=${s.k}" data-k="${s.k}" data-s="${s.s}">

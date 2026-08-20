@@ -237,6 +237,17 @@
         return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
       })));
 
+    // Coverage first: a school with 89 of 254 programs measured should not read as equivalent to
+    // one with broad coverage, however good its pass rate looks. Computed per school, never copied.
+    rows.push(row("Programs measured", cols.map(s => {
+      const decided = s.n_pass + s.n_fail;
+      const total = decided + (s.n_insufficient || 0);
+      if (!total) return "not reported";
+      const share = Math.round(100 * decided / total);
+      const cls = share < 50 ? "bad" : "";
+      return `<span class="${cls}">${decided} of ${total}</span> <span class='schmeta'>${share}% of programs have earnings data</span>`;
+    })));
+
     rows.push(row("Programs clearing the bar", cols.map(s => {
       const r = passRate(s), decided = s.n_pass + s.n_fail;
       if (r == null) return "not enough data";
