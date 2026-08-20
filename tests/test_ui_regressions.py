@@ -212,8 +212,12 @@ def test_search_is_hardened_with_tokens_ranking_aliases_and_empty_state():
     alias map now live in the shared module; Value Check keeps the routed empty state + a11y."""
     mod = (SITE / "assets" / "college-search.js").read_text()
     assert "ALIASES" in mod, "alias map missing from shared module"
-    assert "function searchSchools" in mod, "ranked search function missing from shared module"
-    assert "scored.sort" in mod, "ranking (scored sort) missing from shared module"
+    # Two providers behind one contract (Stage 0.2): colleges rank on name/alias/city/state/size,
+    # K-12 on name with state and district as filters. One matcher for both makes each worse.
+    assert "CollegeSearchProvider" in mod and "K12SearchProvider" in mod
+    assert "searchSchools" in mod, "back-compat shim for the shipped pages must remain"
+    assert "out.sort" in mod, "ranking (scored sort) missing from shared module"
+    assert "editDistance" in mod, "typo tolerance missing"
 
     vc = (SITE / "value-check" / "index.html").read_text()
     assert "function detectState" in vc and "emptyStateHTML" in vc, "routed empty state missing"

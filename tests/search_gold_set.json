@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "updated": "2026-08-19",
+  "note": "Acceptance gate for any college/K-12 search ranking change. Four smoke queries cannot approve a ranking change. 'top' = expected first result (substring match on the name). 'within' = must appear in the first N results. 'none' = must return no results.",
+  "college": [
+    { "q": "ucla", "top": "University of California-Los Angeles", "case": "alias" },
+    { "q": "uc berkeley", "top": "University of California-Berkeley", "case": "alias" },
+    { "q": "ut austin", "top": "The University of Texas at Austin", "case": "alias" },
+    { "q": "texas austin", "top": "The University of Texas at Austin", "case": "alias, spaced" },
+    { "q": "usc", "top": "University of Southern California", "case": "alias, ambiguous initials" },
+    { "q": "nyu", "top": "New York University", "case": "alias" },
+    { "q": "mit", "top": "Massachusetts Institute of Technology", "case": "alias" },
+    { "q": "georgia tech", "top": "Georgia Institute of Technology", "case": "alias" },
+    { "q": "virginia tech", "top": "Virginia Polytechnic Institute", "case": "alias" },
+
+    { "q": "uva", "top": "University of Virginia-Main Campus", "case": "REGRESSION: returned Nuvani Institute (substring noise)" },
+    { "q": "berkeley", "top": "University of California-Berkeley", "case": "REGRESSION: returned Berkeley City College; intent ranking" },
+    { "q": "waco", "within": 5, "expect": "Baylor University", "case": "REGRESSION: city intent, city field was not indexed" },
+    { "q": "ann arbor", "within": 5, "expect": "University of Michigan-Ann Arbor", "case": "city intent" },
+    { "q": "univeristy california los angeles", "top": "University of California-Los Angeles", "case": "REGRESSION: misspelling returned nothing" },
+    { "q": "massachusets institute", "top": "Massachusetts Institute of Technology", "case": "misspelling" },
+
+    { "q": "baylor", "top": "Baylor University", "case": "size tiebreak over Baylor College of Medicine" },
+    { "q": "columbia university", "top": "Columbia University in the City of New York", "case": "near-duplicate names" },
+    { "q": "university of virginia", "top": "University of Virginia-Main Campus", "case": "main campus over College at Wise" },
+    { "q": "university of michigan", "top": "University of Michigan-Ann Arbor", "case": "main campus over satellites" },
+
+    { "q": "santa monica college", "top": "Santa Monica College", "case": "community college, exact" },
+    { "q": "washtenaw community college", "top": "Washtenaw Community College", "case": "community college" },
+    { "q": "austin community college", "within": 3, "expect": "Austin Community College District", "case": "community college, multi-campus" },
+
+    { "q": "harvard", "top": "Harvard University", "case": "single strong name" },
+    { "q": "stanford", "top": "Stanford University", "case": "single strong name" },
+    { "q": "yale", "top": "Yale University", "case": "single strong name" },
+    { "q": "duke", "top": "Duke University", "case": "short name, must beat substring noise" },
+    { "q": "rice university", "top": "Rice University", "case": "short word in many names" },
+
+    { "q": "california state university long beach", "within": 3, "expect": "Long Beach", "case": "long official name" },
+    { "q": "cuny", "within": 8, "expect": "CUNY", "case": "system prefix" },
+    { "q": "penn state", "within": 3, "expect": "Pennsylvania State University", "case": "alias to system" },
+
+    { "q": "a", "none": true, "case": "too short, must not scan" },
+    { "q": "zzzzqqqq", "none": true, "case": "no plausible match" },
+    { "q": "asdfghjkl university", "none": true, "case": "typo tolerance must not invent a confident match" }
+  ],
+  "k12": [
+    { "q": "central high school", "min_results": 20, "case": "REGRESSION: 194 matches, needs state/district narrowing" },
+    { "q": "lincoln high school", "min_results": 5, "case": "REGRESSION: 23 matches across states" },
+    { "q": "central high school", "state": "IN", "narrows": true, "case": "state filter must reduce the set (IN has 21 of the 194)" },
+    { "q": "lincoln high school", "state": "WA", "narrows": true, "case": "state filter must reduce the set (WA has 3 of the 23)" },
+    { "q": "brooklyn technical", "within": 3, "expect": "BROOKLYN TECHNICAL", "case": "distinctive name" },
+    { "q": "zzzzqqqq high", "none": true, "case": "no plausible match" }
+  ]
+}
