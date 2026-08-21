@@ -21,6 +21,12 @@ import duckdb
 
 from pipeline.config import ROOT
 
+# Palette generated from design/tokens.json (tuned for the dark navy finding band this sits on).
+from pipeline.tokens_gen import BAND_ACCENT as BAD  # the "earn less" bar
+from pipeline.tokens_gen import HOME_BAR as BAR  # light brand tint for the "earn more" bars
+from pipeline.tokens_gen import HOME_TEXT as TEXT
+from pipeline.tokens_gen import HOME_TEXT_DIM as TEXT_DIM
+
 SITE = ROOT / "site"
 PARQUET = SITE.parent / "published" / "value_check.parquet"
 INDEX = SITE / "index.html"
@@ -42,11 +48,6 @@ LABELS = [
     "150%+ more",
 ]
 
-# Palette (styles.css) tuned for the dark navy finding band this sits on.
-BAD = "#ff8c7a"  # --band-accent, the "earn less" bar
-BAR = "#8fb2ec"  # light brand tint for the "earn more" bars
-TEXT = "#cdd9ee"
-TEXT_DIM = "#93a9cf"
 BASELINE = "rgba(255,255,255,.28)"
 
 

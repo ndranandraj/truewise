@@ -26,8 +26,8 @@ import duckdb
 from pipeline.build_site import build_model
 from pipeline.cip_names import has_plain_name, plain_name, tidy_official
 from pipeline.config import ROOT
-from pipeline.og_images import BRAND_DEEP, GOOD
 from pipeline.og_images import card as render_card
+from pipeline.tokens_gen import BRAND_DEEP, GOOD
 
 SITE = ROOT / "site"
 BASE = "https://truewise.dev"

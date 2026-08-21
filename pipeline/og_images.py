@@ -23,24 +23,24 @@ from PIL import Image, ImageDraw, ImageFont
 
 from pipeline.config import ROOT
 
+# Site palette: generated from design/tokens.json so these can never drift from the CSS.
+from pipeline.tokens_gen import (
+    BAD,
+    BG,
+    BRAND,
+    BRAND_DEEP,
+    INK,
+    INK_FAINT,
+    INK_SOFT,
+    LINE,
+)
+
 SITE = ROOT / "site"
 OG_DIR = SITE / "og"
 FONT_DIR = ROOT / "assets" / "fonts"
 
 W, H = 1200, 630
 MARGIN = 80
-
-# Site palette (styles.css).
-INK = "#14203a"
-INK_SOFT = "#45526b"
-INK_FAINT = "#6b7688"
-BRAND = "#1f6feb"
-BRAND_DEEP = "#123a7a"
-GOOD = "#0b6b47"
-BAD = "#a02012"
-LINE = "#dde4ee"
-BG = "#ffffff"
-BG_ALT = "#f4f7fb"
 
 _BOLD = FONT_DIR / "LiberationSans-Bold.ttf"
 _REG = FONT_DIR / "LiberationSans-Regular.ttf"

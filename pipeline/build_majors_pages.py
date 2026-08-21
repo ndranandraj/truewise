@@ -17,6 +17,7 @@ from collections import defaultdict
 
 import duckdb
 
+from pipeline import tokens_gen as tk
 from pipeline.build_careers import build_fields
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
@@ -92,13 +93,14 @@ def _ladder_chart(creds) -> str:
     def sx(v):
         return round(x0 + (v - lo) / (hi - lo) * (x1 - x0), 1)
 
+    # Palette from design/tokens.json (generated), so the ladder cannot drift from the site.
     BAND, DOT, INK, SOFT, FAINT, LINE = (
-        "#dbe7fb",
-        "#1f6feb",
-        "#14203a",
-        "#45526b",
-        "#6b7688",
-        "#dde4ee",
+        tk.LADDER_BAND,
+        tk.BRAND,
+        tk.INK,
+        tk.INK_SOFT,
+        tk.INK_FAINT,
+        tk.LINE,
     )
     p = [
         f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '

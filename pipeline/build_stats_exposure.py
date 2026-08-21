@@ -21,8 +21,8 @@ import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
 from pipeline.config import PARQUET_DIR, ROOT
-from pipeline.og_images import BAD as OG_BAD
 from pipeline.og_images import card as render_card
+from pipeline.tokens_gen import BAD as OG_BAD
 
 SITE = ROOT / "site"
 GRAD_LEVELS = ("4", "5", "6", "7", "8")  # post-bacc cert, master's, doctoral, first-prof, grad cert
