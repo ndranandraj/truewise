@@ -1,0 +1,39 @@
+/* Stage 0.3 FINAL palette as CSS custom properties.
+ *
+ * Used only by the Stage 3 component fixtures in this folder. Production still serves the CURRENT
+ * values from site/styles.css (Stage 2); these final values are applied site-wide in Stage 5. Values
+ * mirror design/palette-final.json, and tests/test_components.py asserts they stay in sync, so the
+ * fixtures cannot drift from the palette the contrast gate validates.
+ */
+:root {
+  /* Text */
+  --text: #14203a;
+  --text-secondary: #45526b;
+  --text-muted: #67717f;          /* darkened from #6b7688; now AA on --surface too */
+  --text-on-dark: #eaf0fb;
+  --text-on-dark-muted: #93acda;  /* raised from #7d9bd0 (was 3.91) */
+
+  /* Surfaces */
+  --paper: #ffffff;
+  --surface: #f4f7fb;
+  --brand-strong: #123a7a;
+
+  /* Brand + status */
+  --brand: #1f6feb;
+  --good: #0b6b47;
+  --good-bg: #e7f6ef;
+  --bad: #a02012;
+  --bad-bg: #fbeae7;
+  --caution: #8a6d1a;
+  --caution-bg: #fff7e6;
+  --band-accent: #ff8c7a;
+  --accent: #0f9d6a;              /* graphics only, never text */
+
+  /* Lines + focus */
+  --line: #dde4ee;
+  --focus-ring: #1f6feb;
+  --focus-ring-on-dark: #ffffff;
+
+  --radius: 14px;
+  --font: "Libre Franklin", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}

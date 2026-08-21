@@ -1,0 +1,98 @@
+/* Stage 3 component styles, built on components/tokens-final.css (the 0.3 final palette).
+ * Fixture-only until Stage 5. Colours reference tokens, never raw hex, so the contrast gate covers
+ * them and Stage 5 adoption is a matter of loading the same values site-wide.
+ */
+
+.tw-search {
+  font-family: var(--font);
+  max-width: 620px;
+}
+.tw-search__label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+}
+.tw-search__box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 4px 6px 4px 14px;
+  background: var(--paper);
+  transition: border-color 0.15s;
+}
+.tw-search__box:focus-within {
+  border-color: var(--brand);
+}
+.tw-search__icon {
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+.tw-search__input {
+  border: 0;
+  outline: 0;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 1.05rem;
+  padding: 11px 0;
+  background: transparent;
+  color: var(--text);
+}
+/* Focus ring on the input keeps the mandatory 2px offset (0.3 section 4). */
+.tw-search__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.tw-search__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  box-shadow: 0 12px 32px rgba(20, 32, 58, 0.1);
+}
+.tw-search__opt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.tw-search__opt.is-active,
+.tw-search__opt:hover {
+  background: var(--surface);
+}
+.tw-search__title {
+  font-weight: 600;
+  color: var(--text);
+}
+.tw-search__meta {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+.tw-search__why {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.tw-search__empty {
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+.tw-search__empty a {
+  color: var(--brand);
+  font-weight: 600;
+}
+.tw-search__status {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}

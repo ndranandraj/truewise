@@ -1,0 +1,30 @@
+{
+  "$note": "Stage 0.3 FINAL semantic palette. Not yet live: production still serves the current values from tokens.json (Stage 2). These values are applied in Stage 5, and Stage 3 components are built and validated against them in components/tokens-final.css. tests/test_contrast.py recomputes every colour/surface pairing here with the WCAG formula and fails if any regresses, so this file is the enforced source for the redesign palette.",
+  "surfaces": {
+    "paper": "#ffffff",
+    "surface": "#f4f7fb",
+    "brand-strong": "#123a7a",
+    "brand": "#1f6feb",
+    "good-bg": "#e7f6ef",
+    "bad-bg": "#fbeae7",
+    "caution-bg": "#fff7e6"
+  },
+  "text": {
+    "text":              { "value": "#14203a", "on": ["paper", "surface"], "min": 4.5 },
+    "text-secondary":    { "value": "#45526b", "on": ["paper", "surface"], "min": 4.5 },
+    "text-muted":        { "value": "#67717f", "on": ["paper", "surface"], "min": 4.5, "is_lightest_text": true },
+    "brand-strong":      { "value": "#123a7a", "on": ["paper", "surface"], "min": 4.5 },
+    "good":              { "value": "#0b6b47", "on": ["paper", "good-bg"], "min": 4.5 },
+    "bad":               { "value": "#a02012", "on": ["paper", "bad-bg"], "min": 4.5 },
+    "caution":           { "value": "#8a6d1a", "on": ["paper", "caution-bg"], "min": 4.5 },
+    "text-on-dark":      { "value": "#eaf0fb", "on": ["brand-strong"], "min": 4.5 },
+    "text-on-dark-muted":{ "value": "#93acda", "on": ["brand-strong"], "min": 4.5 },
+    "band-accent":       { "value": "#ff8c7a", "on": ["brand-strong"], "min": 4.5 },
+    "brand-link":        { "value": "#1f6feb", "on": ["paper"], "min": 4.5, "note": "text only on paper; on surface use brand-strong (rule 0.3.5.1)" }
+  },
+  "non_text": {
+    "focus-ring":         { "value": "#1f6feb", "on": ["paper", "surface"], "min": 3.0 },
+    "focus-ring-on-dark": { "value": "#ffffff", "on": ["brand-strong", "brand"], "min": 3.0 },
+    "accent-graphic":     { "value": "#0f9d6a", "on": ["paper"], "min": 3.0, "note": "graphics only, never text" }
+  }
+}

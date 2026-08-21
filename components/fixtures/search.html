@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Fixture: search combobox (B1) | Truewise components</title>
+    <link rel="stylesheet" href="../tokens-final.css" />
+    <link rel="stylesheet" href="../components.css" />
+    <style>
+      body { font-family: var(--font); color: var(--text); margin: 0; padding: 32px; background: var(--paper); }
+      h1 { font-size: 1.4rem; }
+      .note { color: var(--text-secondary); max-width: 60ch; font-size: 0.95rem; }
+      .panel { margin: 28px 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px; }
+      .panel.on-surface { background: var(--surface); }
+      .selected { margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary); }
+      code { font-family: var(--mono, monospace); background: var(--surface); padding: 1px 5px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>Search combobox (component B1)</h1>
+    <p class="note">
+      Isolated fixture. Keyboard: Down/Up to move, Home/End to jump, Enter to select, Escape to close
+      then clear. A screen reader should announce the result count and the active option without focus
+      leaving the input. Two instances below prove the college and K-12 providers share one shell.
+    </p>
+
+    <div class="panel">
+      <div id="college"></div>
+      <p class="selected" id="college-out">Nothing selected.</p>
+    </div>
+
+    <div class="panel on-surface">
+      <div id="k12"></div>
+      <p class="selected" id="k12-out">Nothing selected.</p>
+    </div>
+
+    <script src="../../site/assets/college-search.js"></script>
+    <script src="../search.js"></script>
+    <script>
+      async function boot() {
+        const colleges = (await (await fetch("../../site/value-check/data/schools.json")).json()).schools;
+        const k12 = (await (await fetch("../../site/k12/data/index.json")).json()).schools;
+
+        new TWSearchUI.SearchCombobox(document.getElementById("college"), {
+          provider: TWSearch.CollegeSearchProvider,
+          data: colleges,
+          label: "Find a college",
+          placeholder: "Try berkeley, uva, or waco",
+          onSelect: (r) => {
+            document.getElementById("college-out").textContent =
+              `Selected: ${r.title} (${r.meta || "no meta"}) id=${r.id}`;
+          },
+          emptyHTML: (q) =>
+            `No colleges match "${q}". <a href="#">Browse by state</a> instead.`,
+        });
+
+        new TWSearchUI.SearchCombobox(document.getElementById("k12"), {
+          provider: TWSearch.K12SearchProvider,
+          data: k12,
+          label: "Find a high school",
+          placeholder: "Try a school name",
+          minChars: 3,
+          onSelect: (r) => {
+            document.getElementById("k12-out").textContent =
+              `Selected: ${r.title} (${r.meta || "no meta"}) id=${r.id}`;
+          },
+        });
+      }
+      boot();
+    </script>
+  </body>
+</html>

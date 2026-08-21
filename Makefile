@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold lint format all
+.PHONY: install tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -88,6 +88,10 @@ test-embed:
 # queries cannot approve a ranking change, because ranking regressions are silent.
 test-search-gold:
 	node tests/search_gold.js
+
+# Behavioural smoke for the Stage 3 components (jsdom; run `npm install jsdom` first).
+test-components:
+	node tests/components_smoke.js
 
 lint:
 	ruff check . && ruff format --check .
