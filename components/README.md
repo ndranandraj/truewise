@@ -36,5 +36,11 @@ criteria, and `../truewise-stage0.3-palette.md` for the colour system.
 - B5 program / comparison table (`table.js`): built, smoke green. Coverage first, sortable columns
   with aria-sort, suppressed rows kept visible and sunk to the bottom, decorative premium bar, and a
   mobile layout that keeps every value's column label.
-- B2-B4, B6-B15 (results row, empty state, state chips, coverage note, source note, status pill,
-  filters, calculator, disclosure, loading/error/suppressed, sticky subnav): pending.
+- B3/B4/B6/B7/B8/B9/B11/B12/B13/B14 (`ui.js`): built, smoke green. Empty state with routes, state
+  chips (aria-pressed + announced narrowing), coverage note, source note, status pill (text not
+  colour alone), filters (announced count), disclosure (Escape collapses), loading skeleton (aria-
+  busy), error (role=alert), suppressed value.
+- B2 result row + B15 sticky subnav: covered inside B1 (the option row) and shipped live in Stage 1.5
+  (the subnav offset); no separate fixture needed.
+- B10 affordability calculator: deferred to Stage 4, where it is built directly on the canonical
+  profile against real net-price data rather than mocked in a fixture.

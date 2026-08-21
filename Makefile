@@ -93,6 +93,7 @@ test-search-gold:
 test-components:
 	node tests/components_smoke.js
 	node tests/table_smoke.js
+	node tests/ui_smoke.js
 
 lint:
 	ruff check . && ruff format --check .

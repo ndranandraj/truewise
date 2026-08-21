@@ -81,3 +81,19 @@ def test_program_table_keeps_its_accessibility_contract():
         'aria-hidden="true"',  # the premium bar is decorative
     ):
         assert needed in js, f"program table missing {needed}"
+
+
+def test_small_components_carry_their_contracts():
+    """Guard the B3/B4/B8/B9/B11/B12/B13 wiring in ui.js: status carries text, chips/toggle expose
+    state, loading is announced, error is an alert, suppressed says insufficient data."""
+    js = (COMPONENTS / "ui.js").read_text()
+    for needed in (
+        "clears the bar",  # B8 status is text, not colour alone
+        "falls short",
+        "insufficient data",  # B14 suppressed + B8 insufficient
+        "aria-pressed",  # B4 chips
+        'aria-busy="true"',  # B12 loading
+        'role="alert"',  # B13 error
+        "Escape",  # B11 disclosure collapses
+    ):
+        assert needed in js, f"ui.js missing {needed}"

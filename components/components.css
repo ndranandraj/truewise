@@ -266,3 +266,210 @@
     content: "";
   }
 }
+
+/* ---- Small UI components (B2-B4, B6-B14) ---- */
+.tw-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* B8 status pill */
+.tw-pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.tw-pill--pass {
+  color: var(--good);
+  background: var(--good-bg);
+}
+.tw-pill--fail {
+  color: var(--bad);
+  background: var(--bad-bg);
+}
+.tw-pill--caution {
+  color: var(--caution);
+  background: var(--caution-bg);
+}
+.tw-pill--insuf {
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px dashed var(--line);
+  font-weight: 400;
+}
+
+/* B14 suppressed value */
+.tw-insuf {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* B6 coverage note */
+.tw-coverage {
+  margin: 0 0 6px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.tw-coverage__note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.tw-coverage--low b {
+  color: var(--bad);
+}
+
+/* B7 source note */
+.tw-source {
+  margin: 12px 0 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+/* B3 empty state */
+.tw-empty {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-secondary);
+}
+.tw-empty__routes a {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* B12 loading skeleton */
+.tw-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tw-skel__row {
+  height: 16px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface), var(--line), var(--surface));
+  background-size: 200% 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .tw-skel__row {
+    animation: tw-shimmer 1.2s ease-in-out infinite;
+  }
+}
+@keyframes tw-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* B13 error state */
+.tw-error {
+  padding: 14px 16px;
+  border: 1px solid var(--bad);
+  border-radius: 12px;
+  background: var(--bad-bg);
+  color: var(--bad);
+}
+.tw-error a {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+/* B4 state chips + B9 filters */
+.tw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.tw-chips__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+.tw-chip {
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.tw-chip:hover {
+  border-color: var(--brand);
+  color: var(--text);
+}
+.tw-chip.is-on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+.tw-chip:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.tw-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+.tw-filters__label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.tw-filters__select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--paper);
+  color: var(--text);
+}
+.tw-filters__select:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.tw-filters__check {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* B11 disclosure */
+.tw-disclosure {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 14px;
+}
+.tw-disclosure > summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 600;
+  color: var(--brand-strong);
+}
+.tw-disclosure > summary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.tw-disclosure__body {
+  padding: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}

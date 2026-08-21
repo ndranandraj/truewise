@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Fixture: small components (B2-B14) | Truewise components</title>
+    <link rel="stylesheet" href="../tokens-final.css" />
+    <link rel="stylesheet" href="../components.css" />
+    <style>
+      body { font-family: var(--font); color: var(--text); margin: 0; padding: 32px; background: var(--paper); max-width: 760px; }
+      h1 { font-size: 1.4rem; } h2 { font-size: 1rem; margin: 26px 0 8px; color: var(--text-secondary); }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    </style>
+  </head>
+  <body>
+    <h1>Small components (B2-B14)</h1>
+
+    <h2>B8 status pill (text, never colour alone)</h2>
+    <div class="row" id="pills"></div>
+
+    <h2>B6 coverage note</h2>
+    <div id="cov-low"></div>
+    <div id="cov-high"></div>
+
+    <h2>B7 source note</h2>
+    <div id="src"></div>
+
+    <h2>B3 empty state</h2>
+    <div id="empty"></div>
+
+    <h2>B12 loading skeleton</h2>
+    <div id="skel"></div>
+
+    <h2>B13 error state</h2>
+    <div id="err"></div>
+
+    <h2>B4 state chips (narrow a large match set)</h2>
+    <div id="chips"></div>
+    <p id="chips-live" role="status" aria-live="polite" class="tw-source"></p>
+
+    <h2>B9 filters (announce the resulting count)</h2>
+    <div id="filters"></div>
+    <p id="filters-live" role="status" aria-live="polite" class="tw-source"></p>
+
+    <h2>B11 disclosure (Escape collapses)</h2>
+    <details class="tw-disclosure" id="disc">
+      <summary>How we count</summary>
+      <div class="tw-disclosure__body">Earnings are compared with a state high-school-graduate benchmark. Suppressed values are shown as insufficient data, never imputed.</div>
+    </details>
+
+    <script src="../ui.js"></script>
+    <script>
+      const U = TWUI;
+      document.getElementById("pills").innerHTML =
+        ["pass", "fail", "caution", "insufficient"].map(U.statusPill).join(" ");
+      document.getElementById("cov-low").innerHTML = U.coverageNote(89, 254);
+      document.getElementById("cov-high").innerHTML = U.coverageNote(230, 254);
+      document.getElementById("src").innerHTML = U.sourceNote({
+        source: "U.S. Dept. of Education College Scorecard", release: "2026-06-10",
+        note: "Figures describe past graduates and are never a promise.",
+      });
+      document.getElementById("empty").innerHTML = U.emptyState("univeristy of xyz", [
+        { href: "/colleges/", label: "Browse by state" }, { href: "/lists/", label: "Best-value lists" },
+      ]);
+      document.getElementById("skel").innerHTML = U.skeleton(3);
+      document.getElementById("err").innerHTML = U.errorState("Could not load programs.", { href: "#", label: "Retry" });
+
+      new U.StateChips(document.getElementById("chips"), {
+        states: [["IN", 21], ["IL", 17], ["TN", 15], ["NY", 14]], total: 194,
+        live: document.getElementById("chips-live"),
+        onPick: (st) => console.log("picked", st),
+      });
+      new U.Filters(document.getElementById("filters"), {
+        sorts: [{ key: "earnings", label: "Earnings" }, { key: "program", label: "Program name" }],
+        live: document.getElementById("filters-live"),
+        onChange: (s) => (s.showInsufficient ? 254 : 89),
+      });
+      U.enhanceDisclosure(document.getElementById("disc"));
+    </script>
+  </body>
+</html>
