@@ -89,9 +89,10 @@ test-embed:
 test-search-gold:
 	node tests/search_gold.js
 
-# Behavioural smoke for the Stage 3 components (jsdom; run `npm install jsdom` first).
+# Behavioural smokes for the Stage 3 components (jsdom; run `npm install jsdom` first).
 test-components:
 	node tests/components_smoke.js
+	node tests/table_smoke.js
 
 lint:
 	ruff check . && ruff format --check .

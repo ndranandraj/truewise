@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Fixture: program table (B5) | Truewise components</title>
+    <link rel="stylesheet" href="../tokens-final.css" />
+    <link rel="stylesheet" href="../components.css" />
+    <style>
+      body { font-family: var(--font); color: var(--text); margin: 0; padding: 32px; background: var(--paper); max-width: 960px; }
+      h1 { font-size: 1.4rem; }
+      .note { color: var(--text-secondary); max-width: 64ch; font-size: 0.95rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Program table (component B5)</h1>
+    <p class="note">
+      Coverage is stated first. Click a column header to sort; insufficient-data rows stay visible and
+      always sink to the bottom. Resize below 768px to see the stacked layout, where every value keeps
+      its column label. Keyboard: Tab to a sort button, Enter to sort; aria-sort tracks the active column.
+    </p>
+    <div id="table"></div>
+
+    <script src="../table.js"></script>
+    <script>
+      const rows = [
+        { program: "Computer Science", credential: "Master's Degree", earnings: 195622, premium: 161809, verdict: "pass", debt: 20500, payback: 0.1, completers: 2416 },
+        { program: "Mechanical Engineering", credential: "Bachelor's Degree", earnings: 99955, premium: 66142, verdict: "pass", debt: 22500, payback: 0.3, completers: 421 },
+        { program: "Business Administration", credential: "Bachelor's Degree", earnings: 106155, premium: 72342, verdict: "pass", debt: 21500, payback: 0.3, completers: 359 },
+        { program: "Fine Arts", credential: "Bachelor's Degree", earnings: 28900, premium: -4913, verdict: "fail", debt: 24000, payback: 6.4, completers: 88 },
+        { program: "Philosophy", credential: "Bachelor's Degree", earnings: null, premium: null, verdict: "insufficient", debt: null, payback: null, completers: 41 },
+      ];
+      new TWTable.ProgramTable(document.getElementById("table"), {
+        rows,
+        coverage: { measured: 89, total: 254 },
+        baseline: 33813,
+        caption: "Programs at an example school, by earnings versus a state high-school graduate.",
+      });
+    </script>
+  </body>
+</html>

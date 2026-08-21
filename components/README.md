@@ -33,5 +33,8 @@ criteria, and `../truewise-stage0.3-palette.md` for the colour system.
 ## Status
 
 - B1 search combobox shell + college/K-12 providers: built, smoke green.
-- B2-B15 (results row, empty state, state chips, table + mobile alt, coverage note, source note,
-  status pill, filters, calculator, disclosure, loading/error/suppressed, sticky subnav): pending.
+- B5 program / comparison table (`table.js`): built, smoke green. Coverage first, sortable columns
+  with aria-sort, suppressed rows kept visible and sunk to the bottom, decorative premium bar, and a
+  mobile layout that keeps every value's column label.
+- B2-B4, B6-B15 (results row, empty state, state chips, coverage note, source note, status pill,
+  filters, calculator, disclosure, loading/error/suppressed, sticky subnav): pending.

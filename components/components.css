@@ -96,3 +96,173 @@
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
+/* ---- Program / comparison table (B5) ---- */
+.tw-table__coverage {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.tw-table__covnote {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.tw-table__baseline {
+  margin: 0 0 10px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.tw-table__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.tw-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92rem;
+}
+.tw-table__caption {
+  caption-side: top;
+  text-align: left;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.tw-th,
+.tw-td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.tw-th {
+  background: var(--surface);
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.tw-th--num,
+.tw-td--num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.tw-th__sort {
+  font: inherit;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.tw-th__sort:hover {
+  color: var(--brand-strong);
+}
+.tw-th__sort.is-active {
+  color: var(--brand-strong);
+}
+.tw-th__sort:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.tw-td--program {
+  font-weight: 600;
+  color: var(--text);
+}
+.tw-tr--insuf .tw-td {
+  background: var(--surface);
+}
+.tw-td__insuf {
+  color: var(--text-muted);
+  font-style: italic;
+  border-bottom: 1px dashed var(--line);
+}
+.tw-verdict {
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.tw-verdict--pass {
+  color: var(--good);
+}
+.tw-verdict--fail {
+  color: var(--bad);
+}
+.tw-verdict--insuf {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-style: italic;
+}
+.tw-prem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.tw-prem__bar {
+  display: inline-block;
+  height: 8px;
+  width: 42px;
+  border-radius: 4px;
+}
+.tw-prem__bar--pos {
+  background: var(--good);
+}
+.tw-prem__bar--neg {
+  background: var(--bad);
+}
+.tw-prem__val {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile: stack each row into labelled key/value pairs. Every value keeps its column label via the
+   data-label attribute, so a phone never shows a headerless column of numbers. */
+@media (max-width: 768px) {
+  .tw-table__scroll {
+    border: 0;
+  }
+  .tw-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .tw-table,
+  .tw-table tbody,
+  .tw-tr,
+  .tw-td {
+    display: block;
+    width: 100%;
+  }
+  .tw-tr {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 6px 4px;
+  }
+  .tw-td {
+    border: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 6px 12px;
+    text-align: right;
+  }
+  .tw-td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: left;
+  }
+  .tw-td--program {
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  .tw-td--program::before {
+    content: "";
+  }
+}

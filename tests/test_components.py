@@ -66,3 +66,18 @@ def test_search_shell_implements_the_combobox_contract():
         "aria-expanded",
     ):
         assert needed in js, f"search shell missing {needed}"
+
+
+def test_program_table_keeps_its_accessibility_contract():
+    """Guard the B5 table semantics: real table headers, sortable aria-sort, per-cell mobile labels,
+    and suppressed cells that say insufficient data rather than 0."""
+    js = (COMPONENTS / "table.js").read_text()
+    for needed in (
+        'scope="col"',
+        'scope="row"',
+        "aria-sort",
+        "data-label",
+        "insufficient data",
+        'aria-hidden="true"',  # the premium bar is decorative
+    ):
+        assert needed in js, f"program table missing {needed}"
