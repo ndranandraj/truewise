@@ -12,6 +12,7 @@
   --text-muted: #67717f;          /* darkened from #6b7688; now AA on --surface too */
   --text-on-dark: #eaf0fb;
   --text-on-dark-muted: #93acda;  /* raised from #7d9bd0 (was 3.91) */
+  --text-on-brand: #ffffff;       /* white text on a brand-filled control; 4.63:1 on --brand */
 
   /* Surfaces */
   --paper: #ffffff;

@@ -143,7 +143,11 @@
             this.sortKey = key;
             this.sortDir = COLUMNS.find((c) => c.key === key).kind === "num" ? -1 : 1;
           }
+          // Re-rendering replaces the markup and would drop focus to <body>; restore it to the same
+          // sort button so a keyboard or screen-reader user is not thrown back to the page top.
           this._render();
+          const restored = this.root.querySelector(`.tw-th__sort[data-key="${key}"]`);
+          if (restored) restored.focus();
         }),
       );
     }

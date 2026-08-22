@@ -3,7 +3,7 @@
   "updated": "2026-08-19",
   "note": "Acceptance gate for any college/K-12 search ranking change. Four smoke queries cannot approve a ranking change. 'top' = expected first result (substring match on the name). 'within' = must appear in the first N results. 'none' = must return no results.",
   "college": [
-    { "q": "ucla", "top": "University of California-Los Angeles", "case": "alias" },
+    { "q": "ucla", "top": "University of California-Los Angeles", "why": "alias", "case": "alias" },
     { "q": "uc berkeley", "top": "University of California-Berkeley", "case": "alias" },
     { "q": "ut austin", "top": "The University of Texas at Austin", "case": "alias" },
     { "q": "texas austin", "top": "The University of Texas at Austin", "case": "alias, spaced" },
@@ -15,10 +15,10 @@
 
     { "q": "uva", "top": "University of Virginia-Main Campus", "case": "REGRESSION: returned Nuvani Institute (substring noise)" },
     { "q": "berkeley", "top": "University of California-Berkeley", "case": "REGRESSION: returned Berkeley City College; intent ranking" },
-    { "q": "waco", "within": 5, "expect": "Baylor University", "case": "REGRESSION: city intent, city field was not indexed" },
+    { "q": "waco", "within": 5, "expect": "Baylor University", "why_for_expected": "city", "case": "REGRESSION: city intent, city field was not indexed; also carries the match reason" },
     { "q": "ann arbor", "within": 5, "expect": "University of Michigan-Ann Arbor", "case": "city intent" },
     { "q": "univeristy california los angeles", "top": "University of California-Los Angeles", "case": "REGRESSION: misspelling returned nothing" },
-    { "q": "massachusets institute", "top": "Massachusetts Institute of Technology", "case": "misspelling" },
+    { "q": "massachusets institute", "top": "Massachusetts Institute of Technology", "why": "close spelling", "case": "misspelling, carries close-spelling reason" },
 
     { "q": "baylor", "top": "Baylor University", "case": "size tiebreak over Baylor College of Medicine" },
     { "q": "columbia university", "top": "Columbia University in the City of New York", "case": "near-duplicate names" },

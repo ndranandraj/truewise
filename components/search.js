@@ -61,10 +61,12 @@
                  placeholder="${esc(this.o.placeholder || "")}" />
         </div>
         <ul id="${listId}" class="tw-search__list" role="listbox" aria-labelledby="${labelId}" hidden></ul>
+        <div class="tw-search__empty-region" hidden></div>
         <p id="${statusId}" class="tw-search__status" role="status" aria-live="polite"></p>`;
 
       this.input = this.root.querySelector(".tw-search__input");
       this.list = this.root.querySelector(".tw-search__list");
+      this.emptyRegion = this.root.querySelector(".tw-search__empty-region");
       this.status = this.root.querySelector(".tw-search__status");
       this.listId = listId;
 
@@ -86,22 +88,40 @@
       if (q.length < this.o.minChars) {
         this.results = [];
         this._close();
+        this.emptyRegion.hidden = true;
+        this.emptyRegion.innerHTML = "";
         this.status.textContent = "";
         return;
       }
-      this.results = this.o.provider.search(q, { data: this.o.data, limit: this.o.limit }) || [];
+      // providerOpts lets a caller pass extra provider arguments (e.g. a K-12 state filter from the
+      // state chips) that compose with the query. It can be an object or a function returning one.
+      const extra = typeof this.o.providerOpts === "function" ? this.o.providerOpts() : this.o.providerOpts;
+      this.results =
+        this.o.provider.search(q, { data: this.o.data, limit: this.o.limit, ...extra }) || [];
       this.active = -1;
       this._render(q);
     }
 
+    // Re-run the current query, e.g. after a composed filter (state chips) changes providerOpts.
+    refresh() {
+      this._run();
+    }
+
     _render(q) {
       if (!this.results.length) {
+        // The no-results message and its onward links live OUTSIDE the listbox: a link nested inside
+        // a role=option (even a disabled one) is a nested-interactive violation and is exposed to
+        // assistive tech as disabled. The listbox closes; the empty region opens as a sibling.
         const empty = this.o.emptyHTML ? this.o.emptyHTML(q) : `No matches for "${esc(q)}".`;
-        this.list.innerHTML = `<li class="tw-search__empty" role="option" aria-disabled="true">${empty}</li>`;
+        this.list.innerHTML = "";
+        this._close();
+        this.emptyRegion.innerHTML = `<div class="tw-search__empty">${empty}</div>`;
+        this.emptyRegion.hidden = false;
         this.status.textContent = `No results for ${q}`;
-        this._show();
         return;
       }
+      this.emptyRegion.hidden = true;
+      this.emptyRegion.innerHTML = "";
       this.list.innerHTML = this.results
         .map((r, i) => {
           const why = r.why ? ` <span class="tw-search__why">matched on ${esc(r.why)}</span>` : "";

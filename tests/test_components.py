@@ -39,10 +39,12 @@ def test_tokens_final_matches_the_validated_palette():
 
 
 def test_component_css_uses_tokens_not_raw_palette_hex():
-    """components.css styles must reference var(--token); a raw palette hex would dodge the contrast
-    gate. Shadows/overlays using rgba() are allowed."""
+    """components.css styles must reference var(--token); a raw hex (any of the 3/4/6/8-digit forms)
+    would dodge the contrast gate and its permitted-surface validation. rgba() overlays are allowed."""
     css = (COMPONENTS / "components.css").read_text()
-    hexes = re.findall(r"#[0-9a-fA-F]{6}", css)
+    hexes = re.findall(
+        r"#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])", css
+    )
     assert not hexes, f"components.css should use tokens, found raw hex: {set(hexes)}"
 
 
@@ -64,8 +66,22 @@ def test_search_shell_implements_the_combobox_contract():
         "aria-activedescendant",
         'aria-live="polite"',
         "aria-expanded",
+        "tw-search__empty-region",  # no-results renders outside the listbox (no nested-interactive)
+        "providerOpts",  # composable filter hook (K-12 state narrowing)
     ):
         assert needed in js, f"search shell missing {needed}"
+
+
+def test_fixtures_have_a_main_landmark():
+    """Axe requires page content inside a landmark; each fixture wraps its content in <main>."""
+    for html in (COMPONENTS / "fixtures").glob("*.html"):
+        assert "<main>" in html.read_text(), f"{html.name} missing a <main> landmark"
+
+
+def test_table_restores_focus_after_sort():
+    """Sorting re-renders the table; focus must return to the sort button, not fall to <body>."""
+    js = (COMPONENTS / "table.js").read_text()
+    assert "restored.focus()" in js, "table sort must restore focus to the active sort button"
 
 
 def test_program_table_keeps_its_accessibility_contract():

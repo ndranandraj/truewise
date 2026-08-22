@@ -75,6 +75,11 @@ check(after[after.length - 1] === "Philosophy", "insufficient row should sink to
 check(after[0] === "Computer Science", "descending earnings should put the highest first");
 const earningsTh2 = $$(".tw-th").find((th) => /Median earnings/.test(th.textContent));
 check(earningsTh2.getAttribute("aria-sort") === "descending", "aria-sort should be descending after first click");
+// Focus must survive the re-render: it should land on the same sort button, not the body.
+check(
+  document.activeElement === earningsTh2.querySelector(".tw-th__sort"),
+  "focus should be restored to the sort button after sorting",
+);
 
 // 8. Toggle direction.
 earningsTh2.querySelector(".tw-th__sort").click();

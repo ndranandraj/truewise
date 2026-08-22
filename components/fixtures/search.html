@@ -18,6 +18,7 @@
     </style>
   </head>
   <body>
+    <main>
     <h1>Search combobox (component B1)</h1>
     <p class="note">
       Isolated fixture. Keyboard: Down/Up to move, Home/End to jump, Enter to select, Escape to close
@@ -32,11 +33,15 @@
 
     <div class="panel on-surface">
       <div id="k12"></div>
+      <div id="k12-chips" style="margin-top:10px"></div>
+      <p class="selected" id="k12-live" role="status" aria-live="polite"></p>
       <p class="selected" id="k12-out">Nothing selected.</p>
     </div>
+    </main>
 
     <script src="../../site/assets/college-search.js"></script>
     <script src="../search.js"></script>
+    <script src="../ui.js"></script>
     <script>
       async function boot() {
         const colleges = (await (await fetch("../../site/value-check/data/schools.json")).json()).schools;
@@ -55,17 +60,37 @@
             `No colleges match "${q}". <a href="#">Browse by state</a> instead.`,
         });
 
-        new TWSearchUI.SearchCombobox(document.getElementById("k12"), {
+        // Composed K-12 flow: the search box, the state chips, and the provider's state filter wired
+        // together. Search a repeated name (e.g. "central high school"), then pick a state to narrow.
+        let k12State = null;
+        const k12Live = document.getElementById("k12-live");
+        const k12Box = new TWSearchUI.SearchCombobox(document.getElementById("k12"), {
           provider: TWSearch.K12SearchProvider,
           data: k12,
           label: "Find a high school",
-          placeholder: "Try a school name",
+          placeholder: "Try central high school, then narrow by state",
           minChars: 3,
+          providerOpts: () => ({ state: k12State }),
           onSelect: (r) => {
             document.getElementById("k12-out").textContent =
               `Selected: ${r.title} (${r.meta || "no meta"}) id=${r.id}`;
           },
         });
+        // Offer state chips for the current query and re-run the search when one is chosen.
+        const chipsHost = document.getElementById("k12-chips");
+        const renderChips = () => {
+          const q = k12Box.input.value.trim();
+          if (q.length < 3) { chipsHost.innerHTML = ""; return; }
+          const states = TWSearch.K12SearchProvider.statesFor(q, { data: k12 });
+          const total = states.reduce((n, [, c]) => n + c, 0);
+          if (states.length > 1 && total > 12) {
+            new TWSearchUI.StateChips(chipsHost, {
+              states: states.slice(0, 8), total, live: k12Live,
+              onPick: (st) => { k12State = st; k12Box.refresh(); },
+            });
+          } else chipsHost.innerHTML = "";
+        };
+        k12Box.input.addEventListener("input", () => setTimeout(renderChips, 160));
       }
       boot();
     </script>

@@ -157,15 +157,17 @@
         else if (placeHits) why = why === "alias" ? "alias" : "name and city";
         if (fuzzy) { score -= 40; why = "close spelling"; }
 
-        out.push({ s, score: score + prominence(s.enrollment) });
+        out.push({ s, score: score + prominence(s.enrollment), why });
       }
 
       out.sort((a, b) => b.score - a.score || (a.s.name || "").localeCompare(b.s.name || ""));
-      return out.slice(0, limit).map(({ s, score }) => ({
+      return out.slice(0, limit).map(({ s, why }) => ({
         id: s.unitid,
         title: s.name,
         meta: [s.city, s.state].filter(Boolean).join(", "),
-        why: score >= 1000 ? "name" : undefined,
+        // Surface the match reason only when it adds information: a plain name match is obvious, but
+        // an alias, a city, or a recovered misspelling is worth explaining.
+        why: why && why !== "name" ? why : undefined,
         raw: s,
       }));
     },

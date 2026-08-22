@@ -19,6 +19,7 @@
     "caution":           { "value": "#8a6d1a", "on": ["paper", "caution-bg"], "min": 4.5 },
     "text-on-dark":      { "value": "#eaf0fb", "on": ["brand-strong"], "min": 4.5 },
     "text-on-dark-muted":{ "value": "#93acda", "on": ["brand-strong"], "min": 4.5 },
+    "text-on-brand":     { "value": "#ffffff", "on": ["brand"], "min": 4.5, "note": "white text on a brand-filled control (chips, CTAs)" },
     "band-accent":       { "value": "#ff8c7a", "on": ["brand-strong"], "min": 4.5 },
     "brand-link":        { "value": "#1f6feb", "on": ["paper"], "min": 4.5, "note": "text only on paper; on surface use brand-strong (rule 0.3.5.1)" }
   },

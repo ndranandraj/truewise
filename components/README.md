@@ -44,3 +44,24 @@ criteria, and `../truewise-stage0.3-palette.md` for the colour system.
   (the subnav offset); no separate fixture needed.
 - B10 affordability calculator: deferred to Stage 4, where it is built directly on the canonical
   profile against real net-price data rather than mocked in a fixture.
+
+## Independent test report fixes (2026-08-21)
+
+A rendered-browser test report (axe + three engines) found issues the jsdom smokes could not. All
+resolved:
+
+- P0.1 mobile table clipping: the component now sets its own `box-sizing: border-box` (it no longer
+  relies on the host's global reset), and the caption is a full-width block at the mobile breakpoint.
+- P0.2 sort dropped keyboard focus: the sort handler restores focus to the active sort button after
+  re-render.
+- P0.3 no-results link nested in a disabled listbox option: the empty state now renders in a sibling
+  region outside the listbox.
+- P0.4 the real college provider discarded the computed match reason: `why` (alias / city / close
+  spelling) is now carried through; gold set asserts it.
+- P0.5 empty-state links measured 4.31:1 on the surface: they use `--brand-strong`; a `--text-on-brand`
+  token replaces the raw white chip text, and the raw-hex guard now catches 3/4/6/8-digit forms.
+- P1: fixtures gained a `<main>` landmark; the K-12 search + state-chip + provider flow is composed in
+  the search fixture via a new `providerOpts` hook.
+
+Still requires a real browser/VoiceOver pass to close the gate (axe on the fixed states, a manual
+screen-reader run, and confirmation that mobile `::before` labels are not announced redundantly).

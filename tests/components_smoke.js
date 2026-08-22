@@ -94,17 +94,41 @@ check(selected && selected.id === 3, "Enter did not select the active option");
 check(list.hidden === true, "list should close after selection");
 check(input.value === "Boston College", "input should show the selected title");
 
-// 6. No-result state announces and shows the empty markup.
+// 6. No-result state announces and renders OUTSIDE the listbox (no link nested in a role=option).
 type("zzzz");
+const emptyRegion = root.querySelector(".tw-search__empty-region");
 check(/No results/.test(status.textContent), "no-result count not announced");
-check(/No matches/.test(list.textContent), "empty state markup missing");
+check(!emptyRegion.hidden && /No matches/.test(emptyRegion.textContent), "empty state not in its own region");
+check(list.hidden === true, "listbox should be closed on no-results");
+check(list.querySelectorAll('[role="option"]').length === 0, "no-results must not create a listbox option");
 
 // 7. Escape closes an open list.
 type("b");
 check(list.hidden === false, "list should be open");
+check(emptyRegion.hidden === true, "empty region should hide when results return");
 key("Escape");
 check(list.hidden === true, "Escape should close the list");
 check(input.getAttribute("aria-expanded") === "false", "aria-expanded should be false after Escape");
+
+// 8. providerOpts compose with the query (the K-12 state-filter hook).
+let lastOpts = null;
+const composeRoot = document.createElement("div");
+document.body.appendChild(composeRoot);
+let stateFilter = null;
+const cb2 = new SearchCombobox(composeRoot, {
+  provider: { search: (q, opts) => ((lastOpts = opts), DATA.slice(0, 1)) },
+  data: DATA,
+  minChars: 1,
+  providerOpts: () => ({ state: stateFilter }),
+  onSelect: () => {},
+});
+const inp2 = composeRoot.querySelector(".tw-search__input");
+inp2.value = "b";
+cb2._run();
+check(lastOpts && lastOpts.state === null, "providerOpts should pass through (null state)");
+stateFilter = "TX";
+cb2.refresh();
+check(lastOpts && lastOpts.state === "TX", "refresh() should re-run with the updated providerOpts");
 
 console.log(`components smoke (B1 search combobox): ${pass}/${pass + fail.length} passed`);
 if (fail.length) {

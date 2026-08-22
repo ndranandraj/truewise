@@ -3,6 +3,14 @@
  * them and Stage 5 adoption is a matter of loading the same values site-wide.
  */
 
+/* Self-contained box-sizing: the site sets `* { box-sizing: border-box }` globally, but a component
+ * must not depend on its host doing so, or its 100%-width + padding rules overflow (the mobile table
+ * clipping bug). Scope a low-specificity reset to every Truewise component element. */
+[class^="tw-"],
+[class*=" tw-"] {
+  box-sizing: border-box;
+}
+
 .tw-search {
   font-family: var(--font);
   max-width: 620px;
@@ -88,7 +96,7 @@
   font-size: 0.95rem;
 }
 .tw-search__empty a {
-  color: var(--brand);
+  color: var(--brand-strong); /* links on a tinted surface use brand-strong (0.3 rule 5.1) */
   font-weight: 600;
 }
 .tw-search__status {
@@ -223,6 +231,9 @@
   .tw-table__scroll {
     border: 0;
   }
+  .tw-table__scroll {
+    overflow-x: visible; /* stacked cards do not scroll horizontally */
+  }
   .tw-table thead {
     position: absolute;
     width: 1px;
@@ -237,6 +248,11 @@
     display: block;
     width: 100%;
   }
+  .tw-table__caption {
+    display: block;
+    width: 100%;
+    padding: 0 0 10px;
+  }
   .tw-tr {
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -247,9 +263,15 @@
     border: 0;
     display: flex;
     justify-content: space-between;
+    align-items: baseline;
     gap: 16px;
     padding: 6px 12px;
     text-align: right;
+  }
+  /* Value can wrap under its label if long; label never gets squeezed to a vertical column. */
+  .tw-td::before {
+    flex: 0 0 auto;
+    max-width: 55%;
   }
   .tw-td::before {
     content: attr(data-label);
@@ -342,7 +364,7 @@
   color: var(--text-secondary);
 }
 .tw-empty__routes a {
-  color: var(--brand);
+  color: var(--brand-strong); /* links on the surface-backed empty state (0.3 rule 5.1) */
   font-weight: 600;
 }
 
@@ -413,7 +435,7 @@
 .tw-chip.is-on {
   background: var(--brand);
   border-color: var(--brand);
-  color: #fff;
+  color: var(--text-on-brand);
   font-weight: 600;
 }
 .tw-chip:focus-visible {

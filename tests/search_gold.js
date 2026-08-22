@@ -24,13 +24,16 @@ const record = (ok, label, detail) => {
 // ---- College ----
 // Providers may expose either the legacy searchSchools(list, q) or a provider object; support both
 // so the gold set can gate the migration itself.
-const collegeSearch = (q, opts) =>
+// Keep the full result objects so the gold set can also gate the match reason (why), not just names.
+const collegeResults = (q, opts) =>
   TW.CollegeSearchProvider
-    ? TW.CollegeSearchProvider.search(q, { data: COLLEGES, ...opts }).map((r) => r.title || r.name)
-    : TW.searchSchools(COLLEGES, q).map((s) => s.name);
+    ? TW.CollegeSearchProvider.search(q, { data: COLLEGES, ...opts })
+    : TW.searchSchools(COLLEGES, q).map((s) => ({ title: s.name }));
+const collegeSearch = (q, opts) => collegeResults(q, opts).map((r) => r.title || r.name);
 
 for (const t of GOLD.college) {
-  const hits = collegeSearch(t.q);
+  const results = collegeResults(t.q);
+  const hits = results.map((r) => r.title || r.name);
   const label = `college  ${JSON.stringify(t.q).padEnd(38)} [${t.case}]`;
   if (t.none) {
     record(hits.length === 0, label, `expected no results, got ${hits.length}: ${hits.slice(0, 3)}`);
@@ -40,13 +43,28 @@ for (const t of GOLD.college) {
       label,
       `expected top to contain ${JSON.stringify(t.top)}, got ${JSON.stringify(hits[0] || "(none)")}`,
     );
+    if (t.why) {
+      record(
+        results[0] && results[0].why === t.why,
+        label + " (why)",
+        `expected why=${JSON.stringify(t.why)}, got ${JSON.stringify(results[0] && results[0].why)}`,
+      );
+    }
   } else if (t.within) {
-    const slice = hits.slice(0, t.within);
+    const slice = results.slice(0, t.within);
+    const match = slice.find((r) => (r.title || r.name).includes(t.expect));
     record(
-      slice.some((n) => n.includes(t.expect)),
+      !!match,
       label,
-      `expected ${JSON.stringify(t.expect)} within first ${t.within}, got ${JSON.stringify(slice)}`,
+      `expected ${JSON.stringify(t.expect)} within first ${t.within}, got ${JSON.stringify(slice.map((r) => r.title))}`,
     );
+    if (t.why_for_expected) {
+      record(
+        match && match.why === t.why_for_expected,
+        label + " (why)",
+        `expected ${t.expect} why=${JSON.stringify(t.why_for_expected)}, got ${JSON.stringify(match && match.why)}`,
+      );
+    }
   }
 }
 
