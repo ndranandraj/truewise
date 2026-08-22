@@ -84,7 +84,7 @@
           const states = TWSearch.K12SearchProvider.statesFor(q, { data: k12 });
           const total = states.reduce((n, [, c]) => n + c, 0);
           if (states.length > 1 && total > 12) {
-            new TWSearchUI.StateChips(chipsHost, {
+            new TWUI.StateChips(chipsHost, {
               states: states.slice(0, 8), total, live: k12Live,
               onPick: (st) => { k12State = st; k12Box.refresh(); },
             });

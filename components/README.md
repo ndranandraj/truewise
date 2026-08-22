@@ -63,5 +63,13 @@ resolved:
 - P1: fixtures gained a `<main>` landmark; the K-12 search + state-chip + provider flow is composed in
   the search fixture via a new `providerOpts` hook.
 
-Still requires a real browser/VoiceOver pass to close the gate (axe on the fixed states, a manual
-screen-reader run, and confirmation that mobile `::before` labels are not announced redundantly).
+A second verification confirmed all five P0 fixes and found one new runtime blocker: the composed
+K-12 fixture constructed the chips via `TWSearchUI.StateChips`, but `StateChips` is exported by
+`TWUI` (ui.js). Fixed to `TWUI.StateChips`. Added `tests/integration_smoke.js`, which boots the same
+three modules the fixture loads and drives the full search-then-narrow flow (this is what the earlier
+tests lacked: they exercised components in isolation but never the composed flow), plus a structural
+guard on the namespace. The gold-set summary now counts assertions, not query cases (was 42/39).
+
+Still requires a real VoiceOver pass to close the gate: confirm the search, no-results, mobile table,
+state-chip, filter, and disclosure flows, and that the mobile `::before` labels are not announced
+redundantly with the column headers.

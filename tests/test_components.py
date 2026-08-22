@@ -78,6 +78,15 @@ def test_fixtures_have_a_main_landmark():
         assert "<main>" in html.read_text(), f"{html.name} missing a <main> landmark"
 
 
+def test_fixtures_construct_components_from_the_right_namespace():
+    """StateChips is exported by TWUI (ui.js), not TWSearchUI (search.js). The composed K-12 fixture
+    once called TWSearchUI.StateChips and threw at runtime; guard the namespace so it cannot recur."""
+    search_html = (COMPONENTS / "fixtures" / "search.html").read_text()
+    assert "TWSearchUI.StateChips" not in search_html, "StateChips must be constructed from TWUI"
+    if "StateChips" in search_html:
+        assert "TWUI.StateChips" in search_html, "StateChips must be TWUI.StateChips"
+
+
 def test_table_restores_focus_after_sort():
     """Sorting re-renders the table; focus must return to the sort button, not fall to <body>."""
     js = (COMPONENTS / "table.js").read_text()

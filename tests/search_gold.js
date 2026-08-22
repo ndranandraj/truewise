@@ -108,8 +108,10 @@ for (const t of GOLD.k12) {
   }
 }
 
-const total = GOLD.college.length + GOLD.k12.length;
-console.log(`search gold set v${GOLD.version}: ${pass}/${total} passed`);
+// Count assertions, not query cases: some queries carry an extra match-reason (why) assertion, so
+// the denominator must include those or the summary reads e.g. 42/39.
+const total = pass + failures.length;
+console.log(`search gold set v${GOLD.version}: ${pass}/${total} assertions passed`);
 if (failures.length) {
   console.log("\nFAILURES:");
   failures.forEach((f) => console.log("  " + f));
