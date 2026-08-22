@@ -18,6 +18,7 @@ Usage (from repo root, after the pipeline has produced value_check.parquet):
 from __future__ import annotations
 
 import html
+import json
 import re
 from collections import defaultdict
 
@@ -748,8 +749,18 @@ def main() -> None:
         national_index(states_present.keys(), profiled=len(qualified), searchable=len(schools))
     )
 
+    # Publish the UNITID -> canonical slug map. The Stage 4 consolidation retires
+    # /value-check/?school=<id> in favour of /college/<slug>/; because Cloudflare cannot redirect on a
+    # query parameter, the discovery page resolves ?school=<id> to its slug CLIENT-SIDE from this map
+    # (slugs are collision-adjusted, so the slug cannot be recomputed from the name alone). Every
+    # school with a /college/ page appears here exactly once; the redirect is wired at the Stage 5
+    # cutover, not before.
+    (col_dir / "slug-map.json").write_text(
+        json.dumps({u: slugs[u] for u in qualified}, separators=(",", ":"))
+    )
+
     print(f"college pages: {len(qualified):,}  |  state indexes: {len(states_present)}")
-    print(f"wrote -> {col_dir} and {colleges_dir}")
+    print(f"wrote -> {col_dir} and {colleges_dir} (+ slug-map.json)")
     print("run pipeline.build_sitemap after the page builders to refresh sitemap.xml")
 
 
