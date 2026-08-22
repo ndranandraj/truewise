@@ -1,0 +1,240 @@
+"""Stage 4.1 canonical-profile pilot.
+
+Builds a representative sample of the future `/college/<slug>/` profile using the DELIVERY MODEL from
+decision 0.1: static core HTML (identity, verdict, coverage, and the first N programs as a real,
+crawlable table) plus a per-school tail JSON for the remaining programs, loaded on demand. The point
+is to MEASURE page weight on the hard cases and validate the ~60-program static threshold BEFORE
+generating all ~4,949 profiles or touching production.
+
+Output goes to pilot/ (git-ignored, never deployed). This does not modify the live build.
+
+Usage:
+    python -m pipeline.build_profile_pilot          # build the 4 reps + print measurements
+    python -m pipeline.build_profile_pilot --threshold 60
+"""
+
+from __future__ import annotations
+
+import argparse
+import gzip
+import json
+
+import duckdb
+
+from pipeline.cip_names import plain_name, tidy_official
+from pipeline.config import ROOT
+
+PARQUET = ROOT / "published" / "value_check.parquet"
+OUT = ROOT / "pilot"
+
+# The four representatives, chosen from the data to span the axes that stress the delivery model.
+REPS = {
+    "small": "461111",  # 3 programs
+    "largest": "214777",  # 489 programs (Penn State main)
+    "mostly-suppressed": "116439",  # 107 programs, 106 insufficient
+    "long-name": "158325",  # a very long institution name (wrapping)
+}
+
+# Raised from 60 to 150 after the pilot: gzip makes transfer a non-issue (the worst 489-program page
+# is 12.4 KB gzipped fully static), so the binding constraint is DOM size, not bytes. 150 keeps 95%
+# of schools fully static and crawlable (p95 = 150 programs) and only sends the ~4.9% giants to
+# progressive loading, purely to cap their DOM. See pilot report.
+DEFAULT_THRESHOLD = 150
+
+
+def _slug(name: str) -> str:
+    import re
+
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
+def _money(v):
+    return None if v is None else "$" + format(round(v), ",")
+
+
+def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
+    df = con.sql(
+        f"""
+        SELECT any_value(inst_name) AS name, any_value(state) AS state,
+               any_value(control) AS control
+        FROM '{PARQUET}' WHERE unitid = '{unitid}'
+        """
+    ).df()
+    meta = {
+        "unitid": unitid,
+        "name": df.iloc[0]["name"],
+        "state": df.iloc[0]["state"],
+        "control": df.iloc[0]["control"],
+    }
+    prog = con.sql(
+        f"""
+        SELECT cip_code, cip_desc, credential_desc, earnings, earnings_premium_state,
+               debt_median, debt_payback_years, completers_count, value_flag
+        FROM '{PARQUET}' WHERE unitid = '{unitid}'
+        ORDER BY (value_flag IN ('passes_earnings_premium','fails_earnings_premium')) DESC,
+                 completers_count DESC NULLS LAST
+        """
+    ).df()
+    rows = []
+    for _, r in prog.iterrows():
+        decided = r["value_flag"] in ("passes_earnings_premium", "fails_earnings_premium")
+        rows.append(
+            {
+                "program": plain_name(str(r["cip_code"]), r["cip_desc"])
+                or tidy_official(r["cip_desc"]),
+                "credential": r["credential_desc"],
+                "earnings": None if not decided else _num(r["earnings"]),
+                "premium": None if not decided else _num(r["earnings_premium_state"]),
+                "verdict": "pass"
+                if r["value_flag"] == "passes_earnings_premium"
+                else "fail"
+                if r["value_flag"] == "fails_earnings_premium"
+                else "insufficient",
+                "debt": _num(r["debt_median"]),
+                "payback": _num(r["debt_payback_years"]),
+                "completers": _num(r["completers_count"]),
+            }
+        )
+    return meta, rows
+
+
+def _num(v):
+    import math
+
+    if v is None:
+        return None
+    try:
+        f = float(v)
+        return None if math.isnan(f) else (int(f) if f == int(f) else round(f, 1))
+    except (TypeError, ValueError):
+        return None
+
+
+def _static_row(r: dict) -> str:
+    """One <tr> of static, crawlable HTML using the final component classes."""
+
+    def cell(label, val, num=False):
+        cls = "tw-td tw-td--num" if num else "tw-td"
+        inner = val if val is not None else '<span class="tw-td__insuf">insufficient data</span>'
+        return f'<td class="{cls}" data-label="{label}">{inner}</td>'
+
+    verdict = {
+        "pass": '<span class="tw-verdict tw-verdict--pass">clears the bar</span>',
+        "fail": '<span class="tw-verdict tw-verdict--fail">falls short</span>',
+        "insufficient": '<span class="tw-verdict tw-verdict--insuf">insufficient data</span>',
+    }[r["verdict"]]
+    prem = None
+    if r["premium"] is not None:
+        sign = "+" if r["premium"] >= 0 else "-"
+        prem = f"{sign}{_money(abs(r['premium']))}"
+    return (
+        f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
+        f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{r["program"]}</th>'
+        f'<td class="tw-td" data-label="Degree">{r["credential"] or ""}</td>'
+        + cell("Median earnings", _money(r["earnings"]), True)
+        + cell("vs a high-school grad", prem, True)
+        + f'<td class="tw-td" data-label="Verdict">{verdict}</td>'
+        + cell("Median debt", _money(r["debt"]), True)
+        + cell("Years to repay", None if r["payback"] is None else f"{r['payback']:.1f} yrs", True)
+        + cell(
+            "Recent completers",
+            None if r["completers"] is None else format(r["completers"], ","),
+            True,
+        )
+        + "</tr>"
+    )
+
+
+HEAD = (
+    '<th scope="col" class="tw-th">Program</th><th scope="col" class="tw-th">Degree</th>'
+    '<th scope="col" class="tw-th tw-th--num">Median earnings</th>'
+    '<th scope="col" class="tw-th tw-th--num">vs a high-school grad</th>'
+    '<th scope="col" class="tw-th">Verdict</th>'
+    '<th scope="col" class="tw-th tw-th--num">Median debt</th>'
+    '<th scope="col" class="tw-th tw-th--num">Years to repay</th>'
+    '<th scope="col" class="tw-th tw-th--num">Recent completers</th>'
+)
+
+
+def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, str | None]:
+    """Return (static HTML, tail JSON or None). Static core carries up to `threshold` program rows."""
+    decided = sum(1 for r in rows if r["verdict"] != "insufficient")
+    total = len(rows)
+    static_rows = rows[:threshold]
+    tail = rows[threshold:]
+    body = "".join(_static_row(r) for r in static_rows)
+    more = ""
+    tail_json = None
+    if tail:
+        tail_json = json.dumps({"programs": tail}, separators=(",", ":"))
+        more = (
+            f'<button class="tw-showall" data-tail="programs-tail.json" data-count="{len(tail)}">'
+            f"Show all {total} programs</button>"
+        )
+    html = f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{meta["name"]}: what families pay and what graduates earn</title>
+<link rel="canonical" href="https://truewise.dev/college/{_slug(meta["name"])}/">
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/components.css"></head>
+<body><main class="wrap">
+<h1>{meta["name"]}</h1>
+<p class="profile-sub">{meta["state"]} · {meta["control"]}</p>
+<p class="tw-coverage"><b>{decided} of {total}</b> programs measured
+<span class="tw-coverage__note">{round(100 * decided / total)}% have earnings data</span></p>
+<div class="tw-table__scroll"><table class="tw-table">
+<caption class="tw-table__caption">Programs by earnings versus a state high-school graduate.</caption>
+<thead><tr>{HEAD}</tr></thead><tbody>{body}</tbody></table></div>
+{more}
+<p class="tw-source">Source: U.S. Department of Education College Scorecard. Suppressed values are shown
+as insufficient data, never imputed. Figures describe past graduates and are never a promise.</p>
+</main></body></html>"""
+    return html, tail_json
+
+
+def _gz(s: str) -> int:
+    return len(gzip.compress(s.encode()))
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD)
+    args = ap.parse_args()
+    con = duckdb.connect()
+
+    print(f"Canonical-profile pilot (static threshold = {args.threshold} programs)\n")
+    print(
+        f"{'case':18} {'total':>5} {'static':>6} {'tail':>5} "
+        f"{'html KB':>8} {'html gz':>8} {'tail gz':>8} {'all-static gz':>13}"
+    )
+    measurements = []
+    for case, unitid in REPS.items():
+        meta, rows = _rows_for(con, unitid)
+        html, tail_json = build_profile(meta, rows, args.threshold)
+        all_html, _ = build_profile(meta, rows, 10**9)  # everything static, for comparison
+        slug = _slug(meta["name"])
+        d = OUT / "college" / slug
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(html)
+        if tail_json:
+            (d / "programs-tail.json").write_text(tail_json)
+        m = {
+            "case": case,
+            "total": len(rows),
+            "static": min(args.threshold, len(rows)),
+            "tail": max(0, len(rows) - args.threshold),
+            "html_kb": round(len(html) / 1024, 1),
+            "html_gz_kb": round(_gz(html) / 1024, 1),
+            "tail_gz_kb": round(_gz(tail_json) / 1024, 1) if tail_json else 0,
+            "all_static_gz_kb": round(_gz(all_html) / 1024, 1),
+        }
+        measurements.append(m)
+        print(
+            f"{case:18} {m['total']:>5} {m['static']:>6} {m['tail']:>5} "
+            f"{m['html_kb']:>8} {m['html_gz_kb']:>8} {m['tail_gz_kb']:>8} {m['all_static_gz_kb']:>13}"
+        )
+    (OUT / "measurements.json").write_text(json.dumps(measurements, indent=2))
+    print(f"\nWrote {len(REPS)} pilot profiles + measurements.json to {OUT.relative_to(ROOT)}/")
+
+
+if __name__ == "__main__":
+    main()

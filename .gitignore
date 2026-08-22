@@ -85,8 +85,11 @@ design-audit-*/
 truewise-redesign-*.md
 truewise-audit-triage-*.md
 TRUEWISE_*.md
-truewise-stage0*.md
+truewise-stage*.md
 
 # Node deps (jsdom for the component smoke; installed locally, never committed)
 node_modules/
 package-lock.json
+
+# Stage 4.1 canonical-profile pilot (measurements only, never deployed)
+pilot/
