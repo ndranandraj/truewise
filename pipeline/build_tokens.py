@@ -49,6 +49,13 @@ def render_css_root(tokens: dict) -> str:
     ]
     for name, spec in tokens["color"].items():
         lines.append(f"  --{name}: {spec['value']};")
+    # Semantic bridge layer: the Stage 3 component variable names, aliased to current values so
+    # components render on the live site with no visual change (swapped to the final palette at the
+    # Stage 5 cutover). Keys starting with "$" are notes, not tokens.
+    for name, value in tokens.get("semantic", {}).items():
+        if name.startswith("$"):
+            continue
+        lines.append(f"  --{name}: {value};")
     for name, value in tokens["scale"].items():
         lines.append(f"  --{name}: {value};")
     lines.append(f"  --font: {tokens['font']['sans']};")

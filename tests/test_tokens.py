@@ -24,6 +24,33 @@ def test_generated_files_are_current():
     assert build_tokens.build(check=True) == 0, "generated token files are stale; run `make tokens`"
 
 
+def test_semantic_bridge_covers_every_component_token():
+    """The Stage 3 components reference semantic token names (--text, --paper, --brand-strong, ...).
+    Every one must be defined in the live styles.css, or a component renders with an undefined colour
+    on a real page. This is the Stage 4.3 bridge that lets components go live before the palette
+    cutover."""
+    styles = (ROOT / "site" / "styles.css").read_text()
+    live = set(re.findall(r"^  --([a-z0-9-]+):", styles, re.M))
+    for css in ("components.css",):
+        used = set(re.findall(r"var\(--([a-z0-9-]+)\)", (ROOT / "components" / css).read_text()))
+        missing = used - live
+        assert not missing, f"{css} uses tokens not defined in live styles.css: {missing}"
+
+
+def test_bridge_holds_current_values_not_final():
+    """The bridge deliberately aliases to the CURRENT palette so it is a no-visual-change change; the
+    final 0.3 values land at the Stage 5 cutover. Guard that --text-muted is still the current value
+    (a premature swap to the final #67717f would be an unplanned live restyle)."""
+    tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
+    sem = tokens["semantic"]
+    assert sem["text-muted"] == "#6b7688", (
+        "bridge must stay on the current muted value until Stage 5"
+    )
+    assert sem["text"] == tokens["color"]["ink"]["value"]
+    assert sem["paper"] == tokens["color"]["bg"]["value"]
+    assert sem["brand-strong"] == tokens["color"]["brand-deep"]["value"]
+
+
 def test_css_and_python_share_identical_values():
     """Every shared colour must have the same value in the CSS block and the Python constants."""
     tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
