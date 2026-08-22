@@ -44,6 +44,8 @@
       this.root = root;
       this.o = opts || {};
       this.rows = (this.o.rows || []).slice();
+      // remaining = programs not yet loaded (the progressive tail). onMore() fetches them.
+      this.remaining = this.o.onMore && this.o.remaining > 0 ? this.o.remaining : 0;
       this.sortKey = null;
       this.sortDir = 1;
       this._render();
@@ -128,12 +130,41 @@
         })
         .join("");
 
+      // Progressive tail: when programs remain unloaded, offer a "Show all N" control. Loading them
+      // appends to this.rows so sorting and filtering then operate over the complete set.
+      const more =
+        this.remaining > 0
+          ? `<button type="button" class="tw-showall" data-count="${this.remaining}">` +
+            `Show all ${this.rows.length + this.remaining} programs</button>`
+          : "";
+
       this.root.innerHTML =
         covLine +
         baseLine +
         `<div class="tw-table__scroll"><table class="tw-table">` +
         (this.o.caption ? `<caption class="tw-table__caption">${esc(this.o.caption)}</caption>` : "") +
-        `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+        `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
+        more +
+        `<p class="tw-table__status" role="status" aria-live="polite"></p>`;
+
+      const showAll = this.root.querySelector(".tw-showall");
+      if (showAll) {
+        showAll.addEventListener("click", async () => {
+          showAll.disabled = true;
+          showAll.textContent = "Loading...";
+          try {
+            const extra = await this.o.onMore();
+            this.rows = this.rows.concat(extra || []);
+            this.remaining = 0;
+            this._render();
+            const status = this.root.querySelector(".tw-table__status");
+            if (status) status.textContent = `All ${this.rows.length} programs shown.`;
+          } catch (e) {
+            showAll.disabled = false;
+            showAll.textContent = "Could not load. Try again";
+          }
+        });
+      }
 
       this.root.querySelectorAll(".tw-th__sort").forEach((btn) =>
         btn.addEventListener("click", () => {

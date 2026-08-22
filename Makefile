@@ -95,6 +95,7 @@ test-components:
 	node tests/table_smoke.js
 	node tests/ui_smoke.js
 	node tests/integration_smoke.js
+	node tests/profile_smoke.js
 
 lint:
 	ruff check . && ruff format --check .

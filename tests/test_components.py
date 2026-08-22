@@ -93,6 +93,19 @@ def test_table_restores_focus_after_sort():
     assert "restored.focus()" in js, "table sort must restore focus to the active sort button"
 
 
+def test_profile_enhancement_is_progressive_and_no_js_safe():
+    """The canonical profile enhancer (Stage 4.2) upgrades a server-rendered table and loads the
+    tail on demand, but must degrade to the static table with JS off."""
+    js = (COMPONENTS / "profile.js").read_text()
+    assert "tw-profile-data" in js, "must read the JSON island"
+    assert "data-tail" in js or "dataset.tail" in js, "must support the progressive tail"
+    # If the component or the island is missing it returns without touching the static table.
+    assert "return" in js and "TWTable" in js
+    table = (COMPONENTS / "table.js").read_text()
+    assert "onMore" in table and "remaining" in table, "table must support the progressive tail"
+    assert 'role="status"' in table and "aria-live" in table, "load result must be announced"
+
+
 def test_program_table_keeps_its_accessibility_contract():
     """Guard the B5 table semantics: real table headers, sortable aria-sort, per-cell mobile labels,
     and suppressed cells that say insufficient data rather than 0."""

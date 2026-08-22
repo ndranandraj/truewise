@@ -163,14 +163,24 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
     static_rows = rows[:threshold]
     tail = rows[threshold:]
     body = "".join(_static_row(r) for r in static_rows)
-    more = ""
-    tail_json = None
-    if tail:
-        tail_json = json.dumps({"programs": tail}, separators=(",", ":"))
-        more = (
-            f'<button class="tw-showall" data-tail="programs-tail.json" data-count="{len(tail)}">'
-            f"Show all {total} programs</button>"
-        )
+    tail_json = json.dumps({"programs": tail}, separators=(",", ":")) if tail else None
+
+    # Progressive-enhancement contract (components/profile.js): the static table is the crawlable,
+    # no-JS baseline; the JSON island carries the same static rows as data so the script can upgrade
+    # the table to sortable without re-fetching, and data-tail/data-remaining drive "Show all N".
+    island = json.dumps(
+        {
+            "rows": static_rows,
+            "coverage": {"measured": decided, "total": total},
+            "caption": "Programs by earnings versus a state high-school graduate.",
+        },
+        separators=(",", ":"),
+    )
+    profile_attrs = (
+        f'data-tw-profile data-tail="programs-tail.json" data-remaining="{len(tail)}"'
+        if tail
+        else "data-tw-profile"
+    )
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{meta["name"]}: what families pay and what graduates earn</title>
@@ -179,14 +189,18 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
 <body><main class="wrap">
 <h1>{meta["name"]}</h1>
 <p class="profile-sub">{meta["state"]} · {meta["control"]}</p>
+<div {profile_attrs}>
+<script type="application/json" class="tw-profile-data">{island}</script>
+<div class="tw-profile-static">
 <p class="tw-coverage"><b>{decided} of {total}</b> programs measured
 <span class="tw-coverage__note">{round(100 * decided / total)}% have earnings data</span></p>
 <div class="tw-table__scroll"><table class="tw-table">
 <caption class="tw-table__caption">Programs by earnings versus a state high-school graduate.</caption>
 <thead><tr>{HEAD}</tr></thead><tbody>{body}</tbody></table></div>
-{more}
+</div></div>
 <p class="tw-source">Source: U.S. Department of Education College Scorecard. Suppressed values are shown
 as insufficient data, never imputed. Figures describe past graduates and are never a promise.</p>
+<script src="/components/table.js"></script><script src="/components/profile.js"></script>
 </main></body></html>"""
     return html, tail_json
 

@@ -224,6 +224,33 @@
 .tw-prem__val {
   font-variant-numeric: tabular-nums;
 }
+.tw-showall {
+  margin: 12px 0 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--brand-strong);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.tw-showall:hover {
+  border-color: var(--brand);
+}
+.tw-showall:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.tw-showall[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+.tw-table__status {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
 
 /* Mobile: stack each row into labelled key/value pairs. Every value keeps its column label via the
    data-label attribute, so a phone never shows a headerless column of numbers. */

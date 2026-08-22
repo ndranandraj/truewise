@@ -44,6 +44,10 @@ criteria, and `../truewise-stage0.3-palette.md` for the colour system.
   (the subnav offset); no separate fixture needed.
 - B10 affordability calculator: deferred to Stage 4, where it is built directly on the canonical
   profile against real net-price data rather than mocked in a fixture.
+- Canonical profile progressive enhancement (`profile.js`, Stage 4.2): upgrades a server-rendered
+  static program table into the interactive `ProgramTable` and loads the remaining programs on demand
+  via "Show all N" (table.js `onMore`/`remaining`). No-JS-safe: the static table stands alone.
+  `tests/profile_smoke.js` drives the full load-and-sort flow, 10/10.
 
 ## Independent test report fixes (2026-08-21)
 

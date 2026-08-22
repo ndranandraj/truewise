@@ -53,7 +53,9 @@ def test_small_school_is_fully_static_no_tail():
     html, tail = build_profile(meta, _rows(2, 1), DEFAULT_THRESHOLD)
     assert tail is None, "a 3-program school needs no tail"
     assert html.count('<tr class="tw-tr') == 3
-    assert "Show all" not in html
+    # No tail: no progressive hooks, but the enhancement contract (island) is still present.
+    assert 'data-remaining="0"' not in html and "data-tail" not in html
+    assert 'class="tw-profile-data"' in html
 
 
 def test_large_school_splits_at_threshold():
@@ -63,9 +65,17 @@ def test_large_school_splits_at_threshold():
     assert html.count('<tr class="tw-tr') == DEFAULT_THRESHOLD, (
         "static core must carry exactly the threshold"
     )
-    assert "Show all 489 programs" in html
+    # The "Show all N" control is rendered client-side; the static page carries the progressive hooks.
+    assert 'data-tail="programs-tail.json"' in html
+    assert f'data-remaining="{489 - DEFAULT_THRESHOLD}"' in html
     tail_programs = json.loads(tail)["programs"]
     assert len(tail_programs) == 489 - DEFAULT_THRESHOLD
+    # The JSON island carries the static rows as data for the enhancer.
+    import re
+
+    island = json.loads(re.search(r'tw-profile-data">(.*?)</script>', html, re.S).group(1))
+    assert len(island["rows"]) == DEFAULT_THRESHOLD
+    assert island["coverage"] == {"measured": 200, "total": 489}
 
 
 def test_coverage_and_suppression_are_honest():
