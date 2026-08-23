@@ -25,6 +25,7 @@ from pipeline.cip_names import plain_name, tidy_official
 from pipeline.config import ROOT
 
 PARQUET = ROOT / "published" / "value_check.parquet"
+SITE = ROOT / "site"
 OUT = ROOT / "pilot"
 
 # The four representatives, chosen from the data to span the axes that stress the delivery model.
@@ -231,6 +232,11 @@ def _gz(s: str) -> int:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD)
+    ap.add_argument(
+        "--preview",
+        action="store_true",
+        help="assemble pilot/_preview/ (with assets) so the pages can be served for browser tests",
+    )
     args = ap.parse_args()
     con = duckdb.connect()
 
@@ -267,6 +273,42 @@ def main() -> None:
         )
     (OUT / "measurements.json").write_text(json.dumps(measurements, indent=2))
     print(f"\nWrote {len(REPS)} pilot profiles + measurements.json to {OUT.relative_to(ROOT)}/")
+
+    if args.preview:
+        _assemble_preview()
+
+
+def _assemble_preview() -> None:
+    """Assemble pilot/_preview/ as a servable root so the rendered pages can be measured in a real
+    browser (Lighthouse/axe). The pilot pages use root-absolute asset paths (/styles.css,
+    /components.css, /components/*.js, /college/<slug>/), so this gathers those into one root.
+
+    Run `make components` first so the deployable assets exist under site/.
+    Serve with:  python -m http.server -d pilot/_preview 8000  then open /college/<slug>/
+    """
+    import shutil
+
+    preview = OUT / "_preview"
+    if preview.exists():
+        shutil.rmtree(preview)
+    (preview / "components").mkdir(parents=True, exist_ok=True)
+    # Assets from the deployed site tree (built by build_tokens + build_components).
+    for rel in ("styles.css", "components.css"):
+        src = SITE / rel
+        if src.exists():
+            shutil.copyfile(src, preview / rel)
+    comp = SITE / "components"
+    if comp.exists():
+        for js in comp.glob("*.js"):
+            shutil.copyfile(js, preview / "components" / js.name)
+    # The rendered profiles.
+    shutil.copytree(OUT / "college", preview / "college", dirs_exist_ok=True)
+    print(
+        f"preview assembled at {preview.relative_to(ROOT)}/\n"
+        f"  serve: python -m http.server -d {preview.relative_to(ROOT)} 8000\n"
+        "  then open a profile, e.g. http://localhost:8000/college/"
+        "pennsylvania-state-university-main-campus/"
+    )
 
 
 if __name__ == "__main__":

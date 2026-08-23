@@ -31,6 +31,11 @@ site:
 components:
 	$(PYTHON) -m pipeline.build_components
 
+# Assemble a servable preview of the canonical-profile pilot (rendered pages + their assets) so it
+# can be measured in a real browser (Lighthouse/axe). Prints the http.server command to run.
+pilot-preview: tokens components
+	$(PYTHON) -m pipeline.build_profile_pilot --preview
+
 # 4a) Regenerate design tokens (CSS custom properties + Python colour constants) from
 # design/tokens.json. Run after editing tokens.json; tokens-check fails if outputs are stale.
 tokens:
