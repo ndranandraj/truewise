@@ -21,7 +21,16 @@ import argparse
 
 import duckdb
 
-from pipeline.build_college_pages import BASE, FOOTER, STATE_NAMES, esc, head, money, slugify
+from pipeline.build_college_pages import (
+    BASE,
+    FOOTER,
+    STATE_NAMES,
+    _calculator,
+    esc,
+    head,
+    money,
+    slugify,
+)
 from pipeline.build_profile_pilot import (
     DEFAULT_THRESHOLD,
     HEAD,
@@ -38,6 +47,10 @@ OUT = ROOT / "staging"
 SCORECARD_RELEASE = "2026-06-10"
 
 
+INSTITUTIONS = ROOT / "published" / "institutions.parquet"
+NP_LABELS = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$110k and up"]
+
+
 def _benchmark(con, unitid: str):
     row = con.sql(
         f"SELECT max(earnings_threshold_state) AS t FROM '{PARQUET}' WHERE unitid = '{unitid}'"
@@ -45,8 +58,31 @@ def _benchmark(con, unitid: str):
     return row[0] if row else None
 
 
+def _net_price(con, unitid: str) -> dict | None:
+    """This school's net price by income band, from institutions.parquet (same source as the live
+    summary page). Returns None when the school reports no net price."""
+    if not INSTITUTIONS.exists():
+        return None
+    row = con.sql(
+        f"""SELECT net_price_avg, net_price_0_30k, net_price_30_48k, net_price_48_75k,
+                   net_price_75_110k, net_price_110k_plus
+            FROM '{INSTITUTIONS}' WHERE unitid = '{unitid}'"""
+    ).fetchone()
+    if not row:
+        return None
+    avg, *brackets = (None if v is None else round(float(v)) for v in row)
+    if avg is None and not any(b is not None for b in brackets):
+        return None
+    return {"avg": avg, "brackets": brackets}
+
+
 def canonical_page(
-    meta: dict, rows: list[dict], slug: str, benchmark, threshold: int
+    meta: dict,
+    rows: list[dict],
+    slug: str,
+    benchmark,
+    threshold: int,
+    net_price: dict | None = None,
 ) -> tuple[str, str | None]:
     name = meta["name"]
     st = meta["state"]
@@ -138,6 +174,40 @@ def canonical_page(
     )
     parts.append(f'    <div class="verdict">{verdict}</div>\n')
 
+    # B10 affordability: net price by income + the "what would this cost you" calculator, reusing the
+    # live summary's calculator (income x years arithmetic on published net price). The static table
+    # is the no-JS fallback.
+    if net_price and (net_price.get("avg") is not None or any(net_price.get("brackets") or [])):
+        brackets = list(net_price.get("brackets") or [None] * 5)
+        # _calculator wants a programs list with payback + a flag; adapt from our verdict rows.
+        calc_programs = [
+            {
+                "payback": r["payback"],
+                "flag": "passes_earnings_premium" if r["verdict"] == "pass" else r["verdict"],
+            }
+            for r in rows
+        ]
+        parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
+        parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs))
+        parts.append(
+            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th>'
+            '<th class="num">Net price per year</th></tr></thead><tbody>\n'
+        )
+        for lab, b in zip(NP_LABELS, brackets, strict=False):
+            if b is not None:
+                parts.append(f'      <tr><td>{lab}</td><td class="num">{money(b)}</td></tr>\n')
+        if net_price.get("avg") is not None:
+            parts.append(
+                f"      <tr><td><b>All families (average)</b></td>"
+                f'<td class="num"><b>{money(net_price["avg"])}</b></td></tr>\n'
+            )
+        parts.append("    </tbody></table></div>\n")
+        parts.append(
+            '    <p class="tw-source">Net price is the yearly cost after grants and scholarships, by '
+            "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
+        )
+
+    parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
     # The canonical program table: static core + island + progressive tail, honest coverage label.
     parts.append(f"    <div {profile_attrs}>\n")
     parts.append(
@@ -191,7 +261,9 @@ def main() -> None:
     for slug, unitid in targets:
         meta, rows = _rows_for(con, unitid)
         slug = slug or slugify(meta["name"])
-        html, tail_json = canonical_page(meta, rows, slug, _benchmark(con, unitid), args.threshold)
+        html, tail_json = canonical_page(
+            meta, rows, slug, _benchmark(con, unitid), args.threshold, _net_price(con, unitid)
+        )
         d = OUT / "college" / slug
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(html)

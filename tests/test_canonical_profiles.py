@@ -87,6 +87,23 @@ def test_names_and_island_are_safe():
     assert "</script>" not in island and "\\u003c/script>" in island
 
 
+def test_affordability_calculator_renders_from_net_price():
+    """B10: given net price, the profile shows the income x years calculator and a no-JS fallback
+    table with the average row."""
+    np = {"avg": 15000, "brackets": [8000, 9000, 12000, 18000, 22000]}
+    html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=np)
+    assert "What would this cost you?" in html
+    assert 'id="calc-data"' in html and "calc-income" in html
+    assert "Net price per year" in html  # no-JS fallback table
+    assert "All families (average)" in html and "$15,000" in html
+
+
+def test_no_net_price_omits_the_calculator():
+    """A school with no reported net price shows no calculator, not an empty or broken one."""
+    html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=None)
+    assert "What would this cost you?" not in html
+
+
 def test_threshold_splits_static_and_tail():
     html, tail = canonical_page(META, _rows(200, 289), "x", 36498, DEFAULT_THRESHOLD)
     import json
