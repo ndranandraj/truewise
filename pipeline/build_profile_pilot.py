@@ -48,6 +48,21 @@ def _slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
+def _esc(s) -> str:
+    """HTML-escape any text inserted into the page. School and program names contain ampersands (and
+    the full data will contain <, >, quotes), which would otherwise produce invalid markup across
+    ~4,949 pages."""
+    import html as _html
+
+    return _html.escape(str(s if s is not None else ""), quote=True)
+
+
+def _island_json(obj) -> str:
+    """Serialize the JSON data island so embedded text cannot terminate the <script> element. Escaping
+    every '<' as \\u003c is valid JSON and neutralises any '</script>' in the data by construction."""
+    return json.dumps(obj, separators=(",", ":")).replace("<", "\\u003c")
+
+
 def _money(v):
     return None if v is None else "$" + format(round(v), ",")
 
@@ -71,6 +86,11 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
         SELECT cip_code, cip_desc, credential_desc, earnings, earnings_premium_state,
                debt_median, debt_payback_years, completers_count, value_flag
         FROM '{PARQUET}' WHERE unitid = '{unitid}'
+        -- Selection policy for the static tranche: ASSESSED programs (a real earnings verdict) first,
+        -- then by completers within each group. A program with a verdict is the valuable, crawlable
+        -- content; an insufficient-data row is nearly worthless to a searcher, so a decided program
+        -- outranks a larger insufficient one. This is deliberately NOT "the 150 largest by
+        -- completers" (an earlier report claim); it is "all assessed, then the largest of the rest".
         ORDER BY (value_flag IN ('passes_earnings_premium','fails_earnings_premium')) DESC,
                  completers_count DESC NULLS LAST
         """
@@ -129,8 +149,8 @@ def _static_row(r: dict) -> str:
         prem = f"{sign}{_money(abs(r['premium']))}"
     return (
         f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
-        f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{r["program"]}</th>'
-        f'<td class="tw-td" data-label="Degree">{r["credential"] or ""}</td>'
+        f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{_esc(r["program"])}</th>'
+        f'<td class="tw-td" data-label="Degree">{_esc(r["credential"] or "")}</td>'
         + cell("Median earnings", _money(r["earnings"]), True)
         + cell("vs a high-school grad", prem, True)
         + f'<td class="tw-td" data-label="Verdict">{verdict}</td>'
@@ -163,18 +183,17 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
     static_rows = rows[:threshold]
     tail = rows[threshold:]
     body = "".join(_static_row(r) for r in static_rows)
-    tail_json = json.dumps({"programs": tail}, separators=(",", ":")) if tail else None
+    tail_json = _island_json({"programs": tail}) if tail else None
 
     # Progressive-enhancement contract (components/profile.js): the static table is the crawlable,
     # no-JS baseline; the JSON island carries the same static rows as data so the script can upgrade
     # the table to sortable without re-fetching, and data-tail/data-remaining drive "Show all N".
-    island = json.dumps(
+    island = _island_json(
         {
             "rows": static_rows,
             "coverage": {"measured": decided, "total": total},
             "caption": "Programs by earnings versus a state high-school graduate.",
-        },
-        separators=(",", ":"),
+        }
     )
     profile_attrs = (
         f'data-tw-profile data-tail="programs-tail.json" data-remaining="{len(tail)}"'
@@ -183,17 +202,17 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
     )
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{meta["name"]}: what families pay and what graduates earn</title>
+<title>{_esc(meta["name"])}: what families pay and what graduates earn</title>
 <link rel="canonical" href="https://truewise.dev/college/{_slug(meta["name"])}/">
 <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/components.css"></head>
 <body><main class="wrap">
-<h1>{meta["name"]}</h1>
-<p class="profile-sub">{meta["state"]} · {meta["control"]}</p>
+<h1>{_esc(meta["name"])}</h1>
+<p class="profile-sub">{_esc(meta["state"])} · {_esc(meta["control"])}</p>
 <div {profile_attrs}>
 <script type="application/json" class="tw-profile-data">{island}</script>
 <div class="tw-profile-static">
-<p class="tw-coverage"><b>{decided} of {total}</b> programs measured
-<span class="tw-coverage__note">{round(100 * decided / total)}% have earnings data</span></p>
+<p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed
+<span class="tw-coverage__note">{round(100 * decided / total)}% have an earnings verdict</span></p>
 <div class="tw-table__scroll"><table class="tw-table">
 <caption class="tw-table__caption">Programs by earnings versus a state high-school graduate.</caption>
 <thead><tr>{HEAD}</tr></thead><tbody>{body}</tbody></table></div>

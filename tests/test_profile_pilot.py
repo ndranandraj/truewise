@@ -82,7 +82,7 @@ def test_coverage_and_suppression_are_honest():
     meta = {"name": "Mostly Suppressed CC", "state": "CA", "control": "Public"}
     rows = _rows(1, 106)  # 107 total, 106 insufficient (Irvine Valley shape)
     html, _ = build_profile(meta, rows, DEFAULT_THRESHOLD)
-    assert "<b>1 of 107</b> programs measured" in html
+    assert "<b>1 of 107</b> programs could be assessed" in html
     assert "insufficient data" in html
     # A suppressed row must never render a bare 0 or an empty cell.
     assert ">0<" not in html and "$0<" not in html
@@ -94,3 +94,37 @@ def test_static_table_has_real_headers_and_labels():
     assert 'scope="col"' in html and 'scope="row"' in html
     assert 'data-label="Median earnings"' in html  # mobile labels for the stacked layout
     assert "Recent completers" in html  # not "graduates"
+
+
+def test_coverage_label_says_could_be_assessed():
+    """A program can have earnings but no state benchmark (no verdict); labelling coverage as 'have
+    earnings data' misrepresents those rows. The honest label is 'could be assessed'."""
+    meta = {"name": "X", "state": "TX", "control": "Public"}
+    html, _ = build_profile(meta, _rows(3, 2), DEFAULT_THRESHOLD)
+    assert "could be assessed" in html
+    assert "have earnings data" not in html
+
+
+def test_names_are_html_escaped():
+    """School and program names contain ampersands (and the full data has <, >, quotes). Unescaped,
+    they produce invalid markup across ~4,949 pages."""
+    meta = {"name": "Nursing & Radiology <b>College</b>", "state": "LA", "control": "Private"}
+    rows = _rows(1, 0)
+    rows[0]["program"] = "Fish & Wildlife <script>"
+    html, _ = build_profile(meta, rows, DEFAULT_THRESHOLD)
+    assert "Nursing &amp; Radiology" in html
+    assert "<b>College</b>" not in html  # the literal tag must be escaped, not injected
+    assert "Fish &amp; Wildlife" in html
+
+
+def test_json_island_cannot_break_out_of_the_script_tag():
+    """A '</script>' inside any data value would terminate the island's <script> element. The
+    serializer escapes '<' as \\u003c so the island is safe by construction."""
+    meta = {"name": "X", "state": "TX", "control": "Public"}
+    rows = _rows(1, 0)
+    rows[0]["program"] = "Evil </script><script>alert(1)</script>"
+    html, _ = build_profile(meta, rows, DEFAULT_THRESHOLD)
+    # The raw closing tag must not appear inside the island; it is escaped to \u003c/script>.
+    island = html.split('class="tw-profile-data">')[1].split("</script>")[0]
+    assert "</script>" not in island
+    assert "\\u003c/script>" in island
