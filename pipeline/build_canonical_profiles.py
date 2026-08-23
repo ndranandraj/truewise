@@ -244,11 +244,16 @@ def canonical_page(
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true", help="every profile-eligible school (slow)")
+    ap.add_argument(
+        "--school", help="one UNITID (ad-hoc, e.g. to inspect an all-insufficient school)"
+    )
     ap.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD)
     args = ap.parse_args()
     con = duckdb.connect()
 
-    if args.all:
+    if args.school:
+        targets = [(None, args.school)]
+    elif args.all:
         from pipeline.build_college_pages import build_model, build_slugs, qualifying_schools
 
         qualified = qualifying_schools(build_model(con)[0])

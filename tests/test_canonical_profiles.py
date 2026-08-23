@@ -73,7 +73,21 @@ def test_no_verdict_school_is_truthful_not_blank():
         or "enough data for an earnings verdict" in html
     )
     assert "insufficient data" in html
-    assert ">0<" not in html  # never a bare zero
+    # Suppressed earnings/premium/debt never render as 0; they say insufficient data.
+    for cell in ("Median earnings", "vs a high-school grad", "Median debt"):
+        assert f'data-label="{cell}">0<' not in html
+
+
+def test_zero_completers_is_a_real_count_but_suppressed_earnings_are_not():
+    """The data distinguishes completers_count = 0 (a genuine zero) from NULL (missing). A real 0
+    renders as 0; a suppressed earnings value renders as insufficient data. This is the unknown != 0
+    rule applied per field."""
+    rows = _rows(0, 1)
+    rows[0]["completers"] = 0  # nobody completed recently: a real zero
+    rows[0]["earnings"] = None  # earnings suppressed
+    html, _ = canonical_page(META, rows, "x", 36498, DEFAULT_THRESHOLD)
+    assert 'data-label="Recent completers">0<' in html  # real zero shown as 0
+    assert 'data-label="Median earnings"><span class="tw-td__insuf">insufficient data' in html
 
 
 def test_names_and_island_are_safe():
