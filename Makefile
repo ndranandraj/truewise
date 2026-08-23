@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: install components tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -26,6 +26,11 @@ flags value-check:
 site:
 	$(PYTHON) -m pipeline.build_site
 
+# 4a0) Copy the isolated component assets (components/) into the deployed site/ so the canonical
+# profile and pilot can reference /components.css and /components/*.js.
+components:
+	$(PYTHON) -m pipeline.build_components
+
 # 4a) Regenerate design tokens (CSS custom properties + Python colour constants) from
 # design/tokens.json. Run after editing tokens.json; tokens-check fails if outputs are stale.
 tokens:
@@ -36,6 +41,7 @@ tokens-check:
 # 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
 	$(PYTHON) -m pipeline.build_tokens
+	$(PYTHON) -m pipeline.build_components
 	$(PYTHON) -m pipeline.og_images
 	$(PYTHON) -m pipeline.build_home_chart
 	$(PYTHON) -m pipeline.build_college_pages

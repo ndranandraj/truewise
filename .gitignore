@@ -93,3 +93,7 @@ package-lock.json
 
 # Stage 4.1 canonical-profile pilot (measurements only, never deployed)
 pilot/
+
+# Deployed copies of the isolated component assets (source in components/, copied at build)
+/site/components.css
+/site/components/

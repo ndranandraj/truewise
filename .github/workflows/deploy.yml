@@ -40,6 +40,9 @@ jobs:
           python -m pipeline.build_careers
           [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
+          # Copy the isolated component assets (components/) into site/ so /components.css and
+          # /components/*.js resolve for the canonical profile.
+          python -m pipeline.build_components
           # Per-page social share cards (homepage; majors + findings cards render inside their builders).
           python -m pipeline.og_images
           # Homepage outcome-distribution chart (recomputed from the parquet, injected in place).
