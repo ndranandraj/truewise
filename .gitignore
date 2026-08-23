@@ -97,3 +97,6 @@ pilot/
 # Deployed copies of the isolated component assets (source in components/, copied at build)
 /site/components.css
 /site/components/
+
+# Staged canonical profiles (Stage 4.3b; built and reviewed before the Stage 5 cutover, never deployed)
+staging/
