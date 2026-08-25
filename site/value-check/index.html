@@ -822,7 +822,26 @@
     else renderSearch(params.q || "");
   }
   window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
-  route(Object.fromEntries(new URLSearchParams(location.search)));
+
+  // ---- Legacy ?school=<id> redirect (Stage 5 cutover) ----
+  // The canonical profile now lives at /college/<slug>/. Cloudflare cannot redirect on a query
+  // parameter, so we resolve ?school=<id> to its slug client-side from the published slug map and
+  // hand off with location.replace (no history entry). If the id is missing from the map, fall
+  // through to the in-page renderer, which is retained for one release as a safety net.
+  async function boot() {
+    const params = Object.fromEntries(new URLSearchParams(location.search));
+    if (params.school) {
+      try {
+        const r = await fetch("/college/slug-map.json");
+        if (r.ok) {
+          const slug = (await r.json())[params.school];
+          if (slug) { location.replace("/college/" + slug + "/" + location.hash); return; }
+        }
+      } catch (e) { /* network hiccup: fall through to in-page render */ }
+    }
+    route(params);
+  }
+  boot();
 
   // Back-to-top affordance
   const toTop = document.getElementById("to-top");

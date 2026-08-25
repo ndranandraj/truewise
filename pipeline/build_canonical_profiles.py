@@ -139,8 +139,25 @@ def canonical_page(
             {"@type": "ListItem", "position": 3, "name": name, "item": canonical},
         ],
     }
+    # CollegeOrUniversity structured data (carried over from the retired summary page): it is the
+    # entity search engines attach the profile to, so dropping it at the cutover would be a silent SEO
+    # regression. Serialized through _island_json for the same '<'-escaping safety as the breadcrumb.
+    college = {
+        "@context": "https://schema.org",
+        "@type": "CollegeOrUniversity",
+        "name": name,
+        "url": canonical,
+    }
+    if meta.get("city"):
+        college["address"] = {
+            "@type": "PostalAddress",
+            "addressLocality": meta["city"],
+            "addressRegion": st,
+            "addressCountry": "US",
+        }
     ld = (
         '  <link rel="stylesheet" href="/components.css" />\n'
+        '  <script type="application/ld+json">\n  ' + _island_json(college) + "\n  </script>\n"
         '  <script type="application/ld+json">\n  ' + _island_json(breadcrumb) + "\n  </script>\n"
     )
 
@@ -169,9 +186,9 @@ def canonical_page(
         f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n'
     )
     parts.append(f"    <h1>{esc(name)}</h1>\n")
-    parts.append(
-        f'    <p class="idline">{esc(st_name)}{" &middot; " + esc(meta["control"]) if meta.get("control") else ""}</p>\n'
-    )
+    loc = f"{esc(meta['city'])}, {esc(st_name)}" if meta.get("city") else esc(st_name)
+    ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
+    parts.append(f'    <p class="idline">{loc}{ctrl}</p>\n')
     parts.append(f'    <div class="verdict">{verdict}</div>\n')
 
     # B10 affordability: net price by income + the "what would this cost you" calculator, reusing the

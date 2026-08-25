@@ -86,6 +86,7 @@ truewise-redesign-*.md
 truewise-audit-triage-*.md
 TRUEWISE_*.md
 truewise-stage*.md
+truewise-font-*.md
 
 # Node deps (jsdom for the component smoke; installed locally, never committed)
 node_modules/

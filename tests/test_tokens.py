@@ -37,14 +37,15 @@ def test_semantic_bridge_covers_every_component_token():
         assert not missing, f"{css} uses tokens not defined in live styles.css: {missing}"
 
 
-def test_bridge_holds_current_values_not_final():
-    """The bridge deliberately aliases to the CURRENT palette so it is a no-visual-change change; the
-    final 0.3 values land at the Stage 5 cutover. Guard that --text-muted is still the current value
-    (a premature swap to the final #67717f would be an unplanned live restyle)."""
+def test_bridge_holds_final_palette_after_cutover():
+    """Stage 5 cutover landed the final 0.3 palette. The three contrast-corrected semantic tokens now
+    hold their final values; guard against a regression back to the pre-cutover aliases."""
     tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
     sem = tokens["semantic"]
-    assert sem["text-muted"] == "#6b7688", (
-        "bridge must stay on the current muted value until Stage 5"
+    assert sem["text-muted"] == "#67717f", "cutover applied the final muted value"
+    assert sem["text-on-dark"] == "#eaf0fb", "cutover applied the final on-dark value"
+    assert sem["text-on-dark-muted"] == "#93acda", (
+        "cutover applied the final on-dark-muted value"
     )
     assert sem["text"] == tokens["color"]["ink"]["value"]
     assert sem["paper"] == tokens["color"]["bg"]["value"]

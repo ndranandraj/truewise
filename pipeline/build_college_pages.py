@@ -380,6 +380,29 @@ def _calculator(s, np_, brackets, labels, programs) -> str:
     )
 
 
+def render_og_card(s, slug) -> None:
+    """Write this school's Open Graph share card. Extracted from college_page so the canonical
+    profile (which references the card but does not render it) still gets one per school."""
+    name = s["name"]
+    st_name = STATE_NAMES.get(s["state"], s["state"])
+    decided = s["n_pass"] + s["n_fail"]
+    passed, fail = s["n_pass"], s["n_fail"]
+    if decided and fail:
+        card_big, card_color = f"{passed} of {decided} pay off", BRAND_DEEP
+    elif decided:
+        card_big, card_color = f"All {decided} pay off", GOOD
+    else:
+        card_big, card_color = None, BRAND_DEEP
+    render_card(
+        SITE / "og" / "college" / f"{slug}.png",
+        "College · does it pay off?",
+        name,
+        big=card_big,
+        big_color=card_color,
+        sub=f"Programs whose graduates out-earn a typical {st_name} high-school graduate.",
+    )
+
+
 def college_page(s, programs, slug) -> str:
     name = s["name"]
     st = s["state"]
@@ -646,7 +669,11 @@ def state_index(st, schools_in_state) -> str:
     parts.append('    <ul class="schoollist">\n')
     for slug, s, _ in sorted(schools_in_state, key=lambda x: (x[1]["name"] or "").lower()):
         decided = s["n_pass"] + s["n_fail"]
-        summ = f"{decided} programs with earnings data, {s['n_fail']} fall short"
+        summ = (
+            f"{decided} programs with earnings data, {s['n_fail']} fall short"
+            if decided
+            else "no programs with enough data for an earnings verdict yet"
+        )
         dup_city = name_counts[s["name"]] > 1 and s.get("city")
         label = esc(s["name"]) + (f" ({esc(s['city'])})" if dup_city else "")
         city = "" if dup_city else (f"{esc(s['city'])} &middot; " if s.get("city") else "")
@@ -699,8 +726,16 @@ def national_index(states_present, profiled=None, searchable=None) -> str:
 
 
 def qualifying_schools(schools: dict) -> dict:
-    """Schools that get a page: at least one earnings verdict (skip all-suppressed schools)."""
-    return {u: s for u, s in schools.items() if (s["n_pass"] + s["n_fail"]) >= 1}
+    """Schools that get a /college/ profile. Widened at the Stage 5 cutover from verdict-only to ANY
+    school with at least one program, so the ~1,178 all-insufficient schools also get a truthful
+    no-verdict profile. This keeps every searchable school addressable and the retired ?school=<id>
+    redirect never dead-ends. The value-check rankings/lists still exclude no-verdict schools in SQL,
+    so this only affects which schools get a page and a slug."""
+    return {
+        u: s
+        for u, s in schools.items()
+        if (s["n_pass"] + s["n_fail"] + s.get("n_insufficient", 0)) >= 1
+    }
 
 
 def build_slugs(qualified: dict) -> dict[str, str]:
@@ -723,21 +758,41 @@ def build_slugs(qualified: dict) -> dict[str, str]:
 
 
 def main() -> None:
+    # Stage 5 cutover: /college/<slug>/ is now the FULL canonical profile (delivery model: static core
+    # + JSON island + progressive tail), rendered by canonical_page. The old summary college_page is
+    # retired (kept in this module one release for an easy revert). Lazy import breaks the cycle with
+    # build_canonical_profiles, which imports chrome helpers from here.
+    from pipeline.build_canonical_profiles import canonical_page
+    from pipeline.build_profile_pilot import DEFAULT_THRESHOLD, all_profiles
+
     con = duckdb.connect()
     schools, by_state, _ = build_model(con)
 
     qualified = qualifying_schools(schools)
     slugs = build_slugs(qualified)
+    profiles = all_profiles(con)  # one-pass {unitid: (meta, rows)} from the parquet
 
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
     states_present: dict[str, list] = defaultdict(list)
     for u, s in qualified.items():
         slug = slugs[u]
-        programs = by_state.get(s["state"], {}).get(u, [])
+        _, rows = profiles.get(u, ({}, []))
+        meta = {
+            "name": s["name"],
+            "state": s["state"],
+            "control": s.get("control"),
+            "city": s.get("city"),
+        }
+        html, tail_json = canonical_page(
+            meta, rows, slug, s.get("threshold"), DEFAULT_THRESHOLD, s.get("net_price")
+        )
         d = col_dir / slug
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(college_page(s, programs, slug))
+        (d / "index.html").write_text(html)
+        if tail_json:
+            (d / "programs-tail.json").write_text(tail_json)
+        render_og_card(s, slug)
         states_present[s["state"]].append((slug, s, u))
 
     colleges_dir = SITE / "colleges"

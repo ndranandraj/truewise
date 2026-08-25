@@ -92,8 +92,10 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
         -- content; an insufficient-data row is nearly worthless to a searcher, so a decided program
         -- outranks a larger insufficient one. This is deliberately NOT "the 150 largest by
         -- completers" (an earlier report claim); it is "all assessed, then the largest of the rest".
+        -- cip_code is the final, deterministic tie-breaker so the static/tail split is stable across
+        -- builds (equal-completer programs would otherwise order arbitrarily and churn the URLs/tail).
         ORDER BY (value_flag IN ('passes_earnings_premium','fails_earnings_premium')) DESC,
-                 completers_count DESC NULLS LAST
+                 completers_count DESC NULLS LAST, cip_code, credential_desc, earnings
         """
     ).df()
     rows = []
@@ -117,6 +119,72 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
             }
         )
     return meta, rows
+
+
+def _row_from(r) -> dict:
+    """Map one parquet program record to the canonical row shape (shared by _rows_for and all_profiles)."""
+    decided = r["value_flag"] in ("passes_earnings_premium", "fails_earnings_premium")
+    return {
+        "program": plain_name(str(r["cip_code"]), r["cip_desc"]) or tidy_official(r["cip_desc"]),
+        "credential": r["credential_desc"],
+        "earnings": None if not decided else _num(r["earnings"]),
+        "premium": None if not decided else _num(r["earnings_premium_state"]),
+        "verdict": "pass"
+        if r["value_flag"] == "passes_earnings_premium"
+        else "fail"
+        if r["value_flag"] == "fails_earnings_premium"
+        else "insufficient",
+        "debt": _num(r["debt_median"]),
+        "payback": _num(r["debt_payback_years"]),
+        "completers": _num(r["completers_count"]),
+    }
+
+
+def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
+    """One-pass {unitid: (meta, rows)} for every school, so the cutover build does not run a query per
+    school. Same row shape and assessed-first ordering as _rows_for. Sources programs from the parquet
+    (not the value-check shards, which strip insufficient programs to name+credential and drop
+    completers), so suppressed rows keep their real completers count.
+
+    The parquet path defaults to build_site.PARQUET_DIR (resolved at call time, not import) so it tracks
+    the same source of truth as build_model and honours a test's monkeypatch of PARQUET_DIR."""
+    if parquet is None:
+        from pipeline import build_site as _bs
+
+        parquet = _bs.PARQUET_DIR / "value_check.parquet"
+    df = con.sql(
+        f"""
+        SELECT unitid, inst_name, state, control, cip_code, cip_desc, credential_desc,
+               earnings, earnings_premium_state, debt_median, debt_payback_years,
+               completers_count, value_flag
+        FROM '{parquet}'
+        WHERE TRY_CAST(unitid AS BIGINT) IS NOT NULL
+        ORDER BY unitid,
+                 (value_flag IN ('passes_earnings_premium','fails_earnings_premium')) DESC,
+                 completers_count DESC NULLS LAST, cip_code, credential_desc, earnings
+        """
+    ).df()
+    out: dict[str, tuple[dict, list[dict]]] = {}
+    for r in df.itertuples(index=False):
+        u = str(r.unitid)
+        if u not in out:
+            out[u] = ({"unitid": u, "name": r.inst_name, "state": r.state, "control": r.control}, [])
+        out[u][1].append(
+            _row_from(
+                {
+                    "value_flag": r.value_flag,
+                    "cip_code": r.cip_code,
+                    "cip_desc": r.cip_desc,
+                    "credential_desc": r.credential_desc,
+                    "earnings": r.earnings,
+                    "earnings_premium_state": r.earnings_premium_state,
+                    "debt_median": r.debt_median,
+                    "debt_payback_years": r.debt_payback_years,
+                    "completers_count": r.completers_count,
+                }
+            )
+        )
+    return out
 
 
 def _num(v):

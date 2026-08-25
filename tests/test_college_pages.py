@@ -112,15 +112,22 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     page = site / "college" / "test-state-university" / "index.html"
     assert page.exists(), "college page not generated"
     h = page.read_text()
+    # This page is now the full canonical profile (delivery model: static core + JSON island +
+    # progressive tail), rendered by build_canonical_profiles.canonical_page.
     # Identity + verdict facts baked into HTML (crawlable without JS).
     assert "Test State University" in h
-    assert "Austin, Texas" in h
-    assert "2</b> programs with reported earnings" in h  # 1 pass + 1 fail decided
-    assert "1</b> fall short" in h
-    assert "did not have enough data" in h  # the suppressed program is disclosed, not hidden
+    assert "Austin, Texas" in h  # city + state identity line
+    # Verdict block carries the real counts and the dollar benchmark.
+    assert "Of <b>2</b> assessed programs" in h  # 1 pass + 1 fail decided
+    assert "<b>1</b> fall short" in h
+    assert "about $35,000/yr" in h  # the state high-school-grad benchmark, stated in dollars
+    assert "Another <b>1</b> could not be assessed" in h  # the suppressed program is disclosed
+    # Coverage label on the program table (honest denominator, not "% have earnings data").
+    assert "<b>2 of 3</b> programs could be assessed" in h
     # Net price by income baked in.
     assert "$18,000" in h  # avg net price
-    # SEO essentials.
+    # SEO essentials: canonical + BOTH structured-data types (CollegeOrUniversity carried over from
+    # the retired summary page so the cutover does not drop the entity search engines attach to).
     assert '<link rel="canonical" href="https://truewise.dev/college/test-state-university/"' in h
     assert "CollegeOrUniversity" in h and "BreadcrumbList" in h
     assert "—" not in h  # no em-dash
@@ -131,11 +138,11 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     )
     card = site / "og" / "college" / "test-state-university.png"
     assert card.exists() and card.stat().st_size > 1000, "per-college OG card missing"
-    # The "vs a high-school grad" column renders a diverging bar: the passing program a green
-    # bar right of the benchmark line, the failing one a red bar to the left.
+    # The "vs a high-school grad" column carries the signed earnings premium as crawlable text (the
+    # delivery model renders a number, not a chart bar), and the verdict pills mark pass vs fail.
     assert ">vs a high-school grad</th>" in h
-    assert "class='prem-val pos'" in h and "class='prem-val neg'" in h
-    assert "<i class='pos' style='width:" in h and "<i class='neg' style='width:" in h
+    assert "+$35,000" in h and "-$15,000" in h
+    assert "tw-verdict--pass" in h and "tw-verdict--fail" in h
 
 
 def test_state_index_and_national(tmp_path, monkeypatch):
