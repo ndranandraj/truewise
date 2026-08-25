@@ -28,6 +28,10 @@ site:
 
 # 4a0) Copy the isolated component assets (components/) into the deployed site/ so the canonical
 # profile and pilot can reference /components.css and /components/*.js.
+# Dry-run: render current summary vs new canonical per rep into staging for review before cutover.
+cutover-dryrun: tokens components
+	$(PYTHON) -m pipeline.build_canonical_profiles --cutover-diff
+
 components:
 	$(PYTHON) -m pipeline.build_components
 

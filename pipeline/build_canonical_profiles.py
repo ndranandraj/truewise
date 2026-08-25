@@ -241,15 +241,61 @@ def canonical_page(
     return "".join(parts), tail_json
 
 
+def _cutover_diff(con, threshold: int) -> None:
+    """Render, for each representative, the CURRENT summary page and the NEW canonical page side by
+    side into staging/_cutover-diff/<slug>/, so the exact go-live content change can be reviewed
+    before the cutover ships. Read-only: writes nothing to site/."""
+    from pipeline.build_college_pages import (
+        build_model,
+        build_slugs,
+        college_page,
+        qualifying_schools,
+    )
+
+    schools, by_state, _ = build_model(con)
+    qualified = qualifying_schools(schools)
+    slugs = build_slugs(qualified)
+    out = OUT / "_cutover-diff"
+    print(f"{'case':18} {'slug':44} {'current rows':>12} {'canonical static':>16}")
+    for case, unitid in REPS.items():
+        if unitid not in qualified:
+            continue
+        s = qualified[unitid]
+        slug = slugs[unitid]
+        progs = by_state.get(s["state"], {}).get(unitid, [])
+        current = college_page(s, progs, slug)
+        meta, rows = _rows_for(con, unitid)
+        canonical, _ = canonical_page(
+            meta, rows, slug, _benchmark(con, unitid), threshold, _net_price(con, unitid)
+        )
+        d = out / slug
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "current-summary.html").write_text(current)
+        (d / "new-canonical.html").write_text(canonical)
+        print(
+            f"{case:18} {slug[:44]:44} {current.count('<tr'):>12} {min(threshold, len(rows)):>16}"
+        )
+    print(f"\nwrote current + canonical pairs to {out.relative_to(ROOT)}/ (review before cutover)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true", help="every profile-eligible school (slow)")
     ap.add_argument(
         "--school", help="one UNITID (ad-hoc, e.g. to inspect an all-insufficient school)"
     )
+    ap.add_argument(
+        "--cutover-diff",
+        action="store_true",
+        help="write CURRENT summary + NEW canonical per rep into staging/_cutover-diff/ to review",
+    )
     ap.add_argument("--threshold", type=int, default=DEFAULT_THRESHOLD)
     args = ap.parse_args()
     con = duckdb.connect()
+
+    if args.cutover_diff:
+        _cutover_diff(con, args.threshold)
+        return
 
     if args.school:
         targets = [(None, args.school)]
