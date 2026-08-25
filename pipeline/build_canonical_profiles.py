@@ -235,8 +235,10 @@ def canonical_page(
     )
     parts.append("  </main>\n")
     parts.append(FOOTER)
-    parts.append('  <script src="/components/table.js"></script>\n')
-    parts.append('  <script src="/components/profile.js"></script>\n')
+    # defer: these are progressive enhancement only (the static table is the baseline), so they must
+    # never block first paint. The LCP element is the h1, so keeping JS off the critical path matters.
+    parts.append('  <script defer src="/components/table.js"></script>\n')
+    parts.append('  <script defer src="/components/profile.js"></script>\n')
     parts.append("</body>\n</html>\n")
     return "".join(parts), tail_json
 
