@@ -1,6 +1,6 @@
-@import url("https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap");
-
 /* Truewise site styles. Lightweight, no framework. */
+/* Fonts are loaded non-blocking from each page's <head> (a render-blocking @import here delayed first
+   paint sitewide). Do not re-add an @import for fonts. */
 
 :root {
   /* @tokens:start — generated from design/tokens.json by `make tokens`. Do not edit by hand. */

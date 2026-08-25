@@ -226,6 +226,36 @@ def test_compare_states_coverage_and_labels_are_honest():
     assert "Recent completers" in gen and '"num">Graduates<' not in gen
 
 
+def test_fonts_load_without_blocking_first_paint():
+    """A CSS @import for fonts serializes behind the stylesheet parse and blocks first paint on every
+    page (the 2026-08-25 perf gate flagged it). styles.css must not @import fonts, and every source
+    page must load the font stylesheet non-blocking (media=print/onload) with a <noscript> fallback."""
+    css = (SITE / "styles.css").read_text()
+    assert "@import url" not in css, "styles.css must not @import fonts (render-blocking)"
+    # Committed source pages (generated pages come from head(), checked below). Not a glob, because
+    # stale generated output may sit in the working tree locally.
+    source_pages = [
+        "404.html",
+        "index.html",
+        "about/index.html",
+        "careers/index.html",
+        "compare/index.html",
+        "methodology/index.html",
+        "value-check/index.html",
+        "k12/index.html",
+        "k12/advanced-courses/index.html",
+        "k12/compare/index.html",
+        "k12/rankings/index.html",
+    ]
+    for rel in source_pages:
+        s = (SITE / rel).read_text()
+        assert 'media="print" onload' in s, f"{rel} font link is render-blocking"
+        assert "<noscript><link" in s and "css2" in s, f"{rel} missing noscript font fallback"
+    # The generated-page shell head() must use the same non-blocking pattern.
+    head_src = (PIPELINE / "build_college_pages.py").read_text()
+    assert 'media="print" onload' in head_src, "head() font link is render-blocking"
+
+
 def test_every_page_shares_one_header_nav():
     """The primary CTA used to jump sides and About vanished on some pages. Every hand-written
     page and the generated-page template must now carry the same nav in the same order."""
