@@ -44,9 +44,7 @@ def test_bridge_holds_final_palette_after_cutover():
     sem = tokens["semantic"]
     assert sem["text-muted"] == "#67717f", "cutover applied the final muted value"
     assert sem["text-on-dark"] == "#eaf0fb", "cutover applied the final on-dark value"
-    assert sem["text-on-dark-muted"] == "#93acda", (
-        "cutover applied the final on-dark-muted value"
-    )
+    assert sem["text-on-dark-muted"] == "#93acda", "cutover applied the final on-dark-muted value"
     assert sem["text"] == tokens["color"]["ink"]["value"]
     assert sem["paper"] == tokens["color"]["bg"]["value"]
     assert sem["brand-strong"] == tokens["color"]["brand-deep"]["value"]

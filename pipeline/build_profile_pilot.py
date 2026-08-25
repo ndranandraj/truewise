@@ -168,7 +168,10 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
     for r in df.itertuples(index=False):
         u = str(r.unitid)
         if u not in out:
-            out[u] = ({"unitid": u, "name": r.inst_name, "state": r.state, "control": r.control}, [])
+            out[u] = (
+                {"unitid": u, "name": r.inst_name, "state": r.state, "control": r.control},
+                [],
+            )
         out[u][1].append(
             _row_from(
                 {
