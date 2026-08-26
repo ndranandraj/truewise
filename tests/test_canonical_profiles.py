@@ -7,10 +7,12 @@ pilot-review fixes (escaping, assessed-first selection, could-be-assessed label)
 from __future__ import annotations
 
 from pipeline.build_canonical_profiles import canonical_page
-from pipeline.build_profile_pilot import DEFAULT_THRESHOLD
+from pipeline.build_profile_pilot import DEFAULT_THRESHOLD, _row_from
 
 
-def _rows(n_decided, n_insuf, fail=0):
+def _rows(n_decided, n_insuf, fail=0, one_year=0):
+    """one_year: the first `one_year` decided rows carry the 1-year horizon; the rest are 4-year.
+    Insufficient rows carry horizon None, matching production (their earnings are never displayed)."""
     rows = []
     for i in range(n_decided):
         rows.append(
@@ -20,6 +22,7 @@ def _rows(n_decided, n_insuf, fail=0):
                 "earnings": 60000 + i,
                 "premium": 20000 + i,
                 "verdict": "fail" if i < fail else "pass",
+                "horizon": "1yr_after_completion" if i < one_year else "4yr_after_completion",
                 "debt": 20000,
                 "payback": 1.5,
                 "completers": 100 - i,
@@ -33,6 +36,7 @@ def _rows(n_decided, n_insuf, fail=0):
                 "earnings": None,
                 "premium": None,
                 "verdict": "insufficient",
+                "horizon": None,
                 "debt": None,
                 "payback": None,
                 "completers": 5,
@@ -116,6 +120,66 @@ def test_no_net_price_omits_the_calculator():
     """A school with no reported net price shows no calculator, not an empty or broken one."""
     html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=None)
     assert "What would this cost you?" not in html
+
+
+def test_one_year_label_and_notice_on_mixed_window():
+    """A page mixing 1-year and 4-year earnings marks only its 1-year rows and carries the comparison
+    warning, replacing the old contradictory 'several years out' source wording."""
+    html, _ = canonical_page(META, _rows(4, 1, one_year=2), "x", 36498, DEFAULT_THRESHOLD)
+    # Two 1-year rows -> two inline labels, plus one label inside the notice sentence = 3 spans.
+    assert html.count('<span class="tw-oneyr">1-year earnings</span>') == 3
+    assert "should not be compared as if measured at the same time" in html
+    assert "several years out" not in html
+    assert "measured four years after completion where available" in html
+
+
+def test_one_year_only_profile_still_gets_labels_and_notice():
+    html, _ = canonical_page(META, _rows(3, 0, one_year=3), "x", 36498, DEFAULT_THRESHOLD)
+    assert "should not be compared as if measured at the same time" in html
+    assert html.count('<span class="tw-oneyr">1-year earnings</span>') == 3 + 1  # rows + notice
+
+
+def test_four_year_only_profile_has_no_window_label_or_notice():
+    html, _ = canonical_page(META, _rows(4, 1, one_year=0), "x", 36498, DEFAULT_THRESHOLD)
+    assert "tw-oneyr" not in html
+    assert "should not be compared" not in html
+    assert "Earnings are medians measured four years after completion," in html
+
+
+def test_insufficient_row_never_triggers_a_window_label():
+    """Guard the 2,700-row hazard: an insufficient program can carry a horizon in the parquet while its
+    earnings are hidden. _row_from must drop that horizon so it never labels a figure the page does not
+    show, and the page must show no notice when every 1-year horizon belongs to a suppressed row."""
+    rec = {
+        "value_flag": "insufficient_data",
+        "cip_code": "5201",
+        "cip_desc": "Business.",
+        "credential_desc": "Certificate",
+        "earnings": None,
+        "earnings_premium_state": None,
+        "debt_median": None,
+        "debt_payback_years": None,
+        "completers_count": 5,
+        "earnings_horizon": "1yr_after_completion",  # present in data, but earnings are suppressed
+    }
+    assert _row_from(rec)["horizon"] is None
+    html, _ = canonical_page(META, [_row_from(rec)], "x", 36498, DEFAULT_THRESHOLD)
+    assert "tw-oneyr" not in html and "should not be compared" not in html
+
+
+def test_island_and_tail_carry_horizon_identically():
+    """Static island rows and progressive-tail rows must both carry horizon, so a 1-year row loaded as
+    tail row 151 is labelled exactly like static row 1."""
+    import json
+
+    html, tail = canonical_page(META, _rows(200, 0, one_year=160), "x", 36498, DEFAULT_THRESHOLD)
+    island = json.loads(html.split('class="tw-profile-data">')[1].split("</script>")[0])
+    programs = json.loads(tail)["programs"]
+    assert all("horizon" in r for r in island["rows"]), "island rows dropped horizon"
+    assert all("horizon" in r for r in programs), "tail rows dropped horizon"
+    # 160 one-year rows sit assessed-first; 150 in the static island, 10 in the tail.
+    assert sum(r["horizon"] == "1yr_after_completion" for r in island["rows"]) == 150
+    assert sum(r["horizon"] == "1yr_after_completion" for r in programs) == 10
 
 
 def test_threshold_splits_static_and_tail():

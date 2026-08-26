@@ -18,7 +18,7 @@ const { ProgramTable } = window.TWTable;
 
 const rows = [
   { program: "Computer Science", credential: "Master's", earnings: 195622, premium: 161809, verdict: "pass", debt: 20500, payback: 0.1, completers: 2416 },
-  { program: "Mechanical Eng", credential: "Bachelor's", earnings: 99955, premium: 66142, verdict: "pass", debt: 22500, payback: 0.3, completers: 421 },
+  { program: "Mechanical Eng", credential: "Bachelor's", earnings: 99955, premium: 66142, verdict: "pass", horizon: "1yr_after_completion", debt: 22500, payback: 0.3, completers: 421 },
   { program: "Fine Arts", credential: "Bachelor's", earnings: 28900, premium: -4913, verdict: "fail", debt: 24000, payback: 6.4, completers: 88 },
   { program: "Philosophy", credential: "Bachelor's", earnings: null, premium: null, verdict: "insufficient", debt: null, payback: null, completers: 41 },
 ];
@@ -34,7 +34,8 @@ const $$ = (s) => [...root.querySelectorAll(s)];
 
 // 1. Coverage stated first, computed correctly.
 check(/89 of 254/.test($(".tw-table__coverage").textContent), "coverage line missing/incorrect");
-check(/35% have earnings data/.test($(".tw-table__coverage").textContent), "coverage percent wrong");
+check(/could be assessed/.test($(".tw-table__coverage").textContent), "coverage should say 'could be assessed'");
+check(/35% have an earnings verdict/.test($(".tw-table__coverage").textContent), "coverage percent/wording wrong");
 
 // 2. Real table semantics.
 check($("table.tw-table") !== null, "no real <table>");
@@ -68,6 +69,10 @@ const premBar = $(".tw-prem__bar");
 check(premBar.getAttribute("aria-hidden") === "true", "premium bar must be aria-hidden");
 check(/\+\$161,809/.test(root.textContent), "premium value not shown as text");
 
+// 6b. The 1-year earnings value carries an inline marker; the 4-year values do not.
+check($$(".tw-oneyr").length === 1, "exactly one 1-year marker expected (only the 1-year row)");
+check(/1-year earnings/.test(root.textContent), "1-year earnings label text missing");
+
 // 7. Sort by earnings: rows reorder, insufficient sinks to the bottom, aria-sort updates.
 earningsTh.querySelector(".tw-th__sort").click();
 const after = $$("tbody .tw-td--program").map((th) => th.textContent);
@@ -87,6 +92,9 @@ const th3 = $$(".tw-th").find((th) => /Median earnings/.test(th.textContent));
 check(th3.getAttribute("aria-sort") === "ascending", "second click should flip to ascending");
 const asc = $$("tbody .tw-td--program").map((x) => x.textContent);
 check(asc[asc.length - 1] === "Philosophy", "insufficient still sinks on ascending sort");
+
+// 9. The 1-year marker survives sorting (each re-render must reattach it, like the static row).
+check($$(".tw-oneyr").length === 1, "1-year marker lost after sorting");
 
 console.log(`table smoke (B5 program table): ${pass}/${pass + fail.length} passed`);
 if (fail.length) {

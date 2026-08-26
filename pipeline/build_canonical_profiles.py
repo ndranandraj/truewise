@@ -92,6 +92,9 @@ def canonical_page(
     decided = sum(1 for r in rows if r["verdict"] != "insufficient")
     passed = sum(1 for r in rows if r["verdict"] == "pass")
     fail = sum(1 for r in rows if r["verdict"] == "fail")
+    # A 1-year figure is only ever DISPLAYED for an assessed row (horizon is None on insufficient
+    # rows), so this is exactly "does the page show at least one 1-year earnings value".
+    has_1yr = any(r.get("horizon") == "1yr_after_completion" for r in rows)
     bench_txt = money(benchmark) if benchmark is not None else "a typical high-school graduate"
 
     # Honest headline + meta description carrying real numbers.
@@ -235,6 +238,16 @@ def canonical_page(
         f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
+    # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
+    # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
+    if has_1yr:
+        parts.append(
+            '        <p class="tw-source tw-window-note">Earnings are measured four years after '
+            "completion when available. Where four-year earnings are suppressed, one-year earnings are "
+            'shown and marked <span class="tw-oneyr">1-year earnings</span>. One-year and four-year '
+            "figures reflect different career stages and should not be compared as if measured at the "
+            "same time.</p>\n"
+        )
     parts.append('        <div class="tw-table__scroll"><table class="tw-table">')
     parts.append(
         f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(st_name)} '
@@ -243,9 +256,15 @@ def canonical_page(
     parts.append(f"<thead><tr>{HEAD}</tr></thead><tbody>{body_rows}</tbody></table></div>\n")
     parts.append("      </div>\n    </div>\n")
 
+    window_txt = (
+        "measured four years after completion where available (programs shown with a 1-year figure are "
+        "marked)"
+        if has_1yr
+        else "measured four years after completion"
+    )
     parts.append(
         '    <p class="tw-source">Source: U.S. Department of Education College Scorecard, release '
-        f"{SCORECARD_RELEASE}. Earnings are medians for graduates several years out, compared with the "
+        f"{SCORECARD_RELEASE}. Earnings are medians {window_txt}, compared with the "
         f"state high-school-graduate benchmark ({esc(bench_txt)}/yr). Debt is federal loans only. "
         "Suppressed values are shown as insufficient data, never imputed. Figures describe past "
         "graduates and are never a promise.</p>\n"

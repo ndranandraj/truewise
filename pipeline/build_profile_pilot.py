@@ -85,7 +85,7 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
     prog = con.sql(
         f"""
         SELECT cip_code, cip_desc, credential_desc, earnings, earnings_premium_state,
-               debt_median, debt_payback_years, completers_count, value_flag
+               debt_median, debt_payback_years, completers_count, value_flag, earnings_horizon
         FROM '{PARQUET}' WHERE unitid = '{unitid}'
         -- Selection policy for the static tranche: ASSESSED programs (a real earnings verdict) first,
         -- then by completers within each group. A program with a verdict is the valuable, crawlable
@@ -98,26 +98,10 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
                  completers_count DESC NULLS LAST, cip_code, credential_desc, earnings
         """
     ).df()
-    rows = []
-    for _, r in prog.iterrows():
-        decided = r["value_flag"] in ("passes_earnings_premium", "fails_earnings_premium")
-        rows.append(
-            {
-                "program": plain_name(str(r["cip_code"]), r["cip_desc"])
-                or tidy_official(r["cip_desc"]),
-                "credential": r["credential_desc"],
-                "earnings": None if not decided else _num(r["earnings"]),
-                "premium": None if not decided else _num(r["earnings_premium_state"]),
-                "verdict": "pass"
-                if r["value_flag"] == "passes_earnings_premium"
-                else "fail"
-                if r["value_flag"] == "fails_earnings_premium"
-                else "insufficient",
-                "debt": _num(r["debt_median"]),
-                "payback": _num(r["debt_payback_years"]),
-                "completers": _num(r["completers_count"]),
-            }
-        )
+    # One row-construction path: _rows_for now calls _row_from, so the pilot and full-build tranches
+    # carry an identical shape (including the earnings-window horizon). Divergence here is what let the
+    # mixed-window label ship on one path and not the other, so the shared contract is now real.
+    rows = [_row_from(r) for _, r in prog.iterrows()]
     return meta, rows
 
 
@@ -134,6 +118,9 @@ def _row_from(r) -> dict:
         else "fail"
         if r["value_flag"] == "fails_earnings_premium"
         else "insufficient",
+        # Horizon only for a DISPLAYED assessed value. Insufficient rows hide their earnings, so their
+        # horizon must stay None or they would trip the 1-year label/notice for a figure never shown.
+        "horizon": r["earnings_horizon"] if decided else None,
         "debt": _num(r["debt_median"]),
         "payback": _num(r["debt_payback_years"]),
         "completers": _num(r["completers_count"]),
@@ -156,7 +143,7 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
         f"""
         SELECT unitid, inst_name, state, control, cip_code, cip_desc, credential_desc,
                earnings, earnings_premium_state, debt_median, debt_payback_years,
-               completers_count, value_flag
+               completers_count, value_flag, earnings_horizon
         FROM '{parquet}'
         WHERE TRY_CAST(unitid AS BIGINT) IS NOT NULL
         ORDER BY unitid,
@@ -184,6 +171,7 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
                     "debt_median": r.debt_median,
                     "debt_payback_years": r.debt_payback_years,
                     "completers_count": r.completers_count,
+                    "earnings_horizon": r.earnings_horizon,
                 }
             )
         )
@@ -219,11 +207,16 @@ def _static_row(r: dict) -> str:
     if r["premium"] is not None:
         sign = "+" if r["premium"] >= 0 else "-"
         prem = f"{sign}{_money(abs(r['premium']))}"
+    # 1-year earnings marker: only beside a DISPLAYED assessed value whose horizon is 1-year. Horizon is
+    # None for insufficient rows (earnings hidden), so this never labels a figure the page does not show.
+    earn = _money(r["earnings"])
+    if earn is not None and r.get("horizon") == "1yr_after_completion":
+        earn += ' <span class="tw-oneyr">1-year earnings</span>'
     return (
         f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
         f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{_esc(r["program"])}</th>'
         f'<td class="tw-td" data-label="Degree">{_esc(r["credential"] or "")}</td>'
-        + cell("Median earnings", _money(r["earnings"]), True)
+        + cell("Median earnings", earn, True)
         + cell("vs a high-school grad", prem, True)
         + f'<td class="tw-td" data-label="Verdict">{verdict}</td>'
         + cell("Median debt", _money(r["debt"]), True)

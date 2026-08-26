@@ -353,6 +353,16 @@
   border: 1px dashed var(--line);
   font-weight: 400;
 }
+/* Inline "1-year earnings" marker: an earnings figure measured 1 year after completion, not 4. Reuses
+   the caution palette; sits under the number so it does not read as part of the dollar amount. */
+.tw-oneyr {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--caution);
+  white-space: nowrap;
+}
 
 /* B14 suppressed value */
 .tw-insuf {
