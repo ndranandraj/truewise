@@ -128,19 +128,38 @@ def test_completion_rate_zero_is_treated_as_missing():
 
 
 def test_stylesheet_versioning_stamps_and_is_idempotent():
-    """The deploy stamps styles.css with a content hash so a CSS change busts its own cache.
-    Guard that it rewrites both relative and absolute refs and never double-stamps."""
+    """The deploy stamps BOTH styles.css and components.css with independent content hashes so a CSS
+    change busts only its own cache. Guard relative+absolute refs, idempotency, no double-stamp, and
+    that stamping one sheet never touches the other's version (the rebrand changes components.css)."""
     from pipeline import version_assets as va
 
-    ver = va.stylesheet_hash()
-    assert re.fullmatch(r"[0-9a-f]{10}", ver), "hash should be 10 hex chars"
-    once = va.stamp('<link rel="stylesheet" href="styles.css" /><link href="/styles.css">', ver)
-    assert f'href="styles.css?v={ver}"' in once
-    assert f'href="/styles.css?v={ver}"' in once
-    # Running it again must not append a second ?v=.
-    assert va.stamp(once, ver) == once
-    # A new hash replaces the old stamp rather than stacking.
-    assert va.stamp(once, "deadbeef01").count("?v=") == once.count("?v=")
+    sver = va.sheet_hash("styles.css")
+    assert re.fullmatch(r"[0-9a-f]{10}", sver), "styles hash should be 10 hex chars"
+    cver = va.sheet_hash("components.css")
+    assert cver is None or re.fullmatch(r"[0-9a-f]{10}", cver), "components hash 10 hex or absent"
+
+    # Each sheet gets its OWN ?v=, on both relative and absolute refs.
+    html = (
+        '<link rel="stylesheet" href="styles.css" /><link href="/styles.css">'
+        '<link rel="stylesheet" href="/components.css" />'
+    )
+    out = va.stamp_sheet(html, "styles.css", sver)
+    out = va.stamp_sheet(out, "components.css", "deadbeef01")
+    assert f'href="styles.css?v={sver}"' in out and f'href="/styles.css?v={sver}"' in out
+    assert 'href="/components.css?v=deadbeef01"' in out
+
+    # Idempotent, and a new hash replaces the old stamp rather than stacking.
+    assert va.stamp_sheet(out, "styles.css", sver) == out
+    assert va.stamp_sheet(out, "styles.css", "cafef00d99").count("styles.css?v=") == 2
+
+    # Stamping components.css must not change the styles.css version, and vice versa.
+    only_styles = va.stamp_sheet(html, "styles.css", sver)
+    assert "components.css?v=" not in only_styles
+    only_comp = va.stamp_sheet(html, "components.css", "deadbeef01")
+    assert "styles.css?v=" not in only_comp
+
+    # Back-compat helper still stamps the primary sheet.
+    assert f'href="styles.css?v={sver}"' in va.stamp('<link href="styles.css">', sver)
 
 
 def _primary_nav_order(html: str) -> list[str]:

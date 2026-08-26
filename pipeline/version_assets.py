@@ -23,30 +23,55 @@ import re
 from pipeline.config import ROOT
 
 SITE = ROOT / "site"
-# href="styles.css" or href="/styles.css", with or without an existing ?v= stamp.
-LINK_RE = re.compile(r'href="(/?)styles\.css(?:\?v=[^"]*)?"')
+# Both deployed stylesheets are fingerprinted: styles.css (the whole site) and components.css (the
+# canonical profile's component styles). A rebrand that changes only components.css must bust only its
+# own cache, so each sheet carries an independent ?v=<hash> of its own content.
+SHEETS = ("styles.css", "components.css")
+
+
+def _link_re(name: str) -> re.Pattern:
+    # href="name" or href="/name", with or without an existing ?v= stamp.
+    return re.compile(rf'href="(/?){re.escape(name)}(?:\?v=[^"]*)?"')
+
+
+LINK_RES = {name: _link_re(name) for name in SHEETS}
+
+
+def sheet_hash(name: str) -> str | None:
+    """Short content hash of a shipped stylesheet, or None if it is not present."""
+    p = SITE / name
+    return hashlib.sha256(p.read_bytes()).hexdigest()[:10] if p.exists() else None
 
 
 def stylesheet_hash() -> str:
-    """Short, stable content hash of the shipped stylesheet."""
-    return hashlib.sha256((SITE / "styles.css").read_bytes()).hexdigest()[:10]
+    """Content hash of styles.css (kept for callers/tests that stamp the primary sheet)."""
+    return sheet_hash("styles.css")
+
+
+def stamp_sheet(html: str, name: str, ver: str) -> str:
+    """Rewrite every reference to `name` to carry ?v=<ver>. Idempotent; touches only that sheet."""
+    return LINK_RES[name].sub(rf'href="\g<1>{name}?v={ver}"', html)
 
 
 def stamp(html: str, ver: str) -> str:
-    """Rewrite every styles.css reference to carry ?v=<ver>. Idempotent."""
-    return LINK_RE.sub(rf'href="\1styles.css?v={ver}"', html)
+    """Back-compat: stamp styles.css only."""
+    return stamp_sheet(html, "styles.css", ver)
 
 
 def main() -> None:
-    ver = stylesheet_hash()
+    versions = {name: sheet_hash(name) for name in SHEETS}
+    versions = {name: ver for name, ver in versions.items() if ver}
     changed = 0
     for path in SITE.rglob("*.html"):
         src = path.read_text()
-        out = stamp(src, ver)
+        out = src
+        for name, ver in versions.items():
+            out = stamp_sheet(out, name, ver)
         if out != src:
             path.write_text(out)
             changed += 1
-    print(f"stamped styles.css?v={ver} into {changed} html files")
+    stamps = ", ".join(f"{n}?v={v}" for n, v in versions.items())
+    print(f"stamped [{stamps}] into {changed} html files")
 
 
 if __name__ == "__main__":
