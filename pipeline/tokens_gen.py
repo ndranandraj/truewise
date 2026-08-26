@@ -5,39 +5,57 @@ properties by generation. Edit design/tokens.json and run `make tokens`.
 """
 
 # Shared palette (also emitted as CSS custom properties).
-INK = "#14203a"
-INK_SOFT = "#45526b"
-INK_FAINT = "#6b7688"
-BG = "#ffffff"
-BG_ALT = "#f4f7fb"
-BRAND = "#1f6feb"
-BRAND_DEEP = "#123a7a"
-GOOD = "#0b6b47"
-BAD = "#a02012"
-BAND_ACCENT = "#ff8c7a"
-LINE = "#dde4ee"
+INK = "#0c1512"
+INK_SOFT = "#2c3a34"
+INK_FAINT = "#646f6a"
+BG = "#fbfaf8"
+BG_ALT = "#f3f1ec"
+BRAND = "#1e4d34"
+BRAND_DEEP = "#10291c"
+GOOD = "#1e4d34"
+BAD = "#8a3220"
+BAND_ACCENT = "#d8cdb4"
+LINE = "#e2e4de"
+BRAND_500 = "#4c7a5e"
+BRAND_300 = "#a8c4b2"
+BRAND_50 = "#e6eee7"
+SAND = "#f3f1ec"
+SERIES_1 = "#1e4d34"
+SERIES_2 = "#4c7a5e"
+SERIES_3 = "#a8c4b2"
+SERIES_4 = "#d8cdb4"
+SERIES_NEG = "#8a3220"
 
 # Chart-only tints (Python renderers only; not CSS custom properties).
-HOME_BAR = "#8fb2ec"
-HOME_TEXT = "#cdd9ee"
-HOME_TEXT_DIM = "#93a9cf"
-LADDER_BAND = "#dbe7fb"
+HOME_BAR = "#a8c4b2"
+HOME_TEXT = "#d8cdb4"
+HOME_TEXT_DIM = "#a8c4b2"
+LADDER_BAND = "#e6eee7"
 
 # Every generated colour, keyed by token name, for lookups and the drift test.
 TOKENS = {
-    "ink": "#14203a",
-    "ink-soft": "#45526b",
-    "ink-faint": "#6b7688",
-    "bg": "#ffffff",
-    "bg-alt": "#f4f7fb",
-    "brand": "#1f6feb",
-    "brand-deep": "#123a7a",
-    "good": "#0b6b47",
-    "bad": "#a02012",
-    "band-accent": "#ff8c7a",
-    "line": "#dde4ee",
-    "chart.home-bar": "#8fb2ec",
-    "chart.home-text": "#cdd9ee",
-    "chart.home-text-dim": "#93a9cf",
-    "chart.ladder-band": "#dbe7fb",
+    "ink": "#0c1512",
+    "ink-soft": "#2c3a34",
+    "ink-faint": "#646f6a",
+    "bg": "#fbfaf8",
+    "bg-alt": "#f3f1ec",
+    "brand": "#1e4d34",
+    "brand-deep": "#10291c",
+    "good": "#1e4d34",
+    "bad": "#8a3220",
+    "band-accent": "#d8cdb4",
+    "line": "#e2e4de",
+    "brand-500": "#4c7a5e",
+    "brand-300": "#a8c4b2",
+    "brand-50": "#e6eee7",
+    "sand": "#f3f1ec",
+    "series-1": "#1e4d34",
+    "series-2": "#4c7a5e",
+    "series-3": "#a8c4b2",
+    "series-4": "#d8cdb4",
+    "series-neg": "#8a3220",
+    "chart.home-bar": "#a8c4b2",
+    "chart.home-text": "#d8cdb4",
+    "chart.home-text-dim": "#a8c4b2",
+    "chart.ladder-band": "#e6eee7",
 }

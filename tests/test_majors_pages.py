@@ -60,7 +60,7 @@ def test_major_page_bakes_degree_ladder(tmp_path, monkeypatch):
     # The earnings-range chart renders: a labelled figure with a median dot and a p25-p75 band.
     assert 'class="ladder-chart"' in h
     assert '<title id="ladderT">' in h
-    assert "<circle" in h and 'fill="#dbe7fb"' in h  # median dot + middle-half band
+    assert "<circle" in h and 'fill="#e6eee7"' in h  # median dot + middle-half band
     assert '<link rel="canonical" href="https://truewise.dev/majors/registered-nursing/"' in h
     assert "BreadcrumbList" in h
     assert "—" not in h and "&mdash;" not in h

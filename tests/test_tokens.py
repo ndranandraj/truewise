@@ -37,14 +37,18 @@ def test_semantic_bridge_covers_every_component_token():
         assert not missing, f"{css} uses tokens not defined in live styles.css: {missing}"
 
 
-def test_bridge_holds_final_palette_after_cutover():
-    """Stage 5 cutover landed the final 0.3 palette. The three contrast-corrected semantic tokens now
-    hold their final values; guard against a regression back to the pre-cutover aliases."""
+def test_semantic_palette_is_forest_stage_0_3b():
+    """Release 3 (Stage 0.3b) swapped the semantic palette to forest. Guard the load-bearing tokens
+    (including the three contrast corrections) and that the semantic aliases still track their colour
+    source, so a regression back to blue fails the build."""
     tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
     sem = tokens["semantic"]
-    assert sem["text-muted"] == "#67717f", "cutover applied the final muted value"
-    assert sem["text-on-dark"] == "#eaf0fb", "cutover applied the final on-dark value"
-    assert sem["text-on-dark-muted"] == "#93acda", "cutover applied the final on-dark-muted value"
+    assert sem["text-muted"] == "#646f6a", "forest muted text (ink-400, corrected)"
+    assert sem["text-on-dark"] == "#fbfaf8", "forest on-dark text (paper)"
+    assert sem["text-on-dark-muted"] == "#a8c4b2", "forest on-dark-muted (brand-300)"
+    assert sem["caution"] == "#8a6412", "forest caution (corrected)"
+    assert sem["focus-ring-on-dark"] == "#fbfaf8", "forest focus on dark (paper, corrected)"
+    assert sem["control-border"] == "#79837d" and sem["danger"] == "#b3261e"
     assert sem["text"] == tokens["color"]["ink"]["value"]
     assert sem["paper"] == tokens["color"]["bg"]["value"]
     assert sem["brand-strong"] == tokens["color"]["brand-deep"]["value"]
