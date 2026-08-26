@@ -15,6 +15,35 @@ ROOT = Path(__file__).resolve().parent.parent
 COMPONENTS = ROOT / "components"
 
 
+def test_coverage_wording_matches_between_static_and_enhanced():
+    """The progressive-enhancement table (components/table.js) must state the coverage claim in the
+    SAME honest language as the static canonical HTML. The static generator says a program "could be
+    assessed" and "has an earnings verdict"; a program with reported fields but no verdict is not the
+    same as one that was "measured" with "earnings data". This pins the two so enhancement cannot
+    quietly weaken the claim again (post-launch review, 2026-08-25)."""
+    table_js = (COMPONENTS / "table.js").read_text()
+    generator = (ROOT / "pipeline" / "build_profile_pilot.py").read_text()
+
+    for phrase in ("could be assessed", "have an earnings verdict"):
+        assert phrase in table_js, f"table.js lost the honest coverage phrase: {phrase!r}"
+        assert phrase in generator, f"static generator lost the honest coverage phrase: {phrase!r}"
+
+    for weaker in ("programs measured", "have earnings data"):
+        assert weaker not in table_js, (
+            f"table.js reintroduced the weaker coverage phrase: {weaker!r}"
+        )
+
+
+def test_breadcrumb_links_are_visually_distinguishable():
+    """Breadcrumb links must not rely on colour alone: link vs surrounding text is only 1.71:1, below
+    the 3:1 axe link-in-text-block threshold, so they carry an underline (post-launch review)."""
+    chrome = (ROOT / "pipeline" / "build_college_pages.py").read_text()
+    assert ".crumbs a" in chrome
+    crumb_rule = chrome.split(".crumbs a", 1)[1].split("}", 1)[0]
+    assert "underline" in crumb_rule, "breadcrumb links must be underlined (axe link-in-text-block)"
+    assert "text-decoration: none" not in crumb_rule
+
+
 def test_tokens_final_matches_the_validated_palette():
     """Every colour in components/tokens-final.css must equal its value in palette-final.json, so the
     fixtures render the exact palette the contrast gate checks."""

@@ -94,8 +94,8 @@
     _render() {
       const cov = this.o.coverage;
       const covLine = cov
-        ? `<p class="tw-table__coverage"><b>${cov.measured} of ${cov.total}</b> programs measured` +
-          ` <span class="tw-table__covnote">${Math.round((100 * cov.measured) / cov.total)}% have earnings data</span></p>`
+        ? `<p class="tw-table__coverage"><b>${cov.measured} of ${cov.total}</b> programs could be assessed` +
+          ` <span class="tw-table__covnote">${Math.round((100 * cov.measured) / cov.total)}% have an earnings verdict</span></p>`
         : "";
       const baseLine = this.o.baseline
         ? `<p class="tw-table__baseline">Compared with a typical high-school graduate earning about ${esc(money(this.o.baseline))}/yr.</p>`

@@ -142,7 +142,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
 {extra_ld}  <style>
     .pg {{ max-width: 860px; padding: 8px 0 64px; }}
     .crumbs {{ font-size: .85rem; color: var(--ink-faint); margin: 18px 0 6px; }}
-    .crumbs a {{ color: var(--ink-soft); text-decoration: none; }}
+    .crumbs a {{ color: var(--ink-soft); text-decoration: underline; text-underline-offset: 0.16em; }}
     .pg h1 {{ font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
     .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
     .offname {{ color: var(--ink-faint); }}

@@ -620,7 +620,14 @@
   async function renderSchool(unitid, programAnchor) {
     await loadSchools();
     const s = SCHOOLS.find(x => x.unitid === unitid);
-    if (!s) { app.innerHTML = `<a class="backlink" href="#" id="back">← Search</a><p class="empty">School not found.</p>`; wireBack(); return; }
+    if (!s) {
+      app.innerHTML = `<a class="backlink" href="#" id="back">← Search</a>`
+        + `<div class="school-head"><h1>School not found</h1>`
+        + `<p class="sub">We could not find that school. It may have closed or the link may be out of date. `
+        + `<a href="/value-check/">Search for a college</a>.</p></div>`;
+      document.title = "School not found: Truewise";
+      wireBack(); return;
+    }
     const byId = await loadState(s.state);
     await loadFields();
     let progs = (byId[unitid] || []).slice();
