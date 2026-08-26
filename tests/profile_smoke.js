@@ -5,6 +5,7 @@ const path = require("path");
 const { JSDOM } = require("jsdom");
 
 const dom = new JSDOM(`<!doctype html><body>
+  <p class="tw-source tw-window-note">One-year and four-year figures should not be compared as if measured at the same time.</p>
   <div data-tw-profile data-tail="programs-tail.json" data-remaining="2">
     <script type="application/json" class="tw-profile-data">
       {"rows":[
@@ -53,6 +54,10 @@ check(mount.querySelectorAll("tbody .tw-tr").length === 2, "expected the 2 stati
 // 1b. The static 1-year row (Nursing) carries the marker after enhancement (island -> table.js).
 check(mount.querySelectorAll(".tw-oneyr").length === 1, "static 1-year row lost its marker after enhancement");
 
+// 1c. The comparison notice is a sibling of the mount, so enhancement (which replaces the mount's
+// innerHTML) must NOT remove it. This is the release-2 preview regression.
+check(document.querySelector(".tw-window-note") !== null, "comparison notice vanished after enhancement");
+
 // 2. The "Show all N" control reflects the true total (static + remaining).
 const showAll = mount.querySelector(".tw-showall");
 check(showAll && /Show all 4 programs/.test(showAll.textContent), "show-all count wrong (2 static + 2 tail)");
@@ -69,6 +74,9 @@ setTimeout(() => {
   // 3b. The 1-year marker is preserved through enhancement for BOTH the static row and the tail row
   // (Nursing static + History tail), so a 1-year program loaded as tail row is labelled like row 1.
   check(mount.querySelectorAll(".tw-oneyr").length === 2, "tail 1-year row should also be labelled after load");
+
+  // 3c. The comparison notice still stands after the tail load re-render too.
+  check(document.querySelector(".tw-window-note") !== null, "comparison notice vanished after Show-all");
 
   // 4. Sorting now covers the full set, insufficient sinks to the bottom.
   const earningsBtn = [...mount.querySelectorAll(".tw-th__sort")].find((b) => /earnings/i.test(b.textContent));

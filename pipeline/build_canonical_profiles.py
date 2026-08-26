@@ -228,6 +228,19 @@ def canonical_page(
         )
 
     parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
+    # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
+    # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
+    # This MUST sit OUTSIDE the .tw-profile-static mount: progressive enhancement replaces that mount's
+    # innerHTML wholesale, so a notice placed inside it vanishes after JS runs. As a sibling above the
+    # data-tw-profile container it survives enhancement, sorting, and "Show all".
+    if has_1yr:
+        parts.append(
+            '    <p class="tw-source tw-window-note">Earnings are measured four years after '
+            "completion when available. Where four-year earnings are suppressed, one-year earnings are "
+            'shown and marked <span class="tw-oneyr">1-year earnings</span>. One-year and four-year '
+            "figures reflect different career stages and should not be compared as if measured at the "
+            "same time.</p>\n"
+        )
     # The canonical program table: static core + island + progressive tail, honest coverage label.
     parts.append(f"    <div {profile_attrs}>\n")
     parts.append(
@@ -238,16 +251,6 @@ def canonical_page(
         f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
-    # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
-    # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
-    if has_1yr:
-        parts.append(
-            '        <p class="tw-source tw-window-note">Earnings are measured four years after '
-            "completion when available. Where four-year earnings are suppressed, one-year earnings are "
-            'shown and marked <span class="tw-oneyr">1-year earnings</span>. One-year and four-year '
-            "figures reflect different career stages and should not be compared as if measured at the "
-            "same time.</p>\n"
-        )
     parts.append('        <div class="tw-table__scroll"><table class="tw-table">')
     parts.append(
         f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(st_name)} '

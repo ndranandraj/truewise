@@ -133,6 +133,17 @@ def test_one_year_label_and_notice_on_mixed_window():
     assert "measured four years after completion where available" in html
 
 
+def test_window_notice_sits_outside_the_enhanced_mount():
+    """Progressive enhancement replaces .tw-profile-static's innerHTML wholesale, so the comparison
+    notice must be emitted OUTSIDE that mount or it disappears once JavaScript runs (the release-2
+    preview bug). Assert the notice is positioned before the mount opens."""
+    html, _ = canonical_page(META, _rows(4, 1, one_year=2), "x", 36498, DEFAULT_THRESHOLD)
+    assert "tw-window-note" in html
+    assert html.index("tw-window-note") < html.index('class="tw-profile-static"'), (
+        "the notice must sit outside .tw-profile-static so it survives JS enhancement"
+    )
+
+
 def test_one_year_only_profile_still_gets_labels_and_notice():
     html, _ = canonical_page(META, _rows(3, 0, one_year=3), "x", 36498, DEFAULT_THRESHOLD)
     assert "should not be compared as if measured at the same time" in html
