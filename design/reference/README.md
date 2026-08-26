@@ -26,6 +26,10 @@ corrections live in the decision record.
 - `.fig` scope: the record narrows mono to data figures, not all prose currency.
 - Mobile: `index.html` overflows at 390px (header CTA, search button, example header, provenance).
   NOT responsive-approved; the mobile fixes are listed in the record's scales section.
+- Homepage finding copy: `index.html` omits the one-year fallback, the strict four-year-only rate, and
+  the "How we count" disclosure, and it carries an internal "copy verbatim" instruction. REJECTED.
+  Preserve the COMPLETE production mixed-window disclosure (shipped in Release 2) and generate its
+  figures from the current data summary, not from this file.
 - `program-table.html`: VISUAL reference only. Its mobile CSS hides headers without stacked labels and
   its sort/announce script is a commented-out stub. B-work restyles the tested `tw-table` /
   `components/table.js` / `profile.js`; it does not replace their semantics, announcements, sort

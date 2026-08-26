@@ -1,3 +1,6 @@
+/* ARCHIVAL AUDIT SNAPSHOT. NOT IMPLEMENTATION-READY. The decision record
+   (truewise-stage0.3b-palette-forest.md) and existing production components are
+   authoritative. See README.md override manifest before using anything here. */
 /* Truewise components — load after tokens.css.
    Each block replaces a named block in the current site/styles.css.
    Only tokens from tokens.css appear here: no raw hex, no off-scale values. */
