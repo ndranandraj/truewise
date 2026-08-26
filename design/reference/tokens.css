@@ -1,0 +1,131 @@
+/* Truewise design system — tokens + base
+   Drop-in replacement for the :root block and base rules in site/styles.css.
+   Source of truth: "Truewise Design Audit & System.dc.html" §03–§04.
+   Fonts: Source Serif 4 (display/prose), Sora (UI), IBM Plex Mono (figures). */
+
+@import url("https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Sora:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  /* ---- ink & ground ---- */
+  --ink:        #0C1512;
+  --ink-700:    #2C3A34;
+  --ink-500:    #58665F;
+  --ink-400:    #86918B;
+  --paper:      #FBFAF8;
+  --surface:    #FFFFFF;
+  --sand:       #F3F1EC;
+  --rule:       #E2E4DE;
+  --rule-soft:  #EEEFEA;
+
+  /* ---- brand ---- */
+  --brand:      #1E4D34;
+  --brand-deep: #10291C;
+  --brand-500:  #4C7A5E;
+  --brand-300:  #A8C4B2;
+  --brand-50:   #E6EEE7;
+
+  /* ---- data states (never used for anything else) ---- */
+  --pass:       #1E4D34;
+  --pass-bg:    #E6EEE7;
+  --short:      #8A3220;
+  --short-bg:   #F7E9E3;
+  --caution:    #B4751A;
+  --caution-bg: #F8EEDD;
+  --none:       #58665F;
+  --none-bg:    #EEEFEA;
+
+  /* chart series: magnitude ramp; clay is reserved for "earns less than HS grad" */
+  --series-1:   #1E4D34;
+  --series-2:   #4C7A5E;
+  --series-3:   #A8C4B2;
+  --series-4:   #D8CDB4;
+  --series-neg: #8A3220;
+
+  /* ---- type ---- */
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --ui:      "Sora", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* seven steps. nothing between them. */
+  --t-display: 60px;   --lh-display: 1.02;
+  --t-title:   40px;   --lh-title:   1.10;
+  --t-section: 28px;   --lh-section: 1.15;
+  --t-sub:     18px;   --lh-sub:     1.35;
+  --t-prose:   18px;   --lh-prose:   1.60;
+  --t-ui:      15px;   --lh-ui:      1.50;
+  --t-label:   12px;   --lh-label:   1.20;
+  --t-fine:    13px;   /* captions, table meta — the only sub-15px UI size */
+
+  /* ---- space (4px scale) ---- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px; --s5: 24px;
+  --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px; --s10: 128px;
+
+  /* ---- radius / elevation / measure ---- */
+  --r-sm: 3px;   /* chips, inner buttons */
+  --r-md: 6px;   /* cards, inputs, buttons */
+  --r-lg: 10px;  /* modals, dialogs */
+  --e-rest: 0 1px 2px rgba(12, 21, 18, .05);
+  --e-lift: 0 16px 40px -20px rgba(12, 21, 18, .18);
+  --wrap: 1240px;
+  --gutter: 40px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: var(--t-ui);
+  line-height: var(--lh-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display + prose are serif. UI is Sora. Never mix within one element. */
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+h1 { font-size: clamp(38px, 5.2vw, var(--t-display)); line-height: var(--lh-display); letter-spacing: -0.03em; text-wrap: balance; }
+h2 { font-size: clamp(28px, 3.4vw, var(--t-title)); line-height: var(--lh-title); }
+h3 { font-size: var(--t-section); line-height: var(--lh-section); }
+/* UI-voice heading, for card titles and table group heads */
+.h-ui { font-family: var(--ui); font-size: var(--t-sub); line-height: var(--lh-sub); font-weight: 600; letter-spacing: 0; margin: 0; }
+
+p { margin: 0; }
+.prose { font-family: var(--display); font-size: var(--t-prose); line-height: var(--lh-prose); color: var(--ink-700); max-width: 68ch; }
+.prose--lede { font-size: 20px; max-width: 46ch; }
+.fine { font-size: var(--t-fine); line-height: 1.5; color: var(--ink-500); }
+
+/* One label token. Replaces all six eyebrow variants. */
+.label {
+  font-family: var(--ui);
+  font-size: var(--t-label);
+  line-height: var(--lh-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.label--brand { color: var(--brand); }
+
+/* Every figure on the site. No dollar amount in proportional digits, ever. */
+.fig {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.fig--pass  { color: var(--pass); }
+.fig--short { color: var(--short); }
+.fig--xl    { font-size: 76px; line-height: 1; letter-spacing: -0.03em; }
+
+a { color: var(--brand); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--short); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: var(--r-sm); }
+
+.wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 var(--gutter); }
+.section { padding: var(--s9) 0; }
+@media (min-width: 900px) { .section { padding: var(--s10) 0; } }
+.rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
+
+@media (max-width: 640px) { :root { --gutter: 20px; } }

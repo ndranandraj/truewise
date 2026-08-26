@@ -1,0 +1,135 @@
+<!-- TEMPLATE: program list for the college profile page.
+     Emitted by pipeline/build_college_pages.py, replacing the 60+ prose cards.
+     Rules:
+       1. Baseline stated ONCE, in <tfoot>. Never repeat it per row.
+       2. Bar carries the comparison; the signed mono figure carries precision.
+       3. Suppressed programs stay listed as rows with class "is-none".
+       4. Programs measured 1 year out get a caution chip — never silently mixed in.
+       5. Strip trailing periods from CIP titles at build time.
+     Jinja-ish placeholders in {{ }}. -->
+
+<section class="section" id="programs">
+  <div class="wrap">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); flex-wrap: wrap; margin-bottom: var(--s5);">
+      <h2>Programs at {{ school.name }}</h2>
+      <p class="fine">{{ judged_count }} of {{ total_count }} programs have reported earnings</p>
+    </div>
+
+    <!-- Filter pills. "Insufficient data" is a pill, not a footnote. -->
+    <div class="pill-row" style="margin-bottom: var(--s4);">
+      <button class="pill pill--active" aria-pressed="true" data-filter="all">All <span class="fig">{{ total_count }}</span></button>
+      <button class="pill" aria-pressed="false" data-filter="short">Falls short <span class="fig">{{ short_count }}</span></button>
+      <button class="pill" aria-pressed="false" data-filter="pass">Out-earns <span class="fig">{{ pass_count }}</span></button>
+      <button class="pill" aria-pressed="false" data-filter="none">Insufficient data <span class="fig">{{ none_count }}</span></button>
+    </div>
+
+    <!-- Sort + in-list search -->
+    <div class="ptable__sort">
+      <label class="label" for="p-sort">Sort</label>
+      <select id="p-sort" class="pill" style="padding: 8px 12px;">
+        <option value="premium">Premium vs HS grad</option>
+        <option value="earnings">Median earnings</option>
+        <option value="debt">Median debt</option>
+        <option value="count">Graduates</option>
+        <option value="name">Program name</option>
+      </select>
+      <input id="p-find" class="pill" style="padding: 8px 14px; min-width: 200px;" type="search" placeholder="Find a program…" aria-label="Find a program" />
+    </div>
+
+    <table class="ptable">
+      <thead>
+        <tr>
+          <th scope="col">Program</th>
+          <th scope="col" class="num">Median earnings</th>
+          <th scope="col">vs HS grad</th>
+          <th scope="col" class="num">Median debt</th>
+          <th scope="col" class="num">Graduates</th>
+        </tr>
+      </thead>
+      <tbody>
+
+        <!-- {% for p in programs_judged %} -->
+        <tr class="{{ 'is-short' if p.falls_short else '' }}" data-state="{{ p.state }}">
+          <td class="program">
+            {{ p.title }}, {{ p.credential }}
+            <small>
+              {{ p.years_out }} yrs after completing
+              <!-- {% if p.years_out == 1 %} --><span class="chip chip--caution">1-yr data</span><!-- {% endif %} -->
+            </small>
+          </td>
+          <td class="num">{{ p.earnings | usd }}</td>
+          <td>
+            <div class="bar {{ 'bar--short' if p.falls_short else '' }}">
+              <div class="bar__track"><div class="bar__fill" style="width: {{ p.bar_pct }}%"></div></div>
+              <span class="bar__val {{ 'fig--short' if p.falls_short else 'fig--pass' }}">{{ p.premium_signed }}</span>
+            </div>
+          </td>
+          <td class="num">{{ p.debt | usd }}</td>
+          <td class="num">{{ p.grads }}</td>
+        </tr>
+        <!-- {% endfor %} -->
+
+        <!-- {% for p in programs_suppressed %} -->
+        <tr class="is-none" data-state="none">
+          <td class="program">{{ p.title }}, {{ p.credential }}</td>
+          <td colspan="4" class="fine">Insufficient data — privacy-suppressed by ED</td>
+        </tr>
+        <!-- {% endfor %} -->
+
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="5">
+            {{ state.name }} high-school-graduate baseline {{ state.hs_median | usd }} ·
+            College Scorecard {{ vintage }} · bars scale to +150%
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p class="provenance" style="margin-top: var(--s4);">
+      <span>Source: College Scorecard {{ vintage }}</span>
+      <span>Cohort: {{ cohort }}</span>
+      <span>Window: {{ default_window }} yrs after completion</span>
+      <span>Never imputed</span>
+    </p>
+  </div>
+</section>
+
+<!-- Filter / sort / find behaviour: ~30 lines, no dependencies.
+<script>
+(() => {
+  const table = document.querySelector('.ptable tbody');
+  const rows = [...table.rows];
+  const pills = document.querySelectorAll('[data-filter]');
+  const find = document.getElementById('p-find');
+  const sort = document.getElementById('p-sort');
+  let filter = 'all';
+  const apply = () => {
+    const q = find.value.trim().toLowerCase();
+    rows.forEach(r => {
+      const okState = filter === 'all'
+        || (filter === 'short' && r.dataset.state === 'short')
+        || (filter === 'pass'  && r.dataset.state === 'pass')
+        || (filter === 'none'  && r.dataset.state === 'none');
+      const okText = !q || r.cells[0].textContent.toLowerCase().includes(q);
+      r.hidden = !(okState && okText);
+    });
+  };
+  pills.forEach(p => p.addEventListener('click', () => {
+    pills.forEach(x => { x.classList.remove('pill--active'); x.setAttribute('aria-pressed', 'false'); });
+    p.classList.add('pill--active'); p.setAttribute('aria-pressed', 'true');
+    filter = p.dataset.filter; apply();
+  }));
+  find.addEventListener('input', apply);
+  sort.addEventListener('change', () => {
+    const key = sort.value;
+    rows.sort((a, b) => key === 'name'
+      ? a.dataset.name.localeCompare(b.dataset.name)
+      : Number(b.dataset[key] || -Infinity) - Number(a.dataset[key] || -Infinity));
+    rows.forEach(r => table.appendChild(r));
+  });
+})();
+</script>
+Emit data-name / data-premium / data-earnings / data-debt / data-count on each <tr> for sorting.
+-->
