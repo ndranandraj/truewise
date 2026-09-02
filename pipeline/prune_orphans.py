@@ -30,8 +30,10 @@ authority to diff against, and no orphan has been observed in them, but a retire
 slug would linger unnoticed the same way. Treat this as a guard on the two trees that have an
 authority, not as a whole-site sweep.
 
-Deleting surplus is safe: the check refuses to run unless every expected route is already present
-on disk, so a partial or interrupted build can never be mistaken for a pile of orphans.
+Deleting surplus is safe: the check refuses to run unless every expected input is present and every
+expected route is already on disk, so a partial or interrupted build can never be mistaken for a
+pile of orphans. A missing tree is an error, never a silent pass: reporting "no orphans" for a tree
+that was never built would invert the guarantee.
 
 Usage (from repo root):
     python -m pipeline.prune_orphans --check    # list orphans, exit 1 if any (no writes)
@@ -72,18 +74,32 @@ def _orphans(tree: Path, expected: set[str], label: str) -> list[str]:
     return sorted(on_disk - expected)
 
 
-def find_orphans() -> list[str]:
-    """Every orphaned route, as a site-root path, across both guarded trees."""
-    found: list[str] = []
-    if not SLUG_MAP.exists():
-        raise SystemExit(f"no slug map at {SLUG_MAP}; run the college page build first")
-    published = set(json.loads(SLUG_MAP.read_text()).values())
-    found += [f"/college/{n}/" for n in _orphans(COLLEGE, published, "college")]
-    if FINDINGS.is_dir():
-        found += [
-            f"/findings/{n}/" for n in _orphans(FINDINGS, set(PUBLISHED_FINDINGS), "findings")
-        ]
-    return found
+def find_orphans(site: Path | None = None) -> list[str]:
+    """Every orphaned route, as a site-root path, across both guarded trees.
+
+    Every expected input must be present. A missing tree means the build did not run or did not
+    finish, and treating that as "no orphans" would report success on an incomplete tree, which is
+    the opposite of the guarantee above. So each absence raises rather than being skipped.
+
+    `site` overrides the site root, for tests.
+    """
+    site = site or SITE
+    college, findings = site / "college", site / "findings"
+    slug_map = college / "slug-map.json"
+
+    if not slug_map.exists():
+        raise SystemExit(f"no slug map at {slug_map}; run the college page build first")
+    if not findings.is_dir():
+        raise SystemExit(f"no findings tree at {findings}; run the findings build first")
+    if not (findings / "index.html").exists():
+        raise SystemExit(
+            f"no findings index at {findings / 'index.html'}; the findings build did not finish"
+        )
+
+    published = set(json.loads(slug_map.read_text()).values())
+    return [f"/college/{n}/" for n in _orphans(college, published, "college")] + [
+        f"/findings/{n}/" for n in _orphans(findings, set(PUBLISHED_FINDINGS), "findings")
+    ]
 
 
 def main() -> None:
