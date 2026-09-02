@@ -38,6 +38,36 @@ def test_styles_has_no_bare_verdict_rule():
     assert "verdict-pill" in home
 
 
+def test_inner_pages_keep_a_mobile_gutter():
+    """`.pg` sets `padding: 8px 0 64px`, which overrides the shared `.wrap` gutter and left the
+    Majors and Lists content touching both viewport edges at 390px (2026-09-02 forest review).
+    The shared head() must restore a horizontal gutter once the 860px box fills the viewport,
+    matching the homepage: 40px down to 520px, then 20px."""
+    head_css = (PIPELINE / "build_college_pages.py").read_text()
+    assert "@media (max-width: 900px) {{ .pg {{ padding-left: var(--s8);" in head_css, (
+        "inner pages must regain a horizontal gutter once the box fills the viewport"
+    )
+    assert "@media (max-width: 520px) {{ .pg {{ padding-left: var(--s5);" in head_css, (
+        "inner pages must use the homepage 20px gutter on phones"
+    )
+    # And it must actually be in the shipped pages, on every generator that uses head().
+    for page in ("majors/index.html", "lists/index.html", "colleges/index.html"):
+        html = (SITE / page).read_text()
+        assert "@media (max-width: 520px) { .pg { padding-left: var(--s5);" in html, (
+            f"{page} shipped without the mobile gutter"
+        )
+
+
+def test_mobile_module_separators_are_horizontal():
+    """The three homepage product modules are separated by vertical rules on desktop. Once they
+    stack into one column the rule has to become horizontal, but `.live-card.flagship` (two
+    classes) outranked the single-class mobile reset and kept its right-hand rule."""
+    css = (SITE / "styles.css").read_text()
+    assert ".live-card, .live-card.flagship { border-right: 0;" in css, (
+        "the flagship module must drop its vertical rule when the modules stack"
+    )
+
+
 def test_wide_tables_are_wrapped_for_horizontal_scroll():
     """Every generated data table sits in a .tscroll container so it scrolls inside its box
     on a phone instead of pushing the whole page wider than the viewport."""

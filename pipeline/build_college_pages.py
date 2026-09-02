@@ -141,9 +141,14 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   <link rel="stylesheet" href="/styles.css" />
 {extra_ld}  <style>
     .pg {{ max-width: 860px; padding: 8px 0 64px; }}
+    /* Keep the homepage gutter on inner pages: desktop stays at the centred 860px box with no
+       inset, but once the box fills the viewport add the same 40px / 20px horizontal gutter the
+       shared .wrap uses so headings and rules never touch the screen edge on tablet and mobile. */
+    @media (max-width: 900px) {{ .pg {{ padding-left: var(--s8); padding-right: var(--s8); }} }}
+    @media (max-width: 520px) {{ .pg {{ padding-left: var(--s5); padding-right: var(--s5); }} }}
     .crumbs {{ font-size: .85rem; color: var(--ink-faint); margin: 18px 0 6px; }}
     .crumbs a {{ color: var(--ink-soft); text-decoration: underline; text-underline-offset: 0.16em; }}
-    .pg h1 {{ font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
+    .pg h1 {{ font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
     .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
     .offname {{ color: var(--ink-faint); }}
     .progsub {{ color: var(--ink-faint); font-size: .82rem; display: block; margin-top: 2px; }}

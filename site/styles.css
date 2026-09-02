@@ -253,8 +253,8 @@ a:hover { color: var(--brand-deep); }
   .hero .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s7); }
   .finding-band .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s7); }
   .live-modules { grid-template-columns: minmax(0, 1fr); }
-  .live-card { border-right: 0; border-bottom: 1px solid var(--line); padding: var(--s5) 0; }
-  .live-card:last-child { border-bottom: 0; }
+  .live-card, .live-card.flagship { border-right: 0; border-bottom: 1px solid var(--line); padding: var(--s5) 0; }
+  .live-card:last-child, .live-card.flagship:last-child { border-bottom: 0; }
   .profile-strip { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
   .panel.alt .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s7); }
   .brand-tagline { display: none; }
