@@ -47,6 +47,15 @@ tokens:
 tokens-check:
 	$(PYTHON) -m pipeline.build_tokens --check
 
+# 4a1) Local trees accumulate pre-rendered pages the current build no longer produces (a school's
+# slug changes and the old directory stays). Deploy builds from a clean checkout so production is
+# unaffected, but `wrangler deploy` from a laptop uploads everything under site/, which is how a
+# preview can serve duplicate pages that production 404s. Run prune-check before building one.
+prune-check:
+	$(PYTHON) -m pipeline.prune_orphans --check
+prune:
+	$(PYTHON) -m pipeline.prune_orphans
+
 # 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
 	$(PYTHON) -m pipeline.build_tokens

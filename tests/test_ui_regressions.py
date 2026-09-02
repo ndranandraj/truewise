@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
 PIPELINE = ROOT / "pipeline"
@@ -50,10 +52,13 @@ def test_inner_pages_keep_a_mobile_gutter():
     assert "@media (max-width: 520px) {{ .pg {{ padding-left: var(--s5);" in head_css, (
         "inner pages must use the homepage 20px gutter on phones"
     )
-    # And it must actually be in the shipped pages, on every generator that uses head().
+    # And it must reach the shipped pages, on every generator that uses head(). Those trees are
+    # gitignored and CI runs pytest without building the site, so only assert on what is present.
     for page in ("majors/index.html", "lists/index.html", "colleges/index.html"):
-        html = (SITE / page).read_text()
-        assert "@media (max-width: 520px) { .pg { padding-left: var(--s5);" in html, (
+        built = SITE / page
+        if not built.exists():
+            continue
+        assert "@media (max-width: 520px) { .pg { padding-left: var(--s5);" in built.read_text(), (
             f"{page} shipped without the mobile gutter"
         )
 
@@ -357,6 +362,25 @@ def test_every_page_preloads_exactly_the_faces_it_renders():
         assert preloads_400 == uses_400, (
             f"{name} preloads the 400 display face={preloads_400} but renders it={uses_400}"
         )
+
+
+def test_no_orphaned_college_pages_would_ship():
+    """`wrangler deploy` uploads everything under site/, and build_sitemap scans the DISK, so a
+    pre-rendered page the current build no longer produces would both ship and enter the sitemap.
+    Deploy builds from a clean checkout, so this only bites locally: on 2026-09-02 a preview served
+    twelve stale disambiguation slugs (/college/university-of-st-thomas-mn/ and friends) that
+    production correctly 404s. site/college/ is gitignored, so this is a no-op in CI."""
+    college = SITE / "college"
+    slug_map = college / "slug-map.json"
+    if not slug_map.exists():
+        pytest.skip("no built college tree in this working copy")
+    from pipeline.prune_orphans import find_orphans
+
+    orphans = find_orphans()
+    assert not orphans, (
+        f"{len(orphans)} orphaned college page(s) would ship: {orphans[:5]}. "
+        "Run `make prune` to delete them."
+    )
 
 
 def test_fonts_are_cached_immutably():
