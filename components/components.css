@@ -27,7 +27,7 @@
   align-items: center;
   gap: 10px;
   border: 2px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   padding: 4px 6px 4px 14px;
   background: var(--paper);
   transition: border-color 0.15s;
@@ -54,16 +54,16 @@
 .tw-search__input:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-search__list {
   list-style: none;
   margin: 8px 0 0;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--paper);
-  box-shadow: 0 12px 32px rgba(20, 32, 58, 0.1);
+  box-shadow: 0 12px 32px rgba(12, 21, 18, 0.10);
 }
 .tw-search__opt {
   display: flex;
@@ -71,7 +71,7 @@
   align-items: baseline;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   cursor: pointer;
 }
 .tw-search__opt.is-active,
@@ -123,7 +123,7 @@
 .tw-table__scroll {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
 }
 .tw-table {
   border-collapse: collapse;
@@ -173,7 +173,7 @@
 .tw-th__sort:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-td--program {
   font-weight: 600;
@@ -213,7 +213,7 @@
   display: inline-block;
   height: 8px;
   width: 42px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-prem__bar--pos {
   background: var(--good);
@@ -231,7 +231,7 @@
   color: var(--brand-strong);
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 16px;
   cursor: pointer;
 }
@@ -282,7 +282,7 @@
   }
   .tw-tr {
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--r-lg);
     margin-bottom: 12px;
     padding: 6px 4px;
   }
@@ -332,7 +332,7 @@
   font-size: 0.8rem;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
 .tw-pill--pass {
@@ -396,7 +396,7 @@
 .tw-empty {
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--surface);
   color: var(--text-secondary);
 }
@@ -413,7 +413,7 @@
 }
 .tw-skel__row {
   height: 16px;
-  border-radius: 6px;
+  border-radius: var(--r-md);
   background: linear-gradient(90deg, var(--surface), var(--line), var(--surface));
   background-size: 200% 100%;
 }
@@ -431,7 +431,7 @@
 .tw-error {
   padding: 14px 16px;
   border: 1px solid var(--bad);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--bad-bg);
   color: var(--bad);
 }
@@ -459,7 +459,7 @@
   font: inherit;
   font-size: 0.82rem;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line);
   background: var(--paper);
   color: var(--text-secondary);
@@ -494,7 +494,7 @@
   font: inherit;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: var(--paper);
   color: var(--text);
 }
@@ -513,7 +513,7 @@
 /* B11 disclosure */
 .tw-disclosure {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 0 14px;
 }
 .tw-disclosure > summary {
@@ -525,7 +525,7 @@
 .tw-disclosure > summary:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-disclosure__body {
   padding: 0 0 14px;
