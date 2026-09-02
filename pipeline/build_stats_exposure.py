@@ -234,6 +234,12 @@ def render_page(s) -> str:
     return "".join(p)
 
 
+# The findings this module publishes, as directory names under site/findings/. This is the
+# authoritative list: pipeline/prune_orphans.py checks the built tree against it, so a retired
+# finding cannot linger on disk and ship from a local deploy (site/findings/data-audit/ did).
+PUBLISHED_FINDINGS = ("stats-grad-exposure",)
+
+
 def render_index() -> str:
     canonical = f"{BASE}/findings/"
     title = "Findings: reproducible numbers from US education data"
@@ -266,7 +272,7 @@ def render_index() -> str:
 def main() -> None:
     con = duckdb.connect()
     s = compute_exposure(con)
-    out = SITE / "findings" / "stats-grad-exposure"
+    out = SITE / "findings" / PUBLISHED_FINDINGS[0]
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render_page(s))
     (SITE / "findings" / "index.html").write_text(render_index())

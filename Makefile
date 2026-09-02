@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install components tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: install components tokens tokens-check prune-check prune data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -48,9 +48,11 @@ tokens-check:
 	$(PYTHON) -m pipeline.build_tokens --check
 
 # 4a1) Local trees accumulate pre-rendered pages the current build no longer produces (a school's
-# slug changes and the old directory stays). Deploy builds from a clean checkout so production is
-# unaffected, but `wrangler deploy` from a laptop uploads everything under site/, which is how a
-# preview can serve duplicate pages that production 404s. Run prune-check before building one.
+# slug changes, or a finding is retired, and the old directory stays). Deploy builds from a clean
+# checkout so production is unaffected, but `wrangler deploy` from a laptop uploads everything
+# under site/, which is how a preview can serve pages that production 404s. Run prune-check before
+# building one. Covers /college/ and /findings/ only: those are the trees with a published
+# authority to diff against. /majors/, /lists/, /colleges/ and /updates/ are NOT checked.
 prune-check:
 	$(PYTHON) -m pipeline.prune_orphans --check
 prune:

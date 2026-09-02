@@ -364,12 +364,14 @@ def test_every_page_preloads_exactly_the_faces_it_renders():
         )
 
 
-def test_no_orphaned_college_pages_would_ship():
+def test_no_orphaned_pages_would_ship():
     """`wrangler deploy` uploads everything under site/, and build_sitemap scans the DISK, so a
     pre-rendered page the current build no longer produces would both ship and enter the sitemap.
     Deploy builds from a clean checkout, so this only bites locally: on 2026-09-02 a preview served
-    twelve stale disambiguation slugs (/college/university-of-st-thomas-mn/ and friends) that
-    production correctly 404s. site/college/ is gitignored, so this is a no-op in CI."""
+    thirteen stale pages that production correctly 404s, twelve college slugs
+    (/college/university-of-st-thomas-mn/ and eleven others) plus /findings/data-audit/.
+    Guards /college/ and /findings/, the two trees with a published authority to diff against.
+    Both are gitignored, so this is a no-op in CI."""
     college = SITE / "college"
     slug_map = college / "slug-map.json"
     if not slug_map.exists():
@@ -378,7 +380,7 @@ def test_no_orphaned_college_pages_would_ship():
 
     orphans = find_orphans()
     assert not orphans, (
-        f"{len(orphans)} orphaned college page(s) would ship: {orphans[:5]}. "
+        f"{len(orphans)} orphaned page(s) would ship: {orphans[:5]}. "
         "Run `make prune` to delete them."
     )
 
