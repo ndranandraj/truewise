@@ -152,7 +152,8 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     .progsub {{ color: var(--ink-faint); font-size: .82rem; display: block; margin-top: 2px; }}
     .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 16px 0; font-size: 1.05rem; line-height: 1.6; }}
     .verdict b {{ color: var(--ink); }}
-    .gem {{ display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
+    /* Caution tokens, 4.67 on their own background; the pill also states its meaning in words. */
+    .gem {{ display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
     .cta-row {{ margin: 18px 0 8px; }}
     .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: 10px; }}
     h2.sec {{ font-size: 1.2rem; letter-spacing: -0.02em; margin: 30px 0 8px; }}
@@ -175,8 +176,9 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: 4px; }}
     .pbar::before {{ content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--line); }}
     .pbar i {{ position: absolute; top: 0; height: 100%; min-width: 2px; }}
-    .pbar i.pos {{ left: 50%; background: linear-gradient(90deg, #17936a, var(--good)); border-radius: 0 4px 4px 0; }}
-    .pbar i.neg {{ right: 50%; background: linear-gradient(270deg, #c23522, var(--bad)); border-radius: 4px 0 0 4px; }}
+    /* Solid token fills: bar length is the datum, so the fill carries no extra meaning. */
+    .pbar i.pos {{ left: 50%; background: var(--good); border-radius: 0 4px 4px 0; }}
+    .pbar i.neg {{ right: 50%; background: var(--bad); border-radius: 4px 0 0 4px; }}
     @media (prefers-reduced-motion: no-preference) {{ .pbar i {{ transition: width .3s ease; }} }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
     .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}

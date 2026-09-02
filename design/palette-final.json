@@ -12,24 +12,161 @@
     "none-bg": "#eeefea"
   },
   "text": {
-    "text":              { "value": "#0c1512", "on": ["paper", "surface", "sand"], "min": 4.5 },
-    "text-secondary":    { "value": "#2c3a34", "on": ["paper", "surface", "sand"], "min": 4.5 },
-    "text-muted":        { "value": "#646f6a", "on": ["paper", "surface", "sand"], "min": 4.5, "is_lightest_text": true },
-    "brand-strong":      { "value": "#10291c", "on": ["paper", "surface", "sand"], "min": 4.5 },
-    "brand":             { "value": "#1e4d34", "on": ["paper", "surface", "sand"], "min": 4.5 },
-    "brand-500":         { "value": "#4c7a5e", "on": ["paper", "surface"], "min": 4.5, "note": "text on paper/surface only; FAILS on sand (4.37), where it is graphic-only" },
-    "good":              { "value": "#1e4d34", "on": ["paper", "good-bg"], "min": 4.5 },
-    "bad":               { "value": "#8a3220", "on": ["paper", "bad-bg"], "min": 4.5 },
-    "caution":           { "value": "#8a6412", "on": ["paper", "caution-bg"], "min": 4.5 },
-    "none":              { "value": "#58665f", "on": ["paper", "none-bg"], "min": 4.5 },
-    "danger":            { "value": "#b3261e", "on": ["paper", "surface"], "min": 4.5, "note": "form/system errors only, always with icon + text" },
-    "text-on-dark":      { "value": "#fbfaf8", "on": ["brand-strong", "brand"], "min": 4.5 },
-    "text-on-dark-muted":{ "value": "#a8c4b2", "on": ["brand-strong"], "min": 4.5 },
-    "text-on-brand":     { "value": "#fbfaf8", "on": ["brand", "brand-strong"], "min": 4.5, "note": "paper text on a brand-filled control" }
+    "text": {
+      "value": "#0c1512",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 4.5
+    },
+    "text-secondary": {
+      "value": "#2c3a34",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 4.5
+    },
+    "text-muted": {
+      "value": "#646f6a",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 4.5,
+      "is_lightest_text": true
+    },
+    "brand-strong": {
+      "value": "#10291c",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 4.5
+    },
+    "brand": {
+      "value": "#1e4d34",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 4.5
+    },
+    "brand-500": {
+      "value": "#4c7a5e",
+      "on": [
+        "paper",
+        "surface"
+      ],
+      "min": 4.5,
+      "note": "text on paper/surface only; FAILS on sand (4.37), where it is graphic-only"
+    },
+    "good": {
+      "value": "#1e4d34",
+      "on": [
+        "paper",
+        "good-bg"
+      ],
+      "min": 4.5
+    },
+    "bad": {
+      "value": "#8a3220",
+      "on": [
+        "paper",
+        "bad-bg"
+      ],
+      "min": 4.5
+    },
+    "caution": {
+      "value": "#8a6412",
+      "on": [
+        "paper",
+        "caution-bg"
+      ],
+      "min": 4.5
+    },
+    "none": {
+      "value": "#58665f",
+      "on": [
+        "paper",
+        "none-bg"
+      ],
+      "min": 4.5
+    },
+    "danger": {
+      "value": "#b3261e",
+      "on": [
+        "paper",
+        "surface"
+      ],
+      "min": 4.5,
+      "note": "form/system errors only, always with icon + text"
+    },
+    "text-on-dark": {
+      "value": "#fbfaf8",
+      "on": [
+        "brand-strong",
+        "brand"
+      ],
+      "min": 4.5
+    },
+    "text-on-dark-muted": {
+      "value": "#a8c4b2",
+      "on": [
+        "brand-strong"
+      ],
+      "min": 4.5
+    },
+    "text-on-brand": {
+      "value": "#fbfaf8",
+      "on": [
+        "brand",
+        "brand-strong"
+      ],
+      "min": 4.5,
+      "note": "paper text on a brand-filled control"
+    }
   },
   "non_text": {
-    "focus-ring":         { "value": "#1e4d34", "on": ["paper", "surface", "sand"], "min": 3.0 },
-    "focus-ring-on-dark": { "value": "#fbfaf8", "on": ["brand-strong", "brand"], "min": 3.0 },
-    "control-border":     { "value": "#79837d", "on": ["paper", "surface", "sand"], "min": 3.0, "note": "essential control boundary" }
+    "focus-ring": {
+      "value": "#1e4d34",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 3.0
+    },
+    "focus-ring-on-dark": {
+      "value": "#fbfaf8",
+      "on": [
+        "brand-strong",
+        "brand"
+      ],
+      "min": 3.0
+    },
+    "control-border": {
+      "value": "#79837d",
+      "on": [
+        "paper",
+        "surface",
+        "sand"
+      ],
+      "min": 3.0,
+      "note": "essential control boundary"
+    },
+    "series-neg-on-dark": {
+      "value": "#ab695a",
+      "on": [
+        "brand-strong"
+      ],
+      "min": 3.0
+    }
   }
 }

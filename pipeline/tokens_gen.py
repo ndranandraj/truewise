@@ -31,6 +31,7 @@ HOME_BAR = "#a8c4b2"
 HOME_TEXT = "#d8cdb4"
 HOME_TEXT_DIM = "#a8c4b2"
 LADDER_BAND = "#e6eee7"
+SERIES_NEG_ON_DARK = "#ab695a"
 
 # Every generated colour, keyed by token name, for lookups and the drift test.
 TOKENS = {
@@ -58,4 +59,5 @@ TOKENS = {
     "chart.home-text": "#d8cdb4",
     "chart.home-text-dim": "#a8c4b2",
     "chart.ladder-band": "#e6eee7",
+    "chart.series-neg-on-dark": "#ab695a",
 }

@@ -4,7 +4,7 @@ All three independent reviews (2026-08-13) flagged the same gap: for a product w
 premise is comparison against a benchmark, there was no chart anywhere, only the 1-in-11 dot
 motif. This renders the actual distribution: every judged program bucketed by how much more (or
 less) its graduates earn than a typical high-school graduate in their state, with the "earn
-less" bucket (the 8.96%, ~1 in 11) drawn in the same accent red as the old highlighted dot.
+less" bucket (~1 in 11) drawn in clay, the one colour the system reserves for a negative.
 
 It is a build-time inline SVG, not a JS chart: no library (the homepage CSP allows no third-party
 scripts), no layout shift, works with JavaScript disabled, and the bars are real <rect>s a
@@ -20,12 +20,18 @@ from __future__ import annotations
 import duckdb
 
 from pipeline.config import ROOT
-
-# Palette generated from design/tokens.json (tuned for the dark navy finding band this sits on).
-from pipeline.tokens_gen import BAND_ACCENT as BAD  # the "earn less" bar
 from pipeline.tokens_gen import HOME_BAR as BAR  # light brand tint for the "earn more" bars
 from pipeline.tokens_gen import HOME_TEXT as TEXT
 from pipeline.tokens_gen import HOME_TEXT_DIM as TEXT_DIM
+from pipeline.tokens_gen import SERIES_NEG_ON_DARK as NEG
+
+# Palette generated from design/tokens.json, tuned for the deep-forest finding band this sits on.
+#
+# NEG is the "earn less" bar and the high-school marker. Clay is the only negative in the design
+# system, but true clay (--series-neg) is 1.89 on that band, well under the 3.0 a graphical mark
+# needs, so the dark-band variant is used instead. It is 3.61: enough for a MARK, not for TEXT
+# (4.5), which is why the "earn less" and "HS line" labels stay on TEXT (sand, 9.82) rather than
+# being tinted to match the bar. The meaning is carried by those words, never by the fill alone.
 
 SITE = ROOT / "site"
 PARQUET = SITE.parent / "published" / "value_check.parquet"
@@ -111,7 +117,7 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
         h = round((base_y - top_y) * c / mx)
         x = round(x0 + i * slot + (slot - bw) / 2, 1)
         y = base_y - h
-        fill = BAD if i == 0 else BAR
+        fill = NEG if i == 0 else BAR
         parts.append(
             f'<rect x="{x}" y="{y}" width="{bw:.1f}" height="{h}" rx="2" '
             f'fill="{fill}" data-count="{c}"/>'
@@ -128,19 +134,19 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
     # The high-school line: a marker between the "earn less" bar and the rest.
     hx = round(x0 + slot, 1)
     parts.append(
-        f'<line x1="{hx}" y1="{top_y - 8}" x2="{hx}" y2="{base_y}" stroke="{BAD}" '
+        f'<line x1="{hx}" y1="{top_y - 8}" x2="{hx}" y2="{base_y}" stroke="{NEG}" '
         f'stroke-width="1" stroke-dasharray="3 3"/>'
     )
     # Label sits to the LEFT of the line, over the empty space above the short "earn less" bar,
     # so it never collides with the tall bars to the right.
     parts.append(
-        f'<text x="{hx - 5}" y="{top_y + 14}" text-anchor="end" font-size="9.5" fill="{BAD}" '
+        f'<text x="{hx - 5}" y="{top_y + 14}" text-anchor="end" font-size="9.5" fill="{TEXT}" '
         f'font-weight="700">HS line</text>'
     )
     # Axis captions.
     parts.append(
         f'<text x="{round(x0 + slot / 2, 1)}" y="{base_y + 18}" text-anchor="middle" '
-        f'font-size="10" fill="{BAD}" font-weight="600">earn less</text>'
+        f'font-size="10" fill="{TEXT}" font-weight="600">earn less</text>'
     )
     parts.append(
         f'<text x="{round(x0 + slot * 4, 1)}" y="{base_y + 18}" text-anchor="middle" '

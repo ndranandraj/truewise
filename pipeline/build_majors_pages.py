@@ -129,7 +129,11 @@ def _ladder_chart(creds) -> str:
         cy = top + i * row_h + row_h / 2
         bx, bw = sx(c["p25"]), max(sx(c["p75"]) - sx(c["p25"]), 3)
         p.append(
-            f'<rect x="{bx}" y="{cy - 5:.1f}" width="{bw:.1f}" height="10" rx="5" fill="{BAND}"/>'
+            # The band tint is only 1.13 on paper, so on its own it is not a visible mark. The
+            # design system requires any fill lighter than 3:1 to carry a 1px outline; ink-faint
+            # is 5.00 on paper, so the range stays legible in high-contrast and in print.
+            f'<rect x="{bx}" y="{cy - 5:.1f}" width="{bw:.1f}" height="10" rx="5" fill="{BAND}" '
+            f'stroke="{FAINT}" stroke-width="1"/>'
         )
         p.append(
             f'<circle cx="{sx(c["med"])}" cy="{cy:.1f}" r="4.5" fill="{DOT}" stroke="#fff" stroke-width="1.5"/>'
