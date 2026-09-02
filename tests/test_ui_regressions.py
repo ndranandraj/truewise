@@ -275,34 +275,98 @@ def test_compare_states_coverage_and_labels_are_honest():
     assert "Recent completers" in gen and '"num">Graduates<' not in gen
 
 
-def test_fonts_load_without_blocking_first_paint():
-    """A CSS @import for fonts serializes behind the stylesheet parse and blocks first paint on every
-    page (the 2026-08-25 perf gate flagged it). styles.css must not @import fonts, and every source
-    page must load the font stylesheet non-blocking (media=print/onload) with a <noscript> fallback."""
+# Committed source pages (generated pages come from head(), checked separately). Not a glob,
+# because stale generated output may sit in the working tree locally.
+SOURCE_PAGES = [
+    "404.html",
+    "index.html",
+    "about/index.html",
+    "careers/index.html",
+    "compare/index.html",
+    "methodology/index.html",
+    "value-check/index.html",
+    "k12/index.html",
+    "k12/advanced-courses/index.html",
+    "k12/compare/index.html",
+    "k12/rankings/index.html",
+]
+
+# The only three faces the stylesheet asks for. See site/fonts/README.md.
+FONT_FILES = [
+    "source-serif-4-latin-400-normal.woff2",
+    "source-serif-4-latin-600-normal.woff2",
+    "ibm-plex-mono-latin-500-normal.woff2",
+]
+
+
+def test_fonts_are_self_hosted_with_no_third_party_origin():
+    """Release 3 B3 replaced Google Fonts with self-hosted faces. The Google origins put a
+    third-party connection (two preconnects, a stylesheet round trip, then the files) on the
+    critical path of every page, so no page may reach for them again, and Libre Franklin is gone."""
+    for rel in FONT_FILES:
+        f = SITE / "fonts" / rel
+        assert f.exists(), f"missing self-hosted face: {rel}"
+        assert f.read_bytes()[:4] == b"wOF2", f"{rel} is not a valid woff2 file"
     css = (SITE / "styles.css").read_text()
+    # A render-blocking @import was the 2026-08-25 perf regression; it must never come back.
     assert "@import url" not in css, "styles.css must not @import fonts (render-blocking)"
-    # Committed source pages (generated pages come from head(), checked below). Not a glob, because
-    # stale generated output may sit in the working tree locally.
-    source_pages = [
-        "404.html",
-        "index.html",
-        "about/index.html",
-        "careers/index.html",
-        "compare/index.html",
-        "methodology/index.html",
-        "value-check/index.html",
-        "k12/index.html",
-        "k12/advanced-courses/index.html",
-        "k12/compare/index.html",
-        "k12/rankings/index.html",
+    for rel in FONT_FILES:
+        assert f'url("/fonts/{rel}")' in css, f"styles.css has no @font-face for {rel}"
+    assert css.count("font-display: swap;") == len(FONT_FILES), (
+        "every @font-face needs font-display: swap so text stays visible while a face loads"
+    )
+    pages = [(rel, (SITE / rel).read_text()) for rel in SOURCE_PAGES]
+    pages.append(("build_college_pages.head()", (PIPELINE / "build_college_pages.py").read_text()))
+    pages.append(("embed/index.html", (SITE / "embed" / "index.html").read_text()))
+    for name, text in pages:
+        for gone in ("fonts.googleapis.com", "fonts.gstatic.com", "Libre Franklin"):
+            assert gone not in text, f"{name} still references {gone}"
+    # Sweep whatever generated output is present too. Those directories are gitignored, so this is
+    # a no-op in CI, but locally it catches pages a generator has not rewritten since the change:
+    # /findings/ and /updates/ were still shipping a render-blocking font stylesheet from before the
+    # 2026-08-25 perf fix precisely because no test looked at generated output.
+    stale = [
+        str(p.relative_to(SITE))
+        for p in SITE.rglob("*.html")
+        if "fonts.googleapis.com" in p.read_text() or "fonts.gstatic.com" in p.read_text()
     ]
-    for rel in source_pages:
-        s = (SITE / rel).read_text()
-        assert 'media="print" onload' in s, f"{rel} font link is render-blocking"
-        assert "<noscript><link" in s and "css2" in s, f"{rel} missing noscript font fallback"
-    # The generated-page shell head() must use the same non-blocking pattern.
-    head_src = (PIPELINE / "build_college_pages.py").read_text()
-    assert 'media="print" onload' in head_src, "head() font link is render-blocking"
+    assert not stale, f"generated pages still reference Google Fonts: {stale[:5]}"
+
+
+def test_every_page_preloads_exactly_the_faces_it_renders():
+    """Fonts are only discovered after the stylesheet parses, so each page preloads its faces to
+    keep them off the critical path. Preloading a face a page never renders wastes the download
+    and logs a "preloaded but not used" console warning, so the set must match what the page uses:
+    the 600 display and 500 mono render everywhere (brand and footer), while the 400 display is
+    only reached through .lede and .prose."""
+    always = ["source-serif-4-latin-600-normal.woff2", "ibm-plex-mono-latin-500-normal.woff2"]
+    only_if_used = "source-serif-4-latin-400-normal.woff2"
+    pages = [(rel, (SITE / rel).read_text()) for rel in SOURCE_PAGES]
+    # The generated-page shell renders no .lede/.prose, so it must preload the two faces only.
+    pages.append(("build_college_pages.head()", (PIPELINE / "build_college_pages.py").read_text()))
+    for name, text in pages:
+        for face in always:
+            assert f'rel="preload" href="/fonts/{face}"' in text, f"{name} does not preload {face}"
+        # Fonts are fetched in CORS mode even same-origin: without crossorigin the preload is not
+        # reused and the browser downloads the file twice.
+        assert 'as="font" type="font/woff2" crossorigin' in text, (
+            f"{name} font preload is missing crossorigin, so it would be fetched twice"
+        )
+        uses_400 = 'class="lede"' in text or 'class="prose"' in text
+        preloads_400 = f'rel="preload" href="/fonts/{only_if_used}"' in text
+        assert preloads_400 == uses_400, (
+            f"{name} preloads the 400 display face={preloads_400} but renders it={uses_400}"
+        )
+
+
+def test_fonts_are_cached_immutably():
+    """Font filenames pin family, weight and subset, so the bytes at a URL never change and the
+    files can be held for a year. Without this they would inherit the platform default of
+    revalidating on every navigation, which defeats self-hosting."""
+    headers = (SITE / "_headers").read_text()
+    assert "/fonts/*" in headers, "_headers has no cache rule for the self-hosted fonts"
+    block = headers.split("/fonts/*", 1)[1]
+    assert "immutable" in block.split("\n\n", 1)[0], "/fonts/* should be immutable"
 
 
 def test_every_page_shares_one_header_nav():
@@ -391,7 +455,8 @@ def test_home_and_hubs_have_self_canonical():
 
 def test_security_headers_present_and_csp_allows_site_resources():
     """A baseline security-header block must apply to every path, and the CSP must permit the
-    resources the site actually loads (Google Fonts, the Cloudflare beacon) or it would break."""
+    resources the site actually loads (the Cloudflare beacon) or it would break. Since B3 the
+    fonts are self-hosted, so the font origins must be GONE from the CSP rather than allowed."""
     headers = (SITE / "_headers").read_text()
     for h in (
         "Strict-Transport-Security:",
@@ -403,12 +468,13 @@ def test_security_headers_present_and_csp_allows_site_resources():
     ):
         assert h in headers, f"missing security header: {h}"
     csp = next(ln for ln in headers.splitlines() if "Content-Security-Policy:" in ln)
-    for src in (
-        "https://fonts.gstatic.com",
-        "https://fonts.googleapis.com",
-        "https://static.cloudflareinsights.com",
-    ):
-        assert src in csp, f"CSP would block a resource the site uses: {src}"
+    assert "https://static.cloudflareinsights.com" in csp, (
+        "CSP would block a resource the site uses: the Cloudflare beacon"
+    )
+    # Self-hosted fonts: 'self' must cover them and the Google origins must not be re-granted.
+    assert "font-src 'self';" in csp, "font-src must allow the self-hosted /fonts files"
+    for gone in ("https://fonts.gstatic.com", "https://fonts.googleapis.com"):
+        assert gone not in csp, f"CSP still grants a font origin the site no longer uses: {gone}"
     # Frame protection is X-Frame-Options, NOT a CSP frame-ancestors directive: Cloudflare appends
     # (does not replace) a per-path CSP, so a global frame-ancestors 'none' could not be relaxed on
     # /embed/. X-Frame-Options can be unset per-path with `!`, so the embed widget can opt out.

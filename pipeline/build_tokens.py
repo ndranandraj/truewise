@@ -58,6 +58,11 @@ def render_css_root(tokens: dict) -> str:
         lines.append(f"  --{name}: {value};")
     for name, value in tokens["scale"].items():
         lines.append(f"  --{name}: {value};")
+    # Three font roles, all owned here so no family name is hand-edited in a stylesheet:
+    # --display (Source Serif 4) for headings and editorial prose, --font (the platform system
+    # stack) for UI, --mono (IBM Plex Mono) for figures and metadata. The faces themselves are
+    # self-hosted from site/fonts; see that directory's README.
+    lines.append(f"  --display: {tokens['font']['display']};")
     lines.append(f"  --font: {tokens['font']['sans']};")
     lines.append(f"  --mono: {tokens['font']['mono']};")
     lines.append(END)
