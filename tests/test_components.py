@@ -44,16 +44,6 @@ def test_breadcrumb_links_are_visually_distinguishable():
     assert "text-decoration: none" not in crumb_rule
 
 
-# One long-standing disagreement between the two sources, older than the forest rebrand.
-# design/tokens.json calls --surface #f3f1ec (sand) and keeps white as --surface-raised, while
-# design/palette-final.json and section 3 of the decision record call surface #ffffff. So the
-# contrast gate validates text against white while components.css paints those backgrounds sand.
-# Nothing fails today: the only token that would (brand-500, 4.37 on sand against a 4.5 minimum) is
-# defined but never used as text. Deliberately left as-is on 2026-09-02 to be settled at the B7a
-# prototype gate, with the component backgrounds visible, rather than by changing a value blind.
-KNOWN_SPLIT = {"surface"}
-
-
 def test_tokens_final_matches_the_validated_palette():
     """EVERY colour in components/tokens-final.css must equal its palette value, so a component
     reviewed in a fixture looks like the same component in production.
@@ -77,13 +67,13 @@ def test_tokens_final_matches_the_validated_palette():
     mismatched = {
         token: (got, values[token])
         for token, got in declared.items()
-        if token in values and got.lower() != values[token].lower() and token not in KNOWN_SPLIT
+        if token in values and got.lower() != values[token].lower()
     }
     assert not mismatched, f"tokens-final.css disagrees with the palette: {mismatched}"
-    # Pin the one known disagreement so it stays visible and either side changing fails here.
-    assert declared["surface"] == "#f3f1ec" and values["surface"].lower() == "#ffffff", (
-        "the --surface split has changed; resolve it in the record rather than drifting further"
-    )
+    # --surface used to disagree: tokens.json called it sand while the palette and the record call
+    # it white. It is resolved, not exempted, so the gate now validates the surface components
+    # actually paint. Tinted grounds name --sand; --surface is the white one the record describes.
+    assert declared["surface"] == "#ffffff", "surface must be the white the record defines"
     # The four the old test named, asserted explicitly so they can never fall out of the file.
     for token in ("text-muted", "text-on-dark-muted", "focus-ring-on-dark", "brand-strong"):
         assert token in declared, f"{token} is missing from tokens-final.css"

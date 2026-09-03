@@ -42,7 +42,7 @@ EMBED_TOKENS = (
     "bad",
     "line",
     "bg-alt",
-    "surface-raised",
+    "surface",
     "r-sm",
     "r-md",
     "r-lg",

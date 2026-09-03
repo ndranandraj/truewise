@@ -97,9 +97,24 @@ def find_orphans(site: Path | None = None) -> list[str]:
         )
 
     published = set(json.loads(slug_map.read_text()).values())
-    return [f"/college/{n}/" for n in _orphans(college, published, "college")] + [
-        f"/findings/{n}/" for n in _orphans(findings, set(PUBLISHED_FINDINGS), "findings")
-    ]
+    found = [f"/college/{n}/" for n in _orphans(college, published, "college")]
+    found += [f"/findings/{n}/" for n in _orphans(findings, set(PUBLISHED_FINDINGS), "findings")]
+
+    # Social cards. A card is orphaned when nothing publishes the route it illustrates. These are
+    # PNGs, not directories, so the page sweep above never saw them: ten retired college cards were
+    # still returning 200 on a preview while their pages correctly 404'd, which is worse than a
+    # stale page, because a card is what gets unfurled into someone's timeline.
+    for area in ("college", "majors", "lists", "findings"):
+        cards, pages = site / "og" / area, site / area
+        if not cards.is_dir() or not pages.is_dir():
+            continue
+        routed = {d.name for d in pages.iterdir() if d.is_dir()}
+        found += [
+            f"/og/{area}/{p.name}"
+            for p in sorted(cards.glob("*.png"))
+            if p.stem not in routed and not p.stem.startswith("_")
+        ]
+    return found
 
 
 def main() -> None:
@@ -124,7 +139,9 @@ def main() -> None:
             "Run `python -m pipeline.prune_orphans` to remove them."
         )
     for route in orphans:
-        shutil.rmtree(SITE / route.strip("/"))
+        target = SITE / route.strip("/")
+        # Pages are directories, social cards are single PNGs.
+        shutil.rmtree(target) if target.is_dir() else target.unlink()
     print(f"pruned {len(orphans):,} orphaned page(s)")
 
 

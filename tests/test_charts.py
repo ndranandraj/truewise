@@ -69,6 +69,36 @@ def test_every_home_chart_mark_and_label_clears_its_threshold():
         assert ratio >= 4.5, f"chart label {label!r} is {colour} at {ratio} on the band, under 4.5"
 
 
+def test_home_chart_matches_the_approved_geometry():
+    """The rebrand plan specifies viewBox 480x260, 42px bars, a 14px gap and 13px labels. The
+    chart shipped at 360x230 with 9.5px labels on 32px bars, which is under the 12px floor the
+    record sets for mono metadata and too small to read on a phone."""
+    svg = _home_chart_svg()
+    assert 'viewBox="0 0 480 260"' in svg, "chart is not on the approved 480x260 canvas"
+    widths = {int(w) for w in re.findall(r"<rect[^>]*width=\"(\d+)\"", svg)}
+    assert widths == {42}, f"bars must be 42 wide, found {sorted(widths)}"
+    xs = [int(x) for x in re.findall(r'<rect x="(\d+)"', svg)]
+    gaps = {xs[i + 1] - xs[i] - 42 for i in range(len(xs) - 1)}
+    assert gaps == {14}, f"bar gaps must be 14, found {sorted(gaps)}"
+    sizes = {float(s) for s in re.findall(r'font-size="([\d.]+)"', svg)}
+    assert sizes == {13.0}, f"in-chart labels must be 13px, found {sorted(sizes)}"
+    # Mono comes from the stylesheet rather than an SVG attribute, so it follows the token.
+    css = (SITE / "styles.css").read_text()
+    assert ".home-dist text" in css and "var(--mono)" in css.split(".home-dist text", 1)[1][:120], (
+        "chart labels must be mono, per the type roles"
+    )
+
+
+def test_home_chart_shows_its_denominator():
+    """The percentages are a share of the judged programs, and a reader should be able to see what
+    of without opening the accessibility description. It used to live only in <desc>."""
+    svg = _home_chart_svg()
+    visible = " ".join(re.findall(r"<text[^>]*>([^<]*)</text>", svg))
+    assert re.search(r"n = [\d,]+ judged programs", visible), (
+        "the provenance line is missing from the visible chart"
+    )
+
+
 def test_the_negative_is_labelled_in_words():
     """Colour never carries the meaning on its own."""
     assert "earn less" in _home_chart_svg()
@@ -96,6 +126,38 @@ def test_charts_and_cards_carry_no_raw_palette_hex():
         )
         for stale in STALE:
             assert stale not in code, f"{name} still hard-codes the pre-forest colour {stale}"
+
+
+def test_social_cards_never_draw_over_their_footer():
+    """A two-line headline plus a statistic pushed the caption to y=500; two 30px lines then ran to
+    about 573, crossing the footer rule at 552. Around 1,817 college cards hit that combination, so
+    the caption block now sizes itself against the rule. Rendered and measured, not reasoned about."""
+    from PIL import Image
+
+    from pipeline import og_images as og
+
+    out = Path("/tmp/og_footer_guard.png")
+    og.card(
+        out,
+        "College · does it pay off?",
+        "Pennsylvania State University Main Campus",  # wraps to two lines
+        big="421 of 489 pay off",
+        sub=(
+            "Programs whose graduates out-earn a typical Pennsylvania high-school graduate, "
+            "measured a few years after finishing."
+        ),
+    )
+    im = Image.open(out).convert("RGB")
+    bg = im.getpixel((600, 5))
+    rows = [
+        y
+        for y in range(200, og.FOOTER_RULE_Y)
+        if any(im.getpixel((x, y)) != bg for x in range(og.MARGIN, og.W - og.MARGIN))
+    ]
+    lowest = max(rows)
+    assert lowest < og.FOOTER_RULE_Y - 2, (
+        f"card content reaches y={lowest}, colliding with the footer rule at {og.FOOTER_RULE_Y}"
+    )
 
 
 def test_embed_widget_is_generated_and_self_contained():

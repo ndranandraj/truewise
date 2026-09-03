@@ -1,8 +1,14 @@
-# Truewise components (Stage 3)
+# Truewise components
 
-Shared UI components, built and validated **in isolation** before any live route adopts them
-(that adoption is Stage 5). Nothing here is deployed: the folder sits outside `site/`, and every
-fixture carries `noindex`.
+Shared UI components, authored **in isolation** so each is built once and passes accessibility
+before it reaches a production page.
+
+Two of these files ARE deployed. `pipeline/build_components.py` copies `components.css` and the
+four scripts into `site/` at build time (as `/components.css` and `/components/*.js`), because the
+canonical college profile references them at site-root paths. Source of truth stays here; the
+copies under `site/` are generated, and `python -m pipeline.build_components --check` fails if they
+are stale. The fixtures and `tokens-final.css` are NOT deployed: they are a development harness,
+and every fixture carries `noindex`.
 
 ## Why isolated
 
@@ -13,10 +19,16 @@ criteria, and `../truewise-stage0.3-palette.md` for the colour system.
 
 ## Files
 
-- `tokens-final.css` — the Stage 0.3 final palette as CSS custom properties. Fixture-only; production
-  still serves the current values from `site/styles.css` until Stage 5. Values mirror
-  `design/palette-final.json` (enforced by `tests/test_components.py`).
-- `components.css` — component styles, referencing tokens only (no raw hex).
+- `tokens-final.css` — **generated** by `make tokens` from `design/tokens.json`; do not edit it by
+  hand. It is the same `:root` the site serves, so a component reviewed in a fixture looks like the
+  same component in production. It used to be hand-maintained and drifted: through the Release 3
+  forest rebrand it still declared the old blue brand, status and surface colours, so the fixtures
+  showed one palette while the site served another. The drift test claimed to check every colour and
+  actually spot-checked four. Both are fixed: the file is generated, and `tests/test_components.py`
+  now checks every declared colour against `design/palette-final.json`.
+- `components.css` — component styles, referencing tokens only: no raw hex, no ad-hoc radii (they
+  use `--r-sm`/`--r-md`/`--r-lg`/`--r-pill`), and no off-palette `rgba()`. Tinted backgrounds name
+  `--sand`; `--surface` is the white surface the decision record defines.
 - `search.js` — the accessible combobox shell (B1), wrapping the domain providers in
   `site/assets/college-search.js`.
 - `fixtures/` — one standalone page per component for manual and automated checks.

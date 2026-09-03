@@ -76,7 +76,7 @@
 }
 .tw-search__opt.is-active,
 .tw-search__opt:hover {
-  background: var(--surface);
+  background: var(--sand);
 }
 .tw-search__title {
   font-weight: 600;
@@ -145,7 +145,7 @@
   vertical-align: top;
 }
 .tw-th {
-  background: var(--surface);
+  background: var(--sand);
   font-weight: 700;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -180,7 +180,7 @@
   color: var(--text);
 }
 .tw-tr--insuf .tw-td {
-  background: var(--surface);
+  background: var(--sand);
 }
 .tw-td__insuf {
   color: var(--text-muted);
@@ -349,7 +349,7 @@
 }
 .tw-pill--insuf {
   color: var(--text-muted);
-  background: var(--surface);
+  background: var(--sand);
   border: 1px dashed var(--line);
   font-weight: 400;
 }
@@ -397,7 +397,7 @@
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--surface);
+  background: var(--sand);
   color: var(--text-secondary);
 }
 .tw-empty__routes a {
@@ -414,7 +414,7 @@
 .tw-skel__row {
   height: 16px;
   border-radius: var(--r-md);
-  background: linear-gradient(90deg, var(--surface), var(--line), var(--surface));
+  background: linear-gradient(90deg, var(--sand), var(--line), var(--sand));
   background-size: 200% 100%;
 }
 @media (prefers-reduced-motion: no-preference) {

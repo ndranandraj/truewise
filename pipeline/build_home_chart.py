@@ -92,19 +92,27 @@ def compute_bins() -> tuple[list[int], int, int, float]:
 
 
 def render_svg(counts: list[int], total: int, median: int) -> str:
-    """A vertical histogram, 360x230 viewBox, scaling to its container width."""
-    W, H = 360, 230
-    x0, x1 = 8, 352  # plot horizontal bounds
-    base_y = 176  # bars sit on this line
-    top_y = 30  # tallest bar reaches here
-    slot = (x1 - x0) / len(counts)
-    bw = slot * 0.66
+    """A vertical histogram on the approved 480x260 geometry.
+
+    Bars are 42 wide with a 14 gap and labels are 13px, per the rebrand plan. The earlier 360x230
+    chart put 9.5px system-font labels on 32px bars, which is below the 12px floor the design
+    record sets for mono metadata and too small to read on a phone. Width is symmetric by
+    construction: seven 42px bars and six 14px gaps is 378, leaving 51 either side of 480.
+    """
+    W, H = 480, 260
+    BAR_W, GAP = 42, 14
+    n = len(counts)
+    x0 = round((W - (n * BAR_W + (n - 1) * GAP)) / 2)  # 51
+    slot = BAR_W + GAP
+    base_y = 190  # bars sit on this line
+    top_y = 40  # tallest bar reaches here
+    bw = BAR_W
     mx = max(counts)
     pct = [round(100 * c / total) for c in counts]
 
     parts = [
         f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '
-        'aria-labelledby="distTitle distDesc" style="max-width:380px;height:auto">',
+        'aria-labelledby="distTitle distDesc" style="max-width:480px;height:auto">',
         '<title id="distTitle">How far college programs out-earn a high-school graduate</title>',
         f'<desc id="distDesc">Of {total:,} judged programs, {counts[0]:,} (about {pct[0]}%) '
         f"leave graduates earning less than a typical high-school graduate; the rest earn more, "
@@ -115,42 +123,50 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
     # Bars.
     for i, c in enumerate(counts):
         h = round((base_y - top_y) * c / mx)
-        x = round(x0 + i * slot + (slot - bw) / 2, 1)
+        x = x0 + i * slot
         y = base_y - h
         fill = NEG if i == 0 else BAR
         parts.append(
-            f'<rect x="{x}" y="{y}" width="{bw:.1f}" height="{h}" rx="2" '
+            f'<rect x="{x}" y="{y}" width="{bw}" height="{h}" rx="2" '
             f'fill="{fill}" data-count="{c}"/>'
         )
         parts.append(
-            f'<text x="{x + bw / 2:.1f}" y="{y - 5}" text-anchor="middle" '
-            f'font-size="10" font-weight="700" fill="{TEXT}">{pct[i]}%</text>'
+            f'<text x="{x + bw // 2}" y="{y - 8}" text-anchor="middle" '
+            f'font-size="13" font-weight="600" fill="{TEXT}">{pct[i]}%</text>'
         )
     # Baseline.
     parts.append(
-        f'<line x1="{x0}" y1="{base_y}" x2="{x1}" y2="{base_y}" '
+        f'<line x1="{x0}" y1="{base_y}" x2="{x0 + n * slot - GAP}" y2="{base_y}" '
         f'stroke="{BASELINE}" stroke-width="1"/>'
     )
-    # The high-school line: a marker between the "earn less" bar and the rest.
-    hx = round(x0 + slot, 1)
+    # The high-school line: a marker in the gap between the "earn less" bar and the rest.
+    hx = x0 + BAR_W + GAP // 2
     parts.append(
-        f'<line x1="{hx}" y1="{top_y - 8}" x2="{hx}" y2="{base_y}" stroke="{NEG}" '
+        f'<line x1="{hx}" y1="{top_y - 10}" x2="{hx}" y2="{base_y}" stroke="{NEG}" '
         f'stroke-width="1" stroke-dasharray="3 3"/>'
     )
     # Label sits to the LEFT of the line, over the empty space above the short "earn less" bar,
     # so it never collides with the tall bars to the right.
     parts.append(
-        f'<text x="{hx - 5}" y="{top_y + 14}" text-anchor="end" font-size="9.5" fill="{TEXT}" '
-        f'font-weight="700">HS line</text>'
+        f'<text x="{hx - 6}" y="{top_y + 4}" text-anchor="end" font-size="13" fill="{TEXT}" '
+        f'font-weight="600">HS line</text>'
     )
     # Axis captions.
     parts.append(
-        f'<text x="{round(x0 + slot / 2, 1)}" y="{base_y + 18}" text-anchor="middle" '
-        f'font-size="10" fill="{TEXT}" font-weight="600">earn less</text>'
+        f'<text x="{x0 + BAR_W // 2}" y="{base_y + 22}" text-anchor="middle" '
+        f'font-size="13" fill="{TEXT}" font-weight="600">earn less</text>'
     )
+    # Right-aligned to the plot edge. At 13px mono the two captions would otherwise meet around
+    # x=107, since "earn less" centred under the first bar already reaches it.
     parts.append(
-        f'<text x="{round(x0 + slot * 4, 1)}" y="{base_y + 18}" text-anchor="middle" '
-        f'font-size="10" fill="{TEXT_DIM}">earn more than a high-school graduate &#8594;</text>'
+        f'<text x="{x0 + n * slot - GAP}" y="{base_y + 22}" text-anchor="end" font-size="13" '
+        f'fill="{TEXT_DIM}">earn more than a high-school graduate &#8594;</text>'
+    )
+    # Provenance, on the face of the chart rather than only in the description: a reader should be
+    # able to see what the percentages are a share of without opening the accessibility text.
+    parts.append(
+        f'<text x="{x0}" y="{H - 12}" font-size="13" fill="{TEXT_DIM}">'
+        f"n = {total:,} judged programs</text>"
     )
     parts.append("</svg>")
     return "".join(parts)
