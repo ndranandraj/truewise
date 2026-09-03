@@ -214,6 +214,15 @@ a:hover { color: var(--brand-deep); }
 /* In-chart labels are mono, per the type roles: figures and metadata are mono everywhere else too.
    Set here rather than as an SVG attribute so the chart follows the token. */
 .home-dist text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* Two chart variants, one shown at a time. SVG text scales with the viewBox, so a 480-wide chart
+   squeezed into a phone column renders its 13px labels at about 9px. The narrow variant is sized
+   for that column instead, so the labels keep their real size. Swapped at 520px, where the wide
+   chart stops fitting at 1:1. The hidden one is aria-hidden, so nothing is announced twice. */
+.home-dist--narrow { display: none; }
+@media (max-width: 520px) {
+  .home-dist--wide { display: none; }
+  .home-dist--narrow { display: block; }
+}
 .finding-stat { font-family: var(--mono); font-size: clamp(48px, 6vw, 76px); font-weight: 500; line-height: 1; letter-spacing: -0.03em; margin: 0; max-width: 24ch; color: var(--series-4); }
 .finding-stat b { color: var(--series-4); font-variant-numeric: tabular-nums; }
 .finding-body { font-size: var(--t-ui); line-height: 1.6; color: var(--brand-300); margin: var(--s4) 0 0; max-width: 60ch; }

@@ -17,6 +17,8 @@ Usage:
 
 from __future__ import annotations
 
+import re
+
 import duckdb
 
 from pipeline.config import ROOT
@@ -91,17 +93,50 @@ def compute_bins() -> tuple[list[int], int, int, float]:
     return counts, total, counts[0], round(median)
 
 
-def render_svg(counts: list[int], total: int, median: int) -> str:
-    """A vertical histogram on the approved 480x260 geometry.
+def render_svg(
+    counts: list[int],
+    total: int,
+    median: int,
+    *,
+    W: int = 480,
+    BAR_W: int = 42,
+    GAP: int = 14,
+    caption_right: str = "earn more than a high-school graduate &#8594;",
+    ids: str = "",
+) -> str:
+    """A vertical histogram. Defaults are the approved 480x260 desktop geometry.
 
     Bars are 42 wide with a 14 gap and labels are 13px, per the rebrand plan. The earlier 360x230
     chart put 9.5px system-font labels on 32px bars, which is below the 12px floor the design
-    record sets for mono metadata and too small to read on a phone. Width is symmetric by
-    construction: seven 42px bars and six 14px gaps is 378, leaving 51 either side of 480.
+    record sets for mono metadata. Width is symmetric by construction: seven 42px bars and six
+    14px gaps is 378, leaving 51 either side of 480.
+
+    The size is parameterised because font-size inside an SVG is in USER units: it is scaled by
+    the viewBox transform along with everything else. A 480-wide viewBox rendered into a 335px
+    phone column is scaled by 0.70, so nominal 13px labels land at about 9.1px and the readability
+    problem this geometry was meant to fix comes straight back. No CSS unit escapes that transform,
+    so the only honest fix is a second, narrower chart for narrow columns, which build_block emits
+    alongside this one and CSS swaps at the breakpoint.
     """
-    W, H = 480, 260
-    BAR_W, GAP = 42, 14
+    H = 260
     n = len(counts)
+
+    def place(x: int, anchor: str, label: str, size: int = 13) -> tuple[int, str]:
+        """Keep a label inside the viewBox, falling back to edge alignment.
+
+        IBM Plex Mono advances 0.6em, so a label's width is predictable. The narrow variant is
+        tight enough that a centred "earn less" and an end-anchored "HS line" both hang off the
+        left edge; rather than hand-tuning each geometry, any label that would overflow is
+        re-anchored to the nearer edge.
+        """
+        w = len(re.sub(r"&#\d+;", "-", label)) * size * 0.6
+        lo = x - w / 2 if anchor == "middle" else (x - w if anchor == "end" else x)
+        if lo < 2:
+            return 2, "start"
+        if lo + w > W - 2:
+            return W - 2, "end"
+        return x, anchor
+
     x0 = round((W - (n * BAR_W + (n - 1) * GAP)) / 2)  # 51
     slot = BAR_W + GAP
     base_y = 190  # bars sit on this line
@@ -112,9 +147,10 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
 
     parts = [
         f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '
-        'aria-labelledby="distTitle distDesc" style="max-width:480px;height:auto">',
-        '<title id="distTitle">How far college programs out-earn a high-school graduate</title>',
-        f'<desc id="distDesc">Of {total:,} judged programs, {counts[0]:,} (about {pct[0]}%) '
+        f'aria-labelledby="distTitle{ids} distDesc{ids}" style="max-width:{W}px;height:auto">',
+        f'<title id="distTitle{ids}">How far college programs out-earn a high-school '
+        "graduate</title>",
+        f'<desc id="distDesc{ids}">Of {total:,} judged programs, {counts[0]:,} (about {pct[0]}%) '
         f"leave graduates earning less than a typical high-school graduate; the rest earn more, "
         f"a median of {median}% more. Bars, left to right: "
         + "; ".join(f"{LABELS[i]} {counts[i]:,}" for i in range(len(counts)))
@@ -147,20 +183,23 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
     )
     # Label sits to the LEFT of the line, over the empty space above the short "earn less" bar,
     # so it never collides with the tall bars to the right.
+    hsx, hsa = place(hx - 6, "end", "HS line")
     parts.append(
-        f'<text x="{hx - 6}" y="{top_y + 4}" text-anchor="end" font-size="13" fill="{TEXT}" '
+        f'<text x="{hsx}" y="{top_y + 4}" text-anchor="{hsa}" font-size="13" fill="{TEXT}" '
         f'font-weight="600">HS line</text>'
     )
     # Axis captions.
+    elx, ela = place(x0 + BAR_W // 2, "middle", "earn less")
     parts.append(
-        f'<text x="{x0 + BAR_W // 2}" y="{base_y + 22}" text-anchor="middle" '
+        f'<text x="{elx}" y="{base_y + 22}" text-anchor="{ela}" '
         f'font-size="13" fill="{TEXT}" font-weight="600">earn less</text>'
     )
     # Right-aligned to the plot edge. At 13px mono the two captions would otherwise meet around
     # x=107, since "earn less" centred under the first bar already reaches it.
+    erx, era = place(x0 + n * slot - GAP, "end", caption_right)
     parts.append(
-        f'<text x="{x0 + n * slot - GAP}" y="{base_y + 22}" text-anchor="end" font-size="13" '
-        f'fill="{TEXT_DIM}">earn more than a high-school graduate &#8594;</text>'
+        f'<text x="{erx}" y="{base_y + 22}" text-anchor="{era}" font-size="13" '
+        f'fill="{TEXT_DIM}">{caption_right}</text>'
     )
     # Provenance, on the face of the chart rather than only in the description: a reader should be
     # able to see what the percentages are a share of without opening the accessibility text.
@@ -173,11 +212,32 @@ def render_svg(counts: list[int], total: int, median: int) -> str:
 
 
 def build_block(counts, total, median) -> str:
-    svg = render_svg(counts, total, median)
+    """Both chart variants, one shown at a time by CSS.
+
+    A single SVG cannot hold 13px labels at every width, because its text scales with the viewBox
+    (see render_svg). So the wide chart carries the approved desktop geometry, and a narrow one
+    sized for a phone column renders at roughly 1:1 there, keeping the labels at their real size.
+    The narrow variant shortens the right-hand caption, which does not fit at that width.
+
+    Only one is exposed to assistive tech at a time: the hidden variant is aria-hidden, so the
+    description is not announced twice.
+    """
+    wide = render_svg(counts, total, median)
+    narrow = render_svg(
+        counts,
+        total,
+        median,
+        W=300,
+        BAR_W=30,
+        GAP=11,
+        caption_right="earn more &#8594;",
+        ids="M",
+    )
     return (
         f"{START}\n"
         '          <p class="dots-label">What graduates earn vs a high-school grad</p>\n'
-        f'          <figure class="home-dist">{svg}</figure>\n'
+        f'          <figure class="home-dist home-dist--wide">{wide}</figure>\n'
+        f'          <figure class="home-dist home-dist--narrow" aria-hidden="true">{narrow}</figure>\n'
         f"          {END}"
     )
 

@@ -38,12 +38,24 @@ def contrast(a: str, b: str) -> float:
     return round((max(la, lb) + 0.05) / (min(la, lb) + 0.05), 2)
 
 
-def _home_chart_svg() -> str:
-    """The chart as it is actually published, not as the generator would render it."""
+def _home_chart_block() -> str:
+    """The chart block as actually published, not as the generator would render it."""
     html = (SITE / "index.html").read_text()
     m = re.search(r"<!-- HOME_CHART_START -->(.*?)<!-- HOME_CHART_END -->", html, re.S)
     assert m, "the homepage lost its HOME_CHART markers"
     return m.group(1)
+
+
+def _variant(cls: str) -> str:
+    block = _home_chart_block()
+    m = re.search(rf'<figure class="home-dist {cls}"[^>]*>(.*?)</figure>', block, re.S)
+    assert m, f"the {cls} chart variant is missing"
+    return m.group(1)
+
+
+def _home_chart_svg() -> str:
+    """The wide variant, which carries the approved desktop geometry."""
+    return _variant("home-dist--wide")
 
 
 def test_the_negative_bar_uses_the_dark_band_clay_not_sand():
@@ -82,11 +94,54 @@ def test_home_chart_matches_the_approved_geometry():
     assert gaps == {14}, f"bar gaps must be 14, found {sorted(gaps)}"
     sizes = {float(s) for s in re.findall(r'font-size="([\d.]+)"', svg)}
     assert sizes == {13.0}, f"in-chart labels must be 13px, found {sorted(sizes)}"
+    assert 'style="max-width:480px' in svg, "the wide chart must not stretch past its geometry"
     # Mono comes from the stylesheet rather than an SVG attribute, so it follows the token.
     css = (SITE / "styles.css").read_text()
     assert ".home-dist text" in css and "var(--mono)" in css.split(".home-dist text", 1)[1][:120], (
         "chart labels must be mono, per the type roles"
     )
+
+
+def test_chart_labels_stay_legible_at_phone_width():
+    """font-size inside an SVG is in USER units: the viewBox transform scales it like everything
+    else. The previous test asserted font-size="13" and passed while the 480-wide chart, squeezed
+    into a 335px phone column, actually rendered its labels at about 9.1px, which is the exact
+    problem the geometry was meant to fix. So measure the RENDERED size: nominal x (column /
+    viewBox), capped at 1 because the SVG never scales past its own max-width.
+
+    Column widths are the .wrap content box: viewport minus the 20px mobile gutter each side.
+    """
+    css = (SITE / "styles.css").read_text()
+    assert ".home-dist--narrow" in css and "max-width: 520px" in css, (
+        "the narrow chart variant must be swapped in by a media query"
+    )
+
+    def rendered(cls: str, column: int) -> float:
+        svg = _variant(cls)
+        vb = int(re.search(r'viewBox="0 0 (\d+)', svg).group(1))
+        sizes = {float(s) for s in re.findall(r'font-size="([\d.]+)"', svg)}
+        return round(min(sizes) * min(column / vb, 1.0), 1)
+
+    # Below the 520px breakpoint the narrow variant is the one on screen.
+    for viewport in (320, 360, 390, 430):
+        px = rendered("home-dist--narrow", viewport - 40)
+        assert px >= 12.0, (
+            f"at {viewport}px the chart labels render at {px}px, under the 12px floor"
+        )
+    assert rendered("home-dist--narrow", 350) >= 13.0, "13px labels expected at 390px viewport"
+    # Above it, the wide variant, which is never scaled down because its column exceeds its width.
+    assert rendered("home-dist--wide", 900) == 13.0
+
+
+def test_only_one_chart_variant_is_exposed_to_assistive_tech():
+    """Both variants are in the DOM at all times, so the hidden one must not be announced."""
+    block = _home_chart_block()
+    figures = re.findall(r'<figure class="home-dist ([^"]+)"([^>]*)>', block)
+    assert len(figures) == 2, f"expected two chart variants, found {len(figures)}"
+    hidden = [cls for cls, attrs in figures if 'aria-hidden="true"' in attrs]
+    assert len(hidden) == 1, f"exactly one variant must be aria-hidden, got {hidden}"
+    ids = re.findall(r'id="(distTitle|distDesc)([^"]*)"', block)
+    assert len(set(ids)) == len(ids), f"duplicate ids across the two chart variants: {ids}"
 
 
 def test_home_chart_shows_its_denominator():

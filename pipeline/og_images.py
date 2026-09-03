@@ -165,9 +165,13 @@ def card(
 
 if __name__ == "__main__":
     # Rendered from the page builders; running standalone makes a couple of samples for review.
+    # The review sample goes to staging/, which is gitignored and NOT deployed. It used to be
+    # written into site/og/, so a development sample was publicly fetchable on every deploy.
+    SAMPLE_DIR = ROOT / "staging" / "og-samples"
     OG_DIR.mkdir(parents=True, exist_ok=True)
+    SAMPLE_DIR.mkdir(parents=True, exist_ok=True)
     card(
-        OG_DIR / "_sample_major.png",
+        SAMPLE_DIR / "sample_major.png",
         "College major · median graduate earnings",
         "Nursing",
         big="$85,357",

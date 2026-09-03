@@ -104,11 +104,29 @@ def find_orphans(site: Path | None = None) -> list[str]:
     # PNGs, not directories, so the page sweep above never saw them: ten retired college cards were
     # still returning 200 on a preview while their pages correctly 404'd, which is worse than a
     # stale page, because a card is what gets unfurled into someone's timeline.
-    for area in ("college", "majors", "lists", "findings"):
+    #
+    # Cards are checked against the same AUTHORITY as their pages, not against the directories
+    # currently on disk. Using the disk needed two runs whenever a retired page and its card were
+    # both present: run one deleted the page, and only then did the card look orphaned. Authorities
+    # do not move when the first orphan is removed, so one run now finds both.
+    authority = {
+        "college": published,
+        "findings": set(PUBLISHED_FINDINGS),
+        # No published manifest for these two, so their own page directories are the best available
+        # authority. That is weaker: a retired majors or lists page would have to be removed before
+        # its card is spotted. It is also the case that has never occurred, and /og/majors/nursing.png
+        # was caught because its page had already gone.
+        "majors": None,
+        "lists": None,
+    }
+    for area, routed in authority.items():
         cards, pages = site / "og" / area, site / area
-        if not cards.is_dir() or not pages.is_dir():
+        if not cards.is_dir():
             continue
-        routed = {d.name for d in pages.iterdir() if d.is_dir()}
+        if routed is None:
+            if not pages.is_dir():
+                continue
+            routed = {d.name for d in pages.iterdir() if d.is_dir()}
         found += [
             f"/og/{area}/{p.name}"
             for p in sorted(cards.glob("*.png"))

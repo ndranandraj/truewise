@@ -18,8 +18,19 @@ from pipeline.prune_orphans import find_orphans
 FINDING = PUBLISHED_FINDINGS[0]
 
 
-def _site(tmp_path, *, slugs=("alpha-college",), findings=(FINDING,), index=True, slug_map=True):
-    """A minimal site tree: a college dir per slug, a findings dir per finding, plus the map."""
+def _site(
+    tmp_path,
+    *,
+    slugs=("alpha-college",),
+    findings=(FINDING,),
+    index=True,
+    slug_map=True,
+    cards=None,
+):
+    """A minimal site tree: a college dir per slug, a findings dir per finding, plus the map.
+
+    `cards` is an optional {area: [stem, ...]} of social cards to place under site/og/.
+    """
     site = tmp_path / "site"
     college, found = site / "college", site / "findings"
     college.mkdir(parents=True)
@@ -35,7 +46,44 @@ def _site(tmp_path, *, slugs=("alpha-college",), findings=(FINDING,), index=True
             (found / f / "index.html").write_text("<html></html>")
         if index:
             (found / "index.html").write_text("<html></html>")
+    for area, stems in (cards or {}).items():
+        d = site / "og" / area
+        d.mkdir(parents=True, exist_ok=True)
+        for stem in stems:
+            (d / f"{stem}.png").write_bytes(b"\x89PNG\r\n\x1a\n")
     return site
+
+
+def test_a_card_without_a_published_route_is_an_orphan(tmp_path):
+    """Cards are PNGs, not directories, so the page sweep never saw them. Ten retired college
+    cards were still returning 200 on a preview while their pages correctly 404'd, which is worse
+    than a stale page: a card is what gets unfurled into someone's timeline."""
+    site = _site(tmp_path, cards={"college": ["alpha-college", "retired-college"]})
+    assert find_orphans(site) == ["/og/college/retired-college.png"]
+
+
+def test_a_retired_page_and_its_card_are_both_found_in_one_pass(tmp_path):
+    """The card authority is the slug map, not the directories on disk. When it was the disk, a
+    retired page and its card needed TWO runs: the first deleted the page, and only then did the
+    card look orphaned. Authorities do not move when the first orphan is removed."""
+    site = _site(tmp_path, cards={"college": ["alpha-college", "retired-college"]})
+    (site / "college" / "retired-college").mkdir()  # page still present alongside its card
+    (site / "college" / "retired-college" / "index.html").write_text("<html></html>")
+    assert find_orphans(site) == [
+        "/college/retired-college/",
+        "/og/college/retired-college.png",
+    ]
+
+
+def test_findings_cards_use_the_published_list(tmp_path):
+    site = _site(tmp_path, cards={"findings": [FINDING, "data-audit"]})
+    assert find_orphans(site) == ["/og/findings/data-audit.png"]
+
+
+def test_underscore_prefixed_cards_are_left_alone(tmp_path):
+    """A leading underscore marks a non-route asset rather than a stale one."""
+    site = _site(tmp_path, cards={"college": ["alpha-college", "_sample"]})
+    assert find_orphans(site) == []
 
 
 def test_clean_tree_reports_no_orphans(tmp_path):
