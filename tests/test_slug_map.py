@@ -4,12 +4,24 @@ The consolidation retires /value-check/?school=<id> in favour of /college/<slug>
 redirect on a query parameter, so the discovery page resolves the slug client-side from the published
 slug-map.json. That only works if every school maps to exactly one collision-free slug, and if a
 collided slug cannot be recomputed from the name alone (proving the map is necessary). These test the
-pure build_slugs function deterministically, without a data build.
+assignment rules deterministically, without a data build.
+
+Since the slug registry landed, build_slugs() resolves published institutions from
+published/slug_registry.json and only ASSIGNS a slug to genuinely new ones. These cases are all
+about that assignment path, so they call assign() with an explicit empty registry: passing fake
+institutions through build_slugs() would collide with the 6,127 real slugs the registry reserves,
+which is correct production behaviour but tells you nothing about the rules being tested here.
 """
 
 from __future__ import annotations
 
-from pipeline.build_college_pages import build_slugs, slugify
+from pipeline.build_college_pages import slugify
+from pipeline.slug_registry import assign
+
+
+def build_slugs(qualified):
+    """The collision rules as applied to institutions that are not yet registered."""
+    return assign(qualified, registry={})
 
 
 def _school(name, state, npass=1, nfail=0):
@@ -61,7 +73,11 @@ def test_third_same_name_same_state_falls_back_to_unitid():
 
 
 def test_slug_generation_is_deterministic():
-    """Same input, same output: the map is stable across builds so URLs do not churn."""
+    """Same input, same output: the map is stable across builds so URLs do not churn.
+
+    Input ORDER independence is the stronger property and is covered in test_slug_registry.py,
+    which is where the real bug lived.
+    """
     qualified = {
         "1": _school("Zeta School", "WA"),
         "2": _school("Eta School", "OR"),

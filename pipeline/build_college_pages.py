@@ -744,22 +744,21 @@ def qualifying_schools(schools: dict) -> dict:
 
 
 def build_slugs(qualified: dict) -> dict[str, str]:
-    """Stable, unique college slugs: name; on collision add state, then unitid.
+    """College slugs, from the committed registry. Shared by every builder that links to a profile.
 
-    Shared with build_lists so ranked-list rows link to URLs that actually exist.
+    This used to derive slugs from the data on each call, breaking name ties on the order rows
+    arrived in. For the 18 same-name pairs that made the result depend on DuckDB's row order, which
+    varies between processes: twelve fresh runs produced the live mapping nine times and an
+    alternate mapping (36 unitids moved) three times. Since college pages, lists and canonical
+    profiles each call this in a SEPARATE process, one deploy could publish a page at one slug and
+    link to it at another.
+
+    published/slug_registry.json now holds the mapping, so a published URL cannot move. See that
+    module for why a deterministic tie-break was not enough on its own.
     """
-    slugs: dict[str, str] = {}
-    used: set[str] = set()
-    for u, s in sorted(qualified.items(), key=lambda kv: (kv[1]["name"] or "").lower()):
-        base = slugify(s["name"])
-        cand = base
-        if cand in used:
-            cand = f"{base}-{s['state'].lower()}"
-        if cand in used:
-            cand = f"{base}-{u}"
-        used.add(cand)
-        slugs[u] = cand
-    return slugs
+    from pipeline.slug_registry import assign
+
+    return assign(qualified)
 
 
 def main() -> None:

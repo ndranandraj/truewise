@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install components tokens tokens-check prune-check prune data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -57,6 +57,15 @@ prune-check:
 	$(PYTHON) -m pipeline.prune_orphans --check
 prune:
 	$(PYTHON) -m pipeline.prune_orphans
+
+# 4a2) The published URL contract. published/slug_registry.json freezes unitid -> slug so a college
+# page cannot move between builds; slug-registry adds any genuinely new institutions, and the diff
+# is meant to be reviewed and committed. slug-registry-check fails the build when a qualified
+# school has no registered slug.
+slug-registry:
+	$(PYTHON) -m pipeline.slug_registry
+slug-registry-check:
+	$(PYTHON) -m pipeline.slug_registry --check
 
 # 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
