@@ -219,8 +219,11 @@ def build_block(counts, total, median) -> str:
     sized for a phone column renders at roughly 1:1 there, keeping the labels at their real size.
     The narrow variant shortens the right-hand caption, which does not fit at that width.
 
-    Only one is exposed to assistive tech at a time: the hidden variant is aria-hidden, so the
-    description is not announced twice.
+    Neither figure is aria-hidden. CSS gives the inactive variant display:none, which already
+    removes it from the accessibility tree, so the displayed one is the single exposed chart at
+    every width. Marking the narrow figure aria-hidden as well meant that below the breakpoint the
+    wide chart was display:none and the visible one was aria-hidden, leaving a screen reader with
+    no chart at all on a phone.
     """
     wide = render_svg(counts, total, median)
     narrow = render_svg(
@@ -237,7 +240,7 @@ def build_block(counts, total, median) -> str:
         f"{START}\n"
         '          <p class="dots-label">What graduates earn vs a high-school grad</p>\n'
         f'          <figure class="home-dist home-dist--wide">{wide}</figure>\n'
-        f'          <figure class="home-dist home-dist--narrow" aria-hidden="true">{narrow}</figure>\n'
+        f'          <figure class="home-dist home-dist--narrow">{narrow}</figure>\n'
         f"          {END}"
     )
 

@@ -102,46 +102,79 @@ def test_home_chart_matches_the_approved_geometry():
     )
 
 
-def test_chart_labels_stay_legible_at_phone_width():
-    """font-size inside an SVG is in USER units: the viewBox transform scales it like everything
-    else. The previous test asserted font-size="13" and passed while the 480-wide chart, squeezed
-    into a 335px phone column, actually rendered its labels at about 9.1px, which is the exact
-    problem the geometry was meant to fix. So measure the RENDERED size: nominal x (column /
-    viewBox), capped at 1 because the SVG never scales past its own max-width.
+def _gutter(viewport: int) -> int:
+    """The .wrap horizontal padding at a viewport, read from site/styles.css.
 
-    Column widths are the .wrap content box: viewport minus the 20px mobile gutter each side.
+    Read rather than hardcoded, so this test cannot quietly disagree with the layout.
     """
     css = (SITE / "styles.css").read_text()
-    assert ".home-dist--narrow" in css and "max-width: 520px" in css, (
-        "the narrow chart variant must be swapped in by a media query"
+    scale = dict(re.findall(r"--(s\d+):\s*(\d+)px", css))
+    wide = scale[re.search(r"\.wrap \{[^}]*padding: 0 var\(--(s\d+)\)", css).group(1)]
+    narrow = re.search(
+        r"@media \(max-width: (\d+)px\) \{ \.wrap \{ padding: 0 var\(--(s\d+)\)", css
     )
-
-    def rendered(cls: str, column: int) -> float:
-        svg = _variant(cls)
-        vb = int(re.search(r'viewBox="0 0 (\d+)', svg).group(1))
-        sizes = {float(s) for s in re.findall(r'font-size="([\d.]+)"', svg)}
-        return round(min(sizes) * min(column / vb, 1.0), 1)
-
-    # Below the 520px breakpoint the narrow variant is the one on screen.
-    for viewport in (320, 360, 390, 430):
-        px = rendered("home-dist--narrow", viewport - 40)
-        assert px >= 12.0, (
-            f"at {viewport}px the chart labels render at {px}px, under the 12px floor"
-        )
-    assert rendered("home-dist--narrow", 350) >= 13.0, "13px labels expected at 390px viewport"
-    # Above it, the wide variant, which is never scaled down because its column exceeds its width.
-    assert rendered("home-dist--wide", 900) == 13.0
+    return int(scale[narrow.group(2)] if viewport <= int(narrow.group(1)) else wide)
 
 
-def test_only_one_chart_variant_is_exposed_to_assistive_tech():
-    """Both variants are in the DOM at all times, so the hidden one must not be announced."""
+def _displayed(viewport: int) -> str:
+    """Which variant CSS actually shows at this viewport, read from the media query."""
+    css = (SITE / "styles.css").read_text()
+    swap = int(re.search(r"@media \(max-width: (\d+)px\) \{\n  \.home-dist--wide", css).group(1))
+    return "home-dist--narrow" if viewport <= swap else "home-dist--wide"
+
+
+def _rendered_label_px(viewport: int) -> tuple[str, float]:
+    """On-screen label size of whichever chart is displayed, from its REAL rendered width.
+
+    The width is the column capped by the SVG's own max-width, not an assumption that the column
+    is always the viewport minus 40.
+    """
+    cls = _displayed(viewport)
+    svg = _variant(cls)
+    vb = int(re.search(r'viewBox="0 0 (\d+)', svg).group(1))
+    cap = int(re.search(r"max-width:(\d+)px", svg).group(1))
+    width = min(viewport - 2 * _gutter(viewport), cap)
+    sizes = {float(s) for s in re.findall(r'font-size="([\d.]+)"', svg)}
+    return cls, round(min(sizes) * (width / vb), 2)
+
+
+def test_chart_labels_stay_legible_at_every_width():
+    """font-size inside an SVG is in USER units, so the viewBox transform scales it. An earlier
+    test asserted font-size="13" and passed while the 480-wide chart, squeezed into a 335px phone
+    column, rendered labels at about 9.1px.
+
+    The breakpoints are the sharp edges. Swapping variants at 520px left a band just above it
+    where the wide chart was scaled to 0.92 and rendered 11.9px labels, so the swap is at 560px:
+    the narrowest viewport whose column reaches the wide chart's own 480px.
+    """
+    for viewport in (320, 360, 390, 430, 519, 520, 521, 524, 525, 559, 560, 561, 768, 1440):
+        cls, px = _rendered_label_px(viewport)
+        assert px >= 12.0, f"at {viewport}px the {cls} chart renders {px}px labels, under 12px"
+    for viewport in (390, 559, 560, 1440):
+        _cls, px = _rendered_label_px(viewport)
+        assert px >= 13.0, f"at {viewport}px labels render at {px}px, expected the full 13px"
+
+
+def test_exactly_one_chart_is_exposed_to_assistive_tech_at_every_width():
+    """Both variants are always in the DOM and CSS shows one. display:none already removes the
+    other from the accessibility tree, so neither may ALSO be aria-hidden: when the narrow figure
+    carried aria-hidden, a phone had the wide chart display:none and the visible one hidden, so a
+    screen reader was offered no chart at all."""
     block = _home_chart_block()
     figures = re.findall(r'<figure class="home-dist ([^"]+)"([^>]*)>', block)
     assert len(figures) == 2, f"expected two chart variants, found {len(figures)}"
-    hidden = [cls for cls, attrs in figures if 'aria-hidden="true"' in attrs]
-    assert len(hidden) == 1, f"exactly one variant must be aria-hidden, got {hidden}"
-    ids = re.findall(r'id="(distTitle|distDesc)([^"]*)"', block)
-    assert len(set(ids)) == len(ids), f"duplicate ids across the two chart variants: {ids}"
+    for cls, attrs in figures:
+        assert "aria-hidden" not in attrs, (
+            f"{cls} is aria-hidden; at the width where it is the DISPLAYED chart that leaves no "
+            "chart in the accessibility tree"
+        )
+    ids = re.findall(r'id="((?:distTitle|distDesc)[^"]*)"', block)
+    assert len(set(ids)) == len(ids) == 4, f"chart variants must have distinct ids, got {ids}"
+    for viewport in (320, 390, 520, 521, 560, 1440):
+        svg = _variant(_displayed(viewport))
+        assert "aria-labelledby" in svg and "<title" in svg, (
+            f"at {viewport}px the displayed chart is not an accessible named image"
+        )
 
 
 def test_home_chart_shows_its_denominator():

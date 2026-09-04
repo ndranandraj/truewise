@@ -216,10 +216,15 @@ a:hover { color: var(--brand-deep); }
 .home-dist text { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 /* Two chart variants, one shown at a time. SVG text scales with the viewBox, so a 480-wide chart
    squeezed into a phone column renders its 13px labels at about 9px. The narrow variant is sized
-   for that column instead, so the labels keep their real size. Swapped at 520px, where the wide
-   chart stops fitting at 1:1. The hidden one is aria-hidden, so nothing is announced twice. */
+   for that column instead, so the labels keep their real size.
+   The swap is at 560px, not at the 520px content breakpoint: 560 is where the column (viewport
+   minus the 40px desktop gutter each side) first reaches the wide chart's own 480px, so it is the
+   narrowest viewport at which the wide chart renders 1:1. Swapping at 520 left a band around
+   521px where the wide chart was scaled to 0.92 and its labels rendered at 11.9px, under the 12px
+   floor. Neither variant is aria-hidden: display:none already takes the inactive one out of the
+   accessibility tree, and hiding both ways left a phone with no chart exposed at all. */
 .home-dist--narrow { display: none; }
-@media (max-width: 520px) {
+@media (max-width: 559px) {
   .home-dist--wide { display: none; }
   .home-dist--narrow { display: block; }
 }
