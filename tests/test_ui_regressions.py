@@ -63,6 +63,67 @@ def test_inner_pages_keep_a_mobile_gutter():
         )
 
 
+def _css_without_comments() -> str:
+    """styles.css with /* ... */ stripped, so a rule's declarations can be parsed.
+
+    These rules carry long explanatory comments, and a naive `padding:\\s*([^;]+);` happily matches
+    prose inside one. Strip first, then read.
+    """
+    return re.sub(r"/\*.*?\*/", "", (SITE / "styles.css").read_text(), flags=re.S)
+
+
+def test_inline_children_of_flex_columns_declare_align_self():
+    """Flexbox BLOCKIFIES its children: `display: inline-block` on a flex item computes to `block`,
+    and the default stretch then makes it fill the line.
+
+    That shipped twice in one module. `.live-card .tag` rendered as a 350px dark band instead of a
+    badge hugging "Start here", and `.live-cta` drew its underline across the whole column so it
+    read as a rule rather than a link. Neither is visible in the source: the authored value and the
+    computed value disagree. So any inline-block child of a flex column must say how it aligns.
+    """
+    css = _css_without_comments()
+    flex_columns = set()
+    for sel, body in re.findall(r"(\.[a-z0-9-]+)\s*\{([^}]*)\}", css):
+        if "display: flex" in body and "flex-direction: column" in body:
+            flex_columns.add(sel)
+    assert ".live-card" in flex_columns, "expected .live-card to be a flex column"
+
+    offenders = []
+    for sel, body in re.findall(r"(\.[a-z0-9-][^{]*)\{([^}]*)\}", css):
+        if "display: inline-block" not in body or "align-self" in body:
+            continue
+        # Only the ones actually parented by a known flex column.
+        if any(c in sel for c in flex_columns):
+            offenders.append(sel.strip())
+    assert not offenders, (
+        "inline-block inside a flex column without align-self; it will be blockified and "
+        f"stretched: {offenders}"
+    )
+
+
+def test_module_dividers_do_not_outrun_their_content():
+    """The columns are equal-height grid items, so bottom padding on a card left its 1px divider
+    running past the last line as a stub with nothing beside it."""
+    css = _css_without_comments()
+    block = css.split(".live-card {", 1)[1].split("}", 1)[0]
+    pad = re.search(r"padding:\s*([^;]+);", block)
+    assert pad, ".live-card should set padding explicitly"
+    parts = pad.group(1).split()
+    assert len(parts) == 4 and parts[2] == "0", (
+        f".live-card needs 0 bottom padding so the divider ends with the content, got {pad.group(1)!r}"
+    )
+
+
+def test_the_profile_strip_shares_a_baseline():
+    """One item's description is a single line where its neighbours wrap to two. With
+    align-items: center that dropped its heading 10px below the others."""
+    css = _css_without_comments()
+    block = css.split(".profile-strip {", 1)[1].split("}", 1)[0]
+    assert "align-items: start" in block, (
+        "the strip must top-align, or the shortest column's heading floats out of the row"
+    )
+
+
 def test_mobile_module_separators_are_horizontal():
     """The three homepage product modules are separated by vertical rules on desktop. Once they
     stack into one column the rule has to become horizontal, but `.live-card.flagship` (two

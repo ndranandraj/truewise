@@ -251,24 +251,38 @@ a:hover { color: var(--brand-deep); }
 .live-card {
   display: flex; flex-direction: column; text-decoration: none; color: inherit;
   border: 0; border-right: 1px solid var(--line); border-radius: 0;
-  padding: var(--s6) var(--s6) var(--s6) 0; background: transparent; position: relative; min-width: 0;
+  /* No bottom padding: the columns are equal-height grid items, so any padding below the CTA left
+     the divider running on past it as a stub with nothing beside it. The rule should stop where
+     the content stops. Breathing room below the module comes from its own margin instead. */
+  padding: var(--s6) var(--s6) 0 0; background: transparent; position: relative; min-width: 0;
 }
 .live-card:last-child { border-right: 0; padding-right: 0; }
 .live-card:hover { transform: none; box-shadow: none; color: inherit; }
 .live-card:hover h3 { color: var(--brand); }
 .live-card.flagship { border: 0; border-right: 1px solid var(--line); box-shadow: none; }
 .live-card.flagship:last-child { border-right: 0; }
-.live-card .tag { position: static; display: inline-block; margin-left: var(--s3); background: var(--brand); color: var(--text-on-brand); font-family: var(--ui); font-size: var(--t-label); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: var(--r-sm); padding: 2px var(--s2); vertical-align: middle; }
+/* The badge lives INSIDE the h3, so it sits beside the heading rather than as a block above it,
+   which is what margin-left and vertical-align were always written for. As a direct child of the
+   card it was a flex item, and flexbox BLOCKIFIES its children: `display: inline-block` computed
+   to `block` and the default stretch made it a 350px dark band across the column. Moving it into
+   the heading also realigns the three module headings, which the block badge pushed 30px apart.
+   align-self is kept as a guard, so it cannot stretch again if it is ever moved back out. */
+.live-card .tag { position: static; display: inline-block; align-self: start; margin-left: var(--s3); background: var(--brand); color: var(--text-on-brand); font-family: var(--ui); font-size: var(--t-label); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: var(--r-sm); padding: 2px var(--s2); vertical-align: middle; }
 .live-card h3 { margin: 0 0 var(--s2); font-family: var(--display); font-size: var(--t-sub); font-weight: 600; }
 .live-card p { margin: 0; color: var(--ink-soft); font-size: var(--t-ui); line-height: 1.55; flex: 1; }
-.live-cta { display: inline-block; margin-top: var(--s4); color: var(--brand); font-weight: 600; font-size: var(--t-ui); border-bottom: 1px solid var(--brand-300); }
+/* align-self again: as a flex item this is blockified, so the underline spanned the whole column
+   and read as a rule rather than a link. It also made the three CTAs look unequal, because the
+   last column has no divider gutter and so is 25px wider. Hugging the text fixes both. */
+.live-cta { display: inline-block; align-self: start; margin-top: var(--s4); color: var(--brand); font-weight: 600; font-size: var(--t-ui); border-bottom: 1px solid var(--brand-300); }
 .live-cta:hover { border-bottom-color: var(--brand); }
 
 /* Profile-features strip */
 .profile-strip {
   margin-top: var(--s5); border: 1px solid var(--line); background: var(--sand);
   border-radius: var(--r-md); padding: var(--s5) var(--s6);
-  display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: var(--s6); align-items: center;
+  /* start, not center: Mobility's description is one line where the other two wrap to two, so
+     centring dropped its heading 10px below its siblings and broke the row's shared baseline. */
+  display: grid; grid-template-columns: auto 1fr 1fr 1fr; gap: var(--s6); align-items: start;
 }
 .profile-strip .strip-label { font-family: var(--ui); font-size: var(--t-label); font-weight: 600; text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint); margin: 0; }
 .profile-strip h3 { font-family: var(--display); font-size: var(--t-sub); font-weight: 600; margin: 0; }
