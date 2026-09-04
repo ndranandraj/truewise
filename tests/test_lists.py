@@ -20,7 +20,7 @@ VC_COLS = (
 )
 
 
-def _setup(tmp_path, monkeypatch):
+def _setup(tmp_path, monkeypatch, register_fixture_slugs):
     pq = tmp_path / "parquet"
     pq.mkdir()
     con = duckdb.connect()
@@ -80,12 +80,16 @@ def _setup(tmp_path, monkeypatch):
     monkeypatch.setattr(bl, "PARQUET_DIR", pq)
     monkeypatch.setattr(bs, "PARQUET_DIR", pq)
     monkeypatch.setattr(bl, "SITE", tmp_path / "site")
+    # Builders resolve slugs strictly from the registry, so register these synthetic schools first.
+    register_fixture_slugs()
     bl.main()
     return tmp_path / "site"
 
 
-def test_highest_paying_ranks_correctly_and_excludes_thin_majors(tmp_path, monkeypatch):
-    site = _setup(tmp_path, monkeypatch)
+def test_highest_paying_ranks_correctly_and_excludes_thin_majors(
+    tmp_path, monkeypatch, register_fixture_slugs
+):
+    site = _setup(tmp_path, monkeypatch, register_fixture_slugs)
     h = (site / "lists" / "highest-paying-majors" / "index.html").read_text()
     assert "Engineering" in h
     # The higher-paying major must rank above the lower-paying one.
@@ -104,8 +108,8 @@ def test_highest_paying_ranks_correctly_and_excludes_thin_majors(tmp_path, monke
     assert card.exists() and card.stat().st_size > 1000, "per-list OG card missing"
 
 
-def test_index_and_state_list_exist(tmp_path, monkeypatch):
-    site = _setup(tmp_path, monkeypatch)
+def test_index_and_state_list_exist(tmp_path, monkeypatch, register_fixture_slugs):
+    site = _setup(tmp_path, monkeypatch, register_fixture_slugs)
     idx = (site / "lists" / "index.html").read_text()
     assert 'href="/lists/highest-paying-majors/"' in idx
     assert "one stated metric" in idx  # the honesty framing

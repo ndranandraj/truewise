@@ -755,10 +755,13 @@ def build_slugs(qualified: dict) -> dict[str, str]:
 
     published/slug_registry.json now holds the mapping, so a published URL cannot move. See that
     module for why a deterministic tie-break was not enough on its own.
-    """
-    from pipeline.slug_registry import assign
 
-    return assign(qualified)
+    Resolution is STRICT: an unregistered institution raises rather than being given an invented
+    slug. Run `make slug-registry` and commit the diff to publish a new college.
+    """
+    from pipeline.slug_registry import resolve
+
+    return resolve(qualified)
 
 
 def main() -> None:

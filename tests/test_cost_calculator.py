@@ -18,7 +18,7 @@ import pipeline.build_site as bs
 from tests.test_college_pages import INST_COLS, VC_COLS
 
 
-def _build(tmp_path, monkeypatch, net_price_row):
+def _build(tmp_path, monkeypatch, register_fixture_slugs, net_price_row):
     pq = tmp_path / "parquet"
     pq.mkdir()
     con = duckdb.connect()
@@ -74,14 +74,19 @@ def _build(tmp_path, monkeypatch, net_price_row):
 
     monkeypatch.setattr(bs, "PARQUET_DIR", pq)
     monkeypatch.setattr(bcp, "SITE", tmp_path / "site")
+    # Builders resolve slugs strictly from the registry, so register these synthetic schools first.
+    register_fixture_slugs()
     bcp.main()
     return (tmp_path / "site" / "college" / "test-university" / "index.html").read_text()
 
 
-def test_calculator_uses_real_figures_and_states_assumptions(tmp_path, monkeypatch):
+def test_calculator_uses_real_figures_and_states_assumptions(
+    tmp_path, monkeypatch, register_fixture_slugs
+):
     html = _build(
         tmp_path,
         monkeypatch,
+        register_fixture_slugs,
         "('100','Austin','http://x',5000,18000,12000,14000,20000,24000,28000,0.4,0.3,0.75)",
     )
     data = json.loads(re.search(r'id="calc-data">(.*?)</script>', html).group(1))
@@ -96,11 +101,14 @@ def test_calculator_uses_real_figures_and_states_assumptions(tmp_path, monkeypat
     assert "assumes aid and price stay flat" in html
 
 
-def test_suppressed_income_band_is_disabled_never_guessed(tmp_path, monkeypatch):
+def test_suppressed_income_band_is_disabled_never_guessed(
+    tmp_path, monkeypatch, register_fixture_slugs
+):
     # Middle bracket ($48k-$75k) is NULL, i.e. privacy-suppressed.
     html = _build(
         tmp_path,
         monkeypatch,
+        register_fixture_slugs,
         "('100','Austin','http://x',5000,18000,12000,14000,NULL,24000,28000,0.4,0.3,0.75)",
     )
     data = json.loads(re.search(r'id="calc-data">(.*?)</script>', html).group(1))

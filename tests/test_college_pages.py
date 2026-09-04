@@ -26,7 +26,7 @@ INST_COLS = (
 )
 
 
-def _setup(tmp_path, monkeypatch):
+def _setup(tmp_path, monkeypatch, register_fixture_slugs):
     pq = tmp_path / "parquet"
     pq.mkdir()
     con = duckdb.connect()
@@ -103,12 +103,14 @@ def _setup(tmp_path, monkeypatch):
 
     monkeypatch.setattr(bs, "PARQUET_DIR", pq)
     monkeypatch.setattr(bcp, "SITE", tmp_path / "site")
+    # Builders resolve slugs strictly from the registry, so register these synthetic schools first.
+    register_fixture_slugs()
     bcp.main()
     return tmp_path / "site"
 
 
-def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
-    site = _setup(tmp_path, monkeypatch)
+def test_college_page_bakes_the_facts(tmp_path, monkeypatch, register_fixture_slugs):
+    site = _setup(tmp_path, monkeypatch, register_fixture_slugs)
     page = site / "college" / "test-state-university" / "index.html"
     assert page.exists(), "college page not generated"
     h = page.read_text()
@@ -145,8 +147,8 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch):
     assert "tw-verdict--pass" in h and "tw-verdict--fail" in h
 
 
-def test_state_index_and_national(tmp_path, monkeypatch):
-    site = _setup(tmp_path, monkeypatch)
+def test_state_index_and_national(tmp_path, monkeypatch, register_fixture_slugs):
+    site = _setup(tmp_path, monkeypatch, register_fixture_slugs)
     tx = (site / "colleges" / "tx" / "index.html").read_text()
     assert "Colleges in Texas" in tx
     assert "test-state-university" in tx

@@ -8,9 +8,9 @@ loads them did not order by unitid, so DuckDB was free to return tied rows diffe
 process to the next. Twelve fresh processes produced the live mapping nine times and an alternate
 mapping three times, and the alternate moved 36 unitids.
 
-That is a URL contract failing at random. Worse, `build_slugs` is called from four separate
-processes in one deploy (college pages, lists, canonical profiles), so a single build could publish
-a page at one slug and link to it at another.
+That is a URL contract failing at random. Worse, the deploy has two independent slug consumers,
+college pages and lists, running as separate processes, so a single build could publish a page at
+one slug and link to it at another.
 
 The fix is not a better tie-break. Sorting ties on unitid is deterministic but assigns the suffix to
 the other sibling in 79 cases, so it would silently move 79 live URLs. A published URL is a promise;
@@ -49,10 +49,34 @@ def load() -> dict[str, str]:
     return json.loads(REGISTRY.read_text())
 
 
-def assign(qualified: dict, registry: dict[str, str] | None = None) -> dict[str, str]:
-    """Slugs for the qualified schools: registry first, then deterministic for anything new.
+def resolve(qualified: dict, registry: dict[str, str] | None = None) -> dict[str, str]:
+    """Slugs for the qualified schools, STRICTLY from the registry. Raises on anything unregistered.
 
-    Returns keys of the same type as `qualified`, since callers index it with their own unitids.
+    This is the production path: every builder that publishes or links to a college page uses it.
+    Failing closed is the point. `assign()` below will happily invent a slug for an unknown school,
+    which is right when deliberately extending the registry and wrong during a build, where it
+    would publish a page at an address that is in no committed contract and that a later build
+    could choose differently. The deploy workflow checks the registry up front, but `make
+    college-pages` and a direct `python -m pipeline.build_college_pages` do not, and those are the
+    paths behind local previews and manual promotion.
+    """
+    registry = load() if registry is None else registry
+    missing = [u for u in qualified if str(u) not in registry]
+    if missing:
+        names = [qualified[u].get("name") for u in missing[:5]]
+        raise SystemExit(
+            f"{len(missing):,} institution(s) have no registered slug (e.g. {names}). "
+            "Run `make slug-registry`, review the diff and commit it before building. "
+            "Slugs are a published URL contract and are not invented at build time."
+        )
+    return {u: registry[str(u)] for u in qualified}
+
+
+def assign(qualified: dict, registry: dict[str, str] | None = None) -> dict[str, str]:
+    """Registry first, then a deterministic slug for anything new. For EXTENDING the registry.
+
+    Not for builders: see resolve(). Returns keys of the same type as `qualified`, since callers
+    index it with their own unitids.
     """
     from pipeline.build_college_pages import slugify
 
@@ -76,6 +100,15 @@ def assign(qualified: dict, registry: dict[str, str] | None = None) -> dict[str,
             cand = f"{base}-{(s.get('state') or '').lower()}"
         if cand in reserved:
             cand = f"{base}-{u}"
+        if cand in reserved:
+            # unitid is unique, so this needs the unitid form to have been issued to ANOTHER
+            # institution. Writing it anyway would put two unitids on one URL. Refuse instead:
+            # a registry that cannot be extended safely is a problem for a person to look at.
+            owner = next(k for k, v in registry.items() if v == cand)
+            raise SystemExit(
+                f"cannot assign a slug to {u} ({s.get('name')!r}): every candidate is taken, and "
+                f"{cand!r} already belongs to {owner}. Resolve by hand in {REGISTRY.name}."
+            )
         reserved.add(cand)
         out[u] = cand
     return out

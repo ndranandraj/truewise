@@ -3,8 +3,9 @@
 Slugs were derived from the data, and same-name institutions were separated by the order rows
 arrived in. The loading query did not order by unitid, so DuckDB could return tied rows differently
 per process: twelve fresh runs gave the live mapping nine times and an alternate three times, moving
-36 unitids across 18 pairs. Because college pages, lists and canonical profiles each compute slugs
-in a SEPARATE process, one deploy could publish a page at one slug and link to it at another.
+36 unitids across 18 pairs. Because the deploy has two independent slug consumers, college pages
+and lists, running as separate processes, one deploy could publish a page at one slug and link to
+it at another.
 
 published/slug_registry.json now freezes the mapping. These tests hold that contract: shuffling the
 input cannot change an existing URL, a retired slug is never handed to another institution, and CI
@@ -19,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.slug_registry import REGISTRY, assign
+from pipeline.slug_registry import REGISTRY, assign, resolve
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -93,7 +94,38 @@ def test_the_registry_covers_every_published_college():
 
 
 def test_build_slugs_goes_through_the_registry():
-    """The four callers all route here, so the registry cannot be bypassed by one of them."""
+    """Every slug consumer routes here, so the registry cannot be bypassed by one of them."""
     src = (ROOT / "pipeline" / "build_college_pages.py").read_text()
     body = src.split("def build_slugs(", 1)[1].split("\ndef ", 1)[0]
     assert "slug_registry" in body, "build_slugs must resolve slugs through the registry"
+    assert "resolve" in body, "builders must use the STRICT resolver, not assign()"
+
+
+def test_builders_fail_closed_on_an_unregistered_institution():
+    """The deploy workflow checks the registry up front, but `make college-pages` and a direct
+    module run do not, and those are the paths behind local previews and manual promotion. A build
+    must refuse rather than invent a URL that is in no committed contract."""
+    from pipeline.build_college_pages import build_slugs
+
+    unknown = {
+        "99999999": {"name": "Unregistered College", "state": "CA", "n_pass": 1, "n_fail": 0}
+    }
+    with pytest.raises(SystemExit, match="no registered slug"):
+        build_slugs(unknown)
+    # resolve() is strict; assign() is deliberately permissive, since extending is its job.
+    assert resolve({}, {}) == {}
+    assert assign(unknown, {})["99999999"] == "unregistered-college"
+
+
+def test_assign_refuses_when_even_the_unitid_fallback_is_taken():
+    """base, base-state and base-unitid are the whole ladder. The unitid form was added without
+    rechecking, so a registry that had already issued it got a second institution on the same URL.
+    unitid is unique, so this only happens when that slug belongs to someone else: refuse."""
+    registry = {
+        "111111": "beauty-academy",
+        "222222": "beauty-academy-tx",
+        "333333": "beauty-academy-900001",  # already owns the fallback for 900001
+    }
+    schools = {"900001": {"name": "Beauty Academy", "state": "TX", "n_pass": 1, "n_fail": 0}}
+    with pytest.raises(SystemExit, match="already belongs to 333333"):
+        assign(schools, registry)
