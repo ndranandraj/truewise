@@ -81,8 +81,11 @@ def assign(qualified: dict, registry: dict[str, str] | None = None) -> dict[str,
     from pipeline.build_college_pages import slugify
 
     registry = load() if registry is None else registry
-    # Every slug ever issued is reserved, including for schools no longer in the data.
-    reserved = set(registry.values())
+    # Every slug ever issued is reserved, including for schools no longer in the data. Owners are
+    # tracked slug -> unitid and grow as this run assigns, so a conflict can always name the holder
+    # even when it was handed out moments ago rather than in a previous release.
+    owner_of: dict[str, str] = {v: k for k, v in registry.items()}
+    reserved = set(owner_of)
     out: dict = {}
     new: list = []
     for u, s in qualified.items():
@@ -104,12 +107,18 @@ def assign(qualified: dict, registry: dict[str, str] | None = None) -> dict[str,
             # unitid is unique, so this needs the unitid form to have been issued to ANOTHER
             # institution. Writing it anyway would put two unitids on one URL. Refuse instead:
             # a registry that cannot be extended safely is a problem for a person to look at.
-            owner = next(k for k, v in registry.items() if v == cand)
+            #
+            # The holder may have been assigned earlier in THIS run, not just in the registry: a
+            # name that slugifies to another institution's unitid fallback can take it first, and
+            # sorts before it when the name uses a space where the other uses a hyphen (space is
+            # 0x20, hyphen 0x2D). Looking only at the registry raised StopIteration there, which
+            # still failed before writing but reported nothing useful.
             raise SystemExit(
                 f"cannot assign a slug to {u} ({s.get('name')!r}): every candidate is taken, and "
-                f"{cand!r} already belongs to {owner}. Resolve by hand in {REGISTRY.name}."
+                f"{cand!r} already belongs to {owner_of[cand]}. Resolve by hand in {REGISTRY.name}."
             )
         reserved.add(cand)
+        owner_of[cand] = str(u)
         out[u] = cand
     return out
 

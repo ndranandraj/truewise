@@ -129,3 +129,21 @@ def test_assign_refuses_when_even_the_unitid_fallback_is_taken():
     schools = {"900001": {"name": "Beauty Academy", "state": "TX", "n_pass": 1, "n_fail": 0}}
     with pytest.raises(SystemExit, match="already belongs to 333333"):
         assign(schools, registry)
+
+
+def test_the_conflict_names_a_holder_assigned_earlier_in_the_same_run():
+    """The holder is not always in the registry: it can have been assigned moments ago.
+
+    Sorting is by (name, unitid), and ASCII space (0x20) precedes hyphen (0x2D), so "Beauty
+    Academy 900001" is processed BEFORE "Beauty-Academy" even though slugify collapses both to the
+    same stem. The first takes "beauty-academy-900001", which is exactly the second's unitid
+    fallback. Looking the owner up in the registry alone raised StopIteration: it still failed
+    before writing, so no duplicate URL could be recorded, but it reported nothing useful.
+    """
+    registry = {"111111": "beauty-academy", "222222": "beauty-academy-tx"}
+    schools = {
+        "900001": {"name": "Beauty-Academy", "state": "TX", "n_pass": 1, "n_fail": 0},
+        "800001": {"name": "Beauty Academy 900001", "state": "TX", "n_pass": 1, "n_fail": 0},
+    }
+    with pytest.raises(SystemExit, match="already belongs to 800001"):
+        assign(schools, registry)
