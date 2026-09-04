@@ -228,8 +228,12 @@ a:hover { color: var(--brand-deep); }
   .home-dist--wide { display: none; }
   .home-dist--narrow { display: block; }
 }
-.finding-stat { font-family: var(--mono); font-size: clamp(48px, 6vw, 76px); font-weight: 500; line-height: 1; letter-spacing: -0.03em; margin: 0; max-width: 24ch; color: var(--series-4); }
-.finding-stat b { color: var(--series-4); font-variant-numeric: tabular-nums; }
+/* The FIGURE is the display element, not the sentence around it. This set all 17 words at 76px
+   mono, 13 lines and 988px tall, taking 73% of the band: a whole sentence wearing the treatment
+   the type roles reserve for a number. Now <b> is the figure and the rest is readable prose, which
+   is what "mono for figures, serif for editorial" meant. */
+.finding-stat { font-family: var(--display); font-size: var(--t-lede); line-height: 1.45; margin: 0; max-width: 34ch; color: var(--text-on-dark); }
+.finding-stat b { display: block; font-family: var(--mono); font-size: clamp(48px, 6vw, 76px); font-weight: 500; line-height: 1; letter-spacing: -0.03em; margin-bottom: var(--s3); color: var(--series-4); font-variant-numeric: tabular-nums; }
 .finding-body { font-size: var(--t-ui); line-height: 1.6; color: var(--brand-300); margin: var(--s4) 0 0; max-width: 60ch; }
 .finding-body b { color: var(--series-4); }
 .finding-body a { color: var(--paper); }

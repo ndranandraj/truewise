@@ -124,6 +124,21 @@ def test_the_profile_strip_shares_a_baseline():
     )
 
 
+def test_display_type_is_reserved_for_the_figure_not_the_sentence():
+    """The finding band set its whole 17-word sentence at 76px mono: 13 lines, 988px, 73% of the
+    band. The type roles reserve mono display sizing for FIGURES; the sentence around one is
+    editorial prose. So the big treatment belongs on the <b>, and the paragraph itself must stay at
+    a reading size."""
+    css = _css_without_comments()
+    para = css.split(".finding-stat {", 1)[1].split("}", 1)[0]
+    figure = css.split(".finding-stat b {", 1)[1].split("}", 1)[0]
+    assert "var(--t-lede)" in para, "the sentence must be set at a reading size, not a display size"
+    assert "var(--display)" in para, "editorial prose uses the serif, per the type roles"
+    assert "var(--mono)" in figure and "clamp(" in figure, (
+        "the figure itself keeps the large mono treatment"
+    )
+
+
 def test_mobile_module_separators_are_horizontal():
     """The three homepage product modules are separated by vertical rules on desktop. Once they
     stack into one column the rule has to become horizontal, but `.live-card.flagship` (two
