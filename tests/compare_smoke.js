@@ -71,8 +71,13 @@ const ck = (name, cond) => {
   els.income.value = "-1";
   render();
 
-  // Column count is the observable proxy for the internal picked[] list.
-  const cols = () => (els.cmp.innerHTML.match(/data-rm=/g) || []).length;
+  // Distinct removable schools is the observable proxy for the internal picked[] list. Counting
+  // occurrences of data-rm would double now: each school gets a Remove control in the desktop
+  // table header AND in the phone card list, and only one of the two is displayed at a width.
+  const cols = () =>
+    new Set(
+      Array.from(els.cmp.innerHTML.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+    ).size;
 
   ck("duplicate add is ignored", (await add("223232"), cols() === 2));
 
@@ -109,6 +114,41 @@ const ck = (name, cond) => {
   ck('Compare resolves "UCLA" (advertised on the page)', topName("ucla").includes("California-Los Angeles"));
   ck('Compare resolves "Baylor" to the University', topName("baylor") === "Baylor University");
   ck('Compare resolves "ut austin" to UT Austin', topName("ut austin").includes("Texas at Austin"));
+
+  // The phone presentation. The sticky-label table was the interim repair and it failed its own
+  // acceptance: at 320px one school still overflowed the 280px content box, and with two or more
+  // schools a fragment of the outgoing column sat between the sticky label and the next full
+  // column, so a phone user read partial words and partial numbers. Below 700px the table is
+  // replaced by metric-major cards, which removes the horizontal axis and keeps the schools
+  // adjacent, since stacking one school per card would put the two compared figures a scroll apart.
+  await add("223232");
+  await add("110538");
+  const out = els.cmp.innerHTML;
+  const metrics = (out.match(/<section class="cmp-metric">/g) || []).length;
+  // Minus the header row, whose first cell is the empty corner above the metric labels.
+  const tableRows = (out.match(/<tr><th>/g) || []).length - 1;
+  ck("phone view exists", out.includes('class="cmp-stack"'));
+  ck(
+    `one card per metric (${metrics} cards vs ${tableRows} table rows)`,
+    metrics > 0 && metrics === tableRows,
+  );
+
+  // Same numbers in both renderings, or the phone view is quietly a different product.
+  const picked2 = new Set(
+    Array.from(out.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+  );
+  const cells = Array.from(out.matchAll(/<tr><th>[^<]*<\/th>(.*?)<\/tr>/g), (m) =>
+    Array.from(m[1].matchAll(/<td>(.*?)<\/td>/g), (c) => c[1]),
+  ).flat();
+  const dds = Array.from(out.matchAll(/<dd>(.*?)<\/dd>/g), (m) => m[1]);
+  ck(
+    `every table value appears in the phone view (${cells.length} cells, ${dds.length} entries)`,
+    cells.length > 0 && cells.length === dds.length && cells.every((c, i) => c === dds[i]),
+  );
+  ck(
+    `each card names every school it lists (${picked2.size} schools)`,
+    picked2.size > 1 && (out.match(/<dt>/g) || []).length === metrics * picked2.size,
+  );
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL COMPARE CHECKS PASSED");
   process.exit(fails ? 1 : 0);

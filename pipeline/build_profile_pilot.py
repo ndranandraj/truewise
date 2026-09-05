@@ -210,8 +210,16 @@ def _static_row(r: dict) -> str:
     # 1-year earnings marker: only beside a DISPLAYED assessed value whose horizon is 1-year. Horizon is
     # None for insufficient rows (earnings hidden), so this never labels a figure the page does not show.
     earn = _money(r["earnings"])
-    if earn is not None and r.get("horizon") == "1yr_after_completion":
-        earn += ' <span class="tw-oneyr">1-year earnings</span>'
+    if earn is not None:
+        marker = (
+            '<span class="tw-oneyr">1-year earnings</span>'
+            if r.get("horizon") == "1yr_after_completion"
+            else ""
+        )
+        # One container, so the mobile row is label + value and not label + value + marker:
+        # as a third flex item the nowrap marker could not shrink, and pushed the document
+        # 34px past a 320px viewport on a school with any 1-year figure.
+        earn = f'<span class="tw-val">{earn}{marker}</span>'
     return (
         f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
         f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{_esc(r["program"])}</th>'

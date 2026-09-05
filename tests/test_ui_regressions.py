@@ -234,6 +234,7 @@ def test_every_scroll_region_can_be_reached_by_keyboard():
         SITE / "careers" / "index.html",
         SITE / "compare" / "index.html",
         SITE / "value-check" / "index.html",
+        SITE / "k12" / "compare" / "index.html",
     ]
     opening = re.compile(r'<div class="(?:tscroll|table-wrap|tw-table__scroll)"[^>]*>')
     plain = []
@@ -262,19 +263,32 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
-def test_compare_keeps_its_metric_labels_in_view():
-    """At 390px table.cmp is 560px inside a roughly 350px content area, so the first school's name
-    and values began off-screen with a single school added. Making the metric column sticky means
-    the numbers that do scroll into view always have their label beside them."""
+def test_compare_has_no_horizontal_axis_on_a_phone():
+    """The sticky-label table was the interim repair and it failed its own acceptance criteria.
+
+    At 320px one school still overflowed the 280px content box, and with two or more schools a
+    fragment of the outgoing column sat between the sticky label and the next full column, so a
+    phone user read partial words and partial values. The contract's fallback clause says that is
+    the point to stop refining the table, so below 700px it is replaced outright by metric-major
+    cards: one card per measure, each school listed under it.
+
+    Grouping by metric rather than by school is deliberate. Stacking one school per card would put
+    the two figures being compared a scroll apart, which is the one thing Compare exists to avoid.
+    """
     html = (SITE / "compare" / "index.html").read_text()
-    rule = re.search(
-        r"table\.cmp tbody th, table\.cmp thead th:first-child \{([^}]*)\}", html, re.S
+    css = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+    swap = re.search(r"@media \(max-width: 699px\) \{(.*?)\n    \}", css, re.S)
+    assert swap, "no phone breakpoint that swaps the table for the cards"
+    assert ".table-wrap { display: none; }" in swap.group(1), "the table must be gone, not shrunk"
+    assert ".cmp-stack { display: block; }" in swap.group(1), "the cards must take its place"
+    # Exactly one of the two is displayed at any width, so the duplicate Remove buttons never both
+    # sit in the tab order. Same reasoning as the mobile sort control.
+    assert ".cmp-stack { display: none;" in css, "the cards must be hidden above the breakpoint"
+    # And the table keeps no phone-only scaffolding it no longer needs.
+    assert "position: sticky" not in css, (
+        "the sticky metric column was scaffolding for a scroll that no longer happens"
     )
-    assert rule, "compare's metric column is not sticky"
-    assert "position: sticky" in rule.group(1) and "left: 0" in rule.group(1)
-    assert "background:" in rule.group(1), (
-        "a sticky cell needs an opaque background to scroll under"
-    )
+    assert 'class="cmp-stack"' in html, "the renderer must emit the phone view"
 
 
 def test_every_public_hand_written_page_declares_a_canonical():

@@ -37,26 +37,31 @@
     .income-row label { font-weight: 600; }
     .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
-    /* A flat 560px min-width forced a scroll even with one school added, whose label column plus
-       one school column is about 292px and fits a 390px phone outright. The floor belongs on the
-       school COLUMN, not the table: one school then fits, and two or more scroll because they
-       genuinely have to. */
+    /* The table is the desktop presentation only. Below 700px it is replaced outright by
+       .cmp-stack, so it no longer needs a sticky column, a scroll cue or a narrow-width floor:
+       there is no horizontal scrolling left to explain. */
     table.cmp { border-collapse: collapse; width: 100%; }
     table.cmp thead th:not(:first-child), table.cmp tbody td { min-width: 160px; }
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
     table.cmp thead th { border-bottom: 2px solid var(--line); }
     table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
-    /* The metric label stays put while the school columns scroll under it. Without this, the table
-       is 560px inside a ~350px content area at 390px, so the first school's name and values start
-       off-screen with one school added, before any real comparison begins: a phone user saw a
-       column of numbers with no idea which measure they belonged to. box-shadow rather than
-       border-right, because a collapsed border does not paint on a sticky cell. */
-    table.cmp tbody th, table.cmp thead th:first-child {
-      position: sticky; left: 0; z-index: 1;
-      background: var(--paper); box-shadow: 1px 0 0 var(--line);
-    }
-    @media (max-width: 559px) { table.cmp tbody th { width: 132px; } }
     table.cmp td { font-variant-numeric: tabular-nums; }
+    /* Metric-major cards, the phone presentation. One card per measure, each school listed under
+       it, so the two figures being compared sit one line apart and nothing scrolls sideways. */
+    .cmp-stack { display: none; margin: 14px 0 8px; }
+    .cmp-picked { list-style: none; margin: 0 0 var(--s6); padding: 0; display: grid; gap: var(--s3); }
+    .cmp-picked li { display: grid; gap: 2px; padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+    .cmp-metric { margin: 0 0 var(--s5); }
+    .cmp-metric h3 { font-size: var(--t-fine); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 var(--s2); }
+    .cmp-metric dl { margin: 0; display: grid; gap: var(--s2); }
+    .cmp-metric dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: baseline; padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft); }
+    .cmp-metric dt { color: var(--ink-soft); font-size: var(--t-fine); min-width: 0; overflow-wrap: anywhere; }
+    .cmp-metric dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
+    .cmp-metric dd .schmeta { display: block; }
+    @media (max-width: 699px) {
+      .table-wrap { display: none; }
+      .cmp-stack { display: block; }
+    }
     .schname { font-weight: 700; }
     .schname a { color: var(--brand); text-decoration: none; }
     .schmeta { color: var(--ink-soft); font-size: .85rem; font-weight: 400; margin-top: 2px; }
@@ -240,48 +245,80 @@
         <button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></th>`;
     }).join("")}</tr>`;
 
-    const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
-    const rows = [];
+    // Collect the comparison as (label, cells) pairs, then render it twice from the one source:
+    // a table for the pointer-and-width case, and metric-major cards for phones. Two renderings of
+    // one array, never two copies of the logic.
+    const specs = [];
+    const row = (label, cells) => { specs.push([label, cells]); return ""; };
 
-    rows.push(row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported")));
+    row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported"));
 
-    rows.push(row(bracket < 0 ? "Net price, all families" : "Net price at this income",
+    row(bracket < 0 ? "Net price, all families" : "Net price at this income",
       cols.map(s => {
         if (!s.net_price) return "not reported";
         const v = bracket < 0 ? s.net_price.avg : (s.net_price.brackets || [])[bracket];
         return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
-      })));
+      }));
 
     // Coverage first: a school with 89 of 254 programs measured should not read as equivalent to
     // one with broad coverage, however good its pass rate looks. Computed per school, never copied.
-    rows.push(row("Programs measured", cols.map(s => {
+    row("Programs measured", cols.map(s => {
       const decided = s.n_pass + s.n_fail;
       const total = decided + (s.n_insufficient || 0);
       if (!total) return "not reported";
       const share = Math.round(100 * decided / total);
       const cls = share < 50 ? "bad" : "";
       return `<span class="${cls}">${decided} of ${total}</span> <span class='schmeta'>${share}% of programs have earnings data</span>`;
-    })));
+    }));
 
-    rows.push(row("Programs clearing the bar", cols.map(s => {
+    row("Programs clearing the bar", cols.map(s => {
       const r = passRate(s), decided = s.n_pass + s.n_fail;
       if (r == null) return "not enough data";
       const cls = r >= 0.9 ? "good" : (r < 0.6 ? "bad" : "");
       return `<span class="${cls}">${Math.round(r * 100)}%</span> <span class="schmeta">of ${decided} measured</span>`;
-    })));
+    }));
 
-    rows.push(row("Programs falling short", cols.map(s =>
-      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data")));
+    row("Programs falling short", cols.map(s =>
+      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data"));
 
-    rows.push(row("Typical HS-grad benchmark", cols.map(s => money(s.threshold))));
+    row("Typical HS-grad benchmark", cols.map(s => money(s.threshold)));
 
-    rows.push(row("Students on Pell grants", cols.map(s => pct(s.pell))));
-    rows.push(row("Complete their program", cols.map(s => pct(s.completion))));
-    rows.push(row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no")));
-    rows.push(row("Full profile", cols.map(s =>
-      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`)));
+    row("Students on Pell grants", cols.map(s => pct(s.pell)));
+    row("Complete their program", cols.map(s => pct(s.completion)));
+    row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no"));
+    row("Full profile", cols.map(s =>
+      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`));
 
-    cmp.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="College comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    const body = specs.map(([label, cells]) =>
+      `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
+
+    /* Phone presentation: one card per METRIC, listing each school beneath it.
+     *
+     * The sticky-label table was the interim repair and it did not hold. At 320px one school still
+     * overflowed the 280px content box, and with two or more schools a fragment of the outgoing
+     * column sat between the sticky label and the next full column, so a phone user read partial
+     * words and partial numbers. Grouping by metric instead of by school removes the horizontal
+     * axis entirely, and keeps the schools adjacent to each other, which is the whole point of
+     * Compare: stacking one school per card would have meant scrolling between the two figures
+     * being compared. */
+    const stack =
+      `<div class="cmp-stack">` +
+      `<ol class="cmp-picked">` + picked.map(p => {
+        const s = p.s, slug = SLUGS[p.unitid];
+        return `<li><span class="schname">${slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name)}</span>` +
+          `<span class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}</span>` +
+          `<button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></li>`;
+      }).join("") + `</ol>` +
+      specs.map(([label, cells]) =>
+        `<section class="cmp-metric"><h3>${label}</h3><dl>` +
+        cells.map((c, i) =>
+          `<div><dt>${esc(picked[i].s.name)}</dt><dd>${c}</dd></div>`).join("") +
+        `</dl></section>`).join("") +
+      `</div>`;
+
+    cmp.innerHTML =
+      `<div class="table-wrap" tabindex="0" role="region" aria-label="College comparison">` +
+      `<table class="cmp"><thead>${head}</thead><tbody>${body}</tbody></table></div>` + stack;
     cmp.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
   }
 

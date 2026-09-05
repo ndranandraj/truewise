@@ -154,7 +154,7 @@
     rows.push(row("Police officer on staff", cols.map(s => s.staff.police ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
     rows.push(row("Security guards", cols.map(s => s.staff.guard ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
     rows.push(row("Teachers not certified", cols.map(s => s.staff.uncert_pct != null ? `<span class="num">${s.staff.uncert_pct}%</span>` : "n/a")));
-    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="High school comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
     cmp.querySelectorAll(".rm").forEach(b => b.addEventListener("click", () => remove(b.dataset.k)));
   }
   render();

@@ -166,11 +166,12 @@
           const cells = [
             `<th scope="row" class="tw-td tw-td--program" data-label="Program">${esc(r.program)}</th>`,
             `<td class="tw-td" data-label="Degree">${esc(r.credential || "")}</td>`,
-            `<td class="tw-td tw-td--num" data-label="Median earnings">${this._num(r.earnings, money)}` +
+            `<td class="tw-td tw-td--num" data-label="Median earnings">` +
+              `<span class="tw-val">${this._num(r.earnings, money)}` +
               (r.horizon === "1yr_after_completion" && r.earnings != null
-                ? ' <span class="tw-oneyr">1-year earnings</span>'
+                ? '<span class="tw-oneyr">1-year earnings</span>'
                 : "") +
-              `</td>`,
+              `</span></td>`,
             `<td class="tw-td tw-td--num" data-label="vs a high-school grad">${this._premiumCell(r)}</td>`,
             `<td class="tw-td" data-label="Verdict">${this._verdictCell(r)}</td>`,
             `<td class="tw-td tw-td--num" data-label="Median debt">${this._num(r.debt, money)}</td>`,

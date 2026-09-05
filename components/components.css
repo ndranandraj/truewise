@@ -347,6 +347,13 @@
     flex: 0 0 auto;
     max-width: 55%;
   }
+  /* min-width: 0 lets the value shrink below its content's intrinsic width, which a flex item does
+     not do by default. Without it the value side sets a floor the viewport has to meet. */
+  .tw-td > .tw-val {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+  }
   .tw-td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -402,6 +409,14 @@
 }
 /* Inline "1-year earnings" marker: an earnings figure measured 1 year after completion, not 4. Reuses
    the caution palette; sits under the number so it does not read as part of the dollar amount. */
+/* The amount and its marker travel together in one container. In the stacked mobile row .tw-td is
+   a flex line of label and value; without this wrapper the marker was a THIRD flex item, and being
+   nowrap it could not shrink, so a school with any 1-year figure pushed the document to 354px
+   inside a 320px viewport and produced a page-level horizontal scrollbar. */
+.tw-val {
+  display: inline-block;
+  min-width: 0;
+}
 .tw-oneyr {
   display: block;
   margin-top: 2px;
@@ -409,6 +424,13 @@
   font-weight: 600;
   color: var(--caution);
   white-space: nowrap;
+}
+/* Below the narrowest supported width the marker wraps rather than overflow. Belt and braces with
+   the container above: the container stops it escaping the cell, this stops it setting the floor. */
+@media (max-width: 359px) {
+  .tw-oneyr {
+    white-space: normal;
+  }
 }
 
 /* B14 suppressed value */
