@@ -179,6 +179,52 @@ def test_type_is_a_generated_token_layer():
     )
 
 
+def test_no_generator_or_stylesheet_invents_a_type_size():
+    """The other half of the same root cause.
+
+    A type block in tokens.json only helps if the renderers actually reach for it. Before this,
+    head() in build_college_pages.py carried 13 distinct ad-hoc rem sizes and components.css
+    carried another 12, which is how a profile page ended up with a 40px title sitting straight on
+    a 19.2px heading while the homepage was on a clean scale. Every size in both is now a --t-*
+    token, and this test fails if a new rem or px size appears in either.
+
+    Three sizes are deliberately not tokens and are named here so the exemption is explicit rather
+    than a hole: the two text inputs sit at 16px because iOS Safari zooms the page when a focused
+    input is smaller, and the finding-band figure is a display number, not a step on a text scale.
+    """
+    exempt = re.compile(r"hero-search input|tw-search__input|finding-stat b|^\.brand$")
+    for path in [
+        PIPELINE / "build_college_pages.py",
+        ROOT / "components" / "components.css",
+        SITE / "styles.css",
+    ]:
+        text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        # head() lives inside an f-string, where a CSS brace is doubled.
+        text = text.replace("{{", "{").replace("}}", "}")
+        for sel, body in re.findall(r"([^{}]*)\{([^{}]*)\}", text):
+            sel = " ".join(sel.split())
+            if exempt.search(sel):
+                continue
+            for size in (s.strip() for s in re.findall(r"font-size:\s*([^;}]+)", body)):
+                assert "var(--t-" in size or size == "inherit", (
+                    f"{path.name}: ad-hoc type size {size!r} on {sel!r}; use a --t-* token"
+                )
+
+
+def test_the_profile_argument_is_set_in_the_editorial_serif():
+    """The role split says body is UI sans and editorial prose is the serif, but on a profile page
+    the verdict sentence and the payback explanation ARE the argument, and both inherited body
+    sans. They also inherited the 860px width the program table needs, which put prose at roughly
+    115 characters a line. Serif plus a measure, on the two elements that carry the reasoning."""
+    src = (PIPELINE / "build_college_pages.py").read_text()
+    for cls in (".verdict", ".calc-big"):
+        rule = re.search(rf"\n\s*{re.escape(cls)} \{{\{{(.+?)\}}\}}", src)
+        assert rule, f"{cls} rule not found in head()"
+        body = rule.group(1)
+        assert "var(--display)" in body, f"{cls} should carry the editorial serif"
+        assert "var(--measure)" in body, f"{cls} should be capped at a reading measure, not 860px"
+
+
 def test_display_type_is_reserved_for_the_figure_not_the_sentence():
     """The finding band set its whole 17-word sentence at 76px mono: 13 lines, 988px, 73% of the
     band. The type roles reserve mono display sizing for FIGURES; the sentence around one is

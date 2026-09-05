@@ -162,7 +162,7 @@ a:hover { color: var(--brand-deep); }
 .brand { font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; color: var(--ink); text-decoration: none; white-space: nowrap; }
 .brand span { color: var(--brand); }
 .brand:hover { color: var(--brand); }
-.brand-tagline { font-size: var(--t-label); font-weight: 600; color: var(--ink-500, var(--ink-faint)); border-left: 1px solid var(--line); padding-left: var(--s3); white-space: nowrap; }
+.brand-tagline { font-size: var(--t-label); font-weight: 600; color: var(--ink-faint); border-left: 1px solid var(--line); padding-left: var(--s3); white-space: nowrap; }
 .site-header nav { display: flex; align-items: center; gap: var(--s6); min-width: 0; }
 .site-header nav a { color: var(--ink-soft); text-decoration: none; font-size: var(--t-ui); font-weight: 500; white-space: nowrap; }
 .site-header nav a:hover { color: var(--brand); }
@@ -182,7 +182,7 @@ a:hover { color: var(--brand-deep); }
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--brand);
 }
 .eyebrow::before { content: none; }
-.hero h1 { font-size: clamp(38px, 5.2vw, 60px); line-height: 1.04; letter-spacing: -0.03em; margin: 0 0 var(--s4); text-wrap: balance; }
+.hero h1 { font-size: var(--t-display); line-height: 1.04; letter-spacing: -0.03em; margin: 0 0 var(--s4); text-wrap: balance; }
 .lede { font-family: var(--display); font-size: var(--t-lede); line-height: 1.5; color: var(--ink-soft); max-width: 46ch; margin: 0 0 var(--s6); }
 
 /* Hero search */
@@ -209,7 +209,7 @@ a:hover { color: var(--brand-deep); }
 .example-row .earned { font-size: var(--t-fine); color: var(--ink-soft); margin: var(--s1) 0 0; }
 .example-row .earned b { font-family: var(--mono); font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
 .verdict-pill { flex: 0 0 auto; font-family: var(--mono); font-size: var(--t-sub); font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; background: none; padding: 0; border-radius: 0; }
-.verdict-pill.up { color: var(--pass, var(--good)); }
+.verdict-pill.up { color: var(--good); }
 .verdict-pill.down { color: var(--bad); }
 .example-card footer { font-family: var(--mono); font-size: var(--t-label); color: var(--ink-faint); padding: var(--s4) 0 0; background: transparent; line-height: 1.5; }
 
@@ -257,7 +257,7 @@ a:hover { color: var(--brand-deep); }
 /* Panels */
 .panel { padding: var(--s10) 0; }
 .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s4); margin: 0 0 var(--s7); flex-wrap: wrap; }
-.panel h2 { font-family: var(--display); font-size: clamp(28px, 3.2vw, 40px); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+.panel h2 { font-family: var(--display); font-size: var(--t-title); font-weight: 600; letter-spacing: -0.02em; margin: 0; }
 .panel-head small { font-size: var(--t-ui); color: var(--ink-faint); }
 
 /* Module list: ruled columns, not boxed cards */
@@ -306,7 +306,6 @@ a:hover { color: var(--brand-deep); }
 .panel.alt { background: var(--sand); border-top: 1px solid var(--line); }
 .panel.alt .wrap { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s9); }
 .panel.alt > .wrap > * { min-width: 0; }
-.panel.alt h2 { font-size: clamp(28px, 3.2vw, 40px); }
 .prose { font-family: var(--display); max-width: 58ch; color: var(--ink-soft); font-size: var(--t-sub); line-height: 1.6; margin: var(--s3) 0 0; }
 .data-actions { margin-top: var(--s5); }
 .pip { display: inline-block; font-family: var(--mono); font-size: var(--t-fine); background: var(--ink); color: var(--brand-300); border-radius: var(--r-sm); padding: var(--s3) var(--s4); max-width: 100%; overflow-wrap: anywhere; }
@@ -346,7 +345,9 @@ a:hover { color: var(--brand-deep); }
   .nav-toggle { display: block; position: relative; margin-left: var(--s3); }
   .nav-toggle summary {
     list-style: none; cursor: pointer;
-    font-size: 1.4rem; line-height: 1; color: var(--ink-soft);
+    /* The glyph sizes the button: 26px on line-height 1 plus var(--s2) top and bottom plus the
+       border is a 44px target, which the stray 1.4rem here missed by four pixels. */
+    font-size: var(--t-section); line-height: 1; color: var(--ink-soft);
     padding: var(--s2) var(--s3); border: 1px solid var(--control-border); border-radius: var(--r-md);
   }
   .nav-toggle summary::-webkit-details-marker { display: none; }

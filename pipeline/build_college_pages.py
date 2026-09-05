@@ -144,21 +144,26 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
        shared .wrap uses so headings and rules never touch the screen edge on tablet and mobile. */
     @media (max-width: 900px) {{ .pg {{ padding-left: var(--s8); padding-right: var(--s8); }} }}
     @media (max-width: 520px) {{ .pg {{ padding-left: var(--s5); padding-right: var(--s5); }} }}
-    .crumbs {{ font-size: .85rem; color: var(--ink-faint); margin: 18px 0 6px; }}
+    /* Type below is token-only. Every size here used to be an ad-hoc rem value, because
+       design/tokens.json had no type block for this file to reach for; it has one now, so a step
+       change lands on 6,127 profiles and the homepage together instead of one or the other. */
+    .crumbs {{ font-size: var(--t-fine); color: var(--ink-faint); margin: 18px 0 6px; }}
     .crumbs a {{ color: var(--ink-soft); text-decoration: underline; text-underline-offset: 0.16em; }}
-    .pg h1 {{ font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
-    .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
+    .pg h1 {{ font-size: var(--t-title); letter-spacing: -0.03em; line-height: 1.08; margin: 6px 0 6px; }}
+    .idline {{ color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure-tight); margin: 0 0 18px; }}
     .offname {{ color: var(--ink-faint); }}
-    .progsub {{ color: var(--ink-faint); font-size: .82rem; display: block; margin-top: 2px; }}
-    .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 16px 0; font-size: 1.05rem; line-height: 1.6; }}
+    .progsub {{ color: var(--ink-faint); font-size: var(--t-fine); display: block; margin-top: 2px; }}
+    /* The verdict is the argument of the page, so it is set in the editorial serif and capped at a
+       reading measure rather than inheriting the 860px the program table needs. */
+    .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; padding: 16px 20px; margin: 16px 0; font-family: var(--display); font-size: var(--t-lede); line-height: 1.5; max-width: var(--measure); }}
     .verdict b {{ color: var(--ink); }}
     /* Caution tokens, 4.67 on their own background; the pill also states its meaning in words. */
-    .gem {{ display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
+    .gem {{ display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: var(--t-label); font-weight: 600; margin-left: 6px; }}
     .cta-row {{ margin: 18px 0 8px; }}
-    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: 10px; }}
-    h2.sec {{ font-size: 1.2rem; letter-spacing: -0.02em; margin: 30px 0 8px; }}
+    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: var(--r-lg); }}
+    h2.sec {{ font-size: var(--t-section); letter-spacing: -0.02em; line-height: 1.2; margin: 30px 0 8px; }}
     .tscroll {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0; }}
-    table.t {{ width: 100%; border-collapse: collapse; font-size: .93rem; }}
+    table.t {{ width: 100%; border-collapse: collapse; font-size: var(--t-ui); }}
     table.t th, table.t td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }}
     table.t th {{ color: var(--ink-soft); font-weight: 600; }}
     table.t td.num, table.t th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
@@ -173,35 +178,36 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     .prem-val {{ display: block; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }}
     .prem-val.pos {{ color: var(--good); }}
     .prem-val.neg {{ color: var(--bad); }}
-    .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: 4px; }}
+    .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: var(--r-sm); }}
     .pbar::before {{ content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--line); }}
     .pbar i {{ position: absolute; top: 0; height: 100%; min-width: 2px; }}
     /* Solid token fills: bar length is the datum, so the fill carries no extra meaning. */
-    .pbar i.pos {{ left: 50%; background: var(--good); border-radius: 0 4px 4px 0; }}
-    .pbar i.neg {{ right: 50%; background: var(--bad); border-radius: 4px 0 0 4px; }}
+    .pbar i.pos {{ left: 50%; background: var(--good); border-radius: 0 var(--r-sm) var(--r-sm) 0; }}
+    .pbar i.neg {{ right: 50%; background: var(--bad); border-radius: var(--r-sm) 0 0 var(--r-sm); }}
     @media (prefers-reduced-motion: no-preference) {{ .pbar i {{ transition: width .3s ease; }} }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
-    .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}
-    .calc {{ border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
-    .calc-controls {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .98rem; }}
-    .calc-controls select {{ border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: .98rem; background: #fff; color: var(--ink); }}
-    .calc-big {{ font-size: 1.12rem; margin: 14px 0 6px; line-height: 1.5; }}
-    .calc-note {{ color: var(--ink-soft); font-size: .86rem; line-height: 1.5; margin: 6px 0 0; }}
+    .src {{ color: var(--ink-faint); font-size: var(--t-fine); max-width: var(--measure); margin: 22px 0 0; line-height: 1.5; }}
+    .calc {{ border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
+    .calc-controls {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--t-ui); }}
+    .calc-controls select {{ border: 1px solid var(--line); border-radius: var(--r-md); padding: 7px 10px; font-size: var(--t-ui); background: #fff; color: var(--ink); }}
+    /* The payback sentence is prose about a number, not a control label, so it takes the serif. */
+    .calc-big {{ font-family: var(--display); font-size: var(--t-sub); max-width: var(--measure); margin: 14px 0 6px; line-height: 1.5; }}
+    .calc-note {{ color: var(--ink-soft); font-size: var(--t-fine); max-width: var(--measure); line-height: 1.5; margin: 6px 0 0; }}
     .dl {{ margin: 14px 0 4px; }}
-    .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 9px 14px; font-size: .92rem; font-weight: 600; cursor: pointer; }}
+    .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: var(--r-lg); padding: 9px 14px; font-size: var(--t-ui); font-weight: 600; cursor: pointer; }}
     .dl-btn:hover {{ background: var(--bg-alt); }}
-    .dl-note {{ color: var(--ink-faint); font-size: .85rem; }}
+    .dl-note {{ color: var(--ink-faint); font-size: var(--t-fine); }}
     .upd {{ border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }}
-    .upd h2.sec {{ margin: 4px 0 6px; font-size: 1.1rem; }}
-    .upd-meta {{ color: var(--ink-soft); font-size: .92rem; line-height: 1.55; margin: 4px 0; }}
-    .upd-src {{ color: var(--ink-faint); font-size: .8rem; margin: 3px 0; word-break: break-all; }}
-    .mono {{ font-family: var(--mono); font-size: .82rem; overflow-wrap: anywhere; }}
+    .upd h2.sec {{ margin: 4px 0 6px; font-size: var(--t-sub); }}
+    .upd-meta {{ color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure); line-height: 1.55; margin: 4px 0; }}
+    .upd-src {{ color: var(--ink-faint); font-size: var(--t-label); margin: 3px 0; word-break: break-all; }}
+    .mono {{ font-family: var(--mono); font-size: var(--t-fine); overflow-wrap: anywhere; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
     ul.schoollist li {{ padding: 10px 0; border-bottom: 1px solid var(--line); }}
     ul.schoollist a {{ color: var(--brand); text-decoration: none; font-weight: 600; }}
-    ul.schoollist .meta {{ color: var(--ink-soft); font-size: .9rem; }}
+    ul.schoollist .meta {{ color: var(--ink-soft); font-size: var(--t-ui); }}
   </style>
 </head>
 <body>

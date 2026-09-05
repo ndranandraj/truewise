@@ -17,7 +17,7 @@
 }
 .tw-search__label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   font-weight: 600;
   color: var(--text-secondary);
   margin: 0 0 6px;
@@ -45,7 +45,9 @@
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1.05rem;
+  /* Deliberately not a type token: iOS Safari zooms the page when a focused input is
+     under 16px, and --t-ui is 15px. The one size on the site that answers to the browser. */
+  font-size: 16px;
   padding: 11px 0;
   background: transparent;
   color: var(--text);
@@ -84,16 +86,16 @@
 }
 .tw-search__meta {
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: var(--t-fine);
 }
 .tw-search__why {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--t-label);
 }
 .tw-search__empty {
   padding: 12px;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
 }
 .tw-search__empty a {
   color: var(--brand-strong); /* links on a tinted surface use brand-strong (0.3 rule 5.1) */
@@ -101,23 +103,23 @@
 }
 .tw-search__status {
   margin: 6px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-muted);
 }
 
 /* ---- Program / comparison table (B5) ---- */
 .tw-table__coverage {
   margin: 0 0 4px;
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
   color: var(--text);
 }
 .tw-table__covnote {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-table__baseline {
   margin: 0 0 10px;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-secondary);
 }
 .tw-table__scroll {
@@ -128,14 +130,14 @@
 .tw-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.92rem;
+  font-size: var(--t-ui);
 }
 .tw-table__caption {
   caption-side: top;
   text-align: left;
   padding: 10px 12px;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-th,
 .tw-td {
@@ -189,7 +191,7 @@
 }
 .tw-verdict {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   white-space: nowrap;
 }
 .tw-verdict--pass {
@@ -248,7 +250,7 @@
 }
 .tw-table__status {
   margin: 8px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-muted);
 }
 
@@ -307,7 +309,7 @@
     text-align: left;
   }
   .tw-td--program {
-    font-size: 1.05rem;
+    font-size: var(--t-sub);
     border-bottom: 1px solid var(--line);
     padding-bottom: 8px;
   }
@@ -329,7 +331,7 @@
 /* B8 status pill */
 .tw-pill {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: var(--t-label);
   font-weight: 700;
   padding: 3px 10px;
   border-radius: var(--r-pill);
@@ -358,7 +360,7 @@
 .tw-oneyr {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: var(--t-label);
   font-weight: 600;
   color: var(--caution);
   white-space: nowrap;
@@ -374,11 +376,11 @@
 .tw-coverage {
   margin: 0 0 6px;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
 }
 .tw-coverage__note {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-coverage--low b {
   color: var(--bad);
@@ -388,8 +390,9 @@
 .tw-source {
   margin: 12px 0 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--t-label);
   line-height: 1.5;
+  max-width: var(--measure);
 }
 
 /* B3 empty state */
@@ -448,7 +451,7 @@
   align-items: center;
 }
 .tw-chips__label {
-  font-size: 0.78rem;
+  font-size: var(--t-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -457,7 +460,7 @@
 }
 .tw-chip {
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--t-fine);
   padding: 4px 10px;
   border-radius: var(--r-pill);
   border: 1px solid var(--line);
@@ -488,7 +491,7 @@
 .tw-filters__label {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--t-ui);
 }
 .tw-filters__select {
   font: inherit;
@@ -503,7 +506,7 @@
   outline-offset: 2px;
 }
 .tw-filters__check {
-  font-size: 0.9rem;
+  font-size: var(--t-ui);
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
@@ -530,5 +533,5 @@
 .tw-disclosure__body {
   padding: 0 0 14px;
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: var(--t-ui);
 }
