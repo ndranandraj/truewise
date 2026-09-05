@@ -194,7 +194,10 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     .calc-big {{ font-family: var(--display); font-size: var(--t-sub); max-width: var(--measure); margin: 14px 0 6px; line-height: 1.5; }}
     .calc-note {{ color: var(--ink-soft); font-size: var(--t-fine); max-width: var(--measure); line-height: 1.5; margin: 6px 0 0; }}
     .dl {{ margin: 14px 0 4px; }}
-    .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: var(--r-lg); padding: 9px 14px; font-size: var(--t-ui); font-weight: 600; cursor: pointer; }}
+    /* Serves a <button> on the profile calculator and an <a download> on the lists, so it
+       declares both. 11px of padding on a 15px step at line-height 1.5 is a 46px target,
+       past the 44px floor the phone pass asked for. */
+    .dl-btn {{ display: inline-block; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; border-radius: var(--r-lg); padding: 11px 16px; font-size: var(--t-ui); font-weight: 600; cursor: pointer; }}
     .dl-btn:hover {{ background: var(--bg-alt); }}
     .dl-note {{ color: var(--ink-faint); font-size: var(--t-fine); }}
     .upd {{ border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }}

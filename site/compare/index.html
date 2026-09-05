@@ -37,9 +37,9 @@
     .income-row label { font-weight: 600; }
     .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
-    /* The table is the desktop presentation only. Below 700px it is replaced outright by
-       .cmp-stack, so it no longer needs a sticky column, a scroll cue or a narrow-width floor:
-       there is no horizontal scrolling left to explain. */
+    /* The table is the wide presentation only. Below the breakpoint set further down it is
+       replaced outright by .cmp-stack, so it needs no sticky column, no scroll cue and no
+       narrow-width floor: there is no horizontal scrolling left to explain. */
     table.cmp { border-collapse: collapse; width: 100%; }
     table.cmp thead th:not(:first-child), table.cmp tbody td { min-width: 160px; }
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
@@ -159,7 +159,7 @@
   const MAX = 4;
 
   let SCHOOLS = null;
-  const picked = [];   // {unitid, s}
+  let picked = [];     // {unitid, s}; reassigned wholesale when the URL changes
 
   // Slug must match the pre-rendered /college/<slug>/ pages (name; collision adds state, then unitid).
   function slugify(name) {
@@ -210,6 +210,19 @@
       b.addEventListener("click", () => add(b.dataset.u)));
   }
 
+  /* The URL is the comparison. Adding a school PUSHES, so each step is a real navigation: the back
+     button undoes one addition, the state is shareable at every point, and a two-id URL is by
+     itself the record that someone completed a comparison. replaceState left all of that invisible,
+     because it does not register as a navigation at all.
+     Removing REPLACES, since a removal is a correction to the current state rather than a new one,
+     and pushing it would make the back button silently re-add a school someone just dismissed. */
+  function syncUrl(push) {
+    const url = picked.length
+      ? "?schools=" + picked.map(p => p.unitid).join(",")
+      : location.pathname;
+    history[push ? "pushState" : "replaceState"](null, "", url);
+  }
+
   async function add(unitid) {
     if (picked.length >= MAX || picked.some(p => p.unitid === unitid)) return;
     await load();
@@ -217,7 +230,19 @@
     if (!s) return;
     picked.push({ unitid, s });
     q.value = ""; results.innerHTML = ""; render();
-    history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+    syncUrl(true);
+  }
+
+  // Back and forward have to rebuild the comparison, or the URL and the page disagree: without
+  // this, going back would change the address bar and leave the previous render on screen.
+  async function applyFromUrl() {
+    const ids = (new URLSearchParams(location.search).get("schools") || "")
+      .split(",").map(s => s.trim()).filter(Boolean).slice(0, MAX);
+    if (ids.length) await load();
+    picked = ids
+      .map(unitid => ({ unitid, s: SCHOOLS.find(x => x.unitid === unitid) }))
+      .filter(p => p.s);
+    render();
   }
   function remove(unitid) {
     const i = picked.findIndex(p => p.unitid === unitid);
@@ -228,7 +253,7 @@
       // Return focus predictably: next remove button, else back to the search box.
       const next = cmp.querySelector("[data-rm]");
       (next || q).focus();
-      history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+      syncUrl(false);
     }
   }
 
@@ -334,10 +359,12 @@
 
   // Shareable URLs: /compare/?schools=110662,223232
   (async function init() {
-    const preset = new URLSearchParams(location.search).get("schools");
-    if (preset) { for (const u of preset.split(",").slice(0, MAX)) await add(u.trim()); }
-    else render();
+    // One entry point for "the URL says what to show", shared with the back button below. The old
+    // init replayed add() per id, which pushed a history entry for each school in a shared link.
+    await applyFromUrl();
+    history.replaceState(null, "", location.search || location.pathname);
   })();
+  window.addEventListener("popstate", applyFromUrl);
 
   // No blank page if the data file fails to load.
   window.addEventListener("unhandledrejection", function () {

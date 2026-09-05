@@ -29,15 +29,41 @@ global.document = { getElementById: (id) => els[id] || mk() };
 global.window = { addEventListener() {} };
 // The shared alias/search module both pickers load; inject it as the page would.
 global.TWSearch = require("../site/assets/college-search.js");
-global.history = { replaceState() {} };
+// Record what the page does to history. Adding a school must PUSH, so each addition is a real
+// navigation that analytics can see and the back button can undo; removing must REPLACE, or back
+// would silently re-add a school someone just dismissed.
+const HISTORY = [];
 global.location = { search: "", pathname: "/compare/" };
+const applyUrl = (url) => {
+  const i = url.indexOf("?");
+  global.location.search = i === -1 ? "" : url.slice(i);
+};
+global.history = {
+  pushState(_s, _t, url) {
+    HISTORY.push(["push", url]);
+    applyUrl(url);
+  },
+  replaceState(_s, _t, url) {
+    HISTORY.push(["replace", url]);
+    applyUrl(url);
+  },
+};
 global.fetch = async () => ({ json: async () => ({ schools: data }) });
 global.setTimeout = (f) => f();
 global.clearTimeout = () => {};
+// Real enough to read back what the page just wrote, which is what applyFromUrl() parses.
 global.URLSearchParams = class {
-  constructor() {}
-  get() {
-    return null;
+  constructor(qs) {
+    this.p = new Map(
+      String(qs || "")
+        .replace(/^\?/, "")
+        .split("&")
+        .filter(Boolean)
+        .map((kv) => kv.split("=").map(decodeURIComponent)),
+    );
+  }
+  get(k) {
+    return this.p.has(k) ? this.p.get(k) : null;
   }
 };
 
@@ -149,6 +175,40 @@ const ck = (name, cond) => {
     `each card names every school it lists (${picked2.size} schools)`,
     picked2.size > 1 && (out.match(/<dt>/g) || []).length === metrics * picked2.size,
   );
+
+  /* History behaviour. Compare used replaceState throughout, which does not register as a
+     navigation, so additions and completed comparisons were invisible to analytics that only see
+     pageviews. Adding pushes; removing replaces, or the back button would re-add a school someone
+     just dismissed. This is the measurement itself, so it is asserted rather than assumed. */
+  // Reset through the page's own code path rather than by reaching into its state.
+  global.location.search = "";
+  await applyFromUrl();
+  HISTORY.length = 0;
+  await add("223232");
+  ck("adding a school pushes a history entry", HISTORY.at(-1)[0] === "push");
+  ck("the pushed URL carries the school", HISTORY.at(-1)[1] === "?schools=223232");
+  await add("110538");
+  ck(
+    "a completed two-school comparison is a single URL",
+    HISTORY.at(-1)[0] === "push" && HISTORY.at(-1)[1] === "?schools=223232,110538",
+  );
+  remove("110538");
+  ck("removing replaces rather than pushes", HISTORY.at(-1)[0] === "replace");
+  remove("223232");
+  ck("emptying returns to the bare path", HISTORY.at(-1)[1] === "/compare/");
+
+  // A shared link must not manufacture one history entry per school: init used to replay add()
+  // per id, so opening a four-school link buried the referring page four steps back.
+  HISTORY.length = 0;
+  global.location.search = "?schools=223232,110538";
+  await applyFromUrl();
+  ck("a shared link restores both schools", cols() === 2);
+  ck("a shared link pushes nothing", HISTORY.length === 0);
+
+  // And back must rebuild the comparison, not just the address bar.
+  global.location.search = "?schools=223232";
+  await applyFromUrl();
+  ck("going back rebuilds the comparison", cols() === 1 && txt().includes("Baylor"));
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL COMPARE CHECKS PASSED");
   process.exit(fails ? 1 : 0);
