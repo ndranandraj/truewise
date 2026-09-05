@@ -87,6 +87,14 @@ def render_css_root(tokens: dict) -> str:
     lines.append(f"  --display: {tokens['font']['display']};")
     lines.append(f"  --font: {tokens['font']['sans']};")
     lines.append(f"  --mono: {tokens['font']['mono']};")
+    # Type steps and measures. These lived in a second, hand-written :root that the generator never
+    # saw, so the pipeline could guarantee colour consistency but not type. That is the whole reason
+    # the generated pages ended up with 13 ad-hoc rem sizes and a 115ch measure: there was no token
+    # to reach for. Generated now, so `make tokens-check` guards type the way it guards colour.
+    for name, value in tokens.get("type", {}).items():
+        if name.startswith("$"):
+            continue
+        lines.append(f"  --{name}: {value};")
     lines.append(END)
     lines.append("}")
     return "\n".join(lines)
@@ -113,6 +121,12 @@ def render_python(tokens: dict) -> str:
     out.append("# Chart-only tints (Python renderers only; not CSS custom properties).")
     for name, spec in chart.items():
         out.append(f'{_py_name(name)} = "{spec["value"]}"')
+    out.append("")
+    out.append("# Type steps and measures, for renderers that size text outside CSS (OG cards).")
+    for name, value in tokens.get("type", {}).items():
+        if name.startswith("$"):
+            continue
+        out.append(f'{_py_name(name)} = "{value}"')
     out.append("")
     out.append("# Every generated colour, keyed by token name, for lookups and the drift test.")
     out.append("TOKENS = {")

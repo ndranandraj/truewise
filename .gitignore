@@ -42,6 +42,7 @@ truewise-status-checklist.md
 truewise-data-audit-*.md
 truewise-ux-audit-*.md
 truewise-review-*.md
+Truewise Review - *.html
 truewise_review_*.md
 
 # FVT Monitor: keep provenance + the compact dated snapshot, ignore the bulky raw dumps

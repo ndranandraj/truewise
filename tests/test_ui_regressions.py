@@ -7,6 +7,7 @@ table wrapper, the cache-control _headers file, and the search hardening.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -121,6 +122,60 @@ def test_the_profile_strip_shares_a_baseline():
     block = css.split(".profile-strip {", 1)[1].split("}", 1)[0]
     assert "align-items: start" in block, (
         "the strip must top-align, or the shortest column's heading floats out of the row"
+    )
+
+
+def test_type_is_a_generated_token_layer():
+    """The root cause of the ad-hoc type on the generated pages.
+
+    design/tokens.json had color, semantic, chart, scale and font blocks but NO type block, so the
+    steps lived in a second hand-written :root that build_tokens never saw. The pipeline could
+    guarantee colour consistency structurally and could not guarantee type at all: `make
+    tokens-check` had nothing to compare, and head() had no token to reach for, which is how 13
+    ad-hoc rem sizes and a 115ch measure became the only option available.
+
+    Type is now generated like colour. The five original steps must keep their exact values, or
+    every page that already uses them shifts.
+    """
+    tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
+    assert "type" in tokens, "tokens.json needs a type block, or type cannot be guaranteed"
+    for name, value in {
+        "t-label": "12px",
+        "t-fine": "13px",
+        "t-ui": "15px",
+        "t-sub": "18px",
+        "t-lede": "20px",
+    }.items():
+        assert tokens["type"][name] == value, f"{name} changed value; existing pages would shift"
+    # Eight steps and two measures, named as the Release 3 review section 02 names them. The names
+    # are asserted, not just their presence: a second vocabulary for the same scale is the whole
+    # failure this block exists to end, and t-section in particular is the rung whose absence left
+    # a 44px page title sitting straight on a 15px label.
+    steps = [n for n in tokens["type"] if n.startswith("t-")]
+    assert steps == [
+        "t-label",
+        "t-fine",
+        "t-ui",
+        "t-sub",
+        "t-lede",
+        "t-section",
+        "t-title",
+        "t-display",
+    ], f"the type scale is not the reviewed one: {steps}"
+    # Measures, whose absence let prose inherit the 860px table frame at ~115 characters a line.
+    for name in ("measure", "measure-tight"):
+        assert tokens["type"][name].endswith("ch"), f"{name} must be in ch, it constrains prose"
+
+    css = (SITE / "styles.css").read_text()
+    generated = css.split("@tokens:start", 1)[1].split("@tokens:end", 1)[0]
+    for name in tokens["type"]:
+        if not name.startswith("$"):
+            assert f"--{name}:" in generated, f"--{name} is not in the generated block"
+    # And nothing may redeclare them by hand outside it, which is what drifted before.
+    outside = css.split("@tokens:end", 1)[1]
+    handwritten = re.findall(r"^\s*--(t-[a-z]+|measure[a-z-]*)\s*:", outside, re.M)
+    assert not handwritten, (
+        f"type tokens re-declared by hand outside the generated block: {handwritten}"
     )
 
 

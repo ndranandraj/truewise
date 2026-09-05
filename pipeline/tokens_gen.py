@@ -33,6 +33,18 @@ HOME_TEXT_DIM = "#a8c4b2"
 LADDER_BAND = "#e6eee7"
 SERIES_NEG_ON_DARK = "#ab695a"
 
+# Type steps and measures, for renderers that size text outside CSS (OG cards).
+T_LABEL = "12px"
+T_FINE = "13px"
+T_UI = "15px"
+T_SUB = "18px"
+T_LEDE = "20px"
+T_SECTION = "26px"
+T_TITLE = "clamp(30px, 4vw, 44px)"
+T_DISPLAY = "clamp(38px, 5.2vw, 60px)"
+MEASURE = "66ch"
+MEASURE_TIGHT = "52ch"
+
 # Every generated colour, keyed by token name, for lookups and the drift test.
 TOKENS = {
     "ink": "#0c1512",

@@ -71,5 +71,15 @@
   --display: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --t-label: 12px;
+  --t-fine: 13px;
+  --t-ui: 15px;
+  --t-sub: 18px;
+  --t-lede: 20px;
+  --t-section: 26px;
+  --t-title: clamp(30px, 4vw, 44px);
+  --t-display: clamp(38px, 5.2vw, 60px);
+  --measure: 66ch;
+  --measure-tight: 52ch;
   /* @tokens:end */
 }

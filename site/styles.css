@@ -103,16 +103,26 @@
   --display: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --t-label: 12px;
+  --t-fine: 13px;
+  --t-ui: 15px;
+  --t-sub: 18px;
+  --t-lede: 20px;
+  --t-section: 26px;
+  --t-title: clamp(30px, 4vw, 44px);
+  --t-display: clamp(38px, 5.2vw, 60px);
+  --measure: 66ch;
+  --measure-tight: 52ch;
   /* @tokens:end */
 }
 
-/* Forest type roles. All three font stacks (--display, --font, --mono) are now generated from
-   design/tokens.json into the block above, so no family name is hand-edited here. --ui is kept as
-   the readable alias the component rules already use for the system UI stack. Body text is UI,
-   headings and editorial prose are the serif display, figures and metadata are mono. */
+/* Forest type roles. The font stacks AND the type steps are now generated from design/tokens.json
+   into the block above. The steps used to live here, hand-written, which meant the token pipeline
+   guaranteed colour but not type: `make tokens-check` never saw them, and the generated pages had
+   no token to reach for, so they grew 13 ad-hoc rem sizes and a 115ch measure. --ui stays as the
+   readable alias the component rules use for the system UI stack. */
 :root {
   --ui: var(--font);
-  --t-lede: 20px; --t-sub: 18px; --t-ui: 15px; --t-fine: 13px; --t-label: 12px;
 }
 
 * { box-sizing: border-box; }
