@@ -179,6 +179,133 @@ def test_type_is_a_generated_token_layer():
     )
 
 
+def test_every_scrollable_table_shows_that_it_scrolls():
+    """A table whose columns run off the right edge with no cue hides data rather than deferring it.
+
+    Eleven wrappers carried `overflow-x: auto` and nothing else. Because there are only three
+    wrapper class names site-wide, one rule in styles.css covers all of them; this test fails if a
+    fourth name appears, since a new name would silently opt out of the cue.
+    """
+    css = _css_without_comments()
+    cue = re.search(r"\.tscroll, \.table-wrap, \.tw-table__scroll \{([^}]*)\}", css)
+    assert cue, "the shared scroll-cue rule is missing from styles.css"
+    body = cue.group(1)
+    assert "local" in body and "scroll" in body, (
+        "the cue needs both the content-pinned covers and the box-pinned shadows, "
+        "or it shows a shadow when there is nothing left to scroll to"
+    )
+
+    known = {".tscroll", ".table-wrap", ".tw-table__scroll"}
+    found = set()
+    sources = list(SITE.glob("*.html")) + list(SITE.glob("*/index.html"))
+    sources += [SITE / "styles.css", ROOT / "components" / "components.css"]
+    sources += [PIPELINE / "build_college_pages.py"]
+    for path in sources:
+        if not path.exists():
+            continue
+        text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        for sel in re.findall(
+            r"(\.[a-z][\w-]*(?:__[\w-]+)?)\s*\{\{?[^{}]*overflow-x:\s*auto", text
+        ):
+            found.add(sel)
+    assert found <= known, f"scroll wrappers with no cue: {sorted(found - known)}"
+
+
+def test_compare_keeps_its_metric_labels_in_view():
+    """At 390px table.cmp is 560px inside a roughly 350px content area, so the first school's name
+    and values began off-screen with a single school added. Making the metric column sticky means
+    the numbers that do scroll into view always have their label beside them."""
+    html = (SITE / "compare" / "index.html").read_text()
+    rule = re.search(
+        r"table\.cmp tbody th, table\.cmp thead th:first-child \{([^}]*)\}", html, re.S
+    )
+    assert rule, "compare's metric column is not sticky"
+    assert "position: sticky" in rule.group(1) and "left: 0" in rule.group(1)
+    assert "background:" in rule.group(1), (
+        "a sticky cell needs an opaque background to scroll under"
+    )
+
+
+def test_every_public_hand_written_page_declares_a_canonical():
+    """/k12/rankings/, /k12/compare/ and /k12/advanced-courses/ shipped with titles and
+    descriptions but no canonical, while /k12/ had one. K-12 is a distinct content family, so a
+    gap there costs clean indexing signals on exactly the routes that need them.
+
+    404 is excluded: it is noindex by design and a canonical on an error page is wrong.
+    """
+    missing = []
+    for path in sorted(SITE.rglob("index.html")):
+        if any(part in str(path) for part in ("/college/", "/majors/", "/lists/", "/embed/")):
+            continue
+        html = path.read_text()
+        if "noindex" in html:
+            continue
+        route = "/" + str(path.parent.relative_to(SITE)).replace(".", "").strip("/")
+        route = "/" if route == "/" else route.rstrip("/") + "/"
+        found = re.search(r'rel="canonical" href="([^"]+)"', html)
+        if not found:
+            missing.append(f"{route} has no canonical")
+        elif found.group(1) != f"https://truewise.dev{route}":
+            missing.append(f"{route} canonical points at {found.group(1)}")
+    assert not missing, "canonical problems:\n" + "\n".join(missing)
+
+
+def test_every_form_control_has_a_real_label():
+    """Careers scored 93 on Lighthouse accessibility for exactly one reason: its field and sort
+    selects had no <label> and no accessible name, so a screen-reader user heard "combo box" twice
+    with nothing to distinguish them. Three search inputs had the same problem in a quieter form,
+    relying on a placeholder, which is not a label: it is not reliably announced, it disappears the
+    moment someone types, and the long ones truncated mid-sentence at 320px.
+
+    Every control on a hand-written page needs a <label for> or an aria-label. Generated pages are
+    covered by the component smokes, which assert the same thing on the rendered output.
+    """
+    control = re.compile(r"<(select|input|textarea)\b([^>]*)>")
+    unlabelled = []
+    for path in sorted(SITE.rglob("*.html")):
+        if any(part in str(path) for part in ("/college/", "/majors/", "/lists/", "/findings/")):
+            continue
+        html = path.read_text()
+        labelled = set(re.findall(r'<label[^>]*\bfor="([^"]+)"', html))
+        for tag, attrs in control.findall(html):
+            if re.search(r'type="(hidden|submit|button)"', attrs) or "aria-label" in attrs:
+                continue
+            ident = re.search(r'id="([^"]+)"', attrs)
+            if ident and ident.group(1) in labelled:
+                continue
+            unlabelled.append(f"{path.relative_to(SITE)}: <{tag}{attrs[:60]}>")
+    assert not unlabelled, "controls with no label and no accessible name:\n" + "\n".join(
+        unlabelled
+    )
+
+
+def test_nothing_focusable_is_hidden_by_the_clip_pattern():
+    """A phone-width keyboard trap that no screenshot could show.
+
+    The mobile program table hid its header row with the 1px-clip pattern (position:absolute,
+    width:1px, clip:rect(0 0 0 0)). That pattern hides content visually while KEEPING it in the
+    accessibility tree and the tab order, which is exactly right for a label a screen-reader user
+    still needs, and exactly wrong here: the header row contains six sort <button>s, so a keyboard
+    user on a phone tabbed through six controls that were not on screen, on every profile page.
+
+    thead is display:none now, each cell carries its own column name through data-label, and
+    sorting moved to the visible .tw-sort control. This fails if thead goes back to being clipped.
+    """
+    css = (ROOT / "components" / "components.css").read_text()
+    thead = re.search(r"\.tw-table thead \{([^}]*)\}", css)
+    assert thead, ".tw-table thead rule not found"
+    body = thead.group(1)
+    assert "display: none" in body, "thead must be removed, not clipped: it holds the sort buttons"
+    assert "clip:" not in body, "the clip pattern keeps the sort buttons focusable while invisible"
+
+    # And the replacement must be a real, visible control rather than another hidden one.
+    sort = re.search(r"\n\.tw-sort \{([^}]*)\}", css)
+    assert sort, ".tw-sort rule not found"
+    assert "clip:" not in sort.group(1), "the mobile sort control must not be visually hidden"
+    js = (ROOT / "components" / "table.js").read_text()
+    assert 'class="tw-sort__select"' in js, "table.js must render the visible mobile sort control"
+
+
 def test_no_generator_or_stylesheet_invents_a_type_size():
     """The other half of the same root cause.
 

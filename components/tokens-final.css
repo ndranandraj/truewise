@@ -75,7 +75,7 @@
   --t-ui: 15px;
   --t-sub: 18px;
   --t-lede: 20px;
-  --t-section: 26px;
+  --t-section: clamp(21px, 2.6vw, 26px);
   --t-title: clamp(30px, 4vw, 44px);
   --t-display: clamp(38px, 5.2vw, 60px);
   --measure: 66ch;

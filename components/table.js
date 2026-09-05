@@ -41,6 +41,8 @@
     { key: "completers", label: "Recent completers", kind: "num", get: (r) => r.completers },
   ];
 
+  let seq = 0;
+
   class ProgramTable {
     constructor(root, opts) {
       this.root = root;
@@ -50,7 +52,50 @@
       this.remaining = this.o.onMore && this.o.remaining > 0 ? this.o.remaining : 0;
       this.sortKey = null;
       this.sortDir = 1;
+      // Unique per instance so the mobile sort control's <label for> points at its own <select>
+      // even when a page renders more than one table.
+      this.uid = "tw-sort-" + ++seq;
       this._render();
+    }
+
+    /* Apply a sort the same way whoever asked for it: the column header button on desktop, or the
+       mobile select. Repeating the active key flips direction; a new key starts numeric columns
+       high-to-low, which is what someone sorting by earnings means. */
+    _applySort(key) {
+      if (this.sortKey === key) this.sortDir *= -1;
+      else {
+        this.sortKey = key;
+        this.sortDir = COLUMNS.find((c) => c.key === key).kind === "num" ? -1 : 1;
+      }
+    }
+
+    /* Visible sort control for phone widths, where the header row is display:none.
+     *
+     * The header row used to be clipped to 1px instead, which left its six sort buttons focusable:
+     * a keyboard user tabbed through six controls they could not see, on every profile page. The
+     * header is now genuinely removed at that width (each cell already carries its own column name
+     * through data-label) and sorting moves here, where it can be seen. */
+    _sortControl() {
+      const opts = COLUMNS.filter((c) => c.sortable !== false)
+        .map(
+          (c) =>
+            `<option value="${c.key}"${this.sortKey === c.key ? " selected" : ""}>${esc(c.label)}</option>`,
+        )
+        .join("");
+      const asc = this.sortDir === 1;
+      const dirLabel = this.sortKey && COLUMNS.find((c) => c.key === this.sortKey).kind === "num"
+        ? asc ? "Lowest first" : "Highest first"
+        : asc ? "A to Z" : "Z to A";
+      return (
+        `<div class="tw-sort">` +
+        `<label class="tw-sort__label" for="${this.uid}">Sort by</label>` +
+        `<select class="tw-sort__select" id="${this.uid}">` +
+        `<option value=""${this.sortKey ? "" : " selected"}>Table order</option>${opts}</select>` +
+        (this.sortKey
+          ? `<button type="button" class="tw-sort__dir">${dirLabel}</button>`
+          : "") +
+        `</div>`
+      );
     }
 
     _verdictCell(r) {
@@ -147,6 +192,7 @@
       this.root.innerHTML =
         covLine +
         baseLine +
+        this._sortControl() +
         `<div class="tw-table__scroll"><table class="tw-table">` +
         (this.o.caption ? `<caption class="tw-table__caption">${esc(this.o.caption)}</caption>` : "") +
         `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
@@ -175,11 +221,7 @@
       this.root.querySelectorAll(".tw-th__sort").forEach((btn) =>
         btn.addEventListener("click", () => {
           const key = btn.dataset.key;
-          if (this.sortKey === key) this.sortDir *= -1;
-          else {
-            this.sortKey = key;
-            this.sortDir = COLUMNS.find((c) => c.key === key).kind === "num" ? -1 : 1;
-          }
+          this._applySort(key);
           // Re-rendering replaces the markup and would drop focus to <body>; restore it to the same
           // sort button so a keyboard or screen-reader user is not thrown back to the page top.
           this._render();
@@ -187,6 +229,38 @@
           if (restored) restored.focus();
         }),
       );
+
+      // Mobile sort control. Same focus-restoration reasoning as the header buttons above.
+      const sortSel = this.root.querySelector(".tw-sort__select");
+      if (sortSel) {
+        sortSel.addEventListener("change", () => {
+          const key = sortSel.value;
+          if (!key) {
+            this.sortKey = null;
+            this.sortDir = 1;
+          } else if (this.sortKey !== key) {
+            this.sortKey = key;
+            this.sortDir = COLUMNS.find((c) => c.key === key).kind === "num" ? -1 : 1;
+          }
+          this._render();
+          const restored = this.root.querySelector(".tw-sort__select");
+          if (restored) restored.focus();
+          const status = this.root.querySelector(".tw-table__status");
+          if (status) {
+            const col = COLUMNS.find((c) => c.key === this.sortKey);
+            status.textContent = col ? `Sorted by ${col.label}.` : "Table order restored.";
+          }
+        });
+      }
+      const sortDir = this.root.querySelector(".tw-sort__dir");
+      if (sortDir) {
+        sortDir.addEventListener("click", () => {
+          this.sortDir *= -1;
+          this._render();
+          const restored = this.root.querySelector(".tw-sort__dir");
+          if (restored) restored.focus();
+        });
+      }
     }
   }
 

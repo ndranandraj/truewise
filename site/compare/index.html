@@ -17,7 +17,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=e0878de8e2" />
+  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
   <style>
     .c-head { padding: 40px 0 4px; }
     .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -41,6 +41,16 @@
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
     table.cmp thead th { border-bottom: 2px solid var(--line); }
     table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
+    /* The metric label stays put while the school columns scroll under it. Without this, the table
+       is 560px inside a ~350px content area at 390px, so the first school's name and values start
+       off-screen with one school added, before any real comparison begins: a phone user saw a
+       column of numbers with no idea which measure they belonged to. box-shadow rather than
+       border-right, because a collapsed border does not paint on a sticky cell. */
+    table.cmp tbody th, table.cmp thead th:first-child {
+      position: sticky; left: 0; z-index: 1;
+      background: var(--paper); box-shadow: 1px 0 0 var(--line);
+    }
+    @media (max-width: 559px) { table.cmp tbody th { width: 132px; } }
     table.cmp td { font-variant-numeric: tabular-nums; }
     .schname { font-weight: 700; }
     .schname a { color: var(--brand); text-decoration: none; }

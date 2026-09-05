@@ -17,7 +17,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=e0878de8e2" />
+  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
   <style>
     .vc-search { padding: 48px 0 8px; }
     .vc-search h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -295,11 +295,12 @@
         <p class="lede">Search a school for its Truewise profile: whether each program's graduates
           typically out-earn a high-school graduate (Value Check), what families pay by income, how
           fast debt pays back, and who the school serves, from the Department of Education's own data.</p>
+        <label class="field-label" for="q">${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name" : "Loading colleges"}</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" role="combobox" aria-expanded="false"
             aria-controls="results" aria-autocomplete="list"
-            placeholder="${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…" : "Loading colleges…"}"
+            placeholder="e.g. Baylor"
             value="${esc(preset)}" />
         </div>
         <p class="hint" id="hint">Try &ldquo;Baylor&rdquo;, &ldquo;Long Beach&rdquo;, or your local community college.</p>

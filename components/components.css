@@ -127,6 +127,46 @@
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
 }
+/* Sorting for phone widths, where the header row (and its sort buttons) is display:none. Hidden on
+   desktop, where the column headers already carry it. Not visually-hidden: this control must not
+   exist in the tab order on the widths that have header buttons, or the same duplicate-tab-stop
+   problem returns in the other direction. */
+.tw-sort {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0 0 10px;
+}
+.tw-sort__label {
+  font-size: var(--t-fine);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.tw-sort__select,
+.tw-sort__dir {
+  font: inherit;
+  font-size: var(--t-ui);
+  /* 44px touch target: 11px of padding either side of a 15px step, plus the border. */
+  padding: 11px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--text);
+}
+.tw-sort__dir {
+  font-weight: 600;
+  color: var(--brand-strong);
+  cursor: pointer;
+}
+.tw-sort__dir:hover {
+  border-color: var(--brand);
+}
+.tw-sort__select:focus-visible,
+.tw-sort__dir:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
 .tw-table {
   border-collapse: collapse;
   width: 100%;
@@ -263,12 +303,17 @@
   .tw-table__scroll {
     overflow-x: visible; /* stacked cards do not scroll horizontally */
   }
+  /* Removed, not clipped. The old rule hid this row visually with the 1px-clip pattern, which
+     keeps content in the accessibility tree and the tab order on purpose. That is right for a
+     label a screen-reader user still needs; it was wrong here, because the row contains six sort
+     BUTTONS, so a keyboard user tabbed through six invisible controls on every profile page.
+     Nothing is lost: the stacked layout gives every cell its column name through data-label, and
+     sorting moves to the visible .tw-sort control. */
   .tw-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
+    display: none;
+  }
+  .tw-sort {
+    display: flex;
   }
   .tw-table,
   .tw-table tbody,

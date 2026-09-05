@@ -107,7 +107,7 @@
   --t-ui: 15px;
   --t-sub: 18px;
   --t-lede: 20px;
-  --t-section: 26px;
+  --t-section: clamp(21px, 2.6vw, 26px);
   --t-title: clamp(30px, 4vw, 44px);
   --t-display: clamp(38px, 5.2vw, 60px);
   --measure: 66ch;
@@ -146,6 +146,30 @@ a:hover { color: var(--brand-deep); }
 .fig, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 500; letter-spacing: -0.01em; }
 
 .wrap { width: 100%; max-width: var(--wrap); margin: 0 auto; padding: 0 var(--s8); }
+
+/* Shared control label. A placeholder is not a label: it vanishes the moment someone types, it is
+   not reliably announced, and at 320px the long ones truncate mid-sentence. Pages that carry a
+   search box use this above the box and keep the placeholder to a short example. */
+.field-label { display: block; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); margin: 0 0 var(--s1); }
+
+/* Scroll cue for every horizontally scrollable table.
+ *
+ * Eleven wrappers across the site carried `overflow-x: auto` and nothing else, so a phone user met
+ * a table with columns off the right edge and no sign they existed: the Nursing degree table, the
+ * highest-paying list, Compare, and the program tables all silently hid data. There are only three
+ * wrapper class names, so one rule reaches all of them and there is no per-page copy to drift.
+ *
+ * Four layers. The two `local` gradients are painted with the content, so they scroll away and
+ * uncover the shadow beneath. The two `scroll` shadows are painted against the box and only show
+ * where there is more content in that direction, which means the cue appears exactly when it is
+ * true and disappears at desktop widths where nothing overflows. No JavaScript, no measurement. */
+.tscroll, .table-wrap, .tw-table__scroll {
+  background:
+    linear-gradient(to right, var(--paper) 30%, rgba(251, 250, 248, 0)) left center / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--paper) 30%, rgba(251, 250, 248, 0)) right center / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, rgba(12, 21, 18, 0.16), rgba(12, 21, 18, 0)) left center / 14px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, rgba(12, 21, 18, 0.16), rgba(12, 21, 18, 0)) right center / 14px 100% no-repeat scroll;
+}
 
 /* Header */
 .site-header {
@@ -344,10 +368,12 @@ a:hover { color: var(--brand-deep); }
   .nav-toggle { display: block; position: relative; margin-left: var(--s3); }
   .nav-toggle summary {
     list-style: none; cursor: pointer;
-    /* The glyph sizes the button: 26px on line-height 1 plus var(--s2) top and bottom plus the
-       border is a 44px target, which the stray 1.4rem here missed by four pixels. */
-    font-size: var(--t-section); line-height: 1; color: var(--ink-soft);
-    padding: var(--s2) var(--s3); border: 1px solid var(--control-border); border-radius: var(--r-md);
+    /* The glyph sizes the button, so the arithmetic has to hold at every width this menu appears
+       at: 20px on line-height 1, plus 11px of padding top and bottom, plus the border, is 44px.
+       A fluid step would not do here, which is why this reaches for --t-lede rather than the
+       heading step it visually resembles. The stray 1.4rem it replaced came to 40px. */
+    font-size: var(--t-lede); line-height: 1; color: var(--ink-soft);
+    padding: 11px var(--s3); border: 1px solid var(--control-border); border-radius: var(--r-md);
   }
   .nav-toggle summary::-webkit-details-marker { display: none; }
   .nav-toggle[open] summary { color: var(--brand); border-color: var(--brand); }

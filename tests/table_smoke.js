@@ -14,7 +14,7 @@ global.document = window.document;
 
 const src = fs.readFileSync(path.join(__dirname, "..", "components", "table.js"), "utf8");
 new window.Function(src).call(window);
-const { ProgramTable } = window.TWTable;
+const { ProgramTable, COLUMNS } = window.TWTable;
 
 const rows = [
   { program: "Computer Science", credential: "Master's", earnings: 195622, premium: 161809, verdict: "pass", debt: 20500, payback: 0.1, completers: 2416 },
@@ -95,6 +95,52 @@ check(asc[asc.length - 1] === "Philosophy", "insufficient still sinks on ascendi
 
 // 9. The 1-year marker survives sorting (each re-render must reattach it, like the static row).
 check($$(".tw-oneyr").length === 1, "1-year marker lost after sorting");
+
+// 10. The mobile sort control exists, is labelled, and offers exactly the sortable columns.
+//
+// The header row is display:none below 768px. It used to be clipped to 1px instead, which left its
+// six sort buttons in the tab order: a keyboard user on a phone tabbed through six controls that
+// were not on screen. Sorting has to live somewhere visible at that width, so it lives here.
+const sortSel = document.querySelector(".tw-sort__select");
+check(!!sortSel, "a visible mobile sort control must exist");
+const sortLabel = document.querySelector(".tw-sort__label");
+check(!!sortLabel && sortLabel.getAttribute("for") === sortSel.id, "sort select needs its own label");
+check(!!sortSel.id, "sort select needs an id so the label can point at it");
+const sortableKeys = COLUMNS.filter((c) => c.sortable !== false).map((c) => c.key);
+const optKeys = Array.from(sortSel.options).map((o) => o.value).filter(Boolean);
+check(
+  optKeys.join(",") === sortableKeys.join(","),
+  `sort options ${optKeys} should be the sortable columns ${sortableKeys}`,
+);
+
+// 11. The control actually sorts, and returning to "Table order" restores the source order.
+// Sort by program name: alphabetical differs from the earnings order left behind by check 8, so a
+// no-op would be visible. Numeric columns here happen to rank the same way earnings does.
+const asSupplied = rows.map((r) => r.program);
+const beforeMobileSort = $$("tbody .tw-td--program").map((x) => x.textContent);
+sortSel.value = "program";
+sortSel.dispatchEvent(new dom.window.Event("change"));
+const byName = $$("tbody .tw-td--program").map((x) => x.textContent);
+check(byName.join() !== beforeMobileSort.join(), "choosing a column in the mobile control should reorder");
+check(byName[0] === "Computer Science", "program sort should start A to Z");
+check(byName[byName.length - 1] === "Philosophy", "insufficient still sinks under the mobile sort");
+check(
+  document.activeElement === document.querySelector(".tw-sort__select"),
+  "focus should return to the sort select after its re-render",
+);
+const dirBtn = document.querySelector(".tw-sort__dir");
+check(!!dirBtn, "an active sort needs a visible direction toggle");
+dirBtn.click();
+const flipped = $$("tbody .tw-td--program").map((x) => x.textContent);
+check(flipped.join() !== byName.join(), "the direction toggle should flip the order");
+const sel2 = document.querySelector(".tw-sort__select");
+sel2.value = "";
+sel2.dispatchEvent(new dom.window.Event("change"));
+check(
+  $$("tbody .tw-td--program").map((x) => x.textContent).join() === asSupplied.join(),
+  "Table order should restore the order the rows were supplied in",
+);
+check(!document.querySelector(".tw-sort__dir"), "no direction toggle when no column is sorted");
 
 console.log(`table smoke (B5 program table): ${pass}/${pass + fail.length} passed`);
 if (fail.length) {

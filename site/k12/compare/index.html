@@ -11,11 +11,12 @@
   <meta property="og:image" content="https://truewise.dev/og.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="canonical" href="https://truewise.dev/k12/compare/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=e0878de8e2" />
+  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
   <style>
     /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
        sticky, so without the offset the subnav slides under the header while scrolling. */
@@ -80,9 +81,10 @@
       <p class="lede">Put schools side by side, your options, or a school and the one across town, on the advanced
         courses they offer and who's on staff. Add up to four.</p>
       <noscript><p class="lede" style="font-size:.95rem">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
+      <label class="field-label" for="q">Search a public high school to add</label>
       <div class="searchbox">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="q" type="search" autocomplete="off" placeholder="Search a public high school to add…" />
+        <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" />
       </div>
       <ul class="results" id="results"></ul>
       <div id="cmp"></div>

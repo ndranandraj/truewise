@@ -17,14 +17,19 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=e0878de8e2" />
+  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
   <style>
     .cr-head { padding: 44px 0 6px; }
     .cr-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
     .cr-head p.lede { font-size: 1.1rem; }
-    .cr-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 6px; }
-    .cr-controls input, .cr-controls select { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; font-size: .95rem; background: #fff; color: var(--ink); }
-    .cr-controls input { flex: 1; min-width: 220px; }
+    .cr-controls { display: flex; gap: var(--s3); flex-wrap: wrap; margin: 18px 0 6px; align-items: end; }
+    /* Every control carries a persistent visible label. The two selects previously had neither a
+       label nor an accessible name, which is the one concrete accessibility failure on this page,
+       and the search input relied on a placeholder, which disappears the moment someone types. */
+    .cr-field { display: flex; flex-direction: column; gap: var(--s1); min-width: 0; }
+    .cr-field--grow { flex: 1; min-width: 220px; }
+    .cr-label { font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+    .cr-controls input, .cr-controls select { border: 1px solid var(--control-border); border-radius: var(--r-md); padding: 12px; font-size: var(--t-ui); background: #fff; color: var(--ink); width: 100%; }
     .cr-count { color: var(--ink-soft); font-size: .9rem; margin: 6px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
     .cr-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
@@ -137,14 +142,23 @@
           of Education's own data. Pick a major to see how much its programs pay, how widely that varies,
           and how often graduates out-earn a high-school graduate.</p>
         <div class="cr-controls">
-          <input id="q" type="search" placeholder="Search a major, e.g. nursing, computer science…" value="${esc(preset)}" autocomplete="off" />
-          <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
-          <select id="sort">
-            <option value="med">Sort: Earnings</option>
-            <option value="pass">Sort: Clear the bar</option>
-            <option value="schools">Sort: Most common</option>
-            <option value="name">Sort: A to Z</option>
-          </select>
+          <div class="cr-field cr-field--grow">
+            <label class="cr-label" for="q">Search majors</label>
+            <input id="q" type="search" placeholder="e.g. nursing" value="${esc(preset)}" autocomplete="off" />
+          </div>
+          <div class="cr-field">
+            <label class="cr-label" for="fam">Field of study</label>
+            <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
+          </div>
+          <div class="cr-field">
+            <label class="cr-label" for="sort">Sort by</label>
+            <select id="sort">
+              <option value="med">Earnings</option>
+              <option value="pass">Clear the bar</option>
+              <option value="schools">Most common</option>
+              <option value="name">A to Z</option>
+            </select>
+          </div>
         </div>
         <p class="cr-count" id="count"></p>
         <div id="list"></div>
