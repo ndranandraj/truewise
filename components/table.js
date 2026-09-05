@@ -26,7 +26,11 @@
       /[&<>"]/g,
       (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
     );
-  const money = (n) => (n == null ? null : "$" + Math.round(n).toLocaleString());
+  // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
+  // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
+  // published cost, so the figure is real and stays, correctly written.
+  const money = (n) =>
+    n == null ? null : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
   const INSUF = '<span class="tw-td__insuf">insufficient data</span>';
 
   // Columns: key, label, kind (num sorts numeric, text sorts alpha), and how to render a cell.

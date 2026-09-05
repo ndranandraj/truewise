@@ -133,7 +133,17 @@ def slugify(name: str) -> str:
 
 
 def money(n) -> str:
-    return "n/a" if n is None else "$" + f"{int(round(n)):,}"
+    """Money for a reader. The sign goes OUTSIDE the currency symbol.
+
+    "$-2,533" is what naive formatting produces and it reads as a bug rather than a number. It is
+    on 38 profiles, because a College Scorecard net price genuinely goes negative when grant aid
+    exceeds the published cost of attendance: MIT's lowest income band is one. The figure is real
+    and stays, correctly written.
+    """
+    if n is None:
+        return "n/a"
+    v = int(round(n))
+    return f"-${abs(v):,}" if v < 0 else f"${v:,}"
 
 
 def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:

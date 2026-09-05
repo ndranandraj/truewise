@@ -218,7 +218,10 @@
   let NATL = null;                    // national field medians (Careers), cip|credential -> field
   const stateCache = {};              // state -> {unitid: [programs]}
 
-  const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
+  // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
+  // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
+  // published cost, so the figure is real and stays, correctly written.
+  const money = n => n == null ? "n/a" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
                         : h === "4yr_after_completion" ? "4 years after completing" : "after completing";

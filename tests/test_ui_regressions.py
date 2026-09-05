@@ -263,6 +263,37 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_money_signs_negatives_outside_the_symbol():
+    """ "$-2,533" is what naive formatting produces and it reads as a bug rather than a number.
+
+    It was on 38 profiles. A College Scorecard net price genuinely goes negative when grant aid
+    exceeds the published cost of attendance, MIT's lowest income band among them, so the figure is
+    real and stays. It is written "-$2,533" now, and where any band is negative the table says what
+    a negative net price means, because otherwise a reader discounts the whole table.
+
+    Five separate money() implementations existed, one per surface. All five are fixed; a sixth
+    would reintroduce the bug on whichever page it served.
+    """
+    py = (PIPELINE / "build_college_pages.py").read_text()
+    assert 'f"-${abs(v):,}"' in py, "the Python formatter must sign outside the symbol"
+    js_files = [
+        ROOT / "components" / "table.js",
+        SITE / "careers" / "index.html",
+        SITE / "compare" / "index.html",
+        SITE / "embed" / "index.html",
+        SITE / "value-check" / "index.html",
+    ]
+    for path in js_files:
+        src = path.read_text()
+        for m in re.finditer(r"const money = [^;]+;", src, re.S):
+            assert '"-$"' in m.group(0), f"{path.name} formats a negative as $-n"
+
+    profiles = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert "A negative net price means grant aid exceeded" in profiles, (
+        "a negative net price needs explaining where it appears, or it reads as an error"
+    )
+
+
 def test_a_non_state_code_is_never_rendered_as_a_place():
     """461 live pages said "a typical ZZ high-school graduate".
 

@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -123,6 +123,12 @@ test-embed:
 # queries cannot approve a ranking change, because ranking regressions are silent.
 # Report, not a gate: derives candidate search gaps from the data so none has to be
 # learned by logging what visitors type. Triage its output into the gold set.
+# Every placeholder that reaches a reader as if it were a fact breaks the one thing this
+# site sells. Written after 461 pages spent months saying "a typical ZZ high-school
+# graduate". Reports by default; --strict for a gate.
+honesty-scan:
+	$(PYTHON) -m pipeline.honesty_scan
+
 search-probe:
 	node tests/search_probe.js
 

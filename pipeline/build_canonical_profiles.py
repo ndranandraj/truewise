@@ -246,6 +246,18 @@ def canonical_page(
                 f'<td class="num"><b>{money(net_price["avg"])}</b></td></tr>\n'
             )
         parts.append("    </tbody></table></div>\n")
+        # A negative net price is not an error and not zero: grant aid exceeded the published
+        # cost, so the school pays the student more than the student pays the school. Without
+        # saying so, "-$2,533" reads as a formatting bug and a reader discounts the whole table.
+        shown = [b for b in brackets if b is not None] + (
+            [net_price["avg"]] if net_price.get("avg") is not None else []
+        )
+        if any(v < 0 for v in shown):
+            parts.append(
+                '    <p class="src">A negative net price means grant aid exceeded the published '
+                "cost of attendance for that income band, so a typical student received more than "
+                "they paid. It is what the federal data reports, not an error.</p>\n"
+            )
         parts.append(
             '    <p class="tw-source">Net price is the yearly cost after grants and scholarships, by '
             "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
