@@ -263,6 +263,39 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_long_lists_open_at_a_page_and_state_the_whole():
+    """The audit's central design finding, on both surfaces that had it.
+
+    A Penn State profile rendered 150 stacked rows about 47,000px tall on a phone and Careers
+    rendered 400 in a page about 36,100px. Neither is an interface: the search and filters that
+    would have narrowed them sat above a wall of rows nobody scrolled back up from.
+
+    Two rules make a reveal limit honest rather than a way of hiding data. The count must be stated
+    against the whole set, so "Showing 20 of 489" and never "20 programs". And the default filters
+    must all be empty, so the opening view is the complete list in miniature, including the
+    suppressed rows, rather than a flattering subset.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+    assert re.search(r"const PAGE = \d+", js), "the program table needs a reveal page size"
+    assert "this.shown = PAGE" in js, "it must open at one page rather than at everything"
+    for empty in ('this.query = ""', 'this.verdict = ""', 'this.credential = ""'):
+        assert empty in js, f"filters must start empty, or the opening view is a subset: {empty}"
+    # The count reports against loaded rows PLUS the unfetched tail, not the visible slice.
+    assert "const total = loaded + this.remaining" in js, (
+        "the count must include the programs not yet fetched, or it understates the school"
+    )
+
+    careers = (SITE / "careers" / "index.html").read_text()
+    assert "rows.slice(0, shown)" in careers, "Careers should reveal a page, not its first 400"
+    assert "Showing ${visible.toLocaleString()} of ${rows.length.toLocaleString()}" in careers, (
+        "Careers must state the visible count against the whole set"
+    )
+    assert "shown = PAGE; draw();" in careers, (
+        "changing the search or a filter must reset the reveal, or a narrowed set opens part-way "
+        "down the previous, wider one"
+    )
+
+
 def test_the_compare_swap_matches_what_the_table_needs_at_capacity():
     """The breakpoint is arithmetic, not a device size.
 
@@ -452,11 +485,14 @@ def test_no_generator_or_stylesheet_invents_a_type_size():
     a 19.2px heading while the homepage was on a clean scale. Every size in both is now a --t-*
     token, and this test fails if a new rem or px size appears in either.
 
-    Three sizes are deliberately not tokens and are named here so the exemption is explicit rather
-    than a hole: the two text inputs sit at 16px because iOS Safari zooms the page when a focused
+    Four sizes are deliberately not tokens and are named here so the exemption is explicit rather
+    than a hole: the three text inputs sit at 16px because iOS Safari zooms the page when a focused
     input is smaller, and the finding-band figure is a display number, not a step on a text scale.
     """
-    exempt = re.compile(r"hero-search input|tw-search__input|finding-stat b|^\.brand$")
+    exempt = re.compile(
+        r"hero-search input|tw-search__input|tw-field__input\[type=\"search\"\]"
+        r"|finding-stat b|^\.brand$"
+    )
     for path in [
         PIPELINE / "build_college_pages.py",
         ROOT / "components" / "components.css",

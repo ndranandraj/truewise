@@ -42,6 +42,7 @@
   ];
 
   let seq = 0;
+  const PAGE = 20; // programmes revealed at a time; the rest are one click away, never hidden
 
   class ProgramTable {
     constructor(root, opts) {
@@ -52,10 +53,94 @@
       this.remaining = this.o.onMore && this.o.remaining > 0 ? this.o.remaining : 0;
       this.sortKey = null;
       this.sortDir = 1;
-      // Unique per instance so the mobile sort control's <label for> points at its own <select>
-      // even when a page renders more than one table.
-      this.uid = "tw-sort-" + ++seq;
+      // Search and filter state. All three are empty by default, which matters: the first thing a
+      // visitor sees must be every program, including the suppressed ones.
+      this.query = "";
+      this.verdict = "";
+      this.credential = "";
+      this.shown = PAGE;
+      // Unique per instance so each control's <label for> points at its own field even when a page
+      // renders more than one table.
+      this.uid = "tw-t" + ++seq;
       this._render();
+    }
+
+    /* Rows matching the current search and filters, before the reveal limit.
+     *
+     * Suppressed programs are filtered like any other row rather than being special-cased. Hiding
+     * them by default would be the dishonest move and does not happen: every filter starts empty,
+     * so the opening view is the complete list, and the count line below always reports against
+     * the full set rather than the visible slice. */
+    _matching() {
+      const q = this.query.trim().toLowerCase();
+      return this.rows.filter((r) => {
+        if (this.verdict && r.verdict !== this.verdict) return false;
+        if (this.credential && (r.credential || "") !== this.credential) return false;
+        if (!q) return true;
+        return (
+          String(r.program || "").toLowerCase().includes(q) ||
+          String(r.credential || "").toLowerCase().includes(q)
+        );
+      });
+    }
+
+    _credentials() {
+      return [...new Set(this.rows.map((r) => r.credential).filter(Boolean))].sort();
+    }
+
+    /* Search, two filters and the live count.
+     *
+     * A profile can carry 150 programs in a table about 47,000px tall on a phone, which is not an
+     * interface: reaching one programme meant scrolling past every other. These narrow the set
+     * before the reveal limit does, so a phone user can answer "what about nursing" directly. */
+    _controls() {
+      const cred = this._credentials();
+      const opt = (v, label, cur) =>
+        `<option value="${esc(v)}"${cur === v ? " selected" : ""}>${esc(label)}</option>`;
+      return (
+        `<div class="tw-filters">` +
+        `<div class="tw-field tw-field--grow">` +
+        `<label class="tw-field__label" for="${this.uid}-q">Search programs</label>` +
+        `<input class="tw-field__input" id="${this.uid}-q" type="search" autocomplete="off"` +
+        ` placeholder="e.g. nursing" value="${esc(this.query)}" />` +
+        `</div>` +
+        `<div class="tw-field">` +
+        `<label class="tw-field__label" for="${this.uid}-v">Verdict</label>` +
+        `<select class="tw-field__input" id="${this.uid}-v">` +
+        opt("", "All programs", this.verdict) +
+        opt("pass", "Clears the bar", this.verdict) +
+        opt("fail", "Falls short", this.verdict) +
+        opt("insufficient", "Insufficient data", this.verdict) +
+        `</select></div>` +
+        (cred.length > 1
+          ? `<div class="tw-field">` +
+            `<label class="tw-field__label" for="${this.uid}-c">Degree</label>` +
+            `<select class="tw-field__input" id="${this.uid}-c">` +
+            opt("", "All degrees", this.credential) +
+            cred.map((c) => opt(c, c, this.credential)).join("") +
+            `</select></div>`
+          : "") +
+        `</div>`
+      );
+    }
+
+    /* What the visitor is looking at, stated against the whole set rather than the visible slice.
+       "Showing 20 of 150" is honest; "20 programs" would imply the school has 20. */
+    _countLine(matched) {
+      const loaded = this.rows.length;
+      const total = loaded + this.remaining;
+      const filtered = this.query || this.verdict || this.credential;
+      const visible = Math.min(this.shown, matched);
+      let text;
+      if (filtered) {
+        text = `${matched} of ${total} programs match`;
+        if (visible < matched) text += `, showing the first ${visible}`;
+      } else if (visible < total) {
+        text = `Showing ${visible} of ${total} programs`;
+      } else {
+        text = `All ${total} programs`;
+      }
+      return `<p class="tw-table__count">${esc(text)}</p>`;
     }
 
     /* Apply a sort the same way whoever asked for it: the column header button on desktop, or the
@@ -119,10 +204,11 @@
       return esc(fmt ? fmt(v) : String(v));
     }
 
-    _sorted() {
-      if (!this.sortKey) return this.rows;
+    _sorted(source) {
+      const rows0 = source || this.rows;
+      if (!this.sortKey) return rows0;
       const col = COLUMNS.find((c) => c.key === this.sortKey);
-      const rows = this.rows.slice();
+      const rows = rows0.slice();
       rows.sort((a, b) => {
         const av = col.get(a);
         const bv = col.get(b);
@@ -160,7 +246,9 @@
         return `<th scope="col" class="tw-th tw-th--${c.kind}"${ariaSort}>${inner}</th>`;
       }).join("");
 
-      const body = this._sorted()
+      const matched = this._matching();
+      const body = this._sorted(matched)
+        .slice(0, this.shown)
         .map((r) => {
           const suppressed = r.verdict === "insufficient";
           const cells = [
@@ -184,15 +272,25 @@
 
       // Progressive tail: when programs remain unloaded, offer a "Show all N" control. Loading them
       // appends to this.rows so sorting and filtering then operate over the complete set.
+      /* Two different "more"s, in the order a visitor meets them. First reveal the rest of what
+         is already loaded, a page at a time, so the opening view is readable; only once that is
+         exhausted does the tail fetch appear. Each states its own number, so nothing about the
+         size of the list is hidden behind a vague label. */
+      const hidden = matched.length - Math.min(this.shown, matched.length);
       const more =
-        this.remaining > 0
-          ? `<button type="button" class="tw-showall" data-count="${this.remaining}">` +
-            `Show all ${this.rows.length + this.remaining} programs</button>`
-          : "";
+        hidden > 0
+          ? `<button type="button" class="tw-more" data-count="${hidden}">` +
+            `Show ${Math.min(PAGE, hidden)} more</button>`
+          : this.remaining > 0
+            ? `<button type="button" class="tw-showall" data-count="${this.remaining}">` +
+              `Show all ${this.rows.length + this.remaining} programs</button>`
+            : "";
 
       this.root.innerHTML =
         covLine +
         baseLine +
+        this._controls() +
+        this._countLine(matched.length) +
         this._sortControl() +
         `<div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">` +
         (this.o.caption ? `<caption class="tw-table__caption">${esc(this.o.caption)}</caption>` : "") +
@@ -260,6 +358,61 @@
           this._render();
           const restored = this.root.querySelector(".tw-sort__dir");
           if (restored) restored.focus();
+        });
+      }
+
+      /* Search and filters. Each re-render replaces the markup, so focus and, for the text field,
+         the caret have to be put back deliberately: without that, typing a second character would
+         land on <body>. Every change resets the reveal to the first page, or a narrowed set would
+         still open at whatever position the previous, wider set had been scrolled to. */
+      const restore = (sel, caret) => {
+        const el = this.root.querySelector(sel);
+        if (!el) return;
+        el.focus();
+        if (caret != null && el.setSelectionRange) {
+          try {
+            el.setSelectionRange(caret, caret);
+          } catch (e) {
+            /* not a text input on this browser; focus alone is enough */
+          }
+        }
+      };
+
+      const search = this.root.querySelector(`#${this.uid}-q`);
+      if (search) {
+        search.addEventListener("input", () => {
+          const caret = search.selectionStart;
+          this.query = search.value;
+          this.shown = PAGE;
+          this._render();
+          restore(`#${this.uid}-q`, caret);
+        });
+      }
+      for (const [field, key] of [["v", "verdict"], ["c", "credential"]]) {
+        const el = this.root.querySelector(`#${this.uid}-${field}`);
+        if (!el) continue;
+        el.addEventListener("change", () => {
+          this[key] = el.value;
+          this.shown = PAGE;
+          this._render();
+          restore(`#${this.uid}-${field}`);
+          const status = this.root.querySelector(".tw-table__status");
+          const count = this.root.querySelector(".tw-table__count");
+          if (status && count) status.textContent = count.textContent;
+        });
+      }
+
+      // Reveal the next page of what is already loaded. Distinct from "Show all", which fetches.
+      const moreBtn = this.root.querySelector(".tw-more");
+      if (moreBtn) {
+        moreBtn.addEventListener("click", () => {
+          this.shown += PAGE;
+          this._render();
+          const next = this.root.querySelector(".tw-more") || this.root.querySelector(".tw-showall");
+          if (next) next.focus();
+          const status = this.root.querySelector(".tw-table__status");
+          const count = this.root.querySelector(".tw-table__count");
+          if (status && count) status.textContent = count.textContent;
         });
       }
     }

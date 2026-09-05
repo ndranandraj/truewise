@@ -559,11 +559,73 @@
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* Program search and filters. A profile can carry 150 programmes in a table about 47,000px tall on
+   a phone, so reaching one meant scrolling past every other. Every control is labelled visibly and
+   every input clears 44px, because this is the densest interaction on the site and it is met on a
+   phone more often than on a desktop. */
 .tw-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
+  gap: var(--s3);
+  align-items: end;
+  margin: 0 0 var(--s3);
+}
+.tw-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+.tw-field--grow {
+  flex: 1;
+  min-width: 180px;
+}
+.tw-field__label {
+  font-size: var(--t-fine);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.tw-field__input {
+  font: inherit;
+  font-size: var(--t-ui);
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--text);
+}
+/* 16px on the text field alone: iOS Safari zooms a focused input below that, and --t-ui is 15px. */
+.tw-field__input[type="search"] {
+  font-size: 16px;
+}
+.tw-field__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.tw-table__count {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-fine);
+  color: var(--text-secondary);
+}
+.tw-more {
+  margin: var(--s3) 0 0;
+  font: inherit;
+  font-size: var(--t-ui);
+  font-weight: 600;
+  color: var(--brand-strong);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 11px 16px;
+  cursor: pointer;
+}
+.tw-more:hover {
+  border-color: var(--brand);
+}
+.tw-more:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .tw-filters__label {
   font-weight: 600;

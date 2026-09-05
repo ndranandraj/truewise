@@ -142,6 +142,80 @@ check(
 );
 check(!document.querySelector(".tw-sort__dir"), "no direction toggle when no column is sorted");
 
+
+/* ---- Search, filters and progressive reveal (Wave 1) ----------------------------------------
+ * A Penn State profile renders 150 stacked rows about 47,000px tall on a phone, which is a data
+ * dump rather than an interface. These narrow the set before the reveal limit does. The honesty
+ * rules bite hardest here: nothing may be hidden by DEFAULT, suppressed rows must survive every
+ * operation, and every count must be stated against the whole set, never the visible slice.
+ */
+const many = [];
+for (let i = 0; i < 45; i++) {
+  const insuf = i % 5 === 0;
+  many.push({
+    program: (i % 3 === 0 ? "Nursing " : "History ") + i,
+    credential: i % 2 ? "Bachelor's" : "Master's",
+    earnings: insuf ? null : 40000 + i * 100,
+    premium: insuf ? null : i * 100,
+    verdict: insuf ? "insufficient" : i % 4 === 1 ? "fail" : "pass",
+    debt: insuf ? null : 20000,
+    payback: insuf ? null : 2,
+    completers: 50 + i,
+  });
+}
+const host = document.createElement("div");
+document.body.appendChild(host);
+new ProgramTable(host, { rows: many, coverage: { measured: 36, total: 45 } });
+const $$$ = (sel) => Array.from(host.querySelectorAll(sel));
+const shownNames = () => $$$("tbody .tw-td--program").map((x) => x.textContent);
+const countText = () => host.querySelector(".tw-table__count").textContent;
+
+check(shownNames().length === 20, `opening view reveals 20 of 45, got ${shownNames().length}`);
+check(/Showing 20 of 45 programs/.test(countText()), `count states the whole set: ${countText()}`);
+check(
+  $$$("tbody .tw-verdict--insuf").length > 0,
+  "suppressed programs must appear in the DEFAULT view, not be filtered away",
+);
+
+for (const suffix of ["-q", "-v", "-c"]) {
+  const field = host.querySelector(`[id$="${suffix}"]`);
+  check(!!field, `control ${suffix} exists`);
+  if (!field) continue;
+  const label = host.querySelector(`label[for="${field.id}"]`);
+  check(!!label && label.textContent.trim().length > 0, `control ${suffix} carries a visible label`);
+}
+
+host.querySelector(".tw-more").click();
+check(shownNames().length === 40, `Show more reveals another page, got ${shownNames().length}`);
+check(/Showing 40 of 45/.test(countText()), `the count follows the reveal: ${countText()}`);
+
+const qEl = host.querySelector('[id$="-q"]');
+qEl.value = "nursing";
+qEl.dispatchEvent(new dom.window.Event("input"));
+const nursing = shownNames();
+check(nursing.length > 0 && nursing.every((n) => /Nursing/.test(n)), "search filters to matches");
+check(/of 45 programs match/.test(countText()), `search counts against the total: ${countText()}`);
+check(
+  document.activeElement === host.querySelector('[id$="-q"]'),
+  "focus stays in the search box, or a second keystroke would land on body",
+);
+
+qEl.value = "";
+qEl.dispatchEvent(new dom.window.Event("input"));
+const vEl = host.querySelector('[id$="-v"]');
+vEl.value = "insufficient";
+vEl.dispatchEvent(new dom.window.Event("change"));
+const insufShown = $$$("tbody .tw-verdict--insuf").length;
+check(
+  insufShown === shownNames().length && insufShown === 9,
+  `the suppressed filter isolates all 9, got ${insufShown} of ${shownNames().length}`,
+);
+check(/9 of 45 programs match/.test(countText()), `filters count honestly: ${countText()}`);
+
+vEl.value = "";
+vEl.dispatchEvent(new dom.window.Event("change"));
+check(shownNames().length === 20, "clearing a filter resets the reveal to one page");
+
 console.log(`table smoke (B5 program table): ${pass}/${pass + fail.length} passed`);
 if (fail.length) {
   fail.forEach((f) => console.log("  FAIL: " + f));

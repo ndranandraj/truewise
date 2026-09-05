@@ -166,6 +166,12 @@
     const q = document.getElementById("q"), fam = document.getElementById("fam"), sort = document.getElementById("sort");
     const list = document.getElementById("list"), count = document.getElementById("count");
     const maxP75 = Math.max(...FIELDS.map(f => f.p75 || 0));
+    /* The page rendered its first 400 rows, about 36,100px tall on a phone: a data dump rather
+       than an interface, and the search and field filter that would have narrowed it sat above a
+       wall of rows nobody scrolled back up from. A page at a time instead, reset whenever the set
+       changes so a narrowed search never opens part-way down the previous, wider one. */
+    const PAGE = 25;
+    let shown = PAGE;
     const draw = () => {
       const term = q.value.trim().toLowerCase();
       let rows = FIELDS.filter(f =>
@@ -178,12 +184,17 @@
         schools: (a, b) => (b.schools ?? -1) - (a.schools ?? -1),
         name: (a, b) => (a.name || "").localeCompare(b.name || ""),
       }[s]);
-      count.textContent = `${rows.length.toLocaleString()} major-and-degree combinations`;
+      const visible = Math.min(shown, rows.length);
+      // Say what is on screen AND what exists. "738 combinations" over a list of 25 would be a
+      // claim about the page rather than about the data.
+      count.textContent = visible < rows.length
+        ? `Showing ${visible.toLocaleString()} of ${rows.length.toLocaleString()} major-and-degree combinations`
+        : `${rows.length.toLocaleString()} major-and-degree combinations`;
       if (!rows.length) { list.innerHTML = `<p class="empty">No majors match.</p>`; return; }
       list.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="Majors and earnings"><table class="cr-table">
         <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th>
           <th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
-        <tbody>${rows.slice(0, 400).map(f => {
+        <tbody>${rows.slice(0, shown).map(f => {
           const left = maxP75 ? Math.round((f.p25 || 0) / maxP75 * 100) : 0;
           const width = maxP75 ? Math.max(2, Math.round(((f.p75 || 0) - (f.p25 || 0)) / maxP75 * 100)) : 0;
           const medPos = maxP75 ? Math.round((f.med || 0) / maxP75 * 100) : 0;
@@ -196,16 +207,19 @@
             <td class="num"><span class="clearbar ${cls}">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</span></td>
             <td class="num">${(f.schools || 0).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
-        ${rows.length > 400 ? `<p class="cr-count">Showing the first 400. Narrow with search or a field filter.</p>` : ""}`;
+        ${rows.length > shown ? `<button type="button" class="dl-btn" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
+      const moreBtn = document.getElementById("cr-more");
+      if (moreBtn) moreBtn.addEventListener("click", () => { shown += PAGE; draw(); document.getElementById("cr-more")?.focus(); });
       // The major name is a real link (keyboard-focusable, works with JS off); the handler is
       // progressive enhancement so the SPA route is used when JS is on.
       list.querySelectorAll("a.mlink").forEach(a =>
         a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     };
     let t;
-    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(draw, 120); });
-    fam.addEventListener("change", draw);
-    sort.addEventListener("change", draw);
+    const redraw = () => { shown = PAGE; draw(); };
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(redraw, 120); });
+    fam.addEventListener("change", redraw);
+    sort.addEventListener("change", redraw);
     draw();
     q.focus();
   }
