@@ -24,12 +24,13 @@ import duckdb
 from pipeline.build_college_pages import (
     BASE,
     FOOTER,
-    STATE_NAMES,
     _calculator,
     esc,
     head,
+    known_state,
     money,
     slugify,
+    state_label,
 )
 from pipeline.build_profile_pilot import (
     DEFAULT_THRESHOLD,
@@ -86,7 +87,7 @@ def canonical_page(
 ) -> tuple[str, str | None]:
     name = meta["name"]
     st = meta["state"]
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     total = len(rows)
     decided = sum(1 for r in rows if r["verdict"] != "insufficient")
@@ -96,36 +97,59 @@ def canonical_page(
     # rows), so this is exactly "does the page show at least one 1-year earnings value".
     has_1yr = any(r.get("horizon") == "1yr_after_completion" for r in rows)
     bench_txt = money(benchmark) if benchmark is not None else "a typical high-school graduate"
+    # "in <somewhere>" only when there is a somewhere. For the 461 schools with no city and a
+    # non-state code, the place is dropped from the title and the sentence rather than guessed at.
+    located = known_state(st)
+    where = ", ".join(p for p in (meta.get("city"), st) if p) if located else ""
+    at_where = f"{name} in {where}" if where else name
+    of_state = f"{st_name} " if located else ""
 
     # Honest headline + meta description carrying real numbers.
     if decided and fail:
         desc = (
-            f"At {name}, {fail} of {decided} assessed programs leave graduates earning less than a "
-            f"typical {st_name} high-school graduate. Program-by-program earnings, from federal data."
+            f"At {at_where}, {fail} of {decided} assessed programs leave graduates earning "
+            f"less than a typical {of_state}high-school graduate. Program-by-program earnings, "
+            "from federal data."
         )
         verdict = (
             f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> leave graduates out-earning a "
-            f"typical {esc(st_name)} high-school graduate (about {esc(bench_txt)}/yr) and "
+            f"typical {esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr) and "
             f"<b>{fail}</b> fall short. Another <b>{total - decided}</b> could not be assessed."
         )
     elif decided:
         desc = (
-            f"At {name}, all {decided} assessed programs leave graduates out-earning a typical "
-            f"{st_name} high-school graduate. Program earnings, from federal data."
+            f"At {at_where}, all {decided} assessed programs leave graduates out-earning a "
+            f"typical {of_state}high-school graduate. Program earnings, from federal data."
         )
         verdict = (
             f"All <b>{decided}</b> assessed programs leave graduates out-earning a typical "
-            f"{esc(st_name)} high-school graduate (about {esc(bench_txt)}/yr). "
+            f"{esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr). "
             f"Another <b>{total - decided}</b> could not be assessed."
         )
     else:
-        desc = f"At {name}, no programs have enough data for an earnings verdict yet. From federal data."
+        desc = (
+            f"At {at_where}, no programs have enough data for an earnings verdict yet. "
+            "From federal data."
+        )
         verdict = (
             f"None of {esc(name)}'s <b>{total}</b> programs have enough data for an earnings verdict "
             "yet. Truewise shows what the federal data supports and nothing more."
         )
 
-    title = f"{name}: what families pay and what graduates earn"
+    # Title carries the place, always, not only when the name collides.
+    #
+    # 86 title values were shared by 202 pages, Cortiva Institute six times, so those pages competed
+    # with each other for the same result. The place also answers the query shape the September
+    # baseline is full of: "miller motte in fayetteville nc" sat at position 54.9 and "southern
+    # careers waco" at 78.2, both name-plus-city, against titles carrying no city at all.
+    #
+    # The suffix shortens from 41 characters to 26 in the same change, so a median title grows by
+    # about five characters rather than twenty while saying considerably more.
+    title = (
+        f"{name}, {where}: cost and graduate earnings"
+        if where
+        else (f"{name}: cost and graduate earnings")
+    )
     # The breadcrumb is serialized through _island_json (escapes '<' as <) so a school name
     # containing '<' or '</script>' cannot break out of the ld+json <script> element.
     breadcrumb = {

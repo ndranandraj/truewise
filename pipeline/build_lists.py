@@ -22,13 +22,14 @@ from pipeline.build_college_pages import (
     BASE,
     BEACON,
     FOOTER,
-    STATE_NAMES,
     build_slugs,
     esc,
     head,
+    known_state,
     money,
     qualifying_schools,
     slugify,
+    state_label,
 )
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
@@ -295,7 +296,10 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
             SELECT unitid, nm, n_dec, round(100.0*n_pass/n_dec) AS pass_pct, round(med_earn) AS med
             FROM sch WHERE st='{st}' AND n_dec >= {MIN_SCHOOL_PROGRAMS}
             ORDER BY pass_pct DESC, med DESC LIMIT {TOP_N}""").fetchall()
-        st_name = STATE_NAMES.get(st, st)
+        # Never rank a "state" the data did not report; the label would be a fiction.
+        if not known_state(st):
+            continue
+        st_name = state_label(st)
         cells = []
         for unitid, nm, n_dec, pct, med in rows:
             slug = slugs_by_unitid.get(unitid)
@@ -363,7 +367,7 @@ def render_index(entries) -> str:
     p.append('    <div class="statecols">\n')
     for slug, _, _ in st:
         code = slug.rsplit("-", 1)[-1].upper()
-        p.append(f'      <a href="/lists/{slug}/">{esc(STATE_NAMES.get(code, code))}</a>\n')
+        p.append(f'      <a href="/lists/{slug}/">{esc(state_label(code))}</a>\n')
     p.append("    </div>\n")
     p.append("  </main>\n")
     p.append(FOOTER)

@@ -263,6 +263,56 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_a_non_state_code_is_never_rendered_as_a_place():
+    """461 live pages said "a typical ZZ high-school graduate".
+
+    ZZ is not a state. Those 461 schools have no city and no state earnings benchmark either, so it
+    is the source data's "not reported" bucket, and rendering it as a place is the same failure as
+    showing a suppressed value as 0. The honesty rules forbid it: unknown is labelled unknown.
+
+    Neither the design review nor the growth audit caught this. It surfaced only because putting the
+    state into the title made it visible in a second place.
+
+    The /colleges/zz/ URL is unchanged, because published routes are a frozen contract. Only what a
+    reader sees changes.
+    """
+    src = (PIPELINE / "build_college_pages.py").read_text()
+    assert "def state_label(" in src and "def known_state(" in src, (
+        "one function must decide what an unrecognised code is called, or prose, titles, "
+        "breadcrumbs and the hub drift apart again"
+    )
+    # The raw fallback is what produced "ZZ": STATE_NAMES.get(st, st) hands back the code itself.
+    for path in (PIPELINE / "build_college_pages.py", PIPELINE / "build_canonical_profiles.py"):
+        assert "STATE_NAMES.get(st, st)" not in path.read_text(), (
+            f"{path.name} falls back to the raw code, which prints ZZ as if it were a place"
+        )
+
+    # And it must not have reached the built pages.
+    built = list(SITE.glob("college/*/index.html"))
+    if built:
+        leaked = [p.name for p in built[:400] if "ZZ high-school graduate" in p.read_text()]
+        assert not leaked, f"{len(leaked)} built profiles still name ZZ as a state"
+
+
+def test_college_titles_carry_the_place():
+    """86 title values were shared by 202 pages, Cortiva Institute six times, so those pages
+    competed with each other for one result. The September baseline also showed the query shape
+    they were losing: "miller motte in fayetteville nc" at position 54.9 and "southern careers waco"
+    at 78.2, both name-plus-city, against titles carrying no city at all.
+
+    The suffix shortens in the same change, so the median title did not grow.
+    """
+    src = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert "{name}, {where}: cost and graduate earnings" in src, "title must carry the place"
+    assert "what families pay and what graduates earn" not in src, (
+        "the 41-character suffix should be gone from the profile title"
+    )
+    # A school with no location gets no invented one.
+    assert "{name}: cost and graduate earnings" in src, (
+        "an unlocated school must fall back to the bare name rather than an invented place"
+    )
+
+
 def test_long_lists_open_at_a_page_and_state_the_whole():
     """The audit's central design finding, on both surfaces that had it.
 

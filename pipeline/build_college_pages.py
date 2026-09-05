@@ -103,6 +103,26 @@ BEACON = (
 )
 
 
+# 461 schools carry the state code "ZZ", which is not a state: they have no city and no state
+# earnings benchmark either, so it is the source data's "not reported" bucket. Rendering it as if
+# it were a place put "a typical ZZ high-school graduate" into the body copy of 461 live pages and
+# titled a hub "Colleges in ZZ". That is the same failure as showing a suppressed value as 0, and
+# the honesty rules forbid it: unknown is labelled unknown.
+#
+# The URL keeps its /colleges/zz/ slug, because published routes are a frozen contract. Only what a
+# reader sees changes.
+UNKNOWN_STATE_LABEL = "Location not reported"
+
+
+def known_state(st) -> bool:
+    return st in STATE_NAMES
+
+
+def state_label(st) -> str:
+    """Human-readable place for a state code, or an honest label when the code is not a state."""
+    return STATE_NAMES.get(st, UNKNOWN_STATE_LABEL)
+
+
 def esc(s) -> str:
     return html.escape(str(s if s is not None else ""), quote=True)
 
@@ -398,7 +418,7 @@ def render_og_card(s, slug) -> None:
     """Write this school's Open Graph share card. Extracted from college_page so the canonical
     profile (which references the card but does not render it) still gets one per school."""
     name = s["name"]
-    st_name = STATE_NAMES.get(s["state"], s["state"])
+    st_name = state_label(s["state"])
     decided = s["n_pass"] + s["n_fail"]
     passed, fail = s["n_pass"], s["n_fail"]
     if decided and fail:
@@ -420,7 +440,7 @@ def render_og_card(s, slug) -> None:
 def college_page(s, programs, slug) -> str:
     name = s["name"]
     st = s["state"]
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     decided = s["n_pass"] + s["n_fail"]
     fail, passed = s["n_fail"], s["n_pass"]
@@ -647,14 +667,21 @@ def _json(s) -> str:
 
 
 def state_index(st, schools_in_state) -> str:
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/colleges/{st.lower()}/"
     n = len(schools_in_state)
     total_fail = sum(s["n_fail"] for _, s, _ in schools_in_state)
-    title = f"Colleges in {st_name}: what graduates earn vs a high-school grad"
+    title = (
+        f"Colleges in {st_name}: what graduates earn vs a high-school grad"
+        if known_state(st)
+        else "Colleges with no reported location: what graduates earn"
+    )
     desc = (
-        f"{n} {st_name} colleges by what families pay and whether graduates out-earn a typical "
-        f"high-school graduate. Program-level earnings from federal data."
+        f"{n} {st_name} colleges by what families pay and whether graduates out-earn a "
+        "typical high-school graduate. Program-level earnings from federal data."
+        if known_state(st)
+        else f"{n} colleges whose state is not reported in the federal data, by what "
+        "families pay and what graduates earn."
     )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
@@ -670,10 +697,24 @@ def state_index(st, schools_in_state) -> str:
         + esc(st_name)
         + "</nav>\n"
     )
-    parts.append(f"    <h1>Colleges in {esc(st_name)}</h1>\n")
-    parts.append(
-        f'    <p class="idline">{n} schools with earnings data, {total_fail} programs statewide leave graduates earning less than a typical high-school graduate.</p>\n'
+    # "Colleges in Location not reported" is not a sentence; the unlocated hub gets its own.
+    heading = (
+        f"Colleges in {esc(st_name)}" if known_state(st) else "Colleges with no reported location"
     )
+    parts.append(f"    <h1>{heading}</h1>\n")
+    # For the unlocated hub, "0 programs statewide fall short" would read as a clean bill of
+    # health when the truth is that none could be assessed: those schools have no state benchmark,
+    # so no program CAN fall short. Saying nothing was measured is the honest line, and "statewide"
+    # is not a word that applies to a group with no state.
+    lede = (
+        f"{n} schools with earnings data, {total_fail} programs statewide leave graduates earning "
+        "less than a typical high-school graduate."
+        if known_state(st)
+        else f"{n} schools whose state the federal data does not report. Without a state, there is "
+        "no state high-school-graduate benchmark to compare against, so their programs are listed "
+        "but not judged."
+    )
+    parts.append(f'    <p class="idline">{lede}</p>\n')
     # Some federal records share a name within a state (branch campuses, chains like "Maestro
     # College"). Two identical links read like a bug, so where a name repeats we fold the city
     # into the link text itself (and drop it from the meta line to avoid saying it twice).
@@ -727,10 +768,9 @@ def national_index(states_present, profiled=None, searchable=None) -> str:
             f"Department of Education for small cohorts.</p>\n"
         )
     parts.append('    <div class="statecols">\n')
-    for st in sorted(states_present, key=lambda s: STATE_NAMES.get(s, s)):
-        parts.append(
-            f'      <a href="/colleges/{st.lower()}/">{esc(STATE_NAMES.get(st, st))}</a>\n'
-        )
+    # Unrecognised codes sort last under their honest label rather than alphabetically as "ZZ".
+    for st in sorted(states_present, key=lambda s: (not known_state(s), state_label(s))):
+        parts.append(f'      <a href="/colleges/{st.lower()}/">{esc(state_label(st))}</a>\n')
     parts.append("    </div>\n")
     parts.append("  </main>\n")
     parts.append(FOOTER)
