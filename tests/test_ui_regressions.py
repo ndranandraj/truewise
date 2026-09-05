@@ -263,6 +263,77 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_the_compare_swap_matches_what_the_table_needs_at_capacity():
+    """The breakpoint is arithmetic, not a device size.
+
+    At 768px with four schools the table came back and scrolled, leaving 33px of a 142px metric
+    label at the right edge, which fails "row labels stay understandable". Picking a bigger round
+    number would have been a guess. The table needs its metric column plus MAX schools at their
+    minimum column width plus both page gutters, and the swap is set to exactly that, so the same
+    page never scrolls or not depending on how many schools someone happened to add.
+
+    This recomputes the sum from the declared values, so changing any one of them without moving
+    the breakpoint fails here rather than on someone's tablet.
+    """
+    html = (SITE / "compare" / "index.html").read_text()
+    css = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+    label = int(re.search(r"table\.cmp tbody th \{[^}]*width: (\d+)px", css).group(1))
+    school = int(
+        re.search(
+            r"table\.cmp thead th:not\(:first-child\)[^{]*\{[^}]*min-width: (\d+)px", css
+        ).group(1)
+    )
+    most = int(re.search(r"MAX\s*=\s*(\d+)", html).group(1))
+    gutter = 40  # .wrap padding, both sides
+    needed = label + most * school + 2 * gutter
+    swap = int(re.search(r"@media \(max-width: (\d+)px\)", css).group(1))
+    assert swap + 1 >= needed, (
+        f"the table appears from {swap + 1}px but needs {needed}px to hold {most} schools "
+        f"({label}px label + {most} x {school}px + {2 * gutter}px gutters), so it will scroll "
+        "its metric labels out of view"
+    )
+
+
+def test_the_compare_cards_cannot_squeeze_out_a_school_name():
+    """A grid column of `auto` sizes to its own content, so the longest helper text on a card set
+    the value column to 233px and left the school name 35px at 320px and 90px at 390px, wrapping
+    names into near-vertical fragments. Both columns must be fractions, which cap each side
+    whatever the value happens to say."""
+    css = re.sub(r"/\*.*?\*/", "", (SITE / "compare" / "index.html").read_text(), flags=re.S)
+    rule = re.search(r"\.cmp-metric dl > div \{([^}]*)\}", css)
+    assert rule, ".cmp-metric row rule not found"
+    cols = re.search(r"grid-template-columns:\s*([^;]+);", rule.group(1))
+    assert cols, "the card row needs explicit columns"
+    assert "auto" not in cols.group(1), (
+        f"an auto column lets one long value starve the school name: {cols.group(1)!r}"
+    )
+    assert cols.group(1).count("fr") == 2, f"both columns should be fractions: {cols.group(1)!r}"
+
+
+def test_long_programme_names_cannot_set_the_page_width():
+    """CIP names run slashes together without spaces, and browsers do not break on "/".
+
+    "Agricultural/Animal/Plant/Veterinary" is 36 unbroken characters; at the 18px mobile programme
+    size that is roughly 324px of min-content width, which pushed a Penn State phone page to 354px
+    inside a 320px viewport and produced a document-level horizontal scrollbar. Two names on one
+    page were enough.
+
+    `overflow-wrap: anywhere` rather than `break-word`, because only `anywhere` also lowers the
+    intrinsic minimum, and the intrinsic minimum is the measurement doing the damage.
+    """
+    css = (ROOT / "components" / "components.css").read_text()
+    rule = re.search(r"\n\.tw-td--program \{([^}]*)\}", css)
+    assert rule, ".tw-td--program rule not found"
+    assert "overflow-wrap: anywhere" in rule.group(1), (
+        "break-word would still let the unbroken run set the min-content width"
+    )
+    mobile = re.search(r"@media \(max-width: 768px\) \{(.*?)\n\}", css, re.S)
+    assert mobile and re.search(r"\.tw-td--program \{[^}]*min-width: 0", mobile.group(1)), (
+        "the programme cell is a flex item on mobile and will not shrink below its content "
+        "without min-width: 0"
+    )
+
+
 def test_compare_has_no_horizontal_axis_on_a_phone():
     """The sticky-label table was the interim repair and it failed its own acceptance criteria.
 
@@ -277,8 +348,9 @@ def test_compare_has_no_horizontal_axis_on_a_phone():
     """
     html = (SITE / "compare" / "index.html").read_text()
     css = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
-    swap = re.search(r"@media \(max-width: 699px\) \{(.*?)\n    \}", css, re.S)
-    assert swap, "no phone breakpoint that swaps the table for the cards"
+    # The exact width is owned by the arithmetic test above; here only the swap itself matters.
+    swap = re.search(r"@media \(max-width: \d+px\) \{(.*?)\n    \}", css, re.S)
+    assert swap, "no breakpoint that swaps the table for the cards"
     assert ".table-wrap { display: none; }" in swap.group(1), "the table must be gone, not shrunk"
     assert ".cmp-stack { display: block; }" in swap.group(1), "the cards must take its place"
     # Exactly one of the two is displayed at any width, so the duplicate Remove buttons never both

@@ -54,11 +54,21 @@
     .cmp-metric { margin: 0 0 var(--s5); }
     .cmp-metric h3 { font-size: var(--t-fine); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 var(--s2); }
     .cmp-metric dl { margin: 0; display: grid; gap: var(--s2); }
-    .cmp-metric dl > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s3); align-items: baseline; padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft); }
+    /* Both columns are fractions, never `auto`. With an auto value column the longest helper text
+       on the card sized it to its own content: "97% of programs have earnings data" took 233px,
+       leaving the school name 35px at 320px and 90px at 390px, which wrapped names into near
+       vertical fragments. Fractions cap each side regardless of what the value happens to say. */
+    .cmp-metric dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--s3); align-items: baseline; padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft); }
     .cmp-metric dt { color: var(--ink-soft); font-size: var(--t-fine); min-width: 0; overflow-wrap: anywhere; }
-    .cmp-metric dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; }
+    .cmp-metric dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
     .cmp-metric dd .schmeta { display: block; }
-    @media (max-width: 699px) {
+    /* 930px is the width at which the table can hold its own maximum: a 210px metric column plus
+       four schools at their 160px minimum, plus the 40px page gutter each side. Below that the
+       table would scroll, and at 768px with four schools it scrolled the metric label almost out
+       of view, leaving 33px of a 142px label at the right edge. The swap is set by what the table
+       needs at capacity rather than by a device size, so the same page never scrolls or not
+       depending on how many schools someone happened to add. */
+    @media (max-width: 929px) {
       .table-wrap { display: none; }
       .cmp-stack { display: block; }
     }

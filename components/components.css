@@ -220,6 +220,13 @@
 .tw-td--program {
   font-weight: 600;
   color: var(--text);
+  /* CIP names run slashes together without spaces, and a browser does not break on "/". At 18px
+     "Agricultural/Animal/Plant/Veterinary" is 36 unbroken characters, so it set a min-content
+     width of about 324px and pushed a Penn State phone page to 354px inside a 320px viewport.
+     `anywhere` rather than `break-word` on purpose: only `anywhere` also lowers the intrinsic
+     minimum, which is the measurement doing the damage. It still prefers ordinary break points and
+     splits inside a word only when there is no other option. */
+  overflow-wrap: anywhere;
 }
 .tw-tr--insuf .tw-td {
   background: var(--sand);
@@ -364,6 +371,9 @@
     font-size: var(--t-sub);
     border-bottom: 1px solid var(--line);
     padding-bottom: 8px;
+    /* A flex item will not shrink below its content without this, so the longest programme name
+       on the page would otherwise set the width of the whole document. */
+    min-width: 0;
   }
   .tw-td--program::before {
     content: "";
