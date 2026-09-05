@@ -164,6 +164,10 @@ a:hover { color: var(--brand-deep); }
  * where there is more content in that direction, which means the cue appears exactly when it is
  * true and disappears at desktop widths where nothing overflows. No JavaScript, no measurement. */
 .tscroll, .table-wrap, .tw-table__scroll {
+  /* The cue tells a sighted user the region scrolls. This lets a keyboard user actually scroll it:
+     an overflow container is not focusable by default, so on Safari its off-screen columns were
+     unreachable without a mouse. tabindex is on the element in markup rather than added by script,
+     so it holds with JavaScript off. The focus ring is the standard one, no exception. */
   background:
     linear-gradient(to right, var(--paper) 30%, rgba(251, 250, 248, 0)) left center / 28px 100% no-repeat local,
     linear-gradient(to left, var(--paper) 30%, rgba(251, 250, 248, 0)) right center / 28px 100% no-repeat local,

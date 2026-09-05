@@ -17,7 +17,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .c-head { padding: 40px 0 4px; }
     .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -37,7 +37,12 @@
     .income-row label { font-weight: 600; }
     .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
-    table.cmp { border-collapse: collapse; min-width: 560px; width: 100%; }
+    /* A flat 560px min-width forced a scroll even with one school added, whose label column plus
+       one school column is about 292px and fits a 390px phone outright. The floor belongs on the
+       school COLUMN, not the table: one school then fits, and two or more scroll because they
+       genuinely have to. */
+    table.cmp { border-collapse: collapse; width: 100%; }
+    table.cmp thead th:not(:first-child), table.cmp tbody td { min-width: 160px; }
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
     table.cmp thead th { border-bottom: 2px solid var(--line); }
     table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
@@ -276,7 +281,7 @@
     rows.push(row("Full profile", cols.map(s =>
       `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`)));
 
-    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="College comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
     cmp.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
   }
 

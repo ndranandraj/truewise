@@ -223,7 +223,7 @@ def major_page(cip, name, family, creds, slug) -> str:
     parts.append('    <h2 class="sec">Median earnings by degree level</h2>\n')
     parts.append(_ladder_chart(creds))
     parts.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Degree</th><th class="num">Median earnings</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Earnings by degree"><table class="t"><thead><tr><th>Degree</th><th class="num">Median earnings</th>'
         '<th class="num">Typical range</th><th class="num">Schools</th>'
         '<th class="num">Clear the bar</th></tr></thead><tbody>\n'
     )
@@ -261,7 +261,7 @@ def major_page(cip, name, family, creds, slug) -> str:
         occ = demand.get("occupations") or []
         if occ:
             parts.append(
-                '    <div class="tscroll"><table class="t"><thead><tr><th>Occupation</th><th class="num">Median pay</th>'
+                '    <div class="tscroll" tabindex="0" role="region" aria-label="Related occupations"><table class="t"><thead><tr><th>Occupation</th><th class="num">Median pay</th>'
                 '<th class="num">Growth</th><th class="num">Openings/yr</th></tr></thead><tbody>\n'
             )
             for o in occ:

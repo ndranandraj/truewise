@@ -542,7 +542,7 @@ def college_page(s, programs, slug) -> str:
         parts.append(_calculator(s, np, brackets, labels, programs))
         # The table doubles as the no-JS fallback and the full picture.
         parts.append(
-            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
         for lab, b in zip(labels, brackets, strict=False):
             if b is not None:
@@ -561,7 +561,7 @@ def college_page(s, programs, slug) -> str:
     if rows:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
-            '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
             '<th class="num">Recent completers</th><th class="num">Median earnings</th><th>vs a high-school grad</th>'
             '<th>Verdict</th><th class="num">Median debt</th>'
             '<th class="num">Years of premium to repay</th></tr></thead><tbody>\n'

@@ -140,7 +140,7 @@ def render_page(s) -> str:
     # Exposure curve.
     p.append('    <h2 class="sec">Exposure by benchmark</h2>\n')
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Benchmark comparison"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
         '<th class="num">Grad programs below</th><th class="num">Share of grad programs with earnings</th>'
         "</tr></thead><tbody>\n"
     )
@@ -165,7 +165,7 @@ def render_page(s) -> str:
         f'    <h2 class="sec">By credential (at an illustrative {money(REF)} benchmark)</h2>\n'
     )
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Coverage by credential"><table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
         '<th class="num">Below benchmark</th></tr></thead><tbody>\n'
     )
     for cred, with_earn, below in s["by_cred"]:
@@ -180,7 +180,7 @@ def render_page(s) -> str:
         f'    <h2 class="sec">Fields with the most exposed programs (below {money(REF)})</h2>\n'
     )
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Field of study</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Coverage by field of study"><table class="t"><thead><tr><th>Field of study</th>'
         '<th class="num">Programs below</th><th class="num">Median earnings</th></tr></thead><tbody>\n'
     )
     for field, below, med in s["top_fields"]:

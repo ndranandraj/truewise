@@ -278,7 +278,7 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
 <div class="tw-profile-static">
 <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed
 <span class="tw-coverage__note">{round(100 * decided / total)}% have an earnings verdict</span></p>
-<div class="tw-table__scroll"><table class="tw-table">
+<div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">
 <caption class="tw-table__caption">Programs by earnings versus a state high-school graduate.</caption>
 <thead><tr>{HEAD}</tr></thead><tbody>{body}</tbody></table></div>
 </div></div>

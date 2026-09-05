@@ -210,7 +210,7 @@ def canonical_page(
         parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
         parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs))
         parts.append(
-            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th>'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th>'
             '<th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
         for lab, b in zip(NP_LABELS, brackets, strict=False):
@@ -251,7 +251,9 @@ def canonical_page(
         f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
-    parts.append('        <div class="tw-table__scroll"><table class="tw-table">')
+    parts.append(
+        '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
+    )
     parts.append(
         f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(st_name)} '
         "high-school graduate.</caption>"

@@ -193,7 +193,7 @@
         covLine +
         baseLine +
         this._sortControl() +
-        `<div class="tw-table__scroll"><table class="tw-table">` +
+        `<div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">` +
         (this.o.caption ? `<caption class="tw-table__caption">${esc(this.o.caption)}</caption>` : "") +
         `<thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
         more +

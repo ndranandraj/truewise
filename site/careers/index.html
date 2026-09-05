@@ -17,7 +17,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=5a6658687e" />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .cr-head { padding: 44px 0 6px; }
     .cr-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -180,7 +180,7 @@
       }[s]);
       count.textContent = `${rows.length.toLocaleString()} major-and-degree combinations`;
       if (!rows.length) { list.innerHTML = `<p class="empty">No majors match.</p>`; return; }
-      list.innerHTML = `<div class="table-wrap"><table class="cr-table">
+      list.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="Majors and earnings"><table class="cr-table">
         <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th>
           <th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
         <tbody>${rows.slice(0, 400).map(f => {

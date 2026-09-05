@@ -211,6 +211,57 @@ def test_every_scrollable_table_shows_that_it_scrolls():
     assert found <= known, f"scroll wrappers with no cue: {sorted(found - known)}"
 
 
+def test_every_scroll_region_can_be_reached_by_keyboard():
+    """A cue tells a sighted user the region scrolls. It does nothing for a keyboard user.
+
+    An overflow container is not focusable by default. Chrome and Firefox now focus scrollers
+    natively, but Safari does not, so there the off-screen columns of every one of these tables
+    were unreachable without a pointer: WCAG 2.1.1. Each wrapper carries tabindex="0" plus a role
+    and an accessible name, written into the markup rather than added by script so it holds with
+    JavaScript off.
+
+    Every emission site is checked, not a sample: one wrapper left plain is one table a keyboard
+    user cannot read to the end.
+    """
+    sources = [
+        PIPELINE / "build_canonical_profiles.py",
+        PIPELINE / "build_college_pages.py",
+        PIPELINE / "build_lists.py",
+        PIPELINE / "build_majors_pages.py",
+        PIPELINE / "build_stats_exposure.py",
+        PIPELINE / "build_profile_pilot.py",
+        ROOT / "components" / "table.js",
+        SITE / "careers" / "index.html",
+        SITE / "compare" / "index.html",
+        SITE / "value-check" / "index.html",
+    ]
+    opening = re.compile(r'<div class="(?:tscroll|table-wrap|tw-table__scroll)"[^>]*>')
+    plain = []
+    for path in sources:
+        if not path.exists():
+            continue
+        for tag in opening.findall(path.read_text()):
+            if 'tabindex="0"' not in tag or "aria-label=" not in tag:
+                plain.append(f"{path.name}: {tag}")
+    assert not plain, "scroll regions a keyboard user cannot enter:\n" + "\n".join(plain)
+
+
+def test_compare_does_not_clip_a_single_school():
+    """`table.cmp { min-width: 560px }` forced a horizontal scroll even with one school added,
+    whose sticky label column plus one school column comes to roughly 292px and fits a 390px phone
+    outright. The floor belongs on the school column, so one school fits and two or more scroll
+    because they genuinely need to."""
+    html = (SITE / "compare" / "index.html").read_text()
+    table = re.search(r"table\.cmp \{([^}]*)\}", html)
+    assert table, "table.cmp rule not found"
+    assert "min-width" not in table.group(1), (
+        "a table-level min-width clips the one-school case regardless of how little it contains"
+    )
+    assert re.search(r"table\.cmp thead th:not\(:first-child\)[^{]*\{[^}]*min-width", html), (
+        "the width floor should sit on the school column instead"
+    )
+
+
 def test_compare_keeps_its_metric_labels_in_view():
     """At 390px table.cmp is 560px inside a roughly 350px content area, so the first school's name
     and values began off-screen with a single school added. Making the metric column sticky means
@@ -382,9 +433,12 @@ def test_wide_tables_are_wrapped_for_horizontal_scroll():
     on a phone instead of pushing the whole page wider than the viewport."""
     head_css = (PIPELINE / "build_college_pages.py").read_text()
     assert ".tscroll" in head_css, "the shared head() must define .tscroll"
+    # The wrapper carries tabindex, role and aria-label now, so match the class rather than a
+    # fixed opening string: the point is that a table is wrapped, not how the tag is spelled.
+    wrapped = re.compile(r'<div class="tscroll"[^>]*><table class="t')
     for gen in GENERATORS:
         src = (PIPELINE / gen).read_text()
-        opens = src.count('<div class="tscroll"><table class="t')
+        opens = len(wrapped.findall(src))
         closes = src.count("</tbody></table></div>")
         assert opens > 0, f"{gen} should wrap its tables in .tscroll"
         assert opens == closes, (
@@ -393,7 +447,7 @@ def test_wide_tables_are_wrapped_for_horizontal_scroll():
     # No table may be emitted outside a wrapper.
     for gen in GENERATORS:
         src = (PIPELINE / gen).read_text()
-        assert src.count('<table class="t') == src.count('<div class="tscroll"><table class="t')
+        assert src.count('<table class="t') == len(wrapped.findall(src))
 
 
 def test_headers_file_sets_cache_control_with_single_splat_paths():
