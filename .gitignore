@@ -43,6 +43,8 @@ truewise-data-audit-*.md
 truewise-ux-audit-*.md
 truewise-review-*.md
 review-*/
+# Search Console exports: production data, not source. Kept local.
+gsc-baseline-*/
 Truewise Review - *.html
 truewise_review_*.md
 
