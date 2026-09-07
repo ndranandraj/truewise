@@ -674,3 +674,20 @@
   color: var(--text-secondary);
   font-size: var(--t-ui);
 }
+
+/* Programme name as a link to its major page. Underlined on hover rather than always, because a
+   table of 150 underlined rows reads as noise; the colour and the pointer carry it at rest. */
+.tw-prog {
+  color: inherit;
+  text-decoration: none;
+}
+.tw-prog:hover {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+.tw-prog:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}

@@ -326,6 +326,28 @@ def majors_index(by_family) -> str:
     return "".join(parts)
 
 
+def major_slugs(fields) -> dict[str, str]:
+    """{4-digit CIP: slug} for every major that gets a page.
+
+    The profile pages link programme rows here, so this map is a URL contract the moment those
+    links ship: 6,127 profiles would carry a broken link if a slug moved. Today it is a pure
+    function of the name, because no two major names slugify alike, and a test holds that. The
+    collision branch below is what would make it order-dependent, which is exactly how the college
+    slugs became unstable across processes, so it is written to be noticed rather than relied on.
+    """
+    majors = {}
+    for f in fields:
+        majors.setdefault(f["cip"], {"cip": f["cip"], "name": f["name"]})
+    slugs, used = {}, set()
+    for cip, m in sorted(majors.items(), key=lambda kv: (kv[1]["name"].lower(), kv[0])):
+        cand = slugify(m["name"])
+        if cand in used:
+            cand = f"{cand}-{cip}"
+        used.add(cand)
+        slugs[cip] = cand
+    return slugs
+
+
 def main() -> None:
     con = duckdb.connect()
     fields = build_fields(con)
@@ -338,14 +360,7 @@ def main() -> None:
         )
         m["creds"].append(f)
 
-    # Stable unique slugs (name; on collision add the cip code).
-    slugs, used = {}, set()
-    for cip, m in sorted(majors.items(), key=lambda kv: kv[1]["name"].lower()):
-        cand = slugify(m["name"])
-        if cand in used:
-            cand = f"{cand}-{cip}"
-        used.add(cand)
-        slugs[cip] = cand
+    slugs = major_slugs(fields)
 
     majors_dir = SITE / "majors"
     majors_dir.mkdir(parents=True, exist_ok=True)

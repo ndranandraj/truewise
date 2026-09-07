@@ -263,6 +263,73 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_a_programme_links_to_its_major_by_cip_not_by_name():
+    """The join is the 4-digit CIP, because a major page IS a 4-digit CIP.
+
+    Matching on the programme name would be approximate, and the contract says exact relationships
+    only. A field with no major page, 137 of 429 fall below the ranking threshold, gets no link
+    rather than a guessed one.
+
+    Both renderers build the link from the same `major` field on the row, so enhancement cannot
+    move a link: the static core and the JS component must agree on where a row points.
+    """
+    py = (PIPELINE / "build_profile_pilot.py").read_text()
+    assert "def major_slug_for(" in py, "the CIP to major mapping needs one entry point"
+    assert "str(cip_code)[:4]" in py, "the join must be on the 4-digit CIP"
+    assert '"major": major_slug_for(r["cip_code"])' in py, (
+        "the row shape must carry the slug, or each renderer resolves it separately"
+    )
+    assert 'href="/majors/{_esc(slug)}/"' in py, "the static row must render a real anchor"
+
+    js = (ROOT / "components" / "table.js").read_text()
+    assert 'href="/majors/${esc(r.major)}/"' in js, (
+        "the component must render the same link from the same field"
+    )
+
+
+def test_the_row_builder_does_not_need_the_warehouse():
+    """CI runs pytest WITHOUT building the site or the data.
+
+    The CIP to major map is derived from value_check.parquet, which is data rather than source and
+    is gitignored, so a row builder that needed the warehouse to construct a row would fail every
+    test that touches one. It did, on the first attempt, and the CI simulation caught it before the
+    push rather than after.
+
+    The condition is the parquet's presence, not a bare except, so a real build with the data
+    present still surfaces any error in building the map instead of silently dropping 195,305
+    links.
+    """
+    src = (PIPELINE / "build_profile_pilot.py").read_text()
+    assert 'if not (PARQUET_DIR / "value_check.parquet").exists():' in src, (
+        "the map must be conditional on the data existing"
+    )
+    body = src.split("def major_slug_for", 1)[1]
+    body = body[: body.index("\ndef ")]  # up to the next top-level function
+    # Check the CONSTRUCT, not the word: the comment inside this function contains "except" as
+    # prose, and matching that is the same mistake as a regex hitting `font-display: swap` inside
+    # a comment about font-display: swap. It has happened three times on this project.
+    assert "try:" not in body, (
+        "swallowing the error would hide a genuine failure to build the map in a real build"
+    )
+
+
+def test_major_slugs_cannot_become_order_dependent():
+    """Profile pages now link at major slugs, so those slugs are a URL contract.
+
+    The slug is a pure function of the name today, because no two major names slugify alike. The
+    collision branch is what would make it depend on iteration order, which is exactly how the
+    college slugs became unstable across processes and had to be frozen into a registry. This
+    fails the day a collision appears, while it is still a build error rather than 6,127 profiles
+    pointing somewhere new.
+    """
+    src = (PIPELINE / "build_majors_pages.py").read_text()
+    assert "def major_slugs(" in src, "one function must own the CIP to slug map"
+    # The sort key includes the CIP, so even a future name tie orders deterministically.
+    assert 'key=lambda kv: (kv[1]["name"].lower(), kv[0])' in src, (
+        "sorting on the name alone leaves ties to iteration order, the college-slug bug again"
+    )
+
+
 def test_money_signs_negatives_outside_the_symbol():
     """ "$-2,533" is what naive formatting produces and it reads as a bug rather than a number.
 

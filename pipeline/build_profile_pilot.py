@@ -105,6 +105,37 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
     return meta, rows
 
 
+_MAJOR_SLUGS: dict[str, str] | None = None
+
+
+def major_slug_for(cip_code) -> str | None:
+    """The major page for a programme, joined on 4-digit CIP.
+
+    The CIP is the exact relationship: a major page IS a 4-digit CIP. Matching on the programme
+    name would be approximate, and the contract says exact relationships only, so a field with no
+    major page (137 of 429 fall below the ranking threshold) simply gets no link rather than a
+    guessed one.
+    """
+    global _MAJOR_SLUGS
+    if _MAJOR_SLUGS is None:
+        # The map is derived from value_check.parquet, which is data rather than source and is
+        # gitignored. CI runs pytest WITHOUT building it, so this has to answer "no link" there
+        # rather than raise: a row builder that needs the warehouse to construct a row would fail
+        # every test that touches one. The condition is the parquet itself, not a bare except, so
+        # a real build with the data present still surfaces any error in building the map.
+        from pipeline.config import PARQUET_DIR
+
+        if not (PARQUET_DIR / "value_check.parquet").exists():
+            _MAJOR_SLUGS = {}
+        else:
+            import duckdb
+
+            from pipeline.build_majors_pages import build_fields, major_slugs
+
+            _MAJOR_SLUGS = major_slugs(build_fields(duckdb.connect()))
+    return _MAJOR_SLUGS.get(str(cip_code)[:4])
+
+
 def _row_from(r) -> dict:
     """Map one parquet program record to the canonical row shape (shared by _rows_for and all_profiles)."""
     decided = r["value_flag"] in ("passes_earnings_premium", "fails_earnings_premium")
@@ -124,6 +155,9 @@ def _row_from(r) -> dict:
         "debt": _num(r["debt_median"]),
         "payback": _num(r["debt_payback_years"]),
         "completers": _num(r["completers_count"]),
+        # Carried in the row shape rather than resolved per renderer, so the static core and the
+        # progressive tail cannot link to different places for the same programme.
+        "major": major_slug_for(r["cip_code"]),
     }
 
 
@@ -190,6 +224,19 @@ def _num(v):
         return None
 
 
+def _program_cell(r: dict) -> str:
+    """The programme name, linked to its major page when one exists.
+
+    A real anchor, crawlable and keyboard-focusable, and rendered identically here and in the JS
+    component so enhancement does not change where a row points. Before this the median college
+    page took two impressions in 28 days: 6,127 profiles existed with almost nothing linking into
+    or out of them, which is what these edges are for.
+    """
+    name = _esc(r["program"])
+    slug = r.get("major")
+    return f'<a class="tw-prog" href="/majors/{_esc(slug)}/">{name}</a>' if slug else name
+
+
 def _static_row(r: dict) -> str:
     """One <tr> of static, crawlable HTML using the final component classes."""
 
@@ -222,7 +269,8 @@ def _static_row(r: dict) -> str:
         earn = f'<span class="tw-val">{earn}{marker}</span>'
     return (
         f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
-        f'<th scope="row" class="tw-td tw-td--program" data-label="Program">{_esc(r["program"])}</th>'
+        f'<th scope="row" class="tw-td tw-td--program" data-label="Program">'
+        f"{_program_cell(r)}</th>"
         f'<td class="tw-td" data-label="Degree">{_esc(r["credential"] or "")}</td>'
         + cell("Median earnings", earn, True)
         + cell("vs a high-school grad", prem, True)

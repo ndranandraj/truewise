@@ -256,7 +256,12 @@
         .map((r) => {
           const suppressed = r.verdict === "insufficient";
           const cells = [
-            `<th scope="row" class="tw-td tw-td--program" data-label="Program">${esc(r.program)}</th>`,
+            `<th scope="row" class="tw-td tw-td--program" data-label="Program">` +
+              // Same rule and same markup as the static row, so enhancement never moves a link.
+              (r.major
+                ? `<a class="tw-prog" href="/majors/${esc(r.major)}/">${esc(r.program)}</a>`
+                : esc(r.program)) +
+              `</th>`,
             `<td class="tw-td" data-label="Degree">${esc(r.credential || "")}</td>`,
             `<td class="tw-td tw-td--num" data-label="Median earnings">` +
               `<span class="tw-val">${this._num(r.earnings, money)}` +
