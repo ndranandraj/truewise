@@ -161,6 +161,8 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   <meta property="og:description" content="{esc(desc)}" />
   <meta property="og:url" content="{esc(canonical)}" />
   <meta property="og:image" content="{og}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{og}" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

@@ -19,8 +19,13 @@
 # `frame-ancestors 'none'` cannot be relaxed on /embed/ (the browser enforces the strictest of the
 # two CSPs). X-Frame-Options can be unset per-path with `!`, so it is the mechanism that lets the
 # embed widget opt out while every other page stays frame-denied.
+# Let Google show a large image preview for any page of ours it surfaces, which is what Discover
+# and rich results need. Set once as a header rather than as a meta tag on 6,550 generated pages,
+# and it composes with the per-page robots meta: it is a presentation directive, not an indexing
+# one, so a noindex page keeps its noindex.
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Robots-Tag: max-image-preview:large
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin

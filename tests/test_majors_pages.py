@@ -77,8 +77,22 @@ def test_major_page_bakes_degree_ladder(tmp_path, monkeypatch):
 
 
 def test_sitemap_includes_majors(tmp_path, monkeypatch):
+    """/sitemap.xml is a sitemap INDEX now, so the URLs live one level down.
+
+    A single 6,548-URL file was valid but undiagnosable: the September baseline showed 4,930
+    indexed against 6,548 submitted with nothing saying which families the missing 1,618 were in.
+    The index URL itself is unchanged, so what is submitted in Search Console keeps working.
+    """
     site = _setup(tmp_path, monkeypatch)
     bsm.main()
-    sm = (site / "sitemap.xml").read_text()
-    assert "https://truewise.dev/majors/registered-nursing/" in sm
-    assert "https://truewise.dev/majors/" in sm  # the index
+    index = (site / "sitemap.xml").read_text()
+    assert "<sitemapindex" in index, "/sitemap.xml should be an index"
+    assert "https://truewise.dev/sitemap-majors.xml" in index
+
+    majors = (site / "sitemap-majors.xml").read_text()
+    assert "https://truewise.dev/majors/registered-nursing/" in majors
+    # The /majors/ hub is a core page, not a major, and must appear exactly once across all files.
+    everywhere = "".join(p.read_text() for p in site.glob("sitemap-*.xml"))
+    assert everywhere.count("<loc>https://truewise.dev/majors/</loc>") == 1, (
+        "a URL in two sitemaps makes the per-family counts disagree with reality"
+    )
