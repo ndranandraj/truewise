@@ -21,7 +21,7 @@ from pipeline import tokens_gen as tk
 from pipeline.build_careers import build_fields
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
-from pipeline.config import ROOT
+from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
 
 SITE = ROOT / "site"
@@ -164,7 +164,70 @@ def _headline(creds) -> dict:
     return max(creds, key=lambda c: c.get("programs") or 0)
 
 
-def major_page(cip, name, family, creds, slug) -> str:
+TOP_SCHOOLS = 8
+
+
+def schools_by_completions(con) -> dict[str, tuple[int, list[tuple[str, str, int]]]]:
+    """{4-digit CIP: (total colleges reporting it, [(unitid, name, completions), ...])}.
+
+    The selection rule, which the page states in words, is completions: the colleges where the
+    most students finish this program. It is a fact about where people study, not a judgement
+    about where they should, and the contract's editorial governance requires exactly that. A
+    "best colleges for X" module would be a ranking this data cannot support.
+
+    Stating it matters more than usual here. For nursing the rule surfaces Chamberlain, Western
+    Governors, Grand Canyon, Walden and Capella, which are large online institutions; unlabelled,
+    that list would read as an endorsement by the site that exists to scrutinise them. Labelled, it
+    is simply true and useful.
+
+    Ordered by completions then unitid, so a tie cannot move a link between builds.
+    """
+    vc = PARQUET_DIR / "value_check.parquet"
+    if not vc.exists():
+        return {}
+    rows = con.execute(
+        f"""
+        SELECT substr(cip_code, 1, 4) AS cip4, unitid, any_value(inst_name) AS nm,
+               sum(completers_count) AS completions
+        FROM read_parquet('{vc}')
+        WHERE regexp_matches(unitid, '^[0-9]+$')
+        GROUP BY cip4, unitid
+        HAVING sum(completers_count) > 0
+        ORDER BY cip4, completions DESC, unitid
+        """
+    ).fetchall()
+    out: dict[str, tuple[int, list]] = {}
+    for cip4, unitid, nm, completions in rows:
+        total, picks = out.setdefault(cip4, (0, []))
+        out[cip4] = (total + 1, picks)
+        if len(picks) < TOP_SCHOOLS:
+            picks.append((unitid, nm, int(completions)))
+    return out
+
+
+def _schools_module(cip, plain, schools, slugs) -> str:
+    """Colleges for this major, linked only where a profile actually exists."""
+    total, picks = schools.get(cip[:4], (0, []))
+    linked = [(u, nm, c) for u, nm, c in picks if u in slugs]
+    if not linked:
+        return ""
+    p = ['    <h2 class="sec">Where this is studied</h2>\n']
+    p.append(
+        f'    <p class="idline">The {len(linked)} colleges where the most students complete a '
+        f"{esc(plain.lower())} program, of {total:,} that report one. Ordered by number of "
+        "completions only: this is where people study it, not a judgement about where to.</p>\n"
+    )
+    p.append('    <ul class="schoollist">\n')
+    for unitid, nm, completions in linked:
+        p.append(
+            f'      <li><a href="/college/{esc(slugs[unitid])}/">{esc(nm)}</a>'
+            f'<span class="meta"> {completions:,} completions</span></li>\n'
+        )
+    p.append("    </ul>\n")
+    return "".join(p)
+
+
+def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     canonical = f"{BASE}/majors/{slug}/"
     head_row = _headline(creds)
     lead_earn = money(head_row["med"])
@@ -280,6 +343,9 @@ def major_page(cip, name, family, creds, slug) -> str:
                 "positions reserved for its graduates; the openings should not be added up across majors.</p>\n"
             )
 
+    if schools and slugs:
+        parts.append(_schools_module(cip, plain, schools, slugs))
+
     parts.append(
         '    <p class="src">Earnings source: U.S. Department of Education College Scorecard '
         "(release 2026-06-10), median earnings of graduates measured up to four years after "
@@ -351,6 +417,22 @@ def major_slugs(fields) -> dict[str, str]:
 def main() -> None:
     con = duckdb.connect()
     fields = build_fields(con)
+    # Reciprocal links: 6,127 profiles point at majors; without this the graph is one-directional.
+    #
+    # This pulls build_site into the call chain, and build_site binds its own PARQUET_DIR at import
+    # time, so a caller that redirects the warehouse elsewhere leaves build_site looking at the
+    # original path. Ask exactly the question build_model asks, through build_model's own binding,
+    # so the two cannot disagree: with no warehouse there, the major page renders without the
+    # colleges module rather than failing to render at all. Its own content does not depend on it.
+    from pipeline import build_site as _bs
+    from pipeline.build_college_pages import build_slugs, qualifying_schools
+
+    college_slugs: dict[str, str] = {}
+    schools_for_cip: dict[str, tuple[int, list]] = {}
+    if (_bs.PARQUET_DIR / "value_check.parquet").exists():
+        all_schools, _, _ = _bs.build_model(con)
+        college_slugs = build_slugs(qualifying_schools(all_schools))
+        schools_for_cip = schools_by_completions(con)
 
     # Group per 4-digit CIP (a "major"): each carries its credential ladder.
     majors: dict[str, dict] = {}
@@ -369,7 +451,11 @@ def main() -> None:
         slug = slugs[cip]
         d = majors_dir / slug
         d.mkdir(parents=True, exist_ok=True)
-        (d / "index.html").write_text(major_page(cip, m["name"], m["family"], m["creds"], slug))
+        (d / "index.html").write_text(
+            major_page(
+                cip, m["name"], m["family"], m["creds"], slug, schools_for_cip, college_slugs
+            )
+        )
         # Index by the plain name so the A-Z reads like a person wrote it, while the slug (and
         # therefore the URL) still derives from the official federal label.
         by_family[m["family"]].append(

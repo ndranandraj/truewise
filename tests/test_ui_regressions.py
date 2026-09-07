@@ -263,6 +263,34 @@ def test_compare_does_not_clip_a_single_school():
     )
 
 
+def test_the_colleges_module_states_its_selection_rule():
+    """The contract's editorial governance: any module surfacing a subset of colleges must state
+    its rule in words on the page, apply it deterministically, and never accept placement.
+
+    This one matters more than the rule itself. Ordering by completions surfaces Chamberlain,
+    Western Governors, Grand Canyon, Walden and Capella for nursing, all large online
+    institutions. Unlabelled, that list reads as an endorsement by the site that exists to
+    scrutinise them. Labelled "where the most students complete", it is simply true.
+
+    A "best colleges for X" module would be a ranking this data cannot support, so the page says
+    what the order means and what it does not.
+    """
+    src = (PIPELINE / "build_majors_pages.py").read_text()
+    assert "not a judgement about where to" in src, (
+        "the page must disclaim the ranking reading, or the order implies a recommendation"
+    )
+    assert "the most students complete" in src, "the rule must be stated in words, not implied"
+    assert "that report one" in src, (
+        "the subset must be shown against the whole, or eight colleges read as all of them"
+    )
+    # Deterministic: completions then unitid, so a tie cannot move a link between builds.
+    assert "ORDER BY cip4, completions DESC, unitid" in src, (
+        "ordering on completions alone leaves ties to the query planner"
+    )
+    # And no college is linked without a profile to land on.
+    assert "if u in slugs" in src, "link only where a profile page actually exists"
+
+
 def test_a_programme_links_to_its_major_by_cip_not_by_name():
     """The join is the 4-digit CIP, because a major page IS a 4-digit CIP.
 
