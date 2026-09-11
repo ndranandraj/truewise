@@ -104,12 +104,34 @@ def canonical_page(
     at_where = f"{name} in {where}" if where else name
     of_state = f"{st_name} " if located else ""
 
+    # The size clause, which is what finally separates the last colliding descriptions.
+    #
+    # After the place went into titles, 13 title values were still shared by 26 pages and 10
+    # description values by 20. Every one of those is two real institutions reporting under the same
+    # name: seven are separate campuses in the SAME city, so the place cannot tell them apart, and
+    # six are in the 461 that file program data but have no institution record at all, so there is no
+    # city or state to use.
+    #
+    # Checked before writing any of this: all 13 pairs differ in programs reported, distinct CIP
+    # codes, or recent completers. Not one is the same record twice. So a true, source-derived fact
+    # does separate them, and it is one a reader of two same-named campuses actually wants: which is
+    # the bigger operation. That is worth saying on its own merits and it happens to resolve all ten
+    # description collisions.
+    #
+    # Deliberately NOT a fabricated suffix, a letter, or a UNITID. Those distinguish strings rather
+    # than institutions, and a reader learns nothing from "(2)".
+    grads = sum(r.get("completers") or 0 for r in rows)
+    size = f"Reports {total} program{'' if total == 1 else 's'}"
+    if grads:
+        size += f" and {int(grads):,} recent graduate{'' if grads == 1 else 's'}"
+    size += "."
+
     # Honest headline + meta description carrying real numbers.
     if decided and fail:
         desc = (
             f"At {at_where}, {fail} of {decided} assessed programs leave graduates earning "
-            f"less than a typical {of_state}high-school graduate. Program-by-program earnings, "
-            "from federal data."
+            f"less than a typical {of_state}high-school graduate. {size} Program-by-program "
+            "earnings, from federal data."
         )
         verdict = (
             f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> leave graduates out-earning a "
@@ -119,7 +141,7 @@ def canonical_page(
     elif decided:
         desc = (
             f"At {at_where}, all {decided} assessed programs leave graduates out-earning a "
-            f"typical {of_state}high-school graduate. Program earnings, from federal data."
+            f"typical {of_state}high-school graduate. {size} Program earnings, from federal data."
         )
         verdict = (
             f"All <b>{decided}</b> assessed programs leave graduates out-earning a typical "
@@ -129,7 +151,7 @@ def canonical_page(
     else:
         desc = (
             f"At {at_where}, no programs have enough data for an earnings verdict yet. "
-            "From federal data."
+            f"{size} From federal data."
         )
         verdict = (
             f"None of {esc(name)}'s <b>{total}</b> programs have enough data for an earnings verdict "

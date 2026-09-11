@@ -166,10 +166,14 @@
           </div>
         </div>
         <p class="cr-count" id="count"></p>
+        <!-- A reveal moves focus into the table, which a screen reader announces as a row rather
+             than as "25 more of 738". This says the rest. Polite so it does not interrupt. -->
+        <p class="cr-count" id="cr-live" role="status" aria-live="polite"></p>
         <div id="list"></div>
       </section>`;
     const q = document.getElementById("q"), fam = document.getElementById("fam"), sort = document.getElementById("sort");
     const list = document.getElementById("list"), count = document.getElementById("count");
+    const live = document.getElementById("cr-live");
     const maxP75 = Math.max(...FIELDS.map(f => f.p75 || 0));
     /* The page rendered its first 400 rows, about 36,100px tall on a phone: a data dump rather
        than an interface, and the search and field filter that would have narrowed it sat above a
@@ -214,7 +218,21 @@
         }).join("")}</tbody></table></div>
         ${rows.length > shown ? `<button type="button" class="dl-btn" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
       const moreBtn = document.getElementById("cr-more");
-      if (moreBtn) moreBtn.addEventListener("click", () => { shown += PAGE; draw(); document.getElementById("cr-more")?.focus(); });
+      if (moreBtn) moreBtn.addEventListener("click", () => {
+        /* Focus the first row that just appeared, not the button.
+           The button sits below the rows it reveals, so focusing it put a keyboard user past the 25
+           rows they asked for. And on the final click the button is removed, because nothing is left
+           to reveal, so `?.focus()` was a silent no-op and focus fell to <body>: the reader was
+           returned to the top of the document at the moment they finished opening the list. The row
+           is the content, and it always exists. Same fix as components/table.js. */
+        const firstNew = shown;
+        shown += PAGE;
+        draw();
+        const rows = list.querySelectorAll("tbody tr");
+        const landing = rows[firstNew] || rows[rows.length - 1];
+        if (landing) { landing.setAttribute("tabindex", "-1"); landing.focus(); }
+        if (live) live.textContent = `${rows.length - firstNew} more shown. ${count.textContent}`;
+      });
       // The major name is a real link (keyboard-focusable, works with JS off); the handler is
       // progressive enhancement so the SPA route is used when JS is on.
       list.querySelectorAll("a.mlink").forEach(a =>

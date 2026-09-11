@@ -216,9 +216,149 @@ vEl.value = "";
 vEl.dispatchEvent(new dom.window.Event("change"));
 check(shownNames().length === 20, "clearing a filter resets the reveal to one page");
 
-console.log(`table smoke (B5 program table): ${pass}/${pass + fail.length} passed`);
-if (fail.length) {
-  fail.forEach((f) => console.log("  FAIL: " + f));
-  process.exit(1);
+// The tail assertions below await a fetch, so they live in an async main. This file is CommonJS
+// (require, not import), where top-level await is not available.
+async function main() {
+  /* ---------------------------------------------------------------------------
+   * The progressive tail, which is the half of this component that was wrong.
+   *
+   * 245 profiles ship 150 rows and keep the rest behind a fetch. Search, the two filters and every
+   * sort ran over the loaded rows only, while the count line reported against the full total. So a
+   * search for "nursing" on Penn State examined 150 of 489 programs and announced its result as "3 of
+   * 489 programs match", which is a claim about 339 rows this code had never read. Sorting had the
+   * same shape: the top of the loaded slice presented as the top of the list. And the Degree menu was
+   * built from the loaded rows, so a credential appearing only in the tail was not offered at all.
+   *
+   * These assert the repair and, more importantly, the disclosure when the repair cannot happen.
+   * -------------------------------------------------------------------------*/
+  const tailRows = [];
+  for (let i = 0; i < 6; i++)
+    tailRows.push({
+      program: `Tail Program ${i}`,
+      credential: "Doctorate", // a credential that exists ONLY in the tail
+      earnings: 300000 + i,
+      premium: 260000,
+      verdict: "pass",
+      debt: 1000,
+      payback: 0.1,
+      completers: 10,
+    });
+
+  function tailTable(onMore) {
+    const h = document.createElement("div");
+    document.body.appendChild(h);
+    const inst = new ProgramTable(h, {
+      rows: many.slice(0, 10),
+      coverage: { measured: 8, total: 16 },
+      remaining: tailRows.length,
+      onMore,
+    });
+    return { h, inst, count: () => h.querySelector(".tw-table__count").textContent };
+  }
+
+  // A resolving tail: interaction loads it, and the whole set is then searched and sorted.
+  {
+    let calls = 0;
+    const { h, inst, count } = tailTable(() => {
+      calls++;
+      return Promise.resolve(tailRows);
+    });
+
+    check(/Showing 10 of 16 programs/.test(count()), `reveal wording is fine pre-fetch: ${count()}`);
+    check(
+      !/Doctorate/.test(h.querySelector('[id$="-c"]').innerHTML),
+      "the Degree menu cannot offer a tail-only credential before the tail is loaded",
+    );
+
+    // focusin, not input: the menu has to be complete before it is opened, not after a choice.
+    h.querySelector(".tw-filters").dispatchEvent(
+      new dom.window.Event("focusin", { bubbles: true }),
+    );
+    check(calls === 1, "focusing a filter starts the tail fetch");
+
+    await new Promise((r) => setTimeout(r, 0));
+    check(inst.rows.length === 16, `the tail is merged, got ${inst.rows.length}`);
+    check(inst.remaining === 0, "remaining drops to zero once merged");
+    check(/All 16 programs/.test(count()), `count reflects the whole set: ${count()}`);
+    check(
+      /Doctorate/.test(h.querySelector('[id$="-c"]').innerHTML),
+      "the Degree menu gains the tail-only credential once loaded",
+    );
+
+    // And the interaction that matters: a search now reaches rows that were in the tail.
+    const q = h.querySelector('[id$="-q"]');
+    q.value = "Tail Program";
+    q.dispatchEvent(new dom.window.Event("input"));
+    const names = [...h.querySelectorAll("tbody .tw-td--program")].map((x) => x.textContent);
+    check(names.length === 6, `search reaches the tail, matched ${names.length} of 6`);
+    check(/6 of 16 programs match/.test(count()), `and counts what it searched: ${count()}`);
+
+    // Sorting descending by earnings must surface the tail rows, which are the highest paid. Before
+    // the fix this returned the top of the loaded slice and called it the top.
+    q.value = "";
+    q.dispatchEvent(new dom.window.Event("input"));
+    const earnBtn = [...h.querySelectorAll(".tw-th__sort")].find((b) => b.dataset.key === "earnings");
+    earnBtn.click();
+    const top = h.querySelector("tbody .tw-td--program").textContent;
+    check(/Tail Program/.test(top), `sort covers the tail, top row was ${top}`);
+    check(calls === 1, "the tail is fetched once, not once per keystroke");
+  }
+
+  // A failing tail: the count line must shrink its denominator and name the gap.
+  {
+    const { h, count } = tailTable(() => Promise.reject(new Error("offline")));
+    const q = h.querySelector('[id$="-q"]');
+    q.value = "nursing";
+    q.dispatchEvent(new dom.window.Event("input"));
+    await new Promise((r) => setTimeout(r, 0));
+    const text = count();
+    check(!/of 16 programs match/.test(text), `a failed tail must not claim 16 were searched: ${text}`);
+    check(/of the 10 programs loaded match/.test(text), `states the set it searched: ${text}`);
+    check(
+      /6 more could not be loaded/.test(text) && /not been searched/.test(text),
+      `names the gap as a gap: ${text}`,
+    );
+  }
+
+  /* Focus after "Show more" goes to the first new row, not the button.
+   *
+   * The button sits below the rows it reveals, so focusing it skipped a keyboard user past the content
+   * they asked for. Worse, on the final click the button is removed because nothing is left to reveal,
+   * so there was nothing to focus and focus fell to <body>: the user was thrown to the top of the
+   * document at the moment they finished opening the list. */
+  {
+    const h = document.createElement("div");
+    document.body.appendChild(h);
+    new ProgramTable(h, { rows: many.slice(0, 25), coverage: { measured: 20, total: 25 } });
+    const firstNewName = [...h.querySelectorAll("tbody .tw-tr")].length; // index 20 after reveal
+    h.querySelector(".tw-more").click();
+    const rowsNow = [...h.querySelectorAll("tbody .tw-tr")];
+    check(rowsNow.length === 25, `all 25 revealed on the last click, got ${rowsNow.length}`);
+    check(h.querySelector(".tw-more") === null, "the button is gone, so it cannot be the destination");
+    check(
+      document.activeElement === rowsNow[firstNewName],
+      "focus lands on the first newly revealed row",
+    );
+    check(
+      document.activeElement !== document.body,
+      "and never on <body>, which would return the reader to the top of the page",
+    );
+    check(
+      rowsNow[firstNewName].getAttribute("tabindex") === "-1",
+      "the landing row is focusable without becoming a tab stop",
+    );
+    check(
+      /5 more programs shown/.test(h.querySelector(".tw-table__status").textContent),
+      "the reveal is announced with how many arrived",
+    );
+  }
 }
-console.log("ALL TABLE CHECKS PASSED");
+
+main().then(() => {
+  console.log(`table smoke (B5 program table): ${pass}/${pass + fail.length} passed`);
+  if (fail.length) {
+    fail.forEach((f) => console.log("  FAIL: " + f));
+    process.exit(1);
+  }
+  console.log("ALL TABLE CHECKS PASSED");
+});

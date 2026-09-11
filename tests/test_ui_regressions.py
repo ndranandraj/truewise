@@ -1170,3 +1170,101 @@ def test_security_headers_present_and_csp_allows_site_resources():
     assert "! X-Frame-Options" in embed[1], (
         "/embed/ must unset X-Frame-Options so it can be iframed"
     )
+
+
+def test_a_match_count_is_never_stated_against_rows_that_were_not_searched():
+    """245 profiles keep most of their programs behind a fetch, and the count line said "3 of 489
+    programs match" while 339 of those 489 had never been read.
+
+    That is the ZZ defect in a different surface. The hub gave 461 unassessable schools a clean bill
+    of health; here a search reported a result over a set it had examined part of. Both state a
+    conclusion about rows the code has not seen.
+
+    The repair has two halves, and this holds both. Interaction loads the whole set, so the normal
+    path searches everything. And when that fetch fails the denominator must shrink to what is
+    loaded, with the gap named, rather than quietly keeping the larger number.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+
+    # Every interaction that reads across rows must ask for the whole set first.
+    for interaction in (
+        'filters.addEventListener("focusin"',  # the Degree menu is built from loaded rows
+        "_ensureWholeSet();",
+    ):
+        assert interaction in js, f"missing the whole-set guard: {interaction}"
+    assert js.count("_ensureWholeSet()") >= 5, (
+        "search, both filters, both sort controls and the filter block should each ensure the whole "
+        "set; one of them searching a partial list is enough to reproduce the defect"
+    )
+
+    # The disclosure branch: a failed tail must describe the set it searched.
+    assert "programs loaded match" in js, (
+        "a failed tail must count against the loaded rows, not the full total"
+    )
+    assert "not been searched" in js, "a failed tail must say the unfetched rows were not searched"
+    # And it must not be retried silently in a way that leaves the claim stale.
+    assert "this.tailFailed = true" in js, "a failed tail must be recorded, not forgotten"
+
+
+def test_revealing_more_rows_never_drops_focus_to_the_document():
+    """ "Show more" focused the button it had just clicked. Two problems.
+
+    The button sits below the rows it reveals, so a keyboard or screen-reader user was put past the
+    content they asked for. And on the final click the button is removed, because nothing is left to
+    reveal, so there was nothing to focus: focus fell to <body> and the reader was returned to the
+    top of the document at the moment they finished opening the list.
+
+    Both surfaces with a reveal are checked, because the Careers page carries its own copy of this
+    logic rather than using the component.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+    assert "const firstNew = this.shown" in js, (
+        "the component must remember where the new rows start"
+    )
+    assert "landing.focus()" in js, "focus must move to a row, which always exists"
+    assert 'landing.setAttribute("tabindex", "-1")' in js, (
+        "the landing row must be focusable without becoming a tab stop"
+    )
+
+    careers = (SITE / "careers" / "index.html").read_text()
+    assert 'document.getElementById("cr-more")?.focus()' not in careers, (
+        "Careers still focuses the button, which is absent on the last reveal"
+    )
+    assert "const firstNew = shown" in careers, "Careers must remember where the new rows start"
+    assert "landing.focus()" in careers, "Careers must move focus to a row"
+    assert 'id="cr-live"' in careers and 'role="status"' in careers, (
+        "moving focus into a table announces a row, not a count; Careers needs a live region to say "
+        "how many arrived"
+    )
+
+
+def test_a_profile_description_states_the_size_that_separates_two_same_named_campuses():
+    """After the place went into titles, 13 title values were still shared by 26 pages and 10
+    description values by 20. Every one is two real institutions reporting under the same name.
+
+    Seven are separate campuses in the SAME city, so the place cannot tell them apart. The other six
+    are in the 461 that file program data but have no institution record at all, so there is no city
+    and no state to use. Those 461 are exactly the ZZ population: the same root cause, surfacing a
+    second time.
+
+    Checked against the source before writing the fix: all 13 pairs differ in programs reported,
+    distinct CIP codes, or recent completers. None is one record twice. So a real fact separates them,
+    and it is the one a reader comparing two same-named campuses wants. Saying it resolves all ten
+    description collisions without inventing a suffix, a letter or a UNITID, none of which tell a
+    reader anything.
+    """
+    src = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert 'size = f"Reports {total} program' in src, (
+        "the description must carry the program count that separates same-named campuses"
+    )
+    assert "recent graduate" in src, "and the graduate count, which differs where programs tie"
+    # All three description branches must carry it, or the branch that omits it reintroduces the
+    # collision. The no-verdict branch matters most: six of the ten collisions were in it.
+    assert src.count("{size}") == 3, (
+        f"all three description branches need the size clause, found {src.count('{size}')}"
+    )
+    # Not a fabricated distinguisher. A UNITID in a description identifies a row, not an institution.
+    desc_block = src.split("# Honest headline", 1)[1].split("# Title carries", 1)[0]
+    assert "unitid" not in desc_block.lower(), (
+        "a UNITID in the description distinguishes strings rather than institutions"
+    )
