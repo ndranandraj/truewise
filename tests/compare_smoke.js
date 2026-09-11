@@ -144,9 +144,12 @@ const ck = (name, cond) => {
   // The phone presentation. The sticky-label table was the interim repair and it failed its own
   // acceptance: at 320px one school still overflowed the 280px content box, and with two or more
   // schools a fragment of the outgoing column sat between the sticky label and the next full
-  // column, so a phone user read partial words and partial numbers. Below 700px the table is
-  // replaced by metric-major cards, which removes the horizontal axis and keeps the schools
+  // column, so a phone user read partial words and partial numbers. Below the swap width the table
+  // is replaced by metric-major cards, which removes the horizontal axis and keeps the schools
   // adjacent, since stacking one school per card would put the two compared figures a scroll apart.
+  // That width was 700px when the cards were written and is 929px now, derived in
+  // test_the_compare_swap_matches_what_the_table_needs_at_capacity from the table's own
+  // declarations, so it is deliberately not restated here.
   await add("223232");
   await add("110538");
   const out = els.cmp.innerHTML;

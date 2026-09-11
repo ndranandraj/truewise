@@ -549,8 +549,12 @@ def test_compare_has_no_horizontal_axis_on_a_phone():
     At 320px one school still overflowed the 280px content box, and with two or more schools a
     fragment of the outgoing column sat between the sticky label and the next full column, so a
     phone user read partial words and partial values. The contract's fallback clause says that is
-    the point to stop refining the table, so below 700px it is replaced outright by metric-major
-    cards: one card per measure, each school listed under it.
+    the point to stop refining the table, so below the swap width it is replaced outright by
+    metric-major cards: one card per measure, each school listed under it.
+
+    The swap was 700px when the cards were first written, a round number chosen by eye, and it is
+    929px now. The test above derives that figure from the table's own declarations rather than
+    restating it, which is why this docstring should not name a width at all.
 
     Grouping by metric rather than by school is deliberate. Stacking one school per card would put
     the two figures being compared a scroll apart, which is the one thing Compare exists to avoid.
