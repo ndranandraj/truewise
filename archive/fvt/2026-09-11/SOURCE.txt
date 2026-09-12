@@ -1,0 +1,4 @@
+snapshot_date: 2026-09-11
+downloaded_utc: 2026-09-12T06:09:08.423960Z
+field_of_study: https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Field-of-Study_06102026.zip
+institution: https://ed-public-download.scorecard.network/downloads/Most-Recent-Cohorts-Institution_06102026.zip
