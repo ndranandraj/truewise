@@ -352,6 +352,137 @@ async function main() {
       "the reveal is announced with how many arrived",
     );
   }
+
+
+  /* -------------------------------------------------------------------------
+   * Found in a real browser, not here. Three paths the first round of tail tests
+   * did not reach, because they all resolved the promise immediately and used a
+   * set small enough that the reveal limit never mattered.
+   * -----------------------------------------------------------------------*/
+
+  // A deferred promise we control, so "while the fetch is in flight" is a real state.
+  function deferred() {
+    let resolve, reject;
+    const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  }
+
+  const bigLoaded = [];
+  for (let i = 0; i < 150; i++)
+    bigLoaded.push({ program: `Loaded ${i}`, credential: "Bachelor's", earnings: 40000 + i,
+                     premium: 6000, verdict: "pass", debt: 1000, payback: 1, completers: 5 });
+  const bigTail = [];
+  for (let i = 0; i < 339; i++)
+    bigTail.push({ program: `Tailed ${i}`, credential: "Bachelor's", earnings: 90000 + i,
+                   premium: 56000, verdict: "pass", debt: 1000, payback: 1, completers: 5 });
+
+  function bigTable(onMore) {
+    const h = document.createElement("div");
+    document.body.appendChild(h);
+    new ProgramTable(h, { rows: bigLoaded.slice(), coverage: { measured: 100, total: 489 },
+                          remaining: bigTail.length, onMore });
+    return {
+      h,
+      rows: () => h.querySelectorAll(".tw-table tbody .tw-tr"),
+      count: () => h.querySelector(".tw-table__count").textContent,
+      live: () => h.querySelector(".tw-table__status").textContent,
+    };
+  }
+
+  // 1. "Show all 489 programs" must show all 489.
+  //
+  // It fetched the tail and left the reveal limit where it was, so a page at 160 displayed 160 rows,
+  // the count said "Showing 160 of 489" and the live region said "All 489 programs shown". The
+  // loudest of the three was the false one: a screen-reader user was told the list was complete.
+  {
+    const { h, rows, count, live } = bigTable(() => Promise.resolve(bigTail));
+    // Reveal to 160 the way a reader does, so .tw-showall is the control on offer.
+    for (let i = 0; i < 7; i++) h.querySelector(".tw-more")?.click();
+    check(rows().length === 150, `all loaded rows revealed first, got ${rows().length}`);
+    const showAll = h.querySelector(".tw-showall");
+    check(!!showAll, "with the loaded rows exhausted, the tail control must be offered");
+    showAll.click();
+    await new Promise((r) => setTimeout(r, 0));
+    check(rows().length === 489, `"Show all 489" must render 489 rows, rendered ${rows().length}`);
+    check(/All 489 programs/.test(count()), `the count must agree with the DOM: ${count()}`);
+    check(!/Showing 160/.test(count()), "the stale 160 reveal limit must be gone");
+    check(/489 programs shown/.test(live()), `the announcement must be true: ${live()}`);
+    check(document.activeElement !== document.body, "focus must not fall to the document body");
+    check(
+      /Tailed 0/.test(document.activeElement.textContent || ""),
+      "focus lands on the first newly shown row",
+    );
+  }
+
+  // 2. The focus snapshot must be taken at completion, not when the fetch started.
+  //
+  // Typing "History" with a slow tail put the caret back to 0 when it landed, so the next character
+  // produced "xHistory". The hint was captured on the first keystroke, several characters stale.
+  {
+    const d = deferred();
+    const { h } = bigTable(() => d.promise);
+    const q = h.querySelector('[id$="-q"]');
+    q.focus();
+    for (const ch of "History") {
+      q.value += ch;
+      q.dispatchEvent(new dom.window.Event("input"));
+    }
+    check(q.value === "History", `the field holds what was typed: ${q.value}`);
+    const caretBefore = h.querySelector('[id$="-q"]').selectionStart;
+    d.resolve(bigTail);
+    await new Promise((r) => setTimeout(r, 0));
+    const after = h.querySelector('[id$="-q"]');
+    check(document.activeElement === after, "focus returns to the search field");
+    check(after.value === "History", `the typed text survives the merge: ${after.value}`);
+    check(
+      after.selectionStart === caretBefore && after.selectionStart === 7,
+      `the caret stays at the end, got ${after.selectionStart} expected ${caretBefore}`,
+    );
+  }
+
+  // 3. Desktop sorting while the tail is unresolved. The sort buttons carry no id, so an id-based
+  //    focus hint returned null and focus fell to <body> when the tail landed.
+  {
+    const d = deferred();
+    const { h } = bigTable(() => d.promise);
+    const earn = [...h.querySelectorAll(".tw-th__sort")].find((b) => b.dataset.key === "earnings");
+    earn.focus();
+    earn.click();
+    check(
+      document.activeElement.dataset.key === "earnings",
+      "focus stays on the sort button immediately after the click",
+    );
+    d.resolve(bigTail);
+    await new Promise((r) => setTimeout(r, 0));
+    check(document.activeElement !== document.body, "the tail landing must not drop focus to body");
+    check(
+      document.activeElement.dataset.key === "earnings",
+      `focus returns to the same sort button, got ${document.activeElement.className}`,
+    );
+    const top = h.querySelector("tbody .tw-td--program").textContent;
+    check(/Tailed/.test(top), `the sort now covers the merged set, top row ${top}`);
+  }
+
+  // 4. A failed tail must be SPOKEN, not only drawn. The sentence rendered correctly and the live
+  //    region stayed empty, so a reader whose focus was in the search box was told the result was
+  //    complete by the silence.
+  {
+    const d = deferred();
+    const { h, count, live } = bigTable(() => d.promise);
+    const q = h.querySelector('[id$="-q"]');
+    q.focus();
+    q.value = "Loaded 1";
+    q.dispatchEvent(new dom.window.Event("input"));
+    d.reject(new Error("offline"));
+    await new Promise((r) => setTimeout(r, 0));
+    check(/programs loaded match/.test(count()), `the visible count discloses the limit: ${count()}`);
+    check(
+      /have not been searched/.test(live()),
+      `the live region must say the tail was not searched: ${live()}`,
+    );
+    check(/339/.test(live()), `and name how many: ${live()}`);
+    check(document.activeElement === h.querySelector('[id$="-q"]'), "focus stays in the search box");
+  }
 }
 
 main().then(() => {

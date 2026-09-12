@@ -1268,3 +1268,122 @@ def test_a_profile_description_states_the_size_that_separates_two_same_named_cam
     assert "unitid" not in desc_block.lower(), (
         "a UNITID in the description distinguishes strings rather than institutions"
     )
+
+
+# The 13 title collisions that remain after the place went into every title, approved as
+# irreducible on 2026-09-11. Each is two real institutions reporting to the Department of Education
+# under one name: seven are separate campuses in the SAME city, so the place cannot separate them,
+# and six are among the 461 that file programme data with no institution record at all, so there is
+# no city and no state to use.
+#
+# The decision was to keep them rather than invent a discriminator. A UNITID, a letter or a numeric
+# suffix in a title separates strings, not institutions, and tells a reader nothing. What does
+# separate them is carried where it belongs: the URLs are unique, and the descriptions now state
+# programmes and recent graduates, which differs for all 13 pairs.
+#
+# This list is an allowlist, not a tolerance. A collision that is not in it is a new defect, most
+# likely a template regression that would hit far more than two pages, and it must fail.
+KNOWN_TITLE_COLLISIONS = frozenset(
+    {
+        frozenset({"larry-s-barber-college-il", "larry-s-barber-college"}),
+        frozenset({"city-college-hollywood-zz", "city-college-hollywood"}),
+        frozenset({"western-technical-college-tx", "western-technical-college-224660"}),
+        frozenset({"cortiva-institute-438285", "cortiva-institute-387925"}),
+        frozenset(
+            {"international-school-of-cosmetology", "international-school-of-cosmetology-zz"}
+        ),
+        frozenset({"trend-barber-college-tx", "trend-barber-college"}),
+        frozenset({"tulsa-welding-school-jacksonville-fl", "tulsa-welding-school-jacksonville"}),
+        frozenset({"royal-learning-institute", "royal-learning-institute-zz"}),
+        frozenset({"mitchells-academy", "mitchells-academy-zz"}),
+        frozenset({"ideal-beauty-academy", "ideal-beauty-academy-zz"}),
+        frozenset({"american-university-of-puerto-rico-zz", "american-university-of-puerto-rico"}),
+        frozenset({"interactive-college-of-technology-tx", "interactive-college-of-technology"}),
+        frozenset(
+            {"southern-careers-institute-san-antonio", "southern-careers-institute-san-antonio-tx"}
+        ),
+    }
+)
+
+
+def test_no_college_title_collides_outside_the_approved_thirteen():
+    """An allowlist, so an accidental collision still fails.
+
+    The template fix took duplicate titles from 86 values over 202 pages down to 13 over 26. Marking
+    the remainder "known" without pinning them would mean the next template change could reintroduce
+    mass duplication and this suite would call it expected. Each approved pair is named, so a new
+    one, or a pair that stops colliding and should be removed from the list, both show up.
+    """
+    col = SITE / "college"
+    pages = sorted(col.glob("*/index.html")) if col.exists() else []
+    if len(pages) < 1000:
+        pytest.skip("no built college tree in this working copy")
+
+    by_title: dict[str, set[str]] = {}
+    for p in pages:
+        m = re.search(r"<title>(.*?)</title>", p.read_text(), re.S)
+        if m:
+            by_title.setdefault(m.group(1), set()).add(p.parent.name)
+
+    groups = {frozenset(s) for s in by_title.values() if len(s) > 1}
+    unexpected = groups - KNOWN_TITLE_COLLISIONS
+    assert not unexpected, (
+        "new duplicate title groups, which usually means a template regression rather than two "
+        f"same-named schools: {[sorted(g) for g in unexpected]}"
+    )
+    stale = KNOWN_TITLE_COLLISIONS - groups
+    assert not stale, (
+        "these pairs no longer collide, so remove them from KNOWN_TITLE_COLLISIONS rather than "
+        f"leaving an allowlist that grants more than it needs to: {[sorted(g) for g in stale]}"
+    )
+
+
+def test_no_two_college_pages_share_a_description():
+    """Zero tolerance here, unlike titles, because the description has room for the fact that
+    separates them. All 13 colliding pairs differ in programmes reported, distinct CIP codes or
+    recent completers, so every one can be told apart in a sentence."""
+    col = SITE / "college"
+    pages = sorted(col.glob("*/index.html")) if col.exists() else []
+    if len(pages) < 1000:
+        pytest.skip("no built college tree in this working copy")
+
+    by_desc: dict[str, list[str]] = {}
+    for p in pages:
+        m = re.search(r'<meta name="description" content="(.*?)"', p.read_text(), re.S)
+        if m:
+            by_desc.setdefault(m.group(1), []).append(p.parent.name)
+    dupes = {k: v for k, v in by_desc.items() if len(v) > 1}
+    assert not dupes, f"{len(dupes)} duplicate description groups: {list(dupes.values())[:5]}"
+
+
+def test_careers_carries_its_data_without_javascript():
+    """Careers was the one data page that degraded to nothing.
+
+    The table was built entirely in the browser from a 785 KB JSON, so with scripting off a reader
+    got a paragraph pointing at the methodology page. Approved on 2026-09-11 as a defect rather than
+    a contract exception: the profile pages have shipped a static core since Stage 4.1 and this is
+    the same contract at the same page size.
+    """
+    html = (SITE / "careers" / "index.html").read_text()
+    core = html.split("<!-- CAREERS_CORE_START -->", 1)
+    assert len(core) == 2, "the careers core markers are missing, so build_careers cannot write it"
+    core = core[1].split("<!-- CAREERS_CORE_END -->", 1)[0]
+
+    rows = core.count("<tr data-cip")
+    assert rows == 25, f"the static core should carry one page of 25 rows, found {rows}"
+    # The full total must be stated, or 25 rows imply the dataset is 25 rows long.
+    assert re.search(r"Showing 25 of [\d,]+", core), (
+        "the core must state the whole set, not only what it shows"
+    )
+    # Links go to permanent major pages, NOT to the page's own ?field= route, which is itself
+    # rendered in the browser and would hand a no-JavaScript reader a second empty page.
+    assert core.count('href="/majors/') == rows, "every static row must link to its major page"
+    assert "?field=" not in core, (
+        "a static row must not link into the client-rendered detail view, which needs the script it "
+        "is standing in for"
+    )
+    # And the noscript text must no longer claim there is nothing to read here.
+    assert "This interactive view needs JavaScript to run" not in html, (
+        "the noscript message still says the view needs JavaScript, which is now false: the table is"
+        " in the HTML"
+    )

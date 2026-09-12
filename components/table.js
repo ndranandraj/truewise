@@ -94,45 +94,70 @@
     _ensureWholeSet() {
       if (this.remaining <= 0 || this.tailLoading || this.tailFailed || !this.o.onMore) return;
       this.tailLoading = true;
-      const hint = this._focusHint();
-      this._announce(`Loading the remaining ${this.remaining} programs so the whole list is searched.`);
+      const unsearched = this.remaining; // captured now; `remaining` is cleared on success
+      this._announce(`Loading the remaining ${unsearched} programs so the whole list is searched.`);
       Promise.resolve(this.o.onMore()).then(
         (extra) => {
           this.rows = this.rows.concat(extra || []);
           this.remaining = 0;
           this.tailLoading = false;
-          this._render();
-          this._restoreFocus(hint);
+          this._completeRender();
           this._announce(`All ${this.rows.length} programs are now searched.`);
         },
         () => {
           // Keep `remaining` as it is. It is the number we must now disclose as unsearched.
           this.tailLoading = false;
           this.tailFailed = true;
-          this._render();
-          this._restoreFocus(hint);
+          this._completeRender();
+          // The disclosure has to be spoken, not only drawn. Someone whose focus stayed in the
+          // search box sees nothing change except a sentence above the table, and a screen reader
+          // does not read a paragraph that quietly replaced another one. Without this the reader is
+          // told the result is complete by the silence.
+          this._announce(
+            `${unsearched} programs could not be loaded and have not been searched. ` +
+              `The result covers the ${this.rows.length} programs that are loaded.`,
+          );
         },
       );
     }
 
+    /* Re-render after an async tail, putting focus and the caret back.
+     *
+     * The hint is taken HERE, immediately before the render that destroys the markup, and not when
+     * the fetch was started. Taking it at the start was wrong in a way only a real browser shows:
+     * the fetch begins on the first keystroke and the reader keeps typing, so by the time it lands
+     * the snapshot is several characters stale. Typing "History" and having the tail arrive put the
+     * caret back to 0, and the next character produced "xHistory". */
+    _completeRender() {
+      const hint = this._focusHint();
+      this._render();
+      this._restoreFocus(hint);
+    }
+
     /* Where focus and the caret are, so an async re-render can put them back.
-     * Without this, the tail landing mid-word would drop the caret and the next keystroke would
-     * go to <body>. */
+     *
+     * Identity comes from `data-tw-focus`, which every control renders, rather than from `id`. Only
+     * the search box and the two filter selects have ids: the desktop sort buttons and the direction
+     * toggle do not, so an id-only hint returned null for them and focus fell to <body> when the
+     * tail landed on a sorted table. An attribute the markup owns survives the re-render, which is
+     * exactly what an id was being used for. */
     _focusHint() {
-      const el = typeof document !== "undefined" ? document.activeElement : null;
-      if (!el || !this.root.contains(el) || !el.id) return null;
+      const active = typeof document !== "undefined" ? document.activeElement : null;
+      if (!active || !this.root.contains(active)) return null;
+      const el = active.closest("[data-tw-focus]");
+      if (!el) return null;
       let caret = null;
       try {
         caret = el.selectionStart;
       } catch (e) {
         /* not a text field */
       }
-      return { id: el.id, caret };
+      return { key: el.getAttribute("data-tw-focus"), caret };
     }
 
     _restoreFocus(hint) {
       if (!hint) return;
-      const el = this.root.querySelector(`#${hint.id}`);
+      const el = this.root.querySelector(`[data-tw-focus="${hint.key}"]`);
       if (!el) return;
       el.focus();
       if (hint.caret != null && el.setSelectionRange) {
@@ -185,12 +210,12 @@
         `<div class="tw-filters">` +
         `<div class="tw-field tw-field--grow">` +
         `<label class="tw-field__label" for="${this.uid}-q">Search programs</label>` +
-        `<input class="tw-field__input" id="${this.uid}-q" type="search" autocomplete="off"` +
+        `<input class="tw-field__input" id="${this.uid}-q" data-tw-focus="q" type="search" autocomplete="off"` +
         ` placeholder="e.g. nursing" value="${esc(this.query)}" />` +
         `</div>` +
         `<div class="tw-field">` +
         `<label class="tw-field__label" for="${this.uid}-v">Verdict</label>` +
-        `<select class="tw-field__input" id="${this.uid}-v">` +
+        `<select class="tw-field__input" id="${this.uid}-v" data-tw-focus="verdict">` +
         opt("", "All programs", this.verdict) +
         opt("pass", "Clears the bar", this.verdict) +
         opt("fail", "Falls short", this.verdict) +
@@ -199,7 +224,7 @@
         (cred.length > 1
           ? `<div class="tw-field">` +
             `<label class="tw-field__label" for="${this.uid}-c">Degree</label>` +
-            `<select class="tw-field__input" id="${this.uid}-c">` +
+            `<select class="tw-field__input" id="${this.uid}-c" data-tw-focus="credential">` +
             opt("", "All degrees", this.credential) +
             cred.map((c) => opt(c, c, this.credential)).join("") +
             `</select></div>`
@@ -274,10 +299,10 @@
       return (
         `<div class="tw-sort">` +
         `<label class="tw-sort__label" for="${this.uid}">Sort by</label>` +
-        `<select class="tw-sort__select" id="${this.uid}">` +
+        `<select class="tw-sort__select" id="${this.uid}" data-tw-focus="sortsel">` +
         `<option value=""${this.sortKey ? "" : " selected"}>Table order</option>${opts}</select>` +
         (this.sortKey
-          ? `<button type="button" class="tw-sort__dir">${dirLabel}</button>`
+          ? `<button type="button" class="tw-sort__dir" data-tw-focus="sortdir">${dirLabel}</button>`
           : "") +
         `</div>`
       );
@@ -340,7 +365,8 @@
         // aria-sort only belongs on a sortable column; active shows the direction, others "none".
         const ariaSort = sortable ? ` aria-sort="${active ? (this.sortDir === 1 ? "ascending" : "descending") : "none"}"` : "";
         const inner = sortable
-          ? `<button type="button" class="tw-th__sort${active ? " is-active" : ""}" data-key="${c.key}">` +
+          ? `<button type="button" class="tw-th__sort${active ? " is-active" : ""}" data-key="${c.key}"` +
+            ` data-tw-focus="sort-${c.key}">` +
             `${esc(c.label)}<span class="tw-th__arrow" aria-hidden="true">${active ? (this.sortDir === 1 ? " ▲" : " ▼") : ""}</span></button>`
           : esc(c.label);
         return `<th scope="col" class="tw-th tw-th--${c.kind}"${ariaSort}>${inner}</th>`;
@@ -403,21 +429,46 @@
         more +
         `<p class="tw-table__status" role="status" aria-live="polite"></p>`;
 
+      /* "Show all N programs": fetch the tail AND reveal it.
+       *
+       * It used to do only the first half. The rows were merged and `shown` was left at whatever the
+       * reveal had reached, so pressing "Show all 489 programs" on a page at 160 displayed 160, the
+       * count line said "Showing 160 of 489 programs", and the live region said "All 489 programs
+       * shown". Three statements, and the loudest one was false: a screen-reader user was told the
+       * list was complete while 329 rows were still behind a button that had just disappeared.
+       *
+       * The button's label is a promise about what will be on screen, so the reveal limit is set to
+       * the merged count before rendering. The announcement is then derived from what is actually
+       * rendered rather than asserted, which is the only version that cannot drift from the DOM. */
       const showAll = this.root.querySelector(".tw-showall");
       if (showAll) {
         showAll.addEventListener("click", async () => {
+          const firstNew = Math.min(this.shown, this.rows.length);
           showAll.disabled = true;
           showAll.textContent = "Loading...";
           try {
             const extra = await this.o.onMore();
             this.rows = this.rows.concat(extra || []);
             this.remaining = 0;
+            this.shown = this.rows.length; // the button said "all", so show all
             this._render();
-            const status = this.root.querySelector(".tw-table__status");
-            if (status) status.textContent = `All ${this.rows.length} programs shown.`;
+            // Focus the first row that appeared, for the reason in the reveal handler below: the
+            // button is gone now, so focusing it left focus on <body>.
+            const visible = this.root.querySelectorAll(".tw-table tbody .tw-tr");
+            const landing = visible[firstNew] || visible[visible.length - 1];
+            if (landing) {
+              landing.setAttribute("tabindex", "-1");
+              landing.focus();
+            }
+            this._announce(`${visible.length} programs shown, the whole list.`);
           } catch (e) {
             showAll.disabled = false;
             showAll.textContent = "Could not load. Try again";
+            this.tailFailed = true;
+            this._announce(
+              `Could not load the remaining ${this.remaining} programs. ` +
+                `Still showing the ${this.rows.length} that are loaded.`,
+            );
           }
         });
       }
