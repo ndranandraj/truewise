@@ -483,6 +483,55 @@ async function main() {
     check(/339/.test(live()), `and name how many: ${live()}`);
     check(document.activeElement === h.querySelector('[id$="-q"]'), "focus stays in the search box");
   }
+
+  /* 5. The failed-tail disclosure must SURVIVE the next search render.
+   *
+   * Found in a real browser after the announcement itself was fixed. The failure announced itself
+   * correctly, then typing emptied the live region: every render builds a fresh, empty status node,
+   * the two filter handlers refilled it and the search handler did not. So the sentence stayed on
+   * screen and a screen-reader user heard nothing, about the limitation or the count. Whether they
+   * learned the coverage was partial came down to whether they happened to type.
+   */
+  {
+    const d = deferred();
+    const { h, count, live } = bigTable(() => d.promise);
+    const q = h.querySelector('[id$="-q"]');
+    q.focus();
+    q.value = "Loaded";
+    q.dispatchEvent(new dom.window.Event("input"));
+    d.reject(new Error("offline"));
+    await new Promise((r) => setTimeout(r, 0));
+    check(/have not been searched/.test(live()), `failure is announced at once: ${live()}`);
+
+    // Now keep typing, which is what wiped it.
+    q.value = "Loaded 1";
+    q.dispatchEvent(new dom.window.Event("input"));
+    check(live().length > 0, "the live region must not be emptied by the next search render");
+    check(
+      /programs loaded match/.test(live()),
+      `the announcement must carry the result after typing: ${live()}`,
+    );
+    check(
+      /not been searched/.test(live()) && /339/.test(live()),
+      `and must still disclose the 339 unsearched: ${live()}`,
+    );
+    check(live() === count(), "spoken and drawn must be the same sentence, not two versions");
+
+    // And emptying the box must not erase it either: the count line used to revert to
+    // "Showing 20 of 489 programs", which claims 469 rows are a click away when the fetch for them
+    // has already failed.
+    q.value = "";
+    q.dispatchEvent(new dom.window.Event("input"));
+    check(
+      !/of 489 programs/.test(count()),
+      `an unfiltered view must not claim the unfetched rows are present: ${count()}`,
+    );
+    check(
+      /could not be loaded/.test(count()) && /could not be loaded/.test(live()),
+      `clearing the search must keep the disclosure in both places: ${count()} | ${live()}`,
+    );
+  }
+
 }
 
 main().then(() => {

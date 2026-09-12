@@ -174,6 +174,18 @@
       if (status) status.textContent = text;
     }
 
+    /* Speak whatever the count line currently says, disclosure included.
+     *
+     * One helper rather than the same three lines copied into each handler, because the copy is how
+     * this broke: the filters refilled the live region after re-rendering and search did not, so
+     * typing after a failed tail left the disclosure visible on screen and absent from the
+     * accessibility tree. The count line is already the single place that decides what may be
+     * claimed, so reading from it means the spoken and the drawn version cannot disagree. */
+    _announceCount() {
+      const count = this.root.querySelector(".tw-table__count");
+      if (count) this._announce(count.textContent);
+    }
+
     /* Rows matching the current search and filters, before the reveal limit.
      *
      * Suppressed programs are filtered like any other row rather than being special-cased. Hiding
@@ -258,6 +270,14 @@
       } else if (filtered) {
         text = `${matched} of ${total} programs match`;
         if (visible < matched) text += `, showing the first ${visible}`;
+      } else if (this.tailFailed && this.remaining > 0) {
+        // Clearing the search after a failed tail used to return this line to "Showing 20 of 489
+        // programs", which says all 489 are in the list and 469 are one click away. They are not:
+        // the fetch that would bring them failed. The disclosure belongs here too, not only while a
+        // filter happens to be active, or it vanishes the moment someone empties the search box.
+        text =
+          `Showing ${visible} of the ${loaded} programs loaded. ` +
+          `${this.remaining} more could not be loaded`;
       } else if (visible < total) {
         // Not a search claim, a reveal claim: every one of the `total` is in the list, and this
         // says how many of them are on screen. Honest while the tail is unfetched.
@@ -555,6 +575,11 @@
           this.shown = PAGE;
           this._render();
           restore(`#${this.uid}-q`, caret);
+          // Every render destroys the live region and builds an empty one, so anything it was
+          // saying is gone. The two filters below always refilled it and search did not, which
+          // silently erased the failed-tail disclosure the moment someone typed: the sentence stayed
+          // on screen and a screen-reader user heard nothing, about the limitation OR the count.
+          this._announceCount();
         });
       }
       for (const [field, key] of [["v", "verdict"], ["c", "credential"]]) {
@@ -566,9 +591,7 @@
           this.shown = PAGE;
           this._render();
           restore(`#${this.uid}-${field}`);
-          const status = this.root.querySelector(".tw-table__status");
-          const count = this.root.querySelector(".tw-table__count");
-          if (status && count) status.textContent = count.textContent;
+          this._announceCount();
         });
       }
 
