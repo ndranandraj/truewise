@@ -40,6 +40,9 @@ jobs:
           python -m pipeline.build_careers
           [ -f data/parquet/k12.parquet ] && python -m pipeline.build_k12 || echo "no k12 source, skipping"
           python -m analysis.summary
+          # The URL contract: fail the deploy if a qualified college has no registered slug, rather
+          # than deriving one and silently publishing a page at an address nothing links to.
+          python -m pipeline.slug_registry --check
           # Copy the isolated component assets (components/) into site/ so /components.css and
           # /components/*.js resolve for the canonical profile.
           python -m pipeline.build_components

@@ -9,14 +9,16 @@
   <meta property="og:description" content="Which US high schools offer AP, calculus, and physics, and how many students take them. Federal data." />
   <meta property="og:url" content="https://truewise.dev/k12/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="canonical" href="https://truewise.dev/k12/advanced-courses/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
        sticky, so without the offset the subnav slides under the header while scrolling. */
@@ -146,9 +148,10 @@
         <p class="lede">What does a US public high school actually offer, AP, calculus, physics, chemistry, computer
           science, dual enrollment, IB, and gifted programs, how many students take them, and who's on staff
           (counselors, security)? From the federal Civil Rights Data Collection.</p>
+        <label class="field-label" for="q">Search ${INDEX.length.toLocaleString()} public high schools by name</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <input id="q" type="search" autocomplete="off" placeholder="Search ${INDEX.length.toLocaleString()} public high schools by name…" value="${esc(preset)}" />
+          <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" value="${esc(preset)}" />
         </div>
         <p class="hint">Try your high school, or a well-known one like “Lane Tech” or “Stuyvesant”.</p>
         <div class="statebar" id="statebar" hidden></div>

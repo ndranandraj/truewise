@@ -140,7 +140,7 @@ def render_page(s) -> str:
     # Exposure curve.
     p.append('    <h2 class="sec">Exposure by benchmark</h2>\n')
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Benchmark comparison"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
         '<th class="num">Grad programs below</th><th class="num">Share of grad programs with earnings</th>'
         "</tr></thead><tbody>\n"
     )
@@ -165,7 +165,7 @@ def render_page(s) -> str:
         f'    <h2 class="sec">By credential (at an illustrative {money(REF)} benchmark)</h2>\n'
     )
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Coverage by credential"><table class="t"><thead><tr><th>Credential</th><th class="num">With reported earnings</th>'
         '<th class="num">Below benchmark</th></tr></thead><tbody>\n'
     )
     for cred, with_earn, below in s["by_cred"]:
@@ -180,7 +180,7 @@ def render_page(s) -> str:
         f'    <h2 class="sec">Fields with the most exposed programs (below {money(REF)})</h2>\n'
     )
     p.append(
-        '    <div class="tscroll"><table class="t"><thead><tr><th>Field of study</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Coverage by field of study"><table class="t"><thead><tr><th>Field of study</th>'
         '<th class="num">Programs below</th><th class="num">Median earnings</th></tr></thead><tbody>\n'
     )
     for field, below, med in s["top_fields"]:
@@ -234,6 +234,12 @@ def render_page(s) -> str:
     return "".join(p)
 
 
+# The findings this module publishes, as directory names under site/findings/. This is the
+# authoritative list: pipeline/prune_orphans.py checks the built tree against it, so a retired
+# finding cannot linger on disk and ship from a local deploy (site/findings/data-audit/ did).
+PUBLISHED_FINDINGS = ("stats-grad-exposure",)
+
+
 def render_index() -> str:
     canonical = f"{BASE}/findings/"
     title = "Findings: reproducible numbers from US education data"
@@ -266,7 +272,7 @@ def render_index() -> str:
 def main() -> None:
     con = duckdb.connect()
     s = compute_exposure(con)
-    out = SITE / "findings" / "stats-grad-exposure"
+    out = SITE / "findings" / PUBLISHED_FINDINGS[0]
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.html").write_text(render_page(s))
     (SITE / "findings" / "index.html").write_text(render_index())

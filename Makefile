@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: install components tokens tokens-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -46,6 +46,26 @@ tokens:
 	$(PYTHON) -m pipeline.build_tokens
 tokens-check:
 	$(PYTHON) -m pipeline.build_tokens --check
+
+# 4a1) Local trees accumulate pre-rendered pages the current build no longer produces (a school's
+# slug changes, or a finding is retired, and the old directory stays). Deploy builds from a clean
+# checkout so production is unaffected, but `wrangler deploy` from a laptop uploads everything
+# under site/, which is how a preview can serve pages that production 404s. Run prune-check before
+# building one. Covers /college/ and /findings/ only: those are the trees with a published
+# authority to diff against. /majors/, /lists/, /colleges/ and /updates/ are NOT checked.
+prune-check:
+	$(PYTHON) -m pipeline.prune_orphans --check
+prune:
+	$(PYTHON) -m pipeline.prune_orphans
+
+# 4a2) The published URL contract. published/slug_registry.json freezes unitid -> slug so a college
+# page cannot move between builds; slug-registry adds any genuinely new institutions, and the diff
+# is meant to be reviewed and committed. slug-registry-check fails the build when a qualified
+# school has no registered slug.
+slug-registry:
+	$(PYTHON) -m pipeline.slug_registry
+slug-registry-check:
+	$(PYTHON) -m pipeline.slug_registry --check
 
 # 4b) Generate the pre-rendered HTML pages (SEO volume engine): college/state, majors, sitemap.
 college-pages:
@@ -101,6 +121,17 @@ test-embed:
 
 # Gold-set gate for search ranking. Run BEFORE and AFTER any change to the matcher: four smoke
 # queries cannot approve a ranking change, because ranking regressions are silent.
+# Report, not a gate: derives candidate search gaps from the data so none has to be
+# learned by logging what visitors type. Triage its output into the gold set.
+# Every placeholder that reaches a reader as if it were a fact breaks the one thing this
+# site sells. Written after 461 pages spent months saying "a typical ZZ high-school
+# graduate". Reports by default; --strict for a gate.
+honesty-scan:
+	$(PYTHON) -m pipeline.honesty_scan
+
+search-probe:
+	node tests/search_probe.js
+
 test-search-gold:
 	node tests/search_gold.js
 

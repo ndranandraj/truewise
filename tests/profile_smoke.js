@@ -69,7 +69,15 @@ setTimeout(() => {
   const rows = mount.querySelectorAll("tbody .tw-tr");
   check(rows.length === 4, `expected 4 rows after loading tail, got ${rows.length}`);
   check(mount.querySelector(".tw-showall") === null, "show-all should be gone after loading");
-  check(/All 4 programs shown/.test(mount.textContent), "load completion not announced");
+  /* The announcement must name the number ACTUALLY rendered, not a number asserted alongside it.
+     This used to match the literal "All 4 programs shown", which passed while the real page was
+     announcing "All 489 programs shown" over 160 rendered rows: the reveal limit was left where it
+     was, so the loudest of the three statements on screen was the false one. Deriving the expected
+     text from the DOM is what makes that impossible to pass again. */
+  const status = mount.querySelector(".tw-table__status");
+  check(!!status && new RegExp(`\\b${rows.length}\\b`).test(status.textContent),
+    `the announcement must state the ${rows.length} rows on screen, said: ${status && status.textContent}`);
+  check(!/\b489\b/.test((status && status.textContent) || ""), "no count the DOM does not support");
 
   // 3b. The 1-year marker is preserved through enhancement for BOTH the static row and the tail row
   // (Nursing static + History tail), so a 1-year program loaded as tail row is labelled like row 1.

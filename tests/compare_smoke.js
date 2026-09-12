@@ -29,15 +29,41 @@ global.document = { getElementById: (id) => els[id] || mk() };
 global.window = { addEventListener() {} };
 // The shared alias/search module both pickers load; inject it as the page would.
 global.TWSearch = require("../site/assets/college-search.js");
-global.history = { replaceState() {} };
+// Record what the page does to history. Adding a school must PUSH, so each addition is a real
+// navigation that analytics can see and the back button can undo; removing must REPLACE, or back
+// would silently re-add a school someone just dismissed.
+const HISTORY = [];
 global.location = { search: "", pathname: "/compare/" };
+const applyUrl = (url) => {
+  const i = url.indexOf("?");
+  global.location.search = i === -1 ? "" : url.slice(i);
+};
+global.history = {
+  pushState(_s, _t, url) {
+    HISTORY.push(["push", url]);
+    applyUrl(url);
+  },
+  replaceState(_s, _t, url) {
+    HISTORY.push(["replace", url]);
+    applyUrl(url);
+  },
+};
 global.fetch = async () => ({ json: async () => ({ schools: data }) });
 global.setTimeout = (f) => f();
 global.clearTimeout = () => {};
+// Real enough to read back what the page just wrote, which is what applyFromUrl() parses.
 global.URLSearchParams = class {
-  constructor() {}
-  get() {
-    return null;
+  constructor(qs) {
+    this.p = new Map(
+      String(qs || "")
+        .replace(/^\?/, "")
+        .split("&")
+        .filter(Boolean)
+        .map((kv) => kv.split("=").map(decodeURIComponent)),
+    );
+  }
+  get(k) {
+    return this.p.has(k) ? this.p.get(k) : null;
   }
 };
 
@@ -71,8 +97,13 @@ const ck = (name, cond) => {
   els.income.value = "-1";
   render();
 
-  // Column count is the observable proxy for the internal picked[] list.
-  const cols = () => (els.cmp.innerHTML.match(/data-rm=/g) || []).length;
+  // Distinct removable schools is the observable proxy for the internal picked[] list. Counting
+  // occurrences of data-rm would double now: each school gets a Remove control in the desktop
+  // table header AND in the phone card list, and only one of the two is displayed at a width.
+  const cols = () =>
+    new Set(
+      Array.from(els.cmp.innerHTML.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+    ).size;
 
   ck("duplicate add is ignored", (await add("223232"), cols() === 2));
 
@@ -109,6 +140,78 @@ const ck = (name, cond) => {
   ck('Compare resolves "UCLA" (advertised on the page)', topName("ucla").includes("California-Los Angeles"));
   ck('Compare resolves "Baylor" to the University', topName("baylor") === "Baylor University");
   ck('Compare resolves "ut austin" to UT Austin', topName("ut austin").includes("Texas at Austin"));
+
+  // The phone presentation. The sticky-label table was the interim repair and it failed its own
+  // acceptance: at 320px one school still overflowed the 280px content box, and with two or more
+  // schools a fragment of the outgoing column sat between the sticky label and the next full
+  // column, so a phone user read partial words and partial numbers. Below the swap width the table
+  // is replaced by metric-major cards, which removes the horizontal axis and keeps the schools
+  // adjacent, since stacking one school per card would put the two compared figures a scroll apart.
+  // That width was 700px when the cards were written and is 929px now, derived in
+  // test_the_compare_swap_matches_what_the_table_needs_at_capacity from the table's own
+  // declarations, so it is deliberately not restated here.
+  await add("223232");
+  await add("110538");
+  const out = els.cmp.innerHTML;
+  const metrics = (out.match(/<section class="cmp-metric">/g) || []).length;
+  // Minus the header row, whose first cell is the empty corner above the metric labels.
+  const tableRows = (out.match(/<tr><th>/g) || []).length - 1;
+  ck("phone view exists", out.includes('class="cmp-stack"'));
+  ck(
+    `one card per metric (${metrics} cards vs ${tableRows} table rows)`,
+    metrics > 0 && metrics === tableRows,
+  );
+
+  // Same numbers in both renderings, or the phone view is quietly a different product.
+  const picked2 = new Set(
+    Array.from(out.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+  );
+  const cells = Array.from(out.matchAll(/<tr><th>[^<]*<\/th>(.*?)<\/tr>/g), (m) =>
+    Array.from(m[1].matchAll(/<td>(.*?)<\/td>/g), (c) => c[1]),
+  ).flat();
+  const dds = Array.from(out.matchAll(/<dd>(.*?)<\/dd>/g), (m) => m[1]);
+  ck(
+    `every table value appears in the phone view (${cells.length} cells, ${dds.length} entries)`,
+    cells.length > 0 && cells.length === dds.length && cells.every((c, i) => c === dds[i]),
+  );
+  ck(
+    `each card names every school it lists (${picked2.size} schools)`,
+    picked2.size > 1 && (out.match(/<dt>/g) || []).length === metrics * picked2.size,
+  );
+
+  /* History behaviour. Compare used replaceState throughout, which does not register as a
+     navigation, so additions and completed comparisons were invisible to analytics that only see
+     pageviews. Adding pushes; removing replaces, or the back button would re-add a school someone
+     just dismissed. This is the measurement itself, so it is asserted rather than assumed. */
+  // Reset through the page's own code path rather than by reaching into its state.
+  global.location.search = "";
+  await applyFromUrl();
+  HISTORY.length = 0;
+  await add("223232");
+  ck("adding a school pushes a history entry", HISTORY.at(-1)[0] === "push");
+  ck("the pushed URL carries the school", HISTORY.at(-1)[1] === "?schools=223232");
+  await add("110538");
+  ck(
+    "a completed two-school comparison is a single URL",
+    HISTORY.at(-1)[0] === "push" && HISTORY.at(-1)[1] === "?schools=223232,110538",
+  );
+  remove("110538");
+  ck("removing replaces rather than pushes", HISTORY.at(-1)[0] === "replace");
+  remove("223232");
+  ck("emptying returns to the bare path", HISTORY.at(-1)[1] === "/compare/");
+
+  // A shared link must not manufacture one history entry per school: init used to replay add()
+  // per id, so opening a four-school link buried the referring page four steps back.
+  HISTORY.length = 0;
+  global.location.search = "?schools=223232,110538";
+  await applyFromUrl();
+  ck("a shared link restores both schools", cols() === 2);
+  ck("a shared link pushes nothing", HISTORY.length === 0);
+
+  // And back must rebuild the comparison, not just the address bar.
+  global.location.search = "?schools=223232";
+  await applyFromUrl();
+  ck("going back rebuilds the comparison", cols() === 1 && txt().includes("Baylor"));
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL COMPARE CHECKS PASSED");
   process.exit(fails ? 1 : 0);

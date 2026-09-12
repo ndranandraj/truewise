@@ -11,21 +11,27 @@
   <meta property="og:url" content="https://truewise.dev/careers/" />
   <link rel="canonical" href="https://truewise.dev/careers/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .cr-head { padding: 44px 0 6px; }
     .cr-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
     .cr-head p.lede { font-size: 1.1rem; }
-    .cr-controls { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 6px; }
-    .cr-controls input, .cr-controls select { border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px; font-size: .95rem; background: #fff; color: var(--ink); }
-    .cr-controls input { flex: 1; min-width: 220px; }
+    .cr-controls { display: flex; gap: var(--s3); flex-wrap: wrap; margin: 18px 0 6px; align-items: end; }
+    /* Every control carries a persistent visible label. The two selects previously had neither a
+       label nor an accessible name, which is the one concrete accessibility failure on this page,
+       and the search input relied on a placeholder, which disappears the moment someone types. */
+    .cr-field { display: flex; flex-direction: column; gap: var(--s1); min-width: 0; }
+    .cr-field--grow { flex: 1; min-width: 220px; }
+    .cr-label { font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+    .cr-controls input, .cr-controls select { border: 1px solid var(--control-border); border-radius: var(--r-md); padding: 12px; font-size: var(--t-ui); background: #fff; color: var(--ink); width: 100%; }
     .cr-count { color: var(--ink-soft); font-size: .9rem; margin: 6px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
     .cr-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
@@ -101,8 +107,49 @@
   <main class="wrap" id="app">
     <div id="boot-fallback">
       <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">What a major pays</h1>
-      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Median earnings by field of study from the U.S. Department of Education College Scorecard: what graduates of each major typically earn, the pay range across programs, the degree ladder from certificate to doctorate, and the federal job outlook. Loading the data now.</p>
-      <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
+      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Median earnings by field of study from the U.S. Department of Education College Scorecard: what graduates of each major typically earn, the pay range across programs, the degree ladder from certificate to doctorate, and the federal job outlook.</p>
+      <!-- The no-JavaScript core, written by pipeline/build_careers.py between the markers below.
+           This page used to degrade to nothing: the table was built entirely in the browser from a
+           785 KB JSON, so with scripting off a reader got a paragraph pointing at the methodology
+           page and no data. The profile pages have shipped a static core since Stage 4.1; this is
+           the same contract at the same page size. The script replaces #boot-fallback wholesale, so
+           these rows are the opening view for everyone rather than a separate rendering that only
+           some readers see. Do not hand-edit between the markers: `make careers` overwrites it. -->
+      <!-- CAREERS_CORE_START -->
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Majors and earnings">
+        <table class="cr-table">
+          <caption>The highest-earning major and degree combinations. Showing 25 of 738; the full list needs JavaScript, and every major here has its own page.</caption>
+          <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
+          <tbody>
+          <tr data-cip="5105" data-cred="8"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td>Grad cert</td><td class="num">$224,001</td><td>$195,421 to $264,760</td><td class="num">100%</td><td class="num">16</td></tr>
+          <tr data-cip="5105" data-cred="5"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$211,240</td><td>$201,547 to $233,908</td><td class="num">100%</td><td class="num">25</td></tr>
+          <tr data-cip="5114" data-cred="5"><td class="mname"><a href="/majors/medical-clinical-sciences-graduate-medical-studies/">Medical Clinical Sciences/Graduate Medical Studies</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$202,941</td><td>$178,862 to $246,042</td><td class="num">100%</td><td class="num">14</td></tr>
+          <tr data-cip="5104" data-cred="7"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$173,649</td><td>$160,853 to $187,404</td><td class="num">100%</td><td class="num">62</td></tr>
+          <tr data-cip="5202" data-cred="7"><td class="mname"><a href="/majors/business-administration-management-and-operations/">Business Administration, Management and Operations</a><div class="fam">Business &amp; Management</div></td><td>First prof.</td><td class="num">$166,604</td><td>$138,548 to $258,635</td><td class="num">100%</td><td class="num">5</td></tr>
+          <tr data-cip="5104" data-cred="6"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$156,942</td><td>$128,406 to $174,160</td><td class="num">100%</td><td class="num">7</td></tr>
+          <tr data-cip="1107" data-cred="5"><td class="mname"><a href="/majors/computer-science/">Computer Science</a><div class="fam">Computer &amp; Information Sciences</div></td><td>Master's</td><td class="num">$149,320</td><td>$127,022 to $174,359</td><td class="num">100%</td><td class="num">59</td></tr>
+          <tr data-cip="1427" data-cred="5"><td class="mname"><a href="/majors/systems-engineering/">Systems Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$144,012</td><td>$128,376 to $152,478</td><td class="num">100%</td><td class="num">28</td></tr>
+          <tr data-cip="5108" data-cred="5"><td class="mname"><a href="/majors/allied-health-and-medical-assisting-services/">Allied Health and Medical Assisting Services</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$141,538</td><td>$114,583 to $220,796</td><td class="num">100%</td><td class="num">16</td></tr>
+          <tr data-cip="4008" data-cred="6"><td class="mname"><a href="/majors/physics/">Physics</a><div class="fam">Physical Sciences</div></td><td>Doctoral</td><td class="num">$141,253</td><td>$132,984 to $166,997</td><td class="num">100%</td><td class="num">9</td></tr>
+          <tr data-cip="5120" data-cred="5"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$137,591</td><td>$118,314 to $149,554</td><td class="num">100%</td><td class="num">18</td></tr>
+          <tr data-cip="5120" data-cred="6"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$137,496</td><td>$132,308 to $143,512</td><td class="num">100%</td><td class="num">45</td></tr>
+          <tr data-cip="3030" data-cred="5"><td class="mname"><a href="/majors/computational-science/">Computational Science</a><div class="fam">Interdisciplinary Studies</div></td><td>Master's</td><td class="num">$137,367</td><td>$137,367 to $139,524</td><td class="num">100%</td><td class="num">6</td></tr>
+          <tr data-cip="5107" data-cred="6"><td class="mname"><a href="/majors/health-and-medical-administrative-services/">Health and Medical Administrative Services</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$136,922</td><td>$109,207 to $148,488</td><td class="num">100%</td><td class="num">7</td></tr>
+          <tr data-cip="5138" data-cred="7"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$136,765</td><td>$119,485 to $148,739</td><td class="num">100%</td><td class="num">33</td></tr>
+          <tr data-cip="5120" data-cred="7"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$135,992</td><td>$132,186 to $141,806</td><td class="num">100%</td><td class="num">94</td></tr>
+          <tr data-cip="5138" data-cred="6"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$135,276</td><td>$124,259 to $158,368</td><td class="num">100%</td><td class="num">158</td></tr>
+          <tr data-cip="1409" data-cred="5"><td class="mname"><a href="/majors/computer-engineering/">Computer Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$132,260</td><td>$118,843 to $151,922</td><td class="num">100%</td><td class="num">30</td></tr>
+          <tr data-cip="5117" data-cred="7"><td class="mname"><a href="/majors/optometry/">Optometry</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$130,042</td><td>$126,389 to $134,430</td><td class="num">100%</td><td class="num">18</td></tr>
+          <tr data-cip="5109" data-cred="7"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$130,026</td><td>$115,870 to $133,193</td><td class="num">100%</td><td class="num">5</td></tr>
+          <tr data-cip="1410" data-cred="5"><td class="mname"><a href="/majors/electrical-electronics-and-communications-engineering/">Electrical, Electronics, and Communications Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$129,886</td><td>$110,946 to $145,958</td><td class="num">100%</td><td class="num">72</td></tr>
+          <tr data-cip="0180" data-cred="7"><td class="mname"><a href="/majors/veterinary-medicine/">Veterinary Medicine</a><div class="fam">Agriculture &amp; Natural Resources</div></td><td>First prof.</td><td class="num">$127,974</td><td>$122,885 to $133,414</td><td class="num">100%</td><td class="num">26</td></tr>
+          <tr data-cip="3031" data-cred="5"><td class="mname"><a href="/majors/human-computer-interaction/">Human Computer Interaction</a><div class="fam">Interdisciplinary Studies</div></td><td>Master's</td><td class="num">$127,652</td><td>$115,320 to $161,848</td><td class="num">100%</td><td class="num">9</td></tr>
+          <tr data-cip="5109" data-cred="5"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$126,666</td><td>$117,269 to $135,359</td><td class="num">100%</td><td class="num">234</td></tr>
+          <tr data-cip="5138" data-cred="8"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>Grad cert</td><td class="num">$126,283</td><td>$115,372 to $138,734</td><td class="num">100%</td><td class="num">51</td></tr>
+          </tbody>
+        </table></div>
+        <!-- CAREERS_CORE_END -->
+      <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Sorting, searching and the degree ladder need JavaScript. The table above is the full set of columns for the highest-earning combinations, every major links to its own page, and the complete dataset is on the <a href="/#data">data section</a> with the method on the <a href="/methodology/">methodology page</a>.</p></noscript>
     </div>
   </main>
   <button id="to-top" aria-label="Back to top" title="Back to top" style="position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;">↑</button>
@@ -112,7 +159,10 @@
   const app = document.getElementById("app");
   let FIELDS = null;
 
-  const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
+  // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
+  // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
+  // published cost, so the figure is real and stays, correctly written.
+  const money = n => n == null ? "n/a" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   async function load() {
@@ -138,21 +188,40 @@
           of Education's own data. Pick a major to see how much its programs pay, how widely that varies,
           and how often graduates out-earn a high-school graduate.</p>
         <div class="cr-controls">
-          <input id="q" type="search" placeholder="Search a major, e.g. nursing, computer science…" value="${esc(preset)}" autocomplete="off" />
-          <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
-          <select id="sort">
-            <option value="med">Sort: Earnings</option>
-            <option value="pass">Sort: Clear the bar</option>
-            <option value="schools">Sort: Most common</option>
-            <option value="name">Sort: A to Z</option>
-          </select>
+          <div class="cr-field cr-field--grow">
+            <label class="cr-label" for="q">Search majors</label>
+            <input id="q" type="search" placeholder="e.g. nursing" value="${esc(preset)}" autocomplete="off" />
+          </div>
+          <div class="cr-field">
+            <label class="cr-label" for="fam">Field of study</label>
+            <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
+          </div>
+          <div class="cr-field">
+            <label class="cr-label" for="sort">Sort by</label>
+            <select id="sort">
+              <option value="med">Earnings</option>
+              <option value="pass">Clear the bar</option>
+              <option value="schools">Most common</option>
+              <option value="name">A to Z</option>
+            </select>
+          </div>
         </div>
         <p class="cr-count" id="count"></p>
+        <!-- A reveal moves focus into the table, which a screen reader announces as a row rather
+             than as "25 more of 738". This says the rest. Polite so it does not interrupt. -->
+        <p class="cr-count" id="cr-live" role="status" aria-live="polite"></p>
         <div id="list"></div>
       </section>`;
     const q = document.getElementById("q"), fam = document.getElementById("fam"), sort = document.getElementById("sort");
     const list = document.getElementById("list"), count = document.getElementById("count");
+    const live = document.getElementById("cr-live");
     const maxP75 = Math.max(...FIELDS.map(f => f.p75 || 0));
+    /* The page rendered its first 400 rows, about 36,100px tall on a phone: a data dump rather
+       than an interface, and the search and field filter that would have narrowed it sat above a
+       wall of rows nobody scrolled back up from. A page at a time instead, reset whenever the set
+       changes so a narrowed search never opens part-way down the previous, wider one. */
+    const PAGE = 25;
+    let shown = PAGE;
     const draw = () => {
       const term = q.value.trim().toLowerCase();
       let rows = FIELDS.filter(f =>
@@ -165,12 +234,17 @@
         schools: (a, b) => (b.schools ?? -1) - (a.schools ?? -1),
         name: (a, b) => (a.name || "").localeCompare(b.name || ""),
       }[s]);
-      count.textContent = `${rows.length.toLocaleString()} major-and-degree combinations`;
+      const visible = Math.min(shown, rows.length);
+      // Say what is on screen AND what exists. "738 combinations" over a list of 25 would be a
+      // claim about the page rather than about the data.
+      count.textContent = visible < rows.length
+        ? `Showing ${visible.toLocaleString()} of ${rows.length.toLocaleString()} major-and-degree combinations`
+        : `${rows.length.toLocaleString()} major-and-degree combinations`;
       if (!rows.length) { list.innerHTML = `<p class="empty">No majors match.</p>`; return; }
-      list.innerHTML = `<div class="table-wrap"><table class="cr-table">
+      list.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="Majors and earnings"><table class="cr-table">
         <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th>
           <th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
-        <tbody>${rows.slice(0, 400).map(f => {
+        <tbody>${rows.slice(0, shown).map(f => {
           const left = maxP75 ? Math.round((f.p25 || 0) / maxP75 * 100) : 0;
           const width = maxP75 ? Math.max(2, Math.round(((f.p75 || 0) - (f.p25 || 0)) / maxP75 * 100)) : 0;
           const medPos = maxP75 ? Math.round((f.med || 0) / maxP75 * 100) : 0;
@@ -183,16 +257,33 @@
             <td class="num"><span class="clearbar ${cls}">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</span></td>
             <td class="num">${(f.schools || 0).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
-        ${rows.length > 400 ? `<p class="cr-count">Showing the first 400. Narrow with search or a field filter.</p>` : ""}`;
+        ${rows.length > shown ? `<button type="button" class="dl-btn" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
+      const moreBtn = document.getElementById("cr-more");
+      if (moreBtn) moreBtn.addEventListener("click", () => {
+        /* Focus the first row that just appeared, not the button.
+           The button sits below the rows it reveals, so focusing it put a keyboard user past the 25
+           rows they asked for. And on the final click the button is removed, because nothing is left
+           to reveal, so `?.focus()` was a silent no-op and focus fell to <body>: the reader was
+           returned to the top of the document at the moment they finished opening the list. The row
+           is the content, and it always exists. Same fix as components/table.js. */
+        const firstNew = shown;
+        shown += PAGE;
+        draw();
+        const rows = list.querySelectorAll("tbody tr");
+        const landing = rows[firstNew] || rows[rows.length - 1];
+        if (landing) { landing.setAttribute("tabindex", "-1"); landing.focus(); }
+        if (live) live.textContent = `${rows.length - firstNew} more shown. ${count.textContent}`;
+      });
       // The major name is a real link (keyboard-focusable, works with JS off); the handler is
       // progressive enhancement so the SPA route is used when JS is on.
       list.querySelectorAll("a.mlink").forEach(a =>
         a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     };
     let t;
-    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(draw, 120); });
-    fam.addEventListener("change", draw);
-    sort.addEventListener("change", draw);
+    const redraw = () => { shown = PAGE; draw(); };
+    q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(redraw, 120); });
+    fam.addEventListener("change", redraw);
+    sort.addEventListener("change", redraw);
     draw();
     q.focus();
   }

@@ -7,8 +7,10 @@
 # listed explicitly rather than /*/data/*.
 
 # Baseline security headers on every response. The CSP is matched to the resources the site
-# actually loads: inline <script>/<style> (hence 'unsafe-inline'), Google Fonts, and the
-# cookieless Cloudflare beacon. 'unsafe-inline' is a real weakening, but the pages are static
+# actually loads: inline <script>/<style> (hence 'unsafe-inline') and the cookieless Cloudflare
+# beacon. Since Release 3 B3 the fonts are self-hosted from /fonts, so style-src and font-src no
+# longer allow fonts.googleapis.com or fonts.gstatic.com: the only remaining third-party origin is
+# the beacon. 'unsafe-inline' is a real weakening, but the pages are static
 # and load no third-party scripts beyond the beacon, so the practical risk is low and the
 # nosniff/HSTS protections are the meaningful wins. Revisit CSP if inline JS is ever moved out.
 #
@@ -17,13 +19,18 @@
 # `frame-ancestors 'none'` cannot be relaxed on /embed/ (the browser enforces the strictest of the
 # two CSPs). X-Frame-Options can be unset per-path with `!`, so it is the mechanism that lets the
 # embed widget opt out while every other page stays frame-denied.
+# Let Google show a large image preview for any page of ours it surfaces, which is what Discover
+# and rich results need. Set once as a header rather than as a meta tag on 6,550 generated pages,
+# and it composes with the per-page robots meta: it is a presentation directive, not an indexing
+# one, so a noindex page keeps its noindex.
 /*
   Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Robots-Tag: max-image-preview:large
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(), microphone=(), camera=(), browsing-topics=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://cloudflareinsights.com; base-uri 'self'; object-src 'none'
 
 # The /embed/ widget is meant to be iframed by other sites (journalists, schools), so it opts OUT
 # of the sitewide frame block by unsetting X-Frame-Options. Nothing forbids framing it (the global
@@ -35,6 +42,11 @@
 # Stylesheet and icons: change rarely, safe to hold for an hour.
 /styles.css
   Cache-Control: public, max-age=3600
+
+# Self-hosted fonts: immutable for a year. Safe because each filename pins the family, weight and
+# subset, so a different face is always a different URL. Replace the file name, never the bytes.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
 /favicon.svg
   Cache-Control: public, max-age=86400
 /og.png

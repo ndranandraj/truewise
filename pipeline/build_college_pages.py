@@ -103,6 +103,26 @@ BEACON = (
 )
 
 
+# 461 schools carry the state code "ZZ", which is not a state: they have no city and no state
+# earnings benchmark either, so it is the source data's "not reported" bucket. Rendering it as if
+# it were a place put "a typical ZZ high-school graduate" into the body copy of 461 live pages and
+# titled a hub "Colleges in ZZ". That is the same failure as showing a suppressed value as 0, and
+# the honesty rules forbid it: unknown is labelled unknown.
+#
+# The URL keeps its /colleges/zz/ slug, because published routes are a frozen contract. Only what a
+# reader sees changes.
+UNKNOWN_STATE_LABEL = "Location not reported"
+
+
+def known_state(st) -> bool:
+    return st in STATE_NAMES
+
+
+def state_label(st) -> str:
+    """Human-readable place for a state code, or an honest label when the code is not a state."""
+    return STATE_NAMES.get(st, UNKNOWN_STATE_LABEL)
+
+
 def esc(s) -> str:
     return html.escape(str(s if s is not None else ""), quote=True)
 
@@ -113,7 +133,17 @@ def slugify(name: str) -> str:
 
 
 def money(n) -> str:
-    return "n/a" if n is None else "$" + f"{int(round(n)):,}"
+    """Money for a reader. The sign goes OUTSIDE the currency symbol.
+
+    "$-2,533" is what naive formatting produces and it reads as a bug rather than a number. It is
+    on 38 profiles, because a College Scorecard net price genuinely goes negative when grant aid
+    exceeds the published cost of attendance: MIT's lowest income band is one. The figure is real
+    and stays, correctly written.
+    """
+    if n is None:
+        return "n/a"
+    v = int(round(n))
+    return f"-${abs(v):,}" if v < 0 else f"${v:,}"
 
 
 def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
@@ -131,30 +161,41 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   <meta property="og:description" content="{esc(desc)}" />
   <meta property="og:url" content="{esc(canonical)}" />
   <meta property="og:image" content="{og}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="{og}" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 {extra_ld}  <style>
     .pg {{ max-width: 860px; padding: 8px 0 64px; }}
-    .crumbs {{ font-size: .85rem; color: var(--ink-faint); margin: 18px 0 6px; }}
+    /* Keep the homepage gutter on inner pages: desktop stays at the centred 860px box with no
+       inset, but once the box fills the viewport add the same 40px / 20px horizontal gutter the
+       shared .wrap uses so headings and rules never touch the screen edge on tablet and mobile. */
+    @media (max-width: 900px) {{ .pg {{ padding-left: var(--s8); padding-right: var(--s8); }} }}
+    @media (max-width: 520px) {{ .pg {{ padding-left: var(--s5); padding-right: var(--s5); }} }}
+    /* Type below is token-only. Every size here used to be an ad-hoc rem value, because
+       design/tokens.json had no type block for this file to reach for; it has one now, so a step
+       change lands on 6,127 profiles and the homepage together instead of one or the other. */
+    .crumbs {{ font-size: var(--t-fine); color: var(--ink-faint); margin: 18px 0 6px; }}
     .crumbs a {{ color: var(--ink-soft); text-decoration: underline; text-underline-offset: 0.16em; }}
-    .pg h1 {{ font-size: clamp(1.7rem, 4vw, 2.5rem); letter-spacing: -0.03em; margin: 6px 0 6px; }}
-    .idline {{ color: var(--ink-soft); font-size: 1.02rem; margin: 0 0 18px; }}
+    .pg h1 {{ font-size: var(--t-title); letter-spacing: -0.03em; line-height: 1.08; margin: 6px 0 6px; }}
+    .idline {{ color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure-tight); margin: 0 0 18px; }}
     .offname {{ color: var(--ink-faint); }}
-    .progsub {{ color: var(--ink-faint); font-size: .82rem; display: block; margin-top: 2px; }}
-    .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 12px 12px 0; padding: 16px 20px; margin: 16px 0; font-size: 1.05rem; line-height: 1.6; }}
+    .progsub {{ color: var(--ink-faint); font-size: var(--t-fine); display: block; margin-top: 2px; }}
+    /* The verdict is the argument of the page, so it is set in the editorial serif and capped at a
+       reading measure rather than inheriting the 860px the program table needs. */
+    .verdict {{ border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; padding: 16px 20px; margin: 16px 0; font-family: var(--display); font-size: var(--t-lede); line-height: 1.5; max-width: var(--measure); }}
     .verdict b {{ color: var(--ink); }}
-    .gem {{ display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 2px 10px; font-size: .85rem; font-weight: 700; margin-left: 6px; }}
+    /* Caution tokens, 4.67 on their own background; the pill also states its meaning in words. */
+    .gem {{ display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: var(--t-label); font-weight: 600; margin-left: 6px; }}
     .cta-row {{ margin: 18px 0 8px; }}
-    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: 10px; }}
-    h2.sec {{ font-size: 1.2rem; letter-spacing: -0.02em; margin: 30px 0 8px; }}
+    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: var(--r-lg); }}
+    h2.sec {{ font-size: var(--t-section); letter-spacing: -0.02em; line-height: 1.2; margin: 30px 0 8px; }}
     .tscroll {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0; }}
-    table.t {{ width: 100%; border-collapse: collapse; font-size: .93rem; }}
+    table.t {{ width: 100%; border-collapse: collapse; font-size: var(--t-ui); }}
     table.t th, table.t td {{ text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }}
     table.t th {{ color: var(--ink-soft); font-weight: 600; }}
     table.t td.num, table.t th.num {{ text-align: right; font-variant-numeric: tabular-nums; }}
@@ -169,34 +210,39 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     .prem-val {{ display: block; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }}
     .prem-val.pos {{ color: var(--good); }}
     .prem-val.neg {{ color: var(--bad); }}
-    .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: 4px; }}
+    .pbar {{ position: relative; height: 7px; margin-top: 5px; background: var(--bg-alt); border-radius: var(--r-sm); }}
     .pbar::before {{ content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--line); }}
     .pbar i {{ position: absolute; top: 0; height: 100%; min-width: 2px; }}
-    .pbar i.pos {{ left: 50%; background: linear-gradient(90deg, #17936a, var(--good)); border-radius: 0 4px 4px 0; }}
-    .pbar i.neg {{ right: 50%; background: linear-gradient(270deg, #c23522, var(--bad)); border-radius: 4px 0 0 4px; }}
+    /* Solid token fills: bar length is the datum, so the fill carries no extra meaning. */
+    .pbar i.pos {{ left: 50%; background: var(--good); border-radius: 0 var(--r-sm) var(--r-sm) 0; }}
+    .pbar i.neg {{ right: 50%; background: var(--bad); border-radius: var(--r-sm) 0 0 var(--r-sm); }}
     @media (prefers-reduced-motion: no-preference) {{ .pbar i {{ transition: width .3s ease; }} }}
     .np td.num {{ font-variant-numeric: tabular-nums; }}
-    .src {{ color: var(--ink-faint); font-size: .85rem; margin: 22px 0 0; line-height: 1.5; }}
-    .calc {{ border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
-    .calc-controls {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .98rem; }}
-    .calc-controls select {{ border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; font-size: .98rem; background: #fff; color: var(--ink); }}
-    .calc-big {{ font-size: 1.12rem; margin: 14px 0 6px; line-height: 1.5; }}
-    .calc-note {{ color: var(--ink-soft); font-size: .86rem; line-height: 1.5; margin: 6px 0 0; }}
+    .src {{ color: var(--ink-faint); font-size: var(--t-fine); max-width: var(--measure); margin: 22px 0 0; line-height: 1.5; }}
+    .calc {{ border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }}
+    .calc-controls {{ display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--t-ui); }}
+    .calc-controls select {{ border: 1px solid var(--line); border-radius: var(--r-md); padding: 7px 10px; font-size: var(--t-ui); background: #fff; color: var(--ink); }}
+    /* The payback sentence is prose about a number, not a control label, so it takes the serif. */
+    .calc-big {{ font-family: var(--display); font-size: var(--t-sub); max-width: var(--measure); margin: 14px 0 6px; line-height: 1.5; }}
+    .calc-note {{ color: var(--ink-soft); font-size: var(--t-fine); max-width: var(--measure); line-height: 1.5; margin: 6px 0 0; }}
     .dl {{ margin: 14px 0 4px; }}
-    .dl-btn {{ border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 10px; padding: 9px 14px; font-size: .92rem; font-weight: 600; cursor: pointer; }}
+    /* Serves a <button> on the profile calculator and an <a download> on the lists, so it
+       declares both. 11px of padding on a 15px step at line-height 1.5 is a 46px target,
+       past the 44px floor the phone pass asked for. */
+    .dl-btn {{ display: inline-block; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; border-radius: var(--r-lg); padding: 11px 16px; font-size: var(--t-ui); font-weight: 600; cursor: pointer; }}
     .dl-btn:hover {{ background: var(--bg-alt); }}
-    .dl-note {{ color: var(--ink-faint); font-size: .85rem; }}
+    .dl-note {{ color: var(--ink-faint); font-size: var(--t-fine); }}
     .upd {{ border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }}
-    .upd h2.sec {{ margin: 4px 0 6px; font-size: 1.1rem; }}
-    .upd-meta {{ color: var(--ink-soft); font-size: .92rem; line-height: 1.55; margin: 4px 0; }}
-    .upd-src {{ color: var(--ink-faint); font-size: .8rem; margin: 3px 0; word-break: break-all; }}
-    .mono {{ font-family: var(--mono); font-size: .82rem; overflow-wrap: anywhere; }}
+    .upd h2.sec {{ margin: 4px 0 6px; font-size: var(--t-sub); }}
+    .upd-meta {{ color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure); line-height: 1.55; margin: 4px 0; }}
+    .upd-src {{ color: var(--ink-faint); font-size: var(--t-label); margin: 3px 0; word-break: break-all; }}
+    .mono {{ font-family: var(--mono); font-size: var(--t-fine); overflow-wrap: anywhere; }}
     .statecols {{ columns: 220px 4; column-gap: 20px; margin: 14px 0; }}
     .statecols a {{ display: block; padding: 5px 0; color: var(--brand); text-decoration: none; }}
     ul.schoollist {{ list-style: none; padding: 0; margin: 12px 0; }}
     ul.schoollist li {{ padding: 10px 0; border-bottom: 1px solid var(--line); }}
     ul.schoollist a {{ color: var(--brand); text-decoration: none; font-weight: 600; }}
-    ul.schoollist .meta {{ color: var(--ink-soft); font-size: .9rem; }}
+    ul.schoollist .meta {{ color: var(--ink-soft); font-size: var(--t-ui); }}
   </style>
 </head>
 <body>
@@ -384,7 +430,7 @@ def render_og_card(s, slug) -> None:
     """Write this school's Open Graph share card. Extracted from college_page so the canonical
     profile (which references the card but does not render it) still gets one per school."""
     name = s["name"]
-    st_name = STATE_NAMES.get(s["state"], s["state"])
+    st_name = state_label(s["state"])
     decided = s["n_pass"] + s["n_fail"]
     passed, fail = s["n_pass"], s["n_fail"]
     if decided and fail:
@@ -406,7 +452,7 @@ def render_og_card(s, slug) -> None:
 def college_page(s, programs, slug) -> str:
     name = s["name"]
     st = s["state"]
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     decided = s["n_pass"] + s["n_fail"]
     fail, passed = s["n_fail"], s["n_pass"]
@@ -531,7 +577,7 @@ def college_page(s, programs, slug) -> str:
         parts.append(_calculator(s, np, brackets, labels, programs))
         # The table doubles as the no-JS fallback and the full picture.
         parts.append(
-            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
         for lab, b in zip(labels, brackets, strict=False):
             if b is not None:
@@ -550,7 +596,7 @@ def college_page(s, programs, slug) -> str:
     if rows:
         parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
         parts.append(
-            '    <div class="tscroll"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="t"><thead><tr><th>Program</th><th>Credential</th>'
             '<th class="num">Recent completers</th><th class="num">Median earnings</th><th>vs a high-school grad</th>'
             '<th>Verdict</th><th class="num">Median debt</th>'
             '<th class="num">Years of premium to repay</th></tr></thead><tbody>\n'
@@ -633,14 +679,21 @@ def _json(s) -> str:
 
 
 def state_index(st, schools_in_state) -> str:
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/colleges/{st.lower()}/"
     n = len(schools_in_state)
     total_fail = sum(s["n_fail"] for _, s, _ in schools_in_state)
-    title = f"Colleges in {st_name}: what graduates earn vs a high-school grad"
+    title = (
+        f"Colleges in {st_name}: what graduates earn vs a high-school grad"
+        if known_state(st)
+        else "Colleges with no reported location: what graduates earn"
+    )
     desc = (
-        f"{n} {st_name} colleges by what families pay and whether graduates out-earn a typical "
-        f"high-school graduate. Program-level earnings from federal data."
+        f"{n} {st_name} colleges by what families pay and whether graduates out-earn a "
+        "typical high-school graduate. Program-level earnings from federal data."
+        if known_state(st)
+        else f"{n} colleges whose state is not reported in the federal data, by what "
+        "families pay and what graduates earn."
     )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
@@ -656,10 +709,24 @@ def state_index(st, schools_in_state) -> str:
         + esc(st_name)
         + "</nav>\n"
     )
-    parts.append(f"    <h1>Colleges in {esc(st_name)}</h1>\n")
-    parts.append(
-        f'    <p class="idline">{n} schools with earnings data, {total_fail} programs statewide leave graduates earning less than a typical high-school graduate.</p>\n'
+    # "Colleges in Location not reported" is not a sentence; the unlocated hub gets its own.
+    heading = (
+        f"Colleges in {esc(st_name)}" if known_state(st) else "Colleges with no reported location"
     )
+    parts.append(f"    <h1>{heading}</h1>\n")
+    # For the unlocated hub, "0 programs statewide fall short" would read as a clean bill of
+    # health when the truth is that none could be assessed: those schools have no state benchmark,
+    # so no program CAN fall short. Saying nothing was measured is the honest line, and "statewide"
+    # is not a word that applies to a group with no state.
+    lede = (
+        f"{n} schools with earnings data, {total_fail} programs statewide leave graduates earning "
+        "less than a typical high-school graduate."
+        if known_state(st)
+        else f"{n} schools whose state the federal data does not report. Without a state, there is "
+        "no state high-school-graduate benchmark to compare against, so their programs are listed "
+        "but not judged."
+    )
+    parts.append(f'    <p class="idline">{lede}</p>\n')
     # Some federal records share a name within a state (branch campuses, chains like "Maestro
     # College"). Two identical links read like a bug, so where a name repeats we fold the city
     # into the link text itself (and drop it from the meta line to avoid saying it twice).
@@ -713,10 +780,9 @@ def national_index(states_present, profiled=None, searchable=None) -> str:
             f"Department of Education for small cohorts.</p>\n"
         )
     parts.append('    <div class="statecols">\n')
-    for st in sorted(states_present, key=lambda s: STATE_NAMES.get(s, s)):
-        parts.append(
-            f'      <a href="/colleges/{st.lower()}/">{esc(STATE_NAMES.get(st, st))}</a>\n'
-        )
+    # Unrecognised codes sort last under their honest label rather than alphabetically as "ZZ".
+    for st in sorted(states_present, key=lambda s: (not known_state(s), state_label(s))):
+        parts.append(f'      <a href="/colleges/{st.lower()}/">{esc(state_label(st))}</a>\n')
     parts.append("    </div>\n")
     parts.append("  </main>\n")
     parts.append(FOOTER)
@@ -739,22 +805,24 @@ def qualifying_schools(schools: dict) -> dict:
 
 
 def build_slugs(qualified: dict) -> dict[str, str]:
-    """Stable, unique college slugs: name; on collision add state, then unitid.
+    """College slugs, from the committed registry. Shared by every builder that links to a profile.
 
-    Shared with build_lists so ranked-list rows link to URLs that actually exist.
+    This used to derive slugs from the data on each call, breaking name ties on the order rows
+    arrived in. For the 18 same-name pairs that made the result depend on DuckDB's row order, which
+    varies between processes: twelve fresh runs produced the live mapping nine times and an
+    alternate mapping (36 unitids moved) three times. Since college pages, lists and canonical
+    profiles each call this in a SEPARATE process, one deploy could publish a page at one slug and
+    link to it at another.
+
+    published/slug_registry.json now holds the mapping, so a published URL cannot move. See that
+    module for why a deterministic tie-break was not enough on its own.
+
+    Resolution is STRICT: an unregistered institution raises rather than being given an invented
+    slug. Run `make slug-registry` and commit the diff to publish a new college.
     """
-    slugs: dict[str, str] = {}
-    used: set[str] = set()
-    for u, s in sorted(qualified.items(), key=lambda kv: (kv[1]["name"] or "").lower()):
-        base = slugify(s["name"])
-        cand = base
-        if cand in used:
-            cand = f"{base}-{s['state'].lower()}"
-        if cand in used:
-            cand = f"{base}-{u}"
-        used.add(cand)
-        slugs[u] = cand
-    return slugs
+    from pipeline.slug_registry import resolve
+
+    return resolve(qualified)
 
 
 def main() -> None:

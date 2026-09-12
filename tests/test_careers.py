@@ -45,7 +45,17 @@ def test_build_careers_aggregates_fields(tmp_path, monkeypatch):
 
     monkeypatch.setattr(bc, "PARQUET_DIR", pq)
     monkeypatch.setattr(bc, "OUT_DIR", out)
+    # main() also injects the no-JavaScript static core into the shipped careers page, so PAGE_HTML
+    # has to be redirected too or this test rewrites a tracked release artefact. It did exactly that
+    # once: one run left site/careers/index.html reading "Showing 25 of 1" with a single row taken
+    # from this fixture. inject_core now also refuses a set too small to fill the core, so the two
+    # guards are independent.
+    page = tmp_path / "careers.html"
+    page.write_text(f"<html><body>{bc.CORE_START}\n{bc.CORE_END}</body></html>")
+    monkeypatch.setattr(bc, "PAGE_HTML", page)
+    monkeypatch.setattr(bc, "STATIC_ROWS", 1)  # this fixture has 2 fields, not 25
     bc.main()
+    assert "<tr data-cip" in page.read_text(), "main() should write the static core"
 
     fields = json.loads((out / "fields.json").read_text())["fields"]
     f = next(x for x in fields if x["cip"] == "5138")

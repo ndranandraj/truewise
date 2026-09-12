@@ -7,8 +7,11 @@ table wrapper, the cache-control _headers file, and the search hardening.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -38,14 +41,706 @@ def test_styles_has_no_bare_verdict_rule():
     assert "verdict-pill" in home
 
 
+def test_inner_pages_keep_a_mobile_gutter():
+    """`.pg` sets `padding: 8px 0 64px`, which overrides the shared `.wrap` gutter and left the
+    Majors and Lists content touching both viewport edges at 390px (2026-09-02 forest review).
+    The shared head() must restore a horizontal gutter once the 860px box fills the viewport,
+    matching the homepage: 40px down to 520px, then 20px."""
+    head_css = (PIPELINE / "build_college_pages.py").read_text()
+    assert "@media (max-width: 900px) {{ .pg {{ padding-left: var(--s8);" in head_css, (
+        "inner pages must regain a horizontal gutter once the box fills the viewport"
+    )
+    assert "@media (max-width: 520px) {{ .pg {{ padding-left: var(--s5);" in head_css, (
+        "inner pages must use the homepage 20px gutter on phones"
+    )
+    # And it must reach the shipped pages, on every generator that uses head(). Those trees are
+    # gitignored and CI runs pytest without building the site, so only assert on what is present.
+    for page in ("majors/index.html", "lists/index.html", "colleges/index.html"):
+        built = SITE / page
+        if not built.exists():
+            continue
+        assert "@media (max-width: 520px) { .pg { padding-left: var(--s5);" in built.read_text(), (
+            f"{page} shipped without the mobile gutter"
+        )
+
+
+def _css_without_comments() -> str:
+    """styles.css with /* ... */ stripped, so a rule's declarations can be parsed.
+
+    These rules carry long explanatory comments, and a naive `padding:\\s*([^;]+);` happily matches
+    prose inside one. Strip first, then read.
+    """
+    return re.sub(r"/\*.*?\*/", "", (SITE / "styles.css").read_text(), flags=re.S)
+
+
+def test_inline_children_of_flex_columns_declare_align_self():
+    """Flexbox BLOCKIFIES its children: `display: inline-block` on a flex item computes to `block`,
+    and the default stretch then makes it fill the line.
+
+    That shipped twice in one module. `.live-card .tag` rendered as a 350px dark band instead of a
+    badge hugging "Start here", and `.live-cta` drew its underline across the whole column so it
+    read as a rule rather than a link. Neither is visible in the source: the authored value and the
+    computed value disagree. So any inline-block child of a flex column must say how it aligns.
+    """
+    css = _css_without_comments()
+    flex_columns = set()
+    for sel, body in re.findall(r"(\.[a-z0-9-]+)\s*\{([^}]*)\}", css):
+        if "display: flex" in body and "flex-direction: column" in body:
+            flex_columns.add(sel)
+    assert ".live-card" in flex_columns, "expected .live-card to be a flex column"
+
+    offenders = []
+    for sel, body in re.findall(r"(\.[a-z0-9-][^{]*)\{([^}]*)\}", css):
+        if "display: inline-block" not in body or "align-self" in body:
+            continue
+        # Only the ones actually parented by a known flex column.
+        if any(c in sel for c in flex_columns):
+            offenders.append(sel.strip())
+    assert not offenders, (
+        "inline-block inside a flex column without align-self; it will be blockified and "
+        f"stretched: {offenders}"
+    )
+
+
+def test_module_dividers_do_not_outrun_their_content():
+    """The columns are equal-height grid items, so bottom padding on a card left its 1px divider
+    running past the last line as a stub with nothing beside it."""
+    css = _css_without_comments()
+    block = css.split(".live-card {", 1)[1].split("}", 1)[0]
+    pad = re.search(r"padding:\s*([^;]+);", block)
+    assert pad, ".live-card should set padding explicitly"
+    parts = pad.group(1).split()
+    assert len(parts) == 4 and parts[2] == "0", (
+        f".live-card needs 0 bottom padding so the divider ends with the content, got {pad.group(1)!r}"
+    )
+
+
+def test_the_profile_strip_shares_a_baseline():
+    """One item's description is a single line where its neighbours wrap to two. With
+    align-items: center that dropped its heading 10px below the others."""
+    css = _css_without_comments()
+    block = css.split(".profile-strip {", 1)[1].split("}", 1)[0]
+    assert "align-items: start" in block, (
+        "the strip must top-align, or the shortest column's heading floats out of the row"
+    )
+
+
+def test_type_is_a_generated_token_layer():
+    """The root cause of the ad-hoc type on the generated pages.
+
+    design/tokens.json had color, semantic, chart, scale and font blocks but NO type block, so the
+    steps lived in a second hand-written :root that build_tokens never saw. The pipeline could
+    guarantee colour consistency structurally and could not guarantee type at all: `make
+    tokens-check` had nothing to compare, and head() had no token to reach for, which is how 13
+    ad-hoc rem sizes and a 115ch measure became the only option available.
+
+    Type is now generated like colour. The five original steps must keep their exact values, or
+    every page that already uses them shifts.
+    """
+    tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
+    assert "type" in tokens, "tokens.json needs a type block, or type cannot be guaranteed"
+    for name, value in {
+        "t-label": "12px",
+        "t-fine": "13px",
+        "t-ui": "15px",
+        "t-sub": "18px",
+        "t-lede": "20px",
+    }.items():
+        assert tokens["type"][name] == value, f"{name} changed value; existing pages would shift"
+    # Eight steps and two measures, named as the Release 3 review section 02 names them. The names
+    # are asserted, not just their presence: a second vocabulary for the same scale is the whole
+    # failure this block exists to end, and t-section in particular is the rung whose absence left
+    # a 44px page title sitting straight on a 15px label.
+    steps = [n for n in tokens["type"] if n.startswith("t-")]
+    assert steps == [
+        "t-label",
+        "t-fine",
+        "t-ui",
+        "t-sub",
+        "t-lede",
+        "t-section",
+        "t-title",
+        "t-display",
+    ], f"the type scale is not the reviewed one: {steps}"
+    # Measures, whose absence let prose inherit the 860px table frame at ~115 characters a line.
+    for name in ("measure", "measure-tight"):
+        assert tokens["type"][name].endswith("ch"), f"{name} must be in ch, it constrains prose"
+
+    css = (SITE / "styles.css").read_text()
+    generated = css.split("@tokens:start", 1)[1].split("@tokens:end", 1)[0]
+    for name in tokens["type"]:
+        if not name.startswith("$"):
+            assert f"--{name}:" in generated, f"--{name} is not in the generated block"
+    # And nothing may redeclare them by hand outside it, which is what drifted before.
+    outside = css.split("@tokens:end", 1)[1]
+    handwritten = re.findall(r"^\s*--(t-[a-z]+|measure[a-z-]*)\s*:", outside, re.M)
+    assert not handwritten, (
+        f"type tokens re-declared by hand outside the generated block: {handwritten}"
+    )
+
+
+def test_every_scrollable_table_shows_that_it_scrolls():
+    """A table whose columns run off the right edge with no cue hides data rather than deferring it.
+
+    Eleven wrappers carried `overflow-x: auto` and nothing else. Because there are only three
+    wrapper class names site-wide, one rule in styles.css covers all of them; this test fails if a
+    fourth name appears, since a new name would silently opt out of the cue.
+    """
+    css = _css_without_comments()
+    cue = re.search(r"\.tscroll, \.table-wrap, \.tw-table__scroll \{([^}]*)\}", css)
+    assert cue, "the shared scroll-cue rule is missing from styles.css"
+    body = cue.group(1)
+    assert "local" in body and "scroll" in body, (
+        "the cue needs both the content-pinned covers and the box-pinned shadows, "
+        "or it shows a shadow when there is nothing left to scroll to"
+    )
+
+    known = {".tscroll", ".table-wrap", ".tw-table__scroll"}
+    found = set()
+    sources = list(SITE.glob("*.html")) + list(SITE.glob("*/index.html"))
+    sources += [SITE / "styles.css", ROOT / "components" / "components.css"]
+    sources += [PIPELINE / "build_college_pages.py"]
+    for path in sources:
+        if not path.exists():
+            continue
+        text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        for sel in re.findall(
+            r"(\.[a-z][\w-]*(?:__[\w-]+)?)\s*\{\{?[^{}]*overflow-x:\s*auto", text
+        ):
+            found.add(sel)
+    assert found <= known, f"scroll wrappers with no cue: {sorted(found - known)}"
+
+
+def test_every_scroll_region_can_be_reached_by_keyboard():
+    """A cue tells a sighted user the region scrolls. It does nothing for a keyboard user.
+
+    An overflow container is not focusable by default. Chrome and Firefox now focus scrollers
+    natively, but Safari does not, so there the off-screen columns of every one of these tables
+    were unreachable without a pointer: WCAG 2.1.1. Each wrapper carries tabindex="0" plus a role
+    and an accessible name, written into the markup rather than added by script so it holds with
+    JavaScript off.
+
+    Every emission site is checked, not a sample: one wrapper left plain is one table a keyboard
+    user cannot read to the end.
+    """
+    sources = [
+        PIPELINE / "build_canonical_profiles.py",
+        PIPELINE / "build_college_pages.py",
+        PIPELINE / "build_lists.py",
+        PIPELINE / "build_majors_pages.py",
+        PIPELINE / "build_stats_exposure.py",
+        PIPELINE / "build_profile_pilot.py",
+        ROOT / "components" / "table.js",
+        SITE / "careers" / "index.html",
+        SITE / "compare" / "index.html",
+        SITE / "value-check" / "index.html",
+        SITE / "k12" / "compare" / "index.html",
+    ]
+    opening = re.compile(r'<div class="(?:tscroll|table-wrap|tw-table__scroll)"[^>]*>')
+    plain = []
+    for path in sources:
+        if not path.exists():
+            continue
+        for tag in opening.findall(path.read_text()):
+            if 'tabindex="0"' not in tag or "aria-label=" not in tag:
+                plain.append(f"{path.name}: {tag}")
+    assert not plain, "scroll regions a keyboard user cannot enter:\n" + "\n".join(plain)
+
+
+def test_compare_does_not_clip_a_single_school():
+    """`table.cmp { min-width: 560px }` forced a horizontal scroll even with one school added,
+    whose sticky label column plus one school column comes to roughly 292px and fits a 390px phone
+    outright. The floor belongs on the school column, so one school fits and two or more scroll
+    because they genuinely need to."""
+    html = (SITE / "compare" / "index.html").read_text()
+    table = re.search(r"table\.cmp \{([^}]*)\}", html)
+    assert table, "table.cmp rule not found"
+    assert "min-width" not in table.group(1), (
+        "a table-level min-width clips the one-school case regardless of how little it contains"
+    )
+    assert re.search(r"table\.cmp thead th:not\(:first-child\)[^{]*\{[^}]*min-width", html), (
+        "the width floor should sit on the school column instead"
+    )
+
+
+def test_the_colleges_module_states_its_selection_rule():
+    """The contract's editorial governance: any module surfacing a subset of colleges must state
+    its rule in words on the page, apply it deterministically, and never accept placement.
+
+    This one matters more than the rule itself. Ordering by completions surfaces Chamberlain,
+    Western Governors, Grand Canyon, Walden and Capella for nursing, all large online
+    institutions. Unlabelled, that list reads as an endorsement by the site that exists to
+    scrutinise them. Labelled "where the most students complete", it is simply true.
+
+    A "best colleges for X" module would be a ranking this data cannot support, so the page says
+    what the order means and what it does not.
+    """
+    src = (PIPELINE / "build_majors_pages.py").read_text()
+    assert "not a judgement about where to" in src, (
+        "the page must disclaim the ranking reading, or the order implies a recommendation"
+    )
+    assert "the most students complete" in src, "the rule must be stated in words, not implied"
+    assert "that report one" in src, (
+        "the subset must be shown against the whole, or eight colleges read as all of them"
+    )
+    # Deterministic: completions then unitid, so a tie cannot move a link between builds.
+    assert "ORDER BY cip4, completions DESC, unitid" in src, (
+        "ordering on completions alone leaves ties to the query planner"
+    )
+    # And no college is linked without a profile to land on.
+    assert "if u in slugs" in src, "link only where a profile page actually exists"
+
+
+def test_a_programme_links_to_its_major_by_cip_not_by_name():
+    """The join is the 4-digit CIP, because a major page IS a 4-digit CIP.
+
+    Matching on the programme name would be approximate, and the contract says exact relationships
+    only. A field with no major page, 137 of 429 fall below the ranking threshold, gets no link
+    rather than a guessed one.
+
+    Both renderers build the link from the same `major` field on the row, so enhancement cannot
+    move a link: the static core and the JS component must agree on where a row points.
+    """
+    py = (PIPELINE / "build_profile_pilot.py").read_text()
+    assert "def major_slug_for(" in py, "the CIP to major mapping needs one entry point"
+    assert "str(cip_code)[:4]" in py, "the join must be on the 4-digit CIP"
+    assert '"major": major_slug_for(r["cip_code"])' in py, (
+        "the row shape must carry the slug, or each renderer resolves it separately"
+    )
+    assert 'href="/majors/{_esc(slug)}/"' in py, "the static row must render a real anchor"
+
+    js = (ROOT / "components" / "table.js").read_text()
+    assert 'href="/majors/${esc(r.major)}/"' in js, (
+        "the component must render the same link from the same field"
+    )
+
+
+def test_the_row_builder_does_not_need_the_warehouse():
+    """CI runs pytest WITHOUT building the site or the data.
+
+    The CIP to major map is derived from value_check.parquet, which is data rather than source and
+    is gitignored, so a row builder that needed the warehouse to construct a row would fail every
+    test that touches one. It did, on the first attempt, and the CI simulation caught it before the
+    push rather than after.
+
+    The condition is the parquet's presence, not a bare except, so a real build with the data
+    present still surfaces any error in building the map instead of silently dropping 195,305
+    links.
+    """
+    src = (PIPELINE / "build_profile_pilot.py").read_text()
+    assert 'if not (PARQUET_DIR / "value_check.parquet").exists():' in src, (
+        "the map must be conditional on the data existing"
+    )
+    body = src.split("def major_slug_for", 1)[1]
+    body = body[: body.index("\ndef ")]  # up to the next top-level function
+    # Check the CONSTRUCT, not the word: the comment inside this function contains "except" as
+    # prose, and matching that is the same mistake as a regex hitting `font-display: swap` inside
+    # a comment about font-display: swap. It has happened three times on this project.
+    assert "try:" not in body, (
+        "swallowing the error would hide a genuine failure to build the map in a real build"
+    )
+
+
+def test_major_slugs_cannot_become_order_dependent():
+    """Profile pages now link at major slugs, so those slugs are a URL contract.
+
+    The slug is a pure function of the name today, because no two major names slugify alike. The
+    collision branch is what would make it depend on iteration order, which is exactly how the
+    college slugs became unstable across processes and had to be frozen into a registry. This
+    fails the day a collision appears, while it is still a build error rather than 6,127 profiles
+    pointing somewhere new.
+    """
+    src = (PIPELINE / "build_majors_pages.py").read_text()
+    assert "def major_slugs(" in src, "one function must own the CIP to slug map"
+    # The sort key includes the CIP, so even a future name tie orders deterministically.
+    assert 'key=lambda kv: (kv[1]["name"].lower(), kv[0])' in src, (
+        "sorting on the name alone leaves ties to iteration order, the college-slug bug again"
+    )
+
+
+def test_money_signs_negatives_outside_the_symbol():
+    """ "$-2,533" is what naive formatting produces and it reads as a bug rather than a number.
+
+    It was on 38 profiles. A College Scorecard net price genuinely goes negative when grant aid
+    exceeds the published cost of attendance, MIT's lowest income band among them, so the figure is
+    real and stays. It is written "-$2,533" now, and where any band is negative the table says what
+    a negative net price means, because otherwise a reader discounts the whole table.
+
+    Five separate money() implementations existed, one per surface. All five are fixed; a sixth
+    would reintroduce the bug on whichever page it served.
+    """
+    py = (PIPELINE / "build_college_pages.py").read_text()
+    assert 'f"-${abs(v):,}"' in py, "the Python formatter must sign outside the symbol"
+    js_files = [
+        ROOT / "components" / "table.js",
+        SITE / "careers" / "index.html",
+        SITE / "compare" / "index.html",
+        SITE / "embed" / "index.html",
+        SITE / "value-check" / "index.html",
+    ]
+    for path in js_files:
+        src = path.read_text()
+        for m in re.finditer(r"const money = [^;]+;", src, re.S):
+            assert '"-$"' in m.group(0), f"{path.name} formats a negative as $-n"
+
+    profiles = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert "A negative net price means grant aid exceeded" in profiles, (
+        "a negative net price needs explaining where it appears, or it reads as an error"
+    )
+
+
+def test_a_non_state_code_is_never_rendered_as_a_place():
+    """461 live pages said "a typical ZZ high-school graduate".
+
+    ZZ is not a state. Those 461 schools have no city and no state earnings benchmark either, so it
+    is the source data's "not reported" bucket, and rendering it as a place is the same failure as
+    showing a suppressed value as 0. The honesty rules forbid it: unknown is labelled unknown.
+
+    Neither the design review nor the growth audit caught this. It surfaced only because putting the
+    state into the title made it visible in a second place.
+
+    The /colleges/zz/ URL is unchanged, because published routes are a frozen contract. Only what a
+    reader sees changes.
+    """
+    src = (PIPELINE / "build_college_pages.py").read_text()
+    assert "def state_label(" in src and "def known_state(" in src, (
+        "one function must decide what an unrecognised code is called, or prose, titles, "
+        "breadcrumbs and the hub drift apart again"
+    )
+    # The raw fallback is what produced "ZZ": STATE_NAMES.get(st, st) hands back the code itself.
+    for path in (PIPELINE / "build_college_pages.py", PIPELINE / "build_canonical_profiles.py"):
+        assert "STATE_NAMES.get(st, st)" not in path.read_text(), (
+            f"{path.name} falls back to the raw code, which prints ZZ as if it were a place"
+        )
+
+    # And it must not have reached the built pages.
+    built = list(SITE.glob("college/*/index.html"))
+    if built:
+        leaked = [p.name for p in built[:400] if "ZZ high-school graduate" in p.read_text()]
+        assert not leaked, f"{len(leaked)} built profiles still name ZZ as a state"
+
+
+def test_college_titles_carry_the_place():
+    """86 title values were shared by 202 pages, Cortiva Institute six times, so those pages
+    competed with each other for one result. The September baseline also showed the query shape
+    they were losing: "miller motte in fayetteville nc" at position 54.9 and "southern careers waco"
+    at 78.2, both name-plus-city, against titles carrying no city at all.
+
+    The suffix shortens in the same change, so the median title did not grow.
+    """
+    src = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert "{name}, {where}: cost and graduate earnings" in src, "title must carry the place"
+    assert "what families pay and what graduates earn" not in src, (
+        "the 41-character suffix should be gone from the profile title"
+    )
+    # A school with no location gets no invented one.
+    assert "{name}: cost and graduate earnings" in src, (
+        "an unlocated school must fall back to the bare name rather than an invented place"
+    )
+
+
+def test_long_lists_open_at_a_page_and_state_the_whole():
+    """The audit's central design finding, on both surfaces that had it.
+
+    A Penn State profile rendered 150 stacked rows about 47,000px tall on a phone and Careers
+    rendered 400 in a page about 36,100px. Neither is an interface: the search and filters that
+    would have narrowed them sat above a wall of rows nobody scrolled back up from.
+
+    Two rules make a reveal limit honest rather than a way of hiding data. The count must be stated
+    against the whole set, so "Showing 20 of 489" and never "20 programs". And the default filters
+    must all be empty, so the opening view is the complete list in miniature, including the
+    suppressed rows, rather than a flattering subset.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+    assert re.search(r"const PAGE = \d+", js), "the program table needs a reveal page size"
+    assert "this.shown = PAGE" in js, "it must open at one page rather than at everything"
+    for empty in ('this.query = ""', 'this.verdict = ""', 'this.credential = ""'):
+        assert empty in js, f"filters must start empty, or the opening view is a subset: {empty}"
+    # The count reports against loaded rows PLUS the unfetched tail, not the visible slice.
+    assert "const total = loaded + this.remaining" in js, (
+        "the count must include the programs not yet fetched, or it understates the school"
+    )
+
+    careers = (SITE / "careers" / "index.html").read_text()
+    assert "rows.slice(0, shown)" in careers, "Careers should reveal a page, not its first 400"
+    assert "Showing ${visible.toLocaleString()} of ${rows.length.toLocaleString()}" in careers, (
+        "Careers must state the visible count against the whole set"
+    )
+    assert "shown = PAGE; draw();" in careers, (
+        "changing the search or a filter must reset the reveal, or a narrowed set opens part-way "
+        "down the previous, wider one"
+    )
+
+
+def test_the_compare_swap_matches_what_the_table_needs_at_capacity():
+    """The breakpoint is arithmetic, not a device size.
+
+    At 768px with four schools the table came back and scrolled, leaving 33px of a 142px metric
+    label at the right edge, which fails "row labels stay understandable". Picking a bigger round
+    number would have been a guess. The table needs its metric column plus MAX schools at their
+    minimum column width plus both page gutters, and the swap is set to exactly that, so the same
+    page never scrolls or not depending on how many schools someone happened to add.
+
+    This recomputes the sum from the declared values, so changing any one of them without moving
+    the breakpoint fails here rather than on someone's tablet.
+    """
+    html = (SITE / "compare" / "index.html").read_text()
+    css = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+    label = int(re.search(r"table\.cmp tbody th \{[^}]*width: (\d+)px", css).group(1))
+    school = int(
+        re.search(
+            r"table\.cmp thead th:not\(:first-child\)[^{]*\{[^}]*min-width: (\d+)px", css
+        ).group(1)
+    )
+    most = int(re.search(r"MAX\s*=\s*(\d+)", html).group(1))
+    gutter = 40  # .wrap padding, both sides
+    needed = label + most * school + 2 * gutter
+    swap = int(re.search(r"@media \(max-width: (\d+)px\)", css).group(1))
+    assert swap + 1 >= needed, (
+        f"the table appears from {swap + 1}px but needs {needed}px to hold {most} schools "
+        f"({label}px label + {most} x {school}px + {2 * gutter}px gutters), so it will scroll "
+        "its metric labels out of view"
+    )
+
+
+def test_the_compare_cards_cannot_squeeze_out_a_school_name():
+    """A grid column of `auto` sizes to its own content, so the longest helper text on a card set
+    the value column to 233px and left the school name 35px at 320px and 90px at 390px, wrapping
+    names into near-vertical fragments. Both columns must be fractions, which cap each side
+    whatever the value happens to say."""
+    css = re.sub(r"/\*.*?\*/", "", (SITE / "compare" / "index.html").read_text(), flags=re.S)
+    rule = re.search(r"\.cmp-metric dl > div \{([^}]*)\}", css)
+    assert rule, ".cmp-metric row rule not found"
+    cols = re.search(r"grid-template-columns:\s*([^;]+);", rule.group(1))
+    assert cols, "the card row needs explicit columns"
+    assert "auto" not in cols.group(1), (
+        f"an auto column lets one long value starve the school name: {cols.group(1)!r}"
+    )
+    assert cols.group(1).count("fr") == 2, f"both columns should be fractions: {cols.group(1)!r}"
+
+
+def test_long_programme_names_cannot_set_the_page_width():
+    """CIP names run slashes together without spaces, and browsers do not break on "/".
+
+    "Agricultural/Animal/Plant/Veterinary" is 36 unbroken characters; at the 18px mobile programme
+    size that is roughly 324px of min-content width, which pushed a Penn State phone page to 354px
+    inside a 320px viewport and produced a document-level horizontal scrollbar. Two names on one
+    page were enough.
+
+    `overflow-wrap: anywhere` rather than `break-word`, because only `anywhere` also lowers the
+    intrinsic minimum, and the intrinsic minimum is the measurement doing the damage.
+    """
+    css = (ROOT / "components" / "components.css").read_text()
+    rule = re.search(r"\n\.tw-td--program \{([^}]*)\}", css)
+    assert rule, ".tw-td--program rule not found"
+    assert "overflow-wrap: anywhere" in rule.group(1), (
+        "break-word would still let the unbroken run set the min-content width"
+    )
+    mobile = re.search(r"@media \(max-width: 768px\) \{(.*?)\n\}", css, re.S)
+    assert mobile and re.search(r"\.tw-td--program \{[^}]*min-width: 0", mobile.group(1)), (
+        "the programme cell is a flex item on mobile and will not shrink below its content "
+        "without min-width: 0"
+    )
+
+
+def test_compare_has_no_horizontal_axis_on_a_phone():
+    """The sticky-label table was the interim repair and it failed its own acceptance criteria.
+
+    At 320px one school still overflowed the 280px content box, and with two or more schools a
+    fragment of the outgoing column sat between the sticky label and the next full column, so a
+    phone user read partial words and partial values. The contract's fallback clause says that is
+    the point to stop refining the table, so below the swap width it is replaced outright by
+    metric-major cards: one card per measure, each school listed under it.
+
+    The swap was 700px when the cards were first written, a round number chosen by eye, and it is
+    929px now. The test above derives that figure from the table's own declarations rather than
+    restating it, which is why this docstring should not name a width at all.
+
+    Grouping by metric rather than by school is deliberate. Stacking one school per card would put
+    the two figures being compared a scroll apart, which is the one thing Compare exists to avoid.
+    """
+    html = (SITE / "compare" / "index.html").read_text()
+    css = re.sub(r"/\*.*?\*/", "", html, flags=re.S)
+    # The exact width is owned by the arithmetic test above; here only the swap itself matters.
+    swap = re.search(r"@media \(max-width: \d+px\) \{(.*?)\n    \}", css, re.S)
+    assert swap, "no breakpoint that swaps the table for the cards"
+    assert ".table-wrap { display: none; }" in swap.group(1), "the table must be gone, not shrunk"
+    assert ".cmp-stack { display: block; }" in swap.group(1), "the cards must take its place"
+    # Exactly one of the two is displayed at any width, so the duplicate Remove buttons never both
+    # sit in the tab order. Same reasoning as the mobile sort control.
+    assert ".cmp-stack { display: none;" in css, "the cards must be hidden above the breakpoint"
+    # And the table keeps no phone-only scaffolding it no longer needs.
+    assert "position: sticky" not in css, (
+        "the sticky metric column was scaffolding for a scroll that no longer happens"
+    )
+    assert 'class="cmp-stack"' in html, "the renderer must emit the phone view"
+
+
+def test_every_public_hand_written_page_declares_a_canonical():
+    """/k12/rankings/, /k12/compare/ and /k12/advanced-courses/ shipped with titles and
+    descriptions but no canonical, while /k12/ had one. K-12 is a distinct content family, so a
+    gap there costs clean indexing signals on exactly the routes that need them.
+
+    404 is excluded: it is noindex by design and a canonical on an error page is wrong.
+    """
+    missing = []
+    for path in sorted(SITE.rglob("index.html")):
+        if any(part in str(path) for part in ("/college/", "/majors/", "/lists/", "/embed/")):
+            continue
+        html = path.read_text()
+        if "noindex" in html:
+            continue
+        route = "/" + str(path.parent.relative_to(SITE)).replace(".", "").strip("/")
+        route = "/" if route == "/" else route.rstrip("/") + "/"
+        found = re.search(r'rel="canonical" href="([^"]+)"', html)
+        if not found:
+            missing.append(f"{route} has no canonical")
+        elif found.group(1) != f"https://truewise.dev{route}":
+            missing.append(f"{route} canonical points at {found.group(1)}")
+    assert not missing, "canonical problems:\n" + "\n".join(missing)
+
+
+def test_every_form_control_has_a_real_label():
+    """Careers scored 93 on Lighthouse accessibility for exactly one reason: its field and sort
+    selects had no <label> and no accessible name, so a screen-reader user heard "combo box" twice
+    with nothing to distinguish them. Three search inputs had the same problem in a quieter form,
+    relying on a placeholder, which is not a label: it is not reliably announced, it disappears the
+    moment someone types, and the long ones truncated mid-sentence at 320px.
+
+    Every control on a hand-written page needs a <label for> or an aria-label. Generated pages are
+    covered by the component smokes, which assert the same thing on the rendered output.
+    """
+    control = re.compile(r"<(select|input|textarea)\b([^>]*)>")
+    unlabelled = []
+    for path in sorted(SITE.rglob("*.html")):
+        if any(part in str(path) for part in ("/college/", "/majors/", "/lists/", "/findings/")):
+            continue
+        html = path.read_text()
+        labelled = set(re.findall(r'<label[^>]*\bfor="([^"]+)"', html))
+        for tag, attrs in control.findall(html):
+            if re.search(r'type="(hidden|submit|button)"', attrs) or "aria-label" in attrs:
+                continue
+            ident = re.search(r'id="([^"]+)"', attrs)
+            if ident and ident.group(1) in labelled:
+                continue
+            unlabelled.append(f"{path.relative_to(SITE)}: <{tag}{attrs[:60]}>")
+    assert not unlabelled, "controls with no label and no accessible name:\n" + "\n".join(
+        unlabelled
+    )
+
+
+def test_nothing_focusable_is_hidden_by_the_clip_pattern():
+    """A phone-width keyboard trap that no screenshot could show.
+
+    The mobile program table hid its header row with the 1px-clip pattern (position:absolute,
+    width:1px, clip:rect(0 0 0 0)). That pattern hides content visually while KEEPING it in the
+    accessibility tree and the tab order, which is exactly right for a label a screen-reader user
+    still needs, and exactly wrong here: the header row contains six sort <button>s, so a keyboard
+    user on a phone tabbed through six controls that were not on screen, on every profile page.
+
+    thead is display:none now, each cell carries its own column name through data-label, and
+    sorting moved to the visible .tw-sort control. This fails if thead goes back to being clipped.
+    """
+    css = (ROOT / "components" / "components.css").read_text()
+    thead = re.search(r"\.tw-table thead \{([^}]*)\}", css)
+    assert thead, ".tw-table thead rule not found"
+    body = thead.group(1)
+    assert "display: none" in body, "thead must be removed, not clipped: it holds the sort buttons"
+    assert "clip:" not in body, "the clip pattern keeps the sort buttons focusable while invisible"
+
+    # And the replacement must be a real, visible control rather than another hidden one.
+    sort = re.search(r"\n\.tw-sort \{([^}]*)\}", css)
+    assert sort, ".tw-sort rule not found"
+    assert "clip:" not in sort.group(1), "the mobile sort control must not be visually hidden"
+    js = (ROOT / "components" / "table.js").read_text()
+    assert 'class="tw-sort__select"' in js, "table.js must render the visible mobile sort control"
+
+
+def test_no_generator_or_stylesheet_invents_a_type_size():
+    """The other half of the same root cause.
+
+    A type block in tokens.json only helps if the renderers actually reach for it. Before this,
+    head() in build_college_pages.py carried 13 distinct ad-hoc rem sizes and components.css
+    carried another 12, which is how a profile page ended up with a 40px title sitting straight on
+    a 19.2px heading while the homepage was on a clean scale. Every size in both is now a --t-*
+    token, and this test fails if a new rem or px size appears in either.
+
+    Four sizes are deliberately not tokens and are named here so the exemption is explicit rather
+    than a hole: the three text inputs sit at 16px because iOS Safari zooms the page when a focused
+    input is smaller, and the finding-band figure is a display number, not a step on a text scale.
+    """
+    exempt = re.compile(
+        r"hero-search input|tw-search__input|tw-field__input\[type=\"search\"\]"
+        r"|finding-stat b|^\.brand$"
+    )
+    for path in [
+        PIPELINE / "build_college_pages.py",
+        ROOT / "components" / "components.css",
+        SITE / "styles.css",
+    ]:
+        text = re.sub(r"/\*.*?\*/", "", path.read_text(), flags=re.S)
+        # head() lives inside an f-string, where a CSS brace is doubled.
+        text = text.replace("{{", "{").replace("}}", "}")
+        for sel, body in re.findall(r"([^{}]*)\{([^{}]*)\}", text):
+            sel = " ".join(sel.split())
+            if exempt.search(sel):
+                continue
+            for size in (s.strip() for s in re.findall(r"font-size:\s*([^;}]+)", body)):
+                assert "var(--t-" in size or size == "inherit", (
+                    f"{path.name}: ad-hoc type size {size!r} on {sel!r}; use a --t-* token"
+                )
+
+
+def test_the_profile_argument_is_set_in_the_editorial_serif():
+    """The role split says body is UI sans and editorial prose is the serif, but on a profile page
+    the verdict sentence and the payback explanation ARE the argument, and both inherited body
+    sans. They also inherited the 860px width the program table needs, which put prose at roughly
+    115 characters a line. Serif plus a measure, on the two elements that carry the reasoning."""
+    src = (PIPELINE / "build_college_pages.py").read_text()
+    for cls in (".verdict", ".calc-big"):
+        rule = re.search(rf"\n\s*{re.escape(cls)} \{{\{{(.+?)\}}\}}", src)
+        assert rule, f"{cls} rule not found in head()"
+        body = rule.group(1)
+        assert "var(--display)" in body, f"{cls} should carry the editorial serif"
+        assert "var(--measure)" in body, f"{cls} should be capped at a reading measure, not 860px"
+
+
+def test_display_type_is_reserved_for_the_figure_not_the_sentence():
+    """The finding band set its whole 17-word sentence at 76px mono: 13 lines, 988px, 73% of the
+    band. The type roles reserve mono display sizing for FIGURES; the sentence around one is
+    editorial prose. So the big treatment belongs on the <b>, and the paragraph itself must stay at
+    a reading size."""
+    css = _css_without_comments()
+    para = css.split(".finding-stat {", 1)[1].split("}", 1)[0]
+    figure = css.split(".finding-stat b {", 1)[1].split("}", 1)[0]
+    assert "var(--t-lede)" in para, "the sentence must be set at a reading size, not a display size"
+    assert "var(--display)" in para, "editorial prose uses the serif, per the type roles"
+    assert "var(--mono)" in figure and "clamp(" in figure, (
+        "the figure itself keeps the large mono treatment"
+    )
+
+
+def test_mobile_module_separators_are_horizontal():
+    """The three homepage product modules are separated by vertical rules on desktop. Once they
+    stack into one column the rule has to become horizontal, but `.live-card.flagship` (two
+    classes) outranked the single-class mobile reset and kept its right-hand rule."""
+    css = (SITE / "styles.css").read_text()
+    assert ".live-card, .live-card.flagship { border-right: 0;" in css, (
+        "the flagship module must drop its vertical rule when the modules stack"
+    )
+
+
 def test_wide_tables_are_wrapped_for_horizontal_scroll():
     """Every generated data table sits in a .tscroll container so it scrolls inside its box
     on a phone instead of pushing the whole page wider than the viewport."""
     head_css = (PIPELINE / "build_college_pages.py").read_text()
     assert ".tscroll" in head_css, "the shared head() must define .tscroll"
+    # The wrapper carries tabindex, role and aria-label now, so match the class rather than a
+    # fixed opening string: the point is that a table is wrapped, not how the tag is spelled.
+    wrapped = re.compile(r'<div class="tscroll"[^>]*><table class="t')
     for gen in GENERATORS:
         src = (PIPELINE / gen).read_text()
-        opens = src.count('<div class="tscroll"><table class="t')
+        opens = len(wrapped.findall(src))
         closes = src.count("</tbody></table></div>")
         assert opens > 0, f"{gen} should wrap its tables in .tscroll"
         assert opens == closes, (
@@ -54,7 +749,7 @@ def test_wide_tables_are_wrapped_for_horizontal_scroll():
     # No table may be emitted outside a wrapper.
     for gen in GENERATORS:
         src = (PIPELINE / gen).read_text()
-        assert src.count('<table class="t') == src.count('<div class="tscroll"><table class="t')
+        assert src.count('<table class="t') == len(wrapped.findall(src))
 
 
 def test_headers_file_sets_cache_control_with_single_splat_paths():
@@ -128,19 +823,38 @@ def test_completion_rate_zero_is_treated_as_missing():
 
 
 def test_stylesheet_versioning_stamps_and_is_idempotent():
-    """The deploy stamps styles.css with a content hash so a CSS change busts its own cache.
-    Guard that it rewrites both relative and absolute refs and never double-stamps."""
+    """The deploy stamps BOTH styles.css and components.css with independent content hashes so a CSS
+    change busts only its own cache. Guard relative+absolute refs, idempotency, no double-stamp, and
+    that stamping one sheet never touches the other's version (the rebrand changes components.css)."""
     from pipeline import version_assets as va
 
-    ver = va.stylesheet_hash()
-    assert re.fullmatch(r"[0-9a-f]{10}", ver), "hash should be 10 hex chars"
-    once = va.stamp('<link rel="stylesheet" href="styles.css" /><link href="/styles.css">', ver)
-    assert f'href="styles.css?v={ver}"' in once
-    assert f'href="/styles.css?v={ver}"' in once
-    # Running it again must not append a second ?v=.
-    assert va.stamp(once, ver) == once
-    # A new hash replaces the old stamp rather than stacking.
-    assert va.stamp(once, "deadbeef01").count("?v=") == once.count("?v=")
+    sver = va.sheet_hash("styles.css")
+    assert re.fullmatch(r"[0-9a-f]{10}", sver), "styles hash should be 10 hex chars"
+    cver = va.sheet_hash("components.css")
+    assert cver is None or re.fullmatch(r"[0-9a-f]{10}", cver), "components hash 10 hex or absent"
+
+    # Each sheet gets its OWN ?v=, on both relative and absolute refs.
+    html = (
+        '<link rel="stylesheet" href="styles.css" /><link href="/styles.css">'
+        '<link rel="stylesheet" href="/components.css" />'
+    )
+    out = va.stamp_sheet(html, "styles.css", sver)
+    out = va.stamp_sheet(out, "components.css", "deadbeef01")
+    assert f'href="styles.css?v={sver}"' in out and f'href="/styles.css?v={sver}"' in out
+    assert 'href="/components.css?v=deadbeef01"' in out
+
+    # Idempotent, and a new hash replaces the old stamp rather than stacking.
+    assert va.stamp_sheet(out, "styles.css", sver) == out
+    assert va.stamp_sheet(out, "styles.css", "cafef00d99").count("styles.css?v=") == 2
+
+    # Stamping components.css must not change the styles.css version, and vice versa.
+    only_styles = va.stamp_sheet(html, "styles.css", sver)
+    assert "components.css?v=" not in only_styles
+    only_comp = va.stamp_sheet(html, "components.css", "deadbeef01")
+    assert "styles.css?v=" not in only_comp
+
+    # Back-compat helper still stamps the primary sheet.
+    assert f'href="styles.css?v={sver}"' in va.stamp('<link href="styles.css">', sver)
 
 
 def _primary_nav_order(html: str) -> list[str]:
@@ -226,34 +940,119 @@ def test_compare_states_coverage_and_labels_are_honest():
     assert "Recent completers" in gen and '"num">Graduates<' not in gen
 
 
-def test_fonts_load_without_blocking_first_paint():
-    """A CSS @import for fonts serializes behind the stylesheet parse and blocks first paint on every
-    page (the 2026-08-25 perf gate flagged it). styles.css must not @import fonts, and every source
-    page must load the font stylesheet non-blocking (media=print/onload) with a <noscript> fallback."""
+# Committed source pages (generated pages come from head(), checked separately). Not a glob,
+# because stale generated output may sit in the working tree locally.
+SOURCE_PAGES = [
+    "404.html",
+    "index.html",
+    "about/index.html",
+    "careers/index.html",
+    "compare/index.html",
+    "methodology/index.html",
+    "value-check/index.html",
+    "k12/index.html",
+    "k12/advanced-courses/index.html",
+    "k12/compare/index.html",
+    "k12/rankings/index.html",
+]
+
+# The only three faces the stylesheet asks for. See site/fonts/README.md.
+FONT_FILES = [
+    "source-serif-4-latin-400-normal.woff2",
+    "source-serif-4-latin-600-normal.woff2",
+    "ibm-plex-mono-latin-500-normal.woff2",
+]
+
+
+def test_fonts_are_self_hosted_with_no_third_party_origin():
+    """Release 3 B3 replaced Google Fonts with self-hosted faces. The Google origins put a
+    third-party connection (two preconnects, a stylesheet round trip, then the files) on the
+    critical path of every page, so no page may reach for them again, and Libre Franklin is gone."""
+    for rel in FONT_FILES:
+        f = SITE / "fonts" / rel
+        assert f.exists(), f"missing self-hosted face: {rel}"
+        assert f.read_bytes()[:4] == b"wOF2", f"{rel} is not a valid woff2 file"
     css = (SITE / "styles.css").read_text()
+    # A render-blocking @import was the 2026-08-25 perf regression; it must never come back.
     assert "@import url" not in css, "styles.css must not @import fonts (render-blocking)"
-    # Committed source pages (generated pages come from head(), checked below). Not a glob, because
-    # stale generated output may sit in the working tree locally.
-    source_pages = [
-        "404.html",
-        "index.html",
-        "about/index.html",
-        "careers/index.html",
-        "compare/index.html",
-        "methodology/index.html",
-        "value-check/index.html",
-        "k12/index.html",
-        "k12/advanced-courses/index.html",
-        "k12/compare/index.html",
-        "k12/rankings/index.html",
+    for rel in FONT_FILES:
+        assert f'url("/fonts/{rel}")' in css, f"styles.css has no @font-face for {rel}"
+    assert css.count("font-display: swap;") == len(FONT_FILES), (
+        "every @font-face needs font-display: swap so text stays visible while a face loads"
+    )
+    pages = [(rel, (SITE / rel).read_text()) for rel in SOURCE_PAGES]
+    pages.append(("build_college_pages.head()", (PIPELINE / "build_college_pages.py").read_text()))
+    pages.append(("embed/index.html", (SITE / "embed" / "index.html").read_text()))
+    for name, text in pages:
+        for gone in ("fonts.googleapis.com", "fonts.gstatic.com", "Libre Franklin"):
+            assert gone not in text, f"{name} still references {gone}"
+    # Sweep whatever generated output is present too. Those directories are gitignored, so this is
+    # a no-op in CI, but locally it catches pages a generator has not rewritten since the change:
+    # /findings/ and /updates/ were still shipping a render-blocking font stylesheet from before the
+    # 2026-08-25 perf fix precisely because no test looked at generated output.
+    stale = [
+        str(p.relative_to(SITE))
+        for p in SITE.rglob("*.html")
+        if "fonts.googleapis.com" in p.read_text() or "fonts.gstatic.com" in p.read_text()
     ]
-    for rel in source_pages:
-        s = (SITE / rel).read_text()
-        assert 'media="print" onload' in s, f"{rel} font link is render-blocking"
-        assert "<noscript><link" in s and "css2" in s, f"{rel} missing noscript font fallback"
-    # The generated-page shell head() must use the same non-blocking pattern.
-    head_src = (PIPELINE / "build_college_pages.py").read_text()
-    assert 'media="print" onload' in head_src, "head() font link is render-blocking"
+    assert not stale, f"generated pages still reference Google Fonts: {stale[:5]}"
+
+
+def test_every_page_preloads_exactly_the_faces_it_renders():
+    """Fonts are only discovered after the stylesheet parses, so each page preloads its faces to
+    keep them off the critical path. Preloading a face a page never renders wastes the download
+    and logs a "preloaded but not used" console warning, so the set must match what the page uses:
+    the 600 display and 500 mono render everywhere (brand and footer), while the 400 display is
+    only reached through .lede and .prose."""
+    always = ["source-serif-4-latin-600-normal.woff2", "ibm-plex-mono-latin-500-normal.woff2"]
+    only_if_used = "source-serif-4-latin-400-normal.woff2"
+    pages = [(rel, (SITE / rel).read_text()) for rel in SOURCE_PAGES]
+    # The generated-page shell renders no .lede/.prose, so it must preload the two faces only.
+    pages.append(("build_college_pages.head()", (PIPELINE / "build_college_pages.py").read_text()))
+    for name, text in pages:
+        for face in always:
+            assert f'rel="preload" href="/fonts/{face}"' in text, f"{name} does not preload {face}"
+        # Fonts are fetched in CORS mode even same-origin: without crossorigin the preload is not
+        # reused and the browser downloads the file twice.
+        assert 'as="font" type="font/woff2" crossorigin' in text, (
+            f"{name} font preload is missing crossorigin, so it would be fetched twice"
+        )
+        uses_400 = 'class="lede"' in text or 'class="prose"' in text
+        preloads_400 = f'rel="preload" href="/fonts/{only_if_used}"' in text
+        assert preloads_400 == uses_400, (
+            f"{name} preloads the 400 display face={preloads_400} but renders it={uses_400}"
+        )
+
+
+def test_no_orphaned_pages_would_ship():
+    """`wrangler deploy` uploads everything under site/, and build_sitemap scans the DISK, so a
+    pre-rendered page the current build no longer produces would both ship and enter the sitemap.
+    Deploy builds from a clean checkout, so this only bites locally: on 2026-09-02 a preview served
+    thirteen stale pages that production correctly 404s, twelve college slugs
+    (/college/university-of-st-thomas-mn/ and eleven others) plus /findings/data-audit/.
+    Guards /college/ and /findings/, the two trees with a published authority to diff against.
+    Both are gitignored, so this is a no-op in CI."""
+    college = SITE / "college"
+    slug_map = college / "slug-map.json"
+    if not slug_map.exists():
+        pytest.skip("no built college tree in this working copy")
+    from pipeline.prune_orphans import find_orphans
+
+    orphans = find_orphans()
+    assert not orphans, (
+        f"{len(orphans)} orphaned page(s) would ship: {orphans[:5]}. "
+        "Run `make prune` to delete them."
+    )
+
+
+def test_fonts_are_cached_immutably():
+    """Font filenames pin family, weight and subset, so the bytes at a URL never change and the
+    files can be held for a year. Without this they would inherit the platform default of
+    revalidating on every navigation, which defeats self-hosting."""
+    headers = (SITE / "_headers").read_text()
+    assert "/fonts/*" in headers, "_headers has no cache rule for the self-hosted fonts"
+    block = headers.split("/fonts/*", 1)[1]
+    assert "immutable" in block.split("\n\n", 1)[0], "/fonts/* should be immutable"
 
 
 def test_every_page_shares_one_header_nav():
@@ -342,7 +1141,8 @@ def test_home_and_hubs_have_self_canonical():
 
 def test_security_headers_present_and_csp_allows_site_resources():
     """A baseline security-header block must apply to every path, and the CSP must permit the
-    resources the site actually loads (Google Fonts, the Cloudflare beacon) or it would break."""
+    resources the site actually loads (the Cloudflare beacon) or it would break. Since B3 the
+    fonts are self-hosted, so the font origins must be GONE from the CSP rather than allowed."""
     headers = (SITE / "_headers").read_text()
     for h in (
         "Strict-Transport-Security:",
@@ -354,12 +1154,13 @@ def test_security_headers_present_and_csp_allows_site_resources():
     ):
         assert h in headers, f"missing security header: {h}"
     csp = next(ln for ln in headers.splitlines() if "Content-Security-Policy:" in ln)
-    for src in (
-        "https://fonts.gstatic.com",
-        "https://fonts.googleapis.com",
-        "https://static.cloudflareinsights.com",
-    ):
-        assert src in csp, f"CSP would block a resource the site uses: {src}"
+    assert "https://static.cloudflareinsights.com" in csp, (
+        "CSP would block a resource the site uses: the Cloudflare beacon"
+    )
+    # Self-hosted fonts: 'self' must cover them and the Google origins must not be re-granted.
+    assert "font-src 'self';" in csp, "font-src must allow the self-hosted /fonts files"
+    for gone in ("https://fonts.gstatic.com", "https://fonts.googleapis.com"):
+        assert gone not in csp, f"CSP still grants a font origin the site no longer uses: {gone}"
     # Frame protection is X-Frame-Options, NOT a CSP frame-ancestors directive: Cloudflare appends
     # (does not replace) a per-path CSP, so a global frame-ancestors 'none' could not be relaxed on
     # /embed/. X-Frame-Options can be unset per-path with `!`, so the embed widget can opt out.
@@ -368,4 +1169,221 @@ def test_security_headers_present_and_csp_allows_site_resources():
     assert len(embed) == 2, "missing /embed/* rule"
     assert "! X-Frame-Options" in embed[1], (
         "/embed/ must unset X-Frame-Options so it can be iframed"
+    )
+
+
+def test_a_match_count_is_never_stated_against_rows_that_were_not_searched():
+    """245 profiles keep most of their programs behind a fetch, and the count line said "3 of 489
+    programs match" while 339 of those 489 had never been read.
+
+    That is the ZZ defect in a different surface. The hub gave 461 unassessable schools a clean bill
+    of health; here a search reported a result over a set it had examined part of. Both state a
+    conclusion about rows the code has not seen.
+
+    The repair has two halves, and this holds both. Interaction loads the whole set, so the normal
+    path searches everything. And when that fetch fails the denominator must shrink to what is
+    loaded, with the gap named, rather than quietly keeping the larger number.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+
+    # Every interaction that reads across rows must ask for the whole set first.
+    for interaction in (
+        'filters.addEventListener("focusin"',  # the Degree menu is built from loaded rows
+        "_ensureWholeSet();",
+    ):
+        assert interaction in js, f"missing the whole-set guard: {interaction}"
+    assert js.count("_ensureWholeSet()") >= 5, (
+        "search, both filters, both sort controls and the filter block should each ensure the whole "
+        "set; one of them searching a partial list is enough to reproduce the defect"
+    )
+
+    # The disclosure branch: a failed tail must describe the set it searched.
+    assert "programs loaded match" in js, (
+        "a failed tail must count against the loaded rows, not the full total"
+    )
+    assert "not been searched" in js, "a failed tail must say the unfetched rows were not searched"
+    # And it must not be retried silently in a way that leaves the claim stale.
+    assert "this.tailFailed = true" in js, "a failed tail must be recorded, not forgotten"
+
+
+def test_revealing_more_rows_never_drops_focus_to_the_document():
+    """ "Show more" focused the button it had just clicked. Two problems.
+
+    The button sits below the rows it reveals, so a keyboard or screen-reader user was put past the
+    content they asked for. And on the final click the button is removed, because nothing is left to
+    reveal, so there was nothing to focus: focus fell to <body> and the reader was returned to the
+    top of the document at the moment they finished opening the list.
+
+    Both surfaces with a reveal are checked, because the Careers page carries its own copy of this
+    logic rather than using the component.
+    """
+    js = (ROOT / "components" / "table.js").read_text()
+    assert "const firstNew = this.shown" in js, (
+        "the component must remember where the new rows start"
+    )
+    assert "landing.focus()" in js, "focus must move to a row, which always exists"
+    assert 'landing.setAttribute("tabindex", "-1")' in js, (
+        "the landing row must be focusable without becoming a tab stop"
+    )
+
+    careers = (SITE / "careers" / "index.html").read_text()
+    assert 'document.getElementById("cr-more")?.focus()' not in careers, (
+        "Careers still focuses the button, which is absent on the last reveal"
+    )
+    assert "const firstNew = shown" in careers, "Careers must remember where the new rows start"
+    assert "landing.focus()" in careers, "Careers must move focus to a row"
+    assert 'id="cr-live"' in careers and 'role="status"' in careers, (
+        "moving focus into a table announces a row, not a count; Careers needs a live region to say "
+        "how many arrived"
+    )
+
+
+def test_a_profile_description_states_the_size_that_separates_two_same_named_campuses():
+    """After the place went into titles, 13 title values were still shared by 26 pages and 10
+    description values by 20. Every one is two real institutions reporting under the same name.
+
+    Seven are separate campuses in the SAME city, so the place cannot tell them apart. The other six
+    are in the 461 that file program data but have no institution record at all, so there is no city
+    and no state to use. Those 461 are exactly the ZZ population: the same root cause, surfacing a
+    second time.
+
+    Checked against the source before writing the fix: all 13 pairs differ in programs reported,
+    distinct CIP codes, or recent completers. None is one record twice. So a real fact separates them,
+    and it is the one a reader comparing two same-named campuses wants. Saying it resolves all ten
+    description collisions without inventing a suffix, a letter or a UNITID, none of which tell a
+    reader anything.
+    """
+    src = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert 'size = f"Reports {total} program' in src, (
+        "the description must carry the program count that separates same-named campuses"
+    )
+    assert "recent graduate" in src, "and the graduate count, which differs where programs tie"
+    # All three description branches must carry it, or the branch that omits it reintroduces the
+    # collision. The no-verdict branch matters most: six of the ten collisions were in it.
+    assert src.count("{size}") == 3, (
+        f"all three description branches need the size clause, found {src.count('{size}')}"
+    )
+    # Not a fabricated distinguisher. A UNITID in a description identifies a row, not an institution.
+    desc_block = src.split("# Honest headline", 1)[1].split("# Title carries", 1)[0]
+    assert "unitid" not in desc_block.lower(), (
+        "a UNITID in the description distinguishes strings rather than institutions"
+    )
+
+
+# The 13 title collisions that remain after the place went into every title, approved as
+# irreducible on 2026-09-11. Each is two real institutions reporting to the Department of Education
+# under one name: seven are separate campuses in the SAME city, so the place cannot separate them,
+# and six are among the 461 that file programme data with no institution record at all, so there is
+# no city and no state to use.
+#
+# The decision was to keep them rather than invent a discriminator. A UNITID, a letter or a numeric
+# suffix in a title separates strings, not institutions, and tells a reader nothing. What does
+# separate them is carried where it belongs: the URLs are unique, and the descriptions now state
+# programmes and recent graduates, which differs for all 13 pairs.
+#
+# This list is an allowlist, not a tolerance. A collision that is not in it is a new defect, most
+# likely a template regression that would hit far more than two pages, and it must fail.
+KNOWN_TITLE_COLLISIONS = frozenset(
+    {
+        frozenset({"larry-s-barber-college-il", "larry-s-barber-college"}),
+        frozenset({"city-college-hollywood-zz", "city-college-hollywood"}),
+        frozenset({"western-technical-college-tx", "western-technical-college-224660"}),
+        frozenset({"cortiva-institute-438285", "cortiva-institute-387925"}),
+        frozenset(
+            {"international-school-of-cosmetology", "international-school-of-cosmetology-zz"}
+        ),
+        frozenset({"trend-barber-college-tx", "trend-barber-college"}),
+        frozenset({"tulsa-welding-school-jacksonville-fl", "tulsa-welding-school-jacksonville"}),
+        frozenset({"royal-learning-institute", "royal-learning-institute-zz"}),
+        frozenset({"mitchells-academy", "mitchells-academy-zz"}),
+        frozenset({"ideal-beauty-academy", "ideal-beauty-academy-zz"}),
+        frozenset({"american-university-of-puerto-rico-zz", "american-university-of-puerto-rico"}),
+        frozenset({"interactive-college-of-technology-tx", "interactive-college-of-technology"}),
+        frozenset(
+            {"southern-careers-institute-san-antonio", "southern-careers-institute-san-antonio-tx"}
+        ),
+    }
+)
+
+
+def test_no_college_title_collides_outside_the_approved_thirteen():
+    """An allowlist, so an accidental collision still fails.
+
+    The template fix took duplicate titles from 86 values over 202 pages down to 13 over 26. Marking
+    the remainder "known" without pinning them would mean the next template change could reintroduce
+    mass duplication and this suite would call it expected. Each approved pair is named, so a new
+    one, or a pair that stops colliding and should be removed from the list, both show up.
+    """
+    col = SITE / "college"
+    pages = sorted(col.glob("*/index.html")) if col.exists() else []
+    if len(pages) < 1000:
+        pytest.skip("no built college tree in this working copy")
+
+    by_title: dict[str, set[str]] = {}
+    for p in pages:
+        m = re.search(r"<title>(.*?)</title>", p.read_text(), re.S)
+        if m:
+            by_title.setdefault(m.group(1), set()).add(p.parent.name)
+
+    groups = {frozenset(s) for s in by_title.values() if len(s) > 1}
+    unexpected = groups - KNOWN_TITLE_COLLISIONS
+    assert not unexpected, (
+        "new duplicate title groups, which usually means a template regression rather than two "
+        f"same-named schools: {[sorted(g) for g in unexpected]}"
+    )
+    stale = KNOWN_TITLE_COLLISIONS - groups
+    assert not stale, (
+        "these pairs no longer collide, so remove them from KNOWN_TITLE_COLLISIONS rather than "
+        f"leaving an allowlist that grants more than it needs to: {[sorted(g) for g in stale]}"
+    )
+
+
+def test_no_two_college_pages_share_a_description():
+    """Zero tolerance here, unlike titles, because the description has room for the fact that
+    separates them. All 13 colliding pairs differ in programmes reported, distinct CIP codes or
+    recent completers, so every one can be told apart in a sentence."""
+    col = SITE / "college"
+    pages = sorted(col.glob("*/index.html")) if col.exists() else []
+    if len(pages) < 1000:
+        pytest.skip("no built college tree in this working copy")
+
+    by_desc: dict[str, list[str]] = {}
+    for p in pages:
+        m = re.search(r'<meta name="description" content="(.*?)"', p.read_text(), re.S)
+        if m:
+            by_desc.setdefault(m.group(1), []).append(p.parent.name)
+    dupes = {k: v for k, v in by_desc.items() if len(v) > 1}
+    assert not dupes, f"{len(dupes)} duplicate description groups: {list(dupes.values())[:5]}"
+
+
+def test_careers_carries_its_data_without_javascript():
+    """Careers was the one data page that degraded to nothing.
+
+    The table was built entirely in the browser from a 785 KB JSON, so with scripting off a reader
+    got a paragraph pointing at the methodology page. Approved on 2026-09-11 as a defect rather than
+    a contract exception: the profile pages have shipped a static core since Stage 4.1 and this is
+    the same contract at the same page size.
+    """
+    html = (SITE / "careers" / "index.html").read_text()
+    core = html.split("<!-- CAREERS_CORE_START -->", 1)
+    assert len(core) == 2, "the careers core markers are missing, so build_careers cannot write it"
+    core = core[1].split("<!-- CAREERS_CORE_END -->", 1)[0]
+
+    rows = core.count("<tr data-cip")
+    assert rows == 25, f"the static core should carry one page of 25 rows, found {rows}"
+    # The full total must be stated, or 25 rows imply the dataset is 25 rows long.
+    assert re.search(r"Showing 25 of [\d,]+", core), (
+        "the core must state the whole set, not only what it shows"
+    )
+    # Links go to permanent major pages, NOT to the page's own ?field= route, which is itself
+    # rendered in the browser and would hand a no-JavaScript reader a second empty page.
+    assert core.count('href="/majors/') == rows, "every static row must link to its major page"
+    assert "?field=" not in core, (
+        "a static row must not link into the client-rendered detail view, which needs the script it "
+        "is standing in for"
+    )
+    # And the noscript text must no longer claim there is nothing to read here.
+    assert "This interactive view needs JavaScript to run" not in html, (
+        "the noscript message still says the view needs JavaScript, which is now false: the table is"
+        " in the HTML"
     )

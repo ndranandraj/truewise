@@ -18,12 +18,60 @@ from __future__ import annotations
 import datetime as dt
 import re
 import shutil
+import time
 import zipfile
 from pathlib import Path
 
 import requests
 
 from pipeline.config import ARCHIVE_DIR, BULK_FILES, RAW_DIR, SCORECARD_DATA_HOME
+
+# Identify ourselves honestly. The 2026-09-08 refresh failed with 403 on the data home while the
+# page served fine to an ordinary client: the default "python-requests/x.y" agent from a shared CI
+# address is a common thing for a public site to refuse. The remedy is to say who we are and how to
+# reach us, NOT to impersonate a browser. This is a small, polite, monthly read of a public federal
+# dataset that the page itself invites people to download, and a site owner who wants to throttle
+# or contact us can now tell exactly which client to look for.
+USER_AGENT = (
+    "TruewiseDataRefresh/1.0 (+https://truewise.dev; "
+    "monthly College Scorecard refresh; https://github.com/ndranandraj/truewise)"
+)
+HEADERS = {"User-Agent": USER_AGENT, "Accept": "*/*"}
+RETRIES = 3
+BACKOFF_SECONDS = 5
+
+
+def fetch(url: str, **kw):
+    """GET with our identity attached, retried on transient failure.
+
+    A block and an outage look the same at the call site and need different responses from whoever
+    reads the log, so a 403 that survives the retries says so in words rather than surfacing a bare
+    HTTPError from deep in requests.
+    """
+    last = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=kw.pop("timeout", 60), **kw)
+            resp.raise_for_status()
+            return resp
+        except requests.HTTPError as exc:
+            last = exc
+            status = exc.response.status_code if exc.response is not None else None
+            if status == 403:
+                raise SystemExit(
+                    f"403 Forbidden from {url}.\n"
+                    f"The request identified itself as: {USER_AGENT}\n"
+                    "The page is public and this is a monthly read, so this is a client block\n"
+                    "rather than a missing file. Check whether the host has started refusing this\n"
+                    "address or agent; do not work around it by impersonating a browser."
+                ) from exc
+            if status is not None and status < 500:
+                raise  # 404 and friends are real, and retrying will not help
+        except requests.RequestException as exc:
+            last = exc
+        if attempt < RETRIES:
+            time.sleep(BACKOFF_SECONDS * attempt)
+    raise SystemExit(f"Could not reach {url} after {RETRIES} attempts: {last}")
 
 
 def find_bulk_urls(page_html: str) -> dict[str, str]:
@@ -43,8 +91,9 @@ def find_bulk_urls(page_html: str) -> dict[str, str]:
 
 def download(url: str, dest: Path, chunk: int = 1 << 20) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=600) as resp:
-        resp.raise_for_status()
+    # The zip lives on a different host from the page, so it can be blocked independently; it goes
+    # through the same identified, retried path.
+    with fetch(url, stream=True, timeout=600) as resp:
         with open(dest, "wb") as fh:
             for block in resp.iter_content(chunk_size=chunk):
                 fh.write(block)
@@ -68,8 +117,7 @@ def main() -> None:
     today = dt.date.today().isoformat()
     snapshot_dir = ARCHIVE_DIR / today
 
-    resp = requests.get(SCORECARD_DATA_HOME, timeout=60)
-    resp.raise_for_status()
+    resp = fetch(SCORECARD_DATA_HOME)
     urls = find_bulk_urls(resp.text)
 
     provenance = [f"snapshot_date: {today}", f"downloaded_utc: {dt.datetime.utcnow().isoformat()}Z"]

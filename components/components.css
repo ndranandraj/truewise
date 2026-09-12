@@ -17,7 +17,7 @@
 }
 .tw-search__label {
   display: block;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   font-weight: 600;
   color: var(--text-secondary);
   margin: 0 0 6px;
@@ -27,7 +27,7 @@
   align-items: center;
   gap: 10px;
   border: 2px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   padding: 4px 6px 4px 14px;
   background: var(--paper);
   transition: border-color 0.15s;
@@ -45,7 +45,9 @@
   flex: 1;
   min-width: 0;
   font: inherit;
-  font-size: 1.05rem;
+  /* Deliberately not a type token: iOS Safari zooms the page when a focused input is
+     under 16px, and --t-ui is 15px. The one size on the site that answers to the browser. */
+  font-size: 16px;
   padding: 11px 0;
   background: transparent;
   color: var(--text);
@@ -54,16 +56,16 @@
 .tw-search__input:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-search__list {
   list-style: none;
   margin: 8px 0 0;
   padding: 4px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--paper);
-  box-shadow: 0 12px 32px rgba(20, 32, 58, 0.1);
+  box-shadow: 0 12px 32px rgba(12, 21, 18, 0.10);
 }
 .tw-search__opt {
   display: flex;
@@ -71,12 +73,12 @@
   align-items: baseline;
   gap: 8px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--r-md);
   cursor: pointer;
 }
 .tw-search__opt.is-active,
 .tw-search__opt:hover {
-  background: var(--surface);
+  background: var(--sand);
 }
 .tw-search__title {
   font-weight: 600;
@@ -84,16 +86,16 @@
 }
 .tw-search__meta {
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: var(--t-fine);
 }
 .tw-search__why {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: var(--t-label);
 }
 .tw-search__empty {
   padding: 12px;
   color: var(--text-secondary);
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
 }
 .tw-search__empty a {
   color: var(--brand-strong); /* links on a tinted surface use brand-strong (0.3 rule 5.1) */
@@ -101,41 +103,81 @@
 }
 .tw-search__status {
   margin: 6px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-muted);
 }
 
 /* ---- Program / comparison table (B5) ---- */
 .tw-table__coverage {
   margin: 0 0 4px;
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
   color: var(--text);
 }
 .tw-table__covnote {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-table__baseline {
   margin: 0 0 10px;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-secondary);
 }
 .tw-table__scroll {
   overflow-x: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
+}
+/* Sorting for phone widths, where the header row (and its sort buttons) is display:none. Hidden on
+   desktop, where the column headers already carry it. Not visually-hidden: this control must not
+   exist in the tab order on the widths that have header buttons, or the same duplicate-tab-stop
+   problem returns in the other direction. */
+.tw-sort {
+  display: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0 0 10px;
+}
+.tw-sort__label {
+  font-size: var(--t-fine);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.tw-sort__select,
+.tw-sort__dir {
+  font: inherit;
+  font-size: var(--t-ui);
+  /* 44px touch target: 11px of padding either side of a 15px step, plus the border. */
+  padding: 11px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--text);
+}
+.tw-sort__dir {
+  font-weight: 600;
+  color: var(--brand-strong);
+  cursor: pointer;
+}
+.tw-sort__dir:hover {
+  border-color: var(--brand);
+}
+.tw-sort__select:focus-visible,
+.tw-sort__dir:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .tw-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 0.92rem;
+  font-size: var(--t-ui);
 }
 .tw-table__caption {
   caption-side: top;
   text-align: left;
   padding: 10px 12px;
   color: var(--text-secondary);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-th,
 .tw-td {
@@ -145,7 +187,7 @@
   vertical-align: top;
 }
 .tw-th {
-  background: var(--surface);
+  background: var(--sand);
   font-weight: 700;
   color: var(--text-secondary);
   white-space: nowrap;
@@ -173,14 +215,21 @@
 .tw-th__sort:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-td--program {
   font-weight: 600;
   color: var(--text);
+  /* CIP names run slashes together without spaces, and a browser does not break on "/". At 18px
+     "Agricultural/Animal/Plant/Veterinary" is 36 unbroken characters, so it set a min-content
+     width of about 324px and pushed a Penn State phone page to 354px inside a 320px viewport.
+     `anywhere` rather than `break-word` on purpose: only `anywhere` also lowers the intrinsic
+     minimum, which is the measurement doing the damage. It still prefers ordinary break points and
+     splits inside a word only when there is no other option. */
+  overflow-wrap: anywhere;
 }
 .tw-tr--insuf .tw-td {
-  background: var(--surface);
+  background: var(--sand);
 }
 .tw-td__insuf {
   color: var(--text-muted);
@@ -189,7 +238,7 @@
 }
 .tw-verdict {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   white-space: nowrap;
 }
 .tw-verdict--pass {
@@ -213,7 +262,7 @@
   display: inline-block;
   height: 8px;
   width: 42px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-prem__bar--pos {
   background: var(--good);
@@ -231,7 +280,7 @@
   color: var(--brand-strong);
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 16px;
   cursor: pointer;
 }
@@ -248,7 +297,7 @@
 }
 .tw-table__status {
   margin: 8px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
   color: var(--text-muted);
 }
 
@@ -261,12 +310,17 @@
   .tw-table__scroll {
     overflow-x: visible; /* stacked cards do not scroll horizontally */
   }
+  /* Removed, not clipped. The old rule hid this row visually with the 1px-clip pattern, which
+     keeps content in the accessibility tree and the tab order on purpose. That is right for a
+     label a screen-reader user still needs; it was wrong here, because the row contains six sort
+     BUTTONS, so a keyboard user tabbed through six invisible controls on every profile page.
+     Nothing is lost: the stacked layout gives every cell its column name through data-label, and
+     sorting moves to the visible .tw-sort control. */
   .tw-table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
+    display: none;
+  }
+  .tw-sort {
+    display: flex;
   }
   .tw-table,
   .tw-table tbody,
@@ -282,7 +336,7 @@
   }
   .tw-tr {
     border: 1px solid var(--line);
-    border-radius: 12px;
+    border-radius: var(--r-lg);
     margin-bottom: 12px;
     padding: 6px 4px;
   }
@@ -300,6 +354,13 @@
     flex: 0 0 auto;
     max-width: 55%;
   }
+  /* min-width: 0 lets the value shrink below its content's intrinsic width, which a flex item does
+     not do by default. Without it the value side sets a floor the viewport has to meet. */
+  .tw-td > .tw-val {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+  }
   .tw-td::before {
     content: attr(data-label);
     font-weight: 600;
@@ -307,9 +368,12 @@
     text-align: left;
   }
   .tw-td--program {
-    font-size: 1.05rem;
+    font-size: var(--t-sub);
     border-bottom: 1px solid var(--line);
     padding-bottom: 8px;
+    /* A flex item will not shrink below its content without this, so the longest programme name
+       on the page would otherwise set the width of the whole document. */
+    min-width: 0;
   }
   .tw-td--program::before {
     content: "";
@@ -329,10 +393,10 @@
 /* B8 status pill */
 .tw-pill {
   display: inline-block;
-  font-size: 0.8rem;
+  font-size: var(--t-label);
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   white-space: nowrap;
 }
 .tw-pill--pass {
@@ -349,19 +413,34 @@
 }
 .tw-pill--insuf {
   color: var(--text-muted);
-  background: var(--surface);
+  background: var(--sand);
   border: 1px dashed var(--line);
   font-weight: 400;
 }
 /* Inline "1-year earnings" marker: an earnings figure measured 1 year after completion, not 4. Reuses
    the caution palette; sits under the number so it does not read as part of the dollar amount. */
+/* The amount and its marker travel together in one container. In the stacked mobile row .tw-td is
+   a flex line of label and value; without this wrapper the marker was a THIRD flex item, and being
+   nowrap it could not shrink, so a school with any 1-year figure pushed the document to 354px
+   inside a 320px viewport and produced a page-level horizontal scrollbar. */
+.tw-val {
+  display: inline-block;
+  min-width: 0;
+}
 .tw-oneyr {
   display: block;
   margin-top: 2px;
-  font-size: 0.72rem;
+  font-size: var(--t-label);
   font-weight: 600;
   color: var(--caution);
   white-space: nowrap;
+}
+/* Below the narrowest supported width the marker wraps rather than overflow. Belt and braces with
+   the container above: the container stops it escaping the cell, this stops it setting the floor. */
+@media (max-width: 359px) {
+  .tw-oneyr {
+    white-space: normal;
+  }
 }
 
 /* B14 suppressed value */
@@ -374,11 +453,11 @@
 .tw-coverage {
   margin: 0 0 6px;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: var(--t-ui);
 }
 .tw-coverage__note {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: var(--t-fine);
 }
 .tw-coverage--low b {
   color: var(--bad);
@@ -388,16 +467,17 @@
 .tw-source {
   margin: 12px 0 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: var(--t-label);
   line-height: 1.5;
+  max-width: var(--measure);
 }
 
 /* B3 empty state */
 .tw-empty {
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
+  border-radius: var(--r-lg);
+  background: var(--sand);
   color: var(--text-secondary);
 }
 .tw-empty__routes a {
@@ -413,8 +493,8 @@
 }
 .tw-skel__row {
   height: 16px;
-  border-radius: 6px;
-  background: linear-gradient(90deg, var(--surface), var(--line), var(--surface));
+  border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--sand), var(--line), var(--sand));
   background-size: 200% 100%;
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -431,7 +511,7 @@
 .tw-error {
   padding: 14px 16px;
   border: 1px solid var(--bad);
-  border-radius: 12px;
+  border-radius: var(--r-lg);
   background: var(--bad-bg);
   color: var(--bad);
 }
@@ -448,7 +528,7 @@
   align-items: center;
 }
 .tw-chips__label {
-  font-size: 0.78rem;
+  font-size: var(--t-label);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -457,9 +537,9 @@
 }
 .tw-chip {
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--t-fine);
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line);
   background: var(--paper);
   color: var(--text-secondary);
@@ -479,22 +559,84 @@
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
 }
+/* Program search and filters. A profile can carry 150 programmes in a table about 47,000px tall on
+   a phone, so reaching one meant scrolling past every other. Every control is labelled visibly and
+   every input clears 44px, because this is the densest interaction on the site and it is met on a
+   phone more often than on a desktop. */
 .tw-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
-  align-items: center;
+  gap: var(--s3);
+  align-items: end;
+  margin: 0 0 var(--s3);
+}
+.tw-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  min-width: 0;
+}
+.tw-field--grow {
+  flex: 1;
+  min-width: 180px;
+}
+.tw-field__label {
+  font-size: var(--t-fine);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.tw-field__input {
+  font: inherit;
+  font-size: var(--t-ui);
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: var(--r-md);
+  background: var(--paper);
+  color: var(--text);
+}
+/* 16px on the text field alone: iOS Safari zooms a focused input below that, and --t-ui is 15px. */
+.tw-field__input[type="search"] {
+  font-size: 16px;
+}
+.tw-field__input:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.tw-table__count {
+  margin: 0 0 var(--s3);
+  font-size: var(--t-fine);
+  color: var(--text-secondary);
+}
+.tw-more {
+  margin: var(--s3) 0 0;
+  font: inherit;
+  font-size: var(--t-ui);
+  font-weight: 600;
+  color: var(--brand-strong);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 11px 16px;
+  cursor: pointer;
+}
+.tw-more:hover {
+  border-color: var(--brand);
+}
+.tw-more:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
 }
 .tw-filters__label {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: var(--t-ui);
 }
 .tw-filters__select {
   font: inherit;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-md);
   background: var(--paper);
   color: var(--text);
 }
@@ -503,7 +645,7 @@
   outline-offset: 2px;
 }
 .tw-filters__check {
-  font-size: 0.9rem;
+  font-size: var(--t-ui);
   color: var(--text-secondary);
   display: inline-flex;
   align-items: center;
@@ -513,7 +655,7 @@
 /* B11 disclosure */
 .tw-disclosure {
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-lg);
   padding: 0 14px;
 }
 .tw-disclosure > summary {
@@ -525,10 +667,27 @@
 .tw-disclosure > summary:focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--r-sm);
 }
 .tw-disclosure__body {
   padding: 0 0 14px;
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: var(--t-ui);
+}
+
+/* Programme name as a link to its major page. Underlined on hover rather than always, because a
+   table of 150 underlined rows reads as noise; the colour and the pointer carry it at rest. */
+.tw-prog {
+  color: inherit;
+  text-decoration: none;
+}
+.tw-prog:hover {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+.tw-prog:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
 }

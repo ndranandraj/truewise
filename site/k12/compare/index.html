@@ -9,14 +9,16 @@
   <meta property="og:description" content="Compare public high schools side by side on courses offered and staffing." />
   <meta property="og:url" content="https://truewise.dev/k12/compare/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="canonical" href="https://truewise.dev/k12/compare/" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
        sticky, so without the offset the subnav slides under the header while scrolling. */
@@ -81,9 +83,10 @@
       <p class="lede">Put schools side by side, your options, or a school and the one across town, on the advanced
         courses they offer and who's on staff. Add up to four.</p>
       <noscript><p class="lede" style="font-size:.95rem">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
+      <label class="field-label" for="q">Search a public high school to add</label>
       <div class="searchbox">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="q" type="search" autocomplete="off" placeholder="Search a public high school to add…" />
+        <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" />
       </div>
       <ul class="results" id="results"></ul>
       <div id="cmp"></div>
@@ -153,7 +156,7 @@
     rows.push(row("Police officer on staff", cols.map(s => s.staff.police ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
     rows.push(row("Security guards", cols.map(s => s.staff.guard ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
     rows.push(row("Teachers not certified", cols.map(s => s.staff.uncert_pct != null ? `<span class="num">${s.staff.uncert_pct}%</span>` : "n/a")));
-    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="High school comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
     cmp.querySelectorAll(".rm").forEach(b => b.addEventListener("click", () => remove(b.dataset.k)));
   }
   render();

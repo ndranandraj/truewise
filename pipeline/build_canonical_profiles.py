@@ -24,12 +24,13 @@ import duckdb
 from pipeline.build_college_pages import (
     BASE,
     FOOTER,
-    STATE_NAMES,
     _calculator,
     esc,
     head,
+    known_state,
     money,
     slugify,
+    state_label,
 )
 from pipeline.build_profile_pilot import (
     DEFAULT_THRESHOLD,
@@ -86,7 +87,7 @@ def canonical_page(
 ) -> tuple[str, str | None]:
     name = meta["name"]
     st = meta["state"]
-    st_name = STATE_NAMES.get(st, st)
+    st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     total = len(rows)
     decided = sum(1 for r in rows if r["verdict"] != "insufficient")
@@ -96,36 +97,81 @@ def canonical_page(
     # rows), so this is exactly "does the page show at least one 1-year earnings value".
     has_1yr = any(r.get("horizon") == "1yr_after_completion" for r in rows)
     bench_txt = money(benchmark) if benchmark is not None else "a typical high-school graduate"
+    # "in <somewhere>" only when there is a somewhere. For the 461 schools with no city and a
+    # non-state code, the place is dropped from the title and the sentence rather than guessed at.
+    located = known_state(st)
+    where = ", ".join(p for p in (meta.get("city"), st) if p) if located else ""
+    at_where = f"{name} in {where}" if where else name
+    of_state = f"{st_name} " if located else ""
+
+    # The size clause, which is what finally separates the last colliding descriptions.
+    #
+    # After the place went into titles, 13 title values were still shared by 26 pages and 10
+    # description values by 20. Every one of those is two real institutions reporting under the same
+    # name: seven are separate campuses in the SAME city, so the place cannot tell them apart, and
+    # six are in the 461 that file program data but have no institution record at all, so there is no
+    # city or state to use.
+    #
+    # Checked before writing any of this: all 13 pairs differ in programs reported, distinct CIP
+    # codes, or recent completers. Not one is the same record twice. So a true, source-derived fact
+    # does separate them, and it is one a reader of two same-named campuses actually wants: which is
+    # the bigger operation. That is worth saying on its own merits and it happens to resolve all ten
+    # description collisions.
+    #
+    # Deliberately NOT a fabricated suffix, a letter, or a UNITID. Those distinguish strings rather
+    # than institutions, and a reader learns nothing from "(2)".
+    grads = sum(r.get("completers") or 0 for r in rows)
+    size = f"Reports {total} program{'' if total == 1 else 's'}"
+    if grads:
+        size += f" and {int(grads):,} recent graduate{'' if grads == 1 else 's'}"
+    size += "."
 
     # Honest headline + meta description carrying real numbers.
     if decided and fail:
         desc = (
-            f"At {name}, {fail} of {decided} assessed programs leave graduates earning less than a "
-            f"typical {st_name} high-school graduate. Program-by-program earnings, from federal data."
+            f"At {at_where}, {fail} of {decided} assessed programs leave graduates earning "
+            f"less than a typical {of_state}high-school graduate. {size} Program-by-program "
+            "earnings, from federal data."
         )
         verdict = (
             f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> leave graduates out-earning a "
-            f"typical {esc(st_name)} high-school graduate (about {esc(bench_txt)}/yr) and "
+            f"typical {esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr) and "
             f"<b>{fail}</b> fall short. Another <b>{total - decided}</b> could not be assessed."
         )
     elif decided:
         desc = (
-            f"At {name}, all {decided} assessed programs leave graduates out-earning a typical "
-            f"{st_name} high-school graduate. Program earnings, from federal data."
+            f"At {at_where}, all {decided} assessed programs leave graduates out-earning a "
+            f"typical {of_state}high-school graduate. {size} Program earnings, from federal data."
         )
         verdict = (
             f"All <b>{decided}</b> assessed programs leave graduates out-earning a typical "
-            f"{esc(st_name)} high-school graduate (about {esc(bench_txt)}/yr). "
+            f"{esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr). "
             f"Another <b>{total - decided}</b> could not be assessed."
         )
     else:
-        desc = f"At {name}, no programs have enough data for an earnings verdict yet. From federal data."
+        desc = (
+            f"At {at_where}, no programs have enough data for an earnings verdict yet. "
+            f"{size} From federal data."
+        )
         verdict = (
             f"None of {esc(name)}'s <b>{total}</b> programs have enough data for an earnings verdict "
             "yet. Truewise shows what the federal data supports and nothing more."
         )
 
-    title = f"{name}: what families pay and what graduates earn"
+    # Title carries the place, always, not only when the name collides.
+    #
+    # 86 title values were shared by 202 pages, Cortiva Institute six times, so those pages competed
+    # with each other for the same result. The place also answers the query shape the September
+    # baseline is full of: "miller motte in fayetteville nc" sat at position 54.9 and "southern
+    # careers waco" at 78.2, both name-plus-city, against titles carrying no city at all.
+    #
+    # The suffix shortens from 41 characters to 26 in the same change, so a median title grows by
+    # about five characters rather than twenty while saying considerably more.
+    title = (
+        f"{name}, {where}: cost and graduate earnings"
+        if where
+        else (f"{name}: cost and graduate earnings")
+    )
     # The breadcrumb is serialized through _island_json (escapes '<' as <) so a school name
     # containing '<' or '</script>' cannot break out of the ld+json <script> element.
     breadcrumb = {
@@ -210,7 +256,7 @@ def canonical_page(
         parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
         parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs))
         parts.append(
-            '    <div class="tscroll"><table class="t np"><thead><tr><th>Family income</th>'
+            '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th>'
             '<th class="num">Net price per year</th></tr></thead><tbody>\n'
         )
         for lab, b in zip(NP_LABELS, brackets, strict=False):
@@ -222,6 +268,18 @@ def canonical_page(
                 f'<td class="num"><b>{money(net_price["avg"])}</b></td></tr>\n'
             )
         parts.append("    </tbody></table></div>\n")
+        # A negative net price is not an error and not zero: grant aid exceeded the published
+        # cost, so the school pays the student more than the student pays the school. Without
+        # saying so, "-$2,533" reads as a formatting bug and a reader discounts the whole table.
+        shown = [b for b in brackets if b is not None] + (
+            [net_price["avg"]] if net_price.get("avg") is not None else []
+        )
+        if any(v < 0 for v in shown):
+            parts.append(
+                '    <p class="src">A negative net price means grant aid exceeded the published '
+                "cost of attendance for that income band, so a typical student received more than "
+                "they paid. It is what the federal data reports, not an error.</p>\n"
+            )
         parts.append(
             '    <p class="tw-source">Net price is the yearly cost after grants and scholarships, by '
             "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
@@ -251,7 +309,9 @@ def canonical_page(
         f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
-    parts.append('        <div class="tw-table__scroll"><table class="tw-table">')
+    parts.append(
+        '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
+    )
     parts.append(
         f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(st_name)} '
         "high-school graduate.</caption>"

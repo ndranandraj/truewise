@@ -14,7 +14,6 @@ from __future__ import annotations
 import csv
 import html
 import io
-import json as _j
 import re
 
 import duckdb
@@ -23,13 +22,14 @@ from pipeline.build_college_pages import (
     BASE,
     BEACON,
     FOOTER,
-    STATE_NAMES,
     build_slugs,
     esc,
     head,
+    known_state,
     money,
     qualifying_schools,
     slugify,
+    state_label,
 )
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
@@ -75,29 +75,40 @@ def _csv_text(headers, rows) -> str:
     return buf.getvalue()
 
 
-def _download_block(slug, headers, rows) -> str:
-    """A client-side CSV download button. No server, no tracking, no new data."""
-    payload = _j.dumps(_csv_text(headers, rows))
-    fname = f"truewise-{slug}-scorecard-2026-06-10.csv"
+CSV_DIR = "/data/lists"
+
+
+def csv_filename(slug: str) -> str:
+    return f"truewise-{slug}-scorecard-2026-06-10.csv"
+
+
+def _download_block(slug) -> str:
+    """A link to a real file.
+
+    This used to inline the whole CSV as JSON and build a Blob on click. That worked, but no
+    request ever reached the server, so downloads were unmeasurable without adding an event
+    endpoint, and the file had no address anyone could cite or link to. Writing the CSV at build
+    time fixes both with LESS machinery: the download becomes an ordinary request that Cloudflare's
+    existing logs already record, no new collection of any kind, and every list gains a stable URL
+    for the /data/ page to point at.
+
+    It also takes the table's own bytes back out of the page, which were duplicated in full.
+    """
+    fname = csv_filename(slug)
     return (
-        f'    <script type="application/json" id="csv-data">{payload}</script>\n'
-        '    <p class="dl"><button type="button" id="dl-csv" class="dl-btn">Download this table (CSV)</button>'
+        f'    <p class="dl"><a class="dl-btn" href="{CSV_DIR}/{fname}" download>'
+        "Download this table (CSV)</a>"
         '<span class="dl-note"> Free to reuse with attribution (CC BY 4.0).</span></p>\n'
-        "    <script>\n"
-        "    (function () {\n"
-        '      var el = document.getElementById("csv-data"), btn = document.getElementById("dl-csv");\n'
-        "      if (!el || !btn) return;\n"
-        '      btn.addEventListener("click", function () {\n'
-        '        var blob = new Blob([JSON.parse(el.textContent)], { type: "text/csv;charset=utf-8" });\n'
-        '        var a = document.createElement("a");\n'
-        "        a.href = URL.createObjectURL(blob);\n"
-        f'        a.download = "{fname}";\n'
-        "        document.body.appendChild(a); a.click(); document.body.removeChild(a);\n"
-        "        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);\n"
-        "      });\n"
-        "    })();\n"
-        "    </script>\n"
     )
+
+
+def write_csv(slug, headers, rows) -> int:
+    """Write the list's CSV beside the site and return its byte length."""
+    out = SITE / CSV_DIR.lstrip("/") / csv_filename(slug)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    text = _csv_text(headers, rows)
+    out.write_text(text, encoding="utf-8")
+    return len(text.encode("utf-8"))
 
 
 def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
@@ -115,7 +126,9 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
     p.append(f'    <nav class="crumbs"><a href="/lists/">Lists</a> &rsaquo; {esc(h1)}</nav>\n')
     p.append(f"    <h1>{esc(h1)}</h1>\n")
     p.append(f'    <p class="idline">{lede}</p>\n')
-    p.append('    <div class="tscroll"><table class="t"><thead><tr><th class="num">#</th>')
+    p.append(
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Ranking"><table class="t"><thead><tr><th class="num">#</th>'
+    )
     num_attr = " class='num'"
     for i, hd in enumerate(headers):
         p.append("<th" + (num_attr if i else "") + ">" + esc(hd) + "</th>")
@@ -126,7 +139,8 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
             p.append("<td" + (num_attr if j else "") + ">" + str(c) + "</td>")
         p.append("</tr>\n")
     p.append("    </tbody></table></div>\n")
-    p.append(_download_block(slug, headers, rows))
+    write_csv(slug, headers, rows)
+    p.append(_download_block(slug))
     p.append(f'    <p class="src">{note}</p>\n')
     p.append(
         '    <p class="src">Source: U.S. Department of Education College Scorecard (release '
@@ -282,7 +296,10 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
             SELECT unitid, nm, n_dec, round(100.0*n_pass/n_dec) AS pass_pct, round(med_earn) AS med
             FROM sch WHERE st='{st}' AND n_dec >= {MIN_SCHOOL_PROGRAMS}
             ORDER BY pass_pct DESC, med DESC LIMIT {TOP_N}""").fetchall()
-        st_name = STATE_NAMES.get(st, st)
+        # Never rank a "state" the data did not report; the label would be a fiction.
+        if not known_state(st):
+            continue
+        st_name = state_label(st)
         cells = []
         for unitid, nm, n_dec, pct, med in rows:
             slug = slugs_by_unitid.get(unitid)
@@ -350,7 +367,7 @@ def render_index(entries) -> str:
     p.append('    <div class="statecols">\n')
     for slug, _, _ in st:
         code = slug.rsplit("-", 1)[-1].upper()
-        p.append(f'      <a href="/lists/{slug}/">{esc(STATE_NAMES.get(code, code))}</a>\n')
+        p.append(f'      <a href="/lists/{slug}/">{esc(state_label(code))}</a>\n')
     p.append("    </div>\n")
     p.append("  </main>\n")
     p.append(FOOTER)

@@ -42,6 +42,12 @@ FONT_DIR = ROOT / "assets" / "fonts"
 W, H = 1200, 630
 MARGIN = 80
 
+# Vertical budget for the caption block, so a card can never draw over its own footer.
+FOOTER_RULE_Y = H - 78  # where the attribution rule is drawn
+FOOTER_CLEARANCE = 18  # breathing room between the last caption line and that rule
+SUB_ADVANCE = 40  # baseline-to-baseline for the 30px caption
+SUB_INK = 38  # visual height of one caption line (30px font plus descender)
+
 _BOLD = FONT_DIR / "LiberationSans-Bold.ttf"
 _REG = FONT_DIR / "LiberationSans-Regular.ttf"
 
@@ -121,18 +127,27 @@ def card(
         y += 92
 
     # Big statistic and its caption.
+    #
+    # The caption used to be given a flat two lines, which does not fit when the headline also
+    # takes two. A two-line headline ends at 398, the statistic pushes the caption to 500, and two
+    # 30px lines then run to about 570, crossing the footer rule at 552. Roughly 1,817 college
+    # cards hit that combination. So the caption is allowed only as many lines as actually fit
+    # above the rule: the type sizes stay put and a long caption ellipsizes instead of colliding.
     y = max(y + 12, 402)
     if big:
         bf = _font(True, 76)
         d.text((MARGIN, y), big, font=bf, fill=big_color)
         y += 90
     if sub:
-        for line in _wrap(d, sub, _font(False, 30), W - 2 * MARGIN, 2):
-            d.text((MARGIN, y), line, font=_font(False, 30), fill=INK_SOFT)
-            y += 40
+        sf = _font(False, 30)
+        room = (FOOTER_RULE_Y - FOOTER_CLEARANCE) - y
+        max_lines = max(1, min(2, int((room + SUB_ADVANCE - SUB_INK) // SUB_ADVANCE)))
+        for line in _wrap(d, sub, sf, W - 2 * MARGIN, max_lines):
+            d.text((MARGIN, y), line, font=sf, fill=INK_SOFT)
+            y += SUB_ADVANCE
 
     # Footer rule + attribution.
-    d.line([MARGIN, H - 78, W - MARGIN, H - 78], fill=LINE, width=2)
+    d.line([MARGIN, FOOTER_RULE_Y, W - MARGIN, FOOTER_RULE_Y], fill=LINE, width=2)
     ff = _font(True, 26)
     d.text((MARGIN, H - 58), "truewise.dev", font=ff, fill=BRAND_DEEP)
     d.text(
@@ -150,9 +165,13 @@ def card(
 
 if __name__ == "__main__":
     # Rendered from the page builders; running standalone makes a couple of samples for review.
+    # The review sample goes to staging/, which is gitignored and NOT deployed. It used to be
+    # written into site/og/, so a development sample was publicly fetchable on every deploy.
+    SAMPLE_DIR = ROOT / "staging" / "og-samples"
     OG_DIR.mkdir(parents=True, exist_ok=True)
+    SAMPLE_DIR.mkdir(parents=True, exist_ok=True)
     card(
-        OG_DIR / "_sample_major.png",
+        SAMPLE_DIR / "sample_major.png",
         "College major · median graduate earnings",
         "Nursing",
         big="$85,357",

@@ -41,11 +41,31 @@ def test_cells_are_plain_text_entities_decoded_commas_quoted():
     assert '"Smith, Jones & Co. College"' in text
 
 
-def test_download_block_names_the_file_and_states_the_licence():
-    block = _download_block("highest-paying-majors", ["Major"], [("Computer Science",)])
-    assert 'a.download = "truewise-highest-paying-majors-scorecard-2026-06-10.csv"' in block
+def test_the_download_is_a_real_file_not_a_blob(tmp_path, monkeypatch):
+    """The CSV used to be inlined as JSON and assembled into a Blob on click.
+
+    That worked, but no request ever reached the server, so a download could not be counted
+    without adding an event endpoint, and the file had no address anyone could cite. Writing it at
+    build time and linking to it makes the download an ordinary request that the existing logs
+    already record, with no new collection at all, and gives every list a stable URL.
+    """
+    block = _download_block("highest-paying-majors")
+    fname = "truewise-highest-paying-majors-scorecard-2026-06-10.csv"
+    assert f'href="/data/lists/{fname}" download' in block, "the download must be a real URL"
     assert "CC BY 4.0" in block
-    assert 'id="csv-data"' in block
+    # And none of the old machinery, which would mean the bytes are still duplicated in the page.
+    for gone in ('id="csv-data"', "createObjectURL", "new Blob("):
+        assert gone not in block, f"{gone} should be gone with the Blob download"
+
+    # The file written is byte-identical to what the table renders, so the two cannot disagree.
+    import pipeline.build_lists as bl
+
+    monkeypatch.setattr(bl, "SITE", tmp_path)
+    headers = ["Major", "Median earnings"]
+    rows = [('<a href="/majors/x/">Computer Science</a>', "$96,748")]
+    bl.write_csv("highest-paying-majors", headers, rows)
+    written = (tmp_path / "data" / "lists" / fname).read_text()
+    assert written == _csv_text(headers, rows)
 
 
 def test_strip_tags_handles_none_and_nested_markup():

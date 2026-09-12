@@ -164,6 +164,117 @@ def build_fields(con) -> list[dict]:
     return fields
 
 
+STATIC_ROWS = 25  # one page of the reveal, matching the PAGE constant in the page's own script
+CORE_START = "<!-- CAREERS_CORE_START -->"
+CORE_END = "<!-- CAREERS_CORE_END -->"
+PAGE_HTML = ROOT / "site" / "careers" / "index.html"
+
+
+def _esc(s) -> str:
+    return (
+        str(s or "")
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _money(n) -> str:
+    if n is None:
+        return "n/a"
+    v = int(round(n))
+    return f"-${abs(v):,}" if v < 0 else f"${v:,}"
+
+
+def static_core(fields: list[dict]) -> str:
+    """The first page of rows, server-rendered, so Careers carries data without JavaScript.
+
+    It was the one data page that degraded to nothing: the table was built entirely in the browser
+    from a 785 KB JSON, so with scripting off a reader got a paragraph pointing at the methodology
+    page. The profile pages have shipped a static core since Stage 4.1 and this is the same contract,
+    at the same page size, 25 rows.
+
+    Two deliberate choices.
+
+    The order is the page's own default, earnings descending, so the static rows ARE the opening view
+    rather than a different set that the script then replaces. A visitor with JavaScript sees the same
+    25 rows they would have seen anyway, which is what makes this progressive enhancement rather than
+    two implementations of one table.
+
+    The links go to `/majors/<slug>/`, not to the page's own `?field=` route. That route is itself
+    rendered in the browser, so linking a no-JavaScript reader into it would hand them a second empty
+    page. Every one of the 292 CIPs here has a real major page, checked rather than assumed.
+    """
+    from pipeline.build_majors_pages import major_slugs
+
+    slugs = major_slugs(fields)
+    rows = sorted(fields, key=lambda f: (-(f["med"] or -1), f["name"], f["cred"]))[:STATIC_ROWS]
+    out = []
+    for f in rows:
+        slug = slugs.get(f["cip"])
+        name = _esc(f["name"])
+        link = f'<a href="/majors/{slug}/">{name}</a>' if slug else name
+        pass_txt = "n/a" if f["pass_pct"] is None else f"{f['pass_pct']}%"
+        band = (
+            f"{_money(f['p25'])} to {_money(f['p75'])}"
+            if f["p25"] is not None and f["p75"] is not None
+            else "insufficient data"
+        )
+        out.append(
+            f'          <tr data-cip="{_esc(f["cip"])}" data-cred="{_esc(f["cred"])}">'
+            f'<td class="mname">{link}<div class="fam">{_esc(f["family"])}</div></td>'
+            f"<td>{_esc(f['cred_short'])}</td>"
+            f'<td class="num">{_money(f["med"])}</td>'
+            f"<td>{band}</td>"
+            f'<td class="num">{pass_txt}</td>'
+            f'<td class="num">{(f["schools"] or 0):,}</td></tr>'
+        )
+    body = "\n".join(out)
+    return (
+        f"{CORE_START}\n"
+        '        <div class="table-wrap" tabindex="0" role="region" aria-label="Majors and earnings">\n'
+        '        <table class="cr-table">\n'
+        "          <caption>The highest-earning major and degree combinations. "
+        f"Showing {STATIC_ROWS} of {len(fields):,}; the full list needs JavaScript, and every major "
+        "here has its own page.</caption>\n"
+        '          <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th>'
+        '<th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th>'
+        "</tr></thead>\n"
+        f"          <tbody>\n{body}\n          </tbody>\n"
+        "        </table></div>\n"
+        f"        {CORE_END}"
+    )
+
+
+def inject_core(fields: list[dict]) -> None:
+    """Write the static core between the markers in the shipped page.
+
+    Refuses a set too small to fill the core. This is not defensiveness for its own sake: putting the
+    injection in main() meant `pytest` began rewriting this tracked file, because tests/test_careers
+    calls main() against a synthetic parquet and redirects OUT_DIR but not this page. One run left the
+    shipped page reading "Showing 25 of 1" with a single row. A generator that silently replaces a
+    6,127-row release artefact with a fixture's output is worse than one that stops, so it stops. The
+    test now redirects PAGE_HTML as well; this guard is what makes the next such caller fail loudly.
+    """
+    if len(fields) < STATIC_ROWS:
+        raise SystemExit(
+            f"refusing to write the careers core from {len(fields)} fields: it cannot fill "
+            f"{STATIC_ROWS} rows, and overwriting the shipped page with a stub would be worse than "
+            "failing. Point PAGE_HTML at a scratch file if this is a test."
+        )
+    html = PAGE_HTML.read_text()
+    if CORE_START not in html or CORE_END not in html:
+        raise SystemExit(
+            f"{PAGE_HTML} is missing the {CORE_START} / {CORE_END} markers, so the "
+            "no-JavaScript core cannot be written. Restore them rather than skipping: without the "
+            "core this page carries no data at all with scripting off."
+        )
+    pre, rest = html.split(CORE_START, 1)
+    _, post = rest.split(CORE_END, 1)
+    PAGE_HTML.write_text(pre + static_core(fields) + post)
+
+
 def main() -> None:
     con = duckdb.connect()
     fields = build_fields(con)
@@ -171,9 +282,11 @@ def main() -> None:
     (OUT_DIR / "fields.json").write_text(
         json.dumps({"generated": True, "fields": fields}, separators=(",", ":"))
     )
+    inject_core(fields)
     n_demand = sum(1 for f in fields if "demand" in f)
     print(f"careers fields: {len(fields):,}  |  with demand: {n_demand:,}")
     print(f"wrote -> {OUT_DIR / 'fields.json'}")
+    print(f"wrote -> {PAGE_HTML} ({STATIC_ROWS} static rows)")
 
 
 if __name__ == "__main__":

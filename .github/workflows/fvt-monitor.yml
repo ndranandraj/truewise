@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write           # to commit the snapshot + summary back to the repo
+  issues: write             # to raise an issue when a monthly refresh fails
 
 concurrency:
   group: fvt-monitor
@@ -64,3 +65,35 @@ jobs:
             git commit -m "FVT Monitor: refresh $(date -u +%Y-%m-%d)"
             git push
           fi
+
+      # A monthly job that fails quietly is a monitor that has stopped monitoring. The 2026-09-08
+      # run failed on a 403 and nobody was told; the last archived snapshot is 2026-07-14, so the
+      # 2026-08-08 run very likely failed the same way and went equally unnoticed. The whole point
+      # of this job is to accumulate a history ED does not keep, and for two months it accumulated
+      # nothing. A failure now opens an issue, so silence means success rather than absence.
+      - name: Report a failed refresh
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const today = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `FVT Monitor: refresh failed ${today}`,
+              labels: ['monitor'],
+              body: [
+                `The monthly Scorecard refresh failed. Run: ${run}`,
+                '',
+                'Most likely causes, in order:',
+                '- **403 on the data home.** A client block. The downloader identifies itself as',
+                '  `TruewiseDataRefresh/1.0`; check whether the host is refusing that agent or this',
+                '  address. Do not work around it by impersonating a browser.',
+                '- **Download link not found.** ED changed the page layout; update `BULK_FILES`.',
+                '- **Data-quality gate failed.** A real problem with the new release. Read the gate',
+                '  output before republishing anything.',
+                '',
+                'No snapshot was archived, so the Monitor has a gap for this month.',
+              ].join('\n'),
+            });

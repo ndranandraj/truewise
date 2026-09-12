@@ -88,6 +88,23 @@
   const SUBSTR_MIN = 4;  // bare substring matching needs at least this many characters
 
   /* Does `token` match any word in `words`? Returns the match kind, or null. */
+  /* The distinguishing part of an institution's name: what is left after the words nearly every
+     institution shares. Order is preserved so "north carolina" and "carolina north" differ, and
+     the result is only used for equality, never for ranking on its own. */
+  const GENERIC = new Set([
+    "the", "of", "at", "a", "an", "and",
+    "university", "universities", "college", "colleges", "institute", "institution",
+    "school", "main", "campus", "system",
+  ]);
+  function core(name) {
+    return String(name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(" ")
+      .filter((w) => w && !GENERIC.has(w))
+      .join(" ");
+  }
+
   function tokenHit(token, words, haystack) {
     for (const w of words) if (w.startsWith(token)) return "prefix";
     if (token.length >= SUBSTR_MIN && haystack.includes(token)) return "substring";
@@ -143,6 +160,13 @@
         let score = 0;
         let why = aliased ? "alias" : "name";
         if (name === expanded) score = 1000;
+        // Same institution once the generic words are removed. "iowa university" and "University
+        // of Iowa" both reduce to "iowa", while "Iowa State University" reduces to "iowa state",
+        // so the flagship wins on being the tighter match rather than losing on being smaller.
+        // Without this the word-boundary tier scored both identically and enrolment decided, which
+        // returned Iowa State for "iowa university", UAB for "university of alabama", Utah Valley
+        // for "utah university" and University of Phoenix for "arizona university".
+        else if (core(name) && core(name) === core(expanded)) score = 700;
         // "Starts with" only earns a bonus for multi-word queries, where it signals a real prefix
         // phrase. For a single word it would rank "Berkeley City College" above "University of
         // California-Berkeley" purely for word order, which is not what people mean by "berkeley";

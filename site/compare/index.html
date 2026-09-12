@@ -11,14 +11,15 @@
   <meta property="og:site_name" content="Truewise US education data" />
   <meta property="og:url" content="https://truewise.dev/compare/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .c-head { padding: 40px 0 4px; }
     .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -38,11 +39,41 @@
     .income-row label { font-weight: 600; }
     .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
-    table.cmp { border-collapse: collapse; min-width: 560px; width: 100%; }
+    /* The table is the wide presentation only. Below the breakpoint set further down it is
+       replaced outright by .cmp-stack, so it needs no sticky column, no scroll cue and no
+       narrow-width floor: there is no horizontal scrolling left to explain. */
+    table.cmp { border-collapse: collapse; width: 100%; }
+    table.cmp thead th:not(:first-child), table.cmp tbody td { min-width: 160px; }
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: .95rem; }
     table.cmp thead th { border-bottom: 2px solid var(--line); }
     table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
     table.cmp td { font-variant-numeric: tabular-nums; }
+    /* Metric-major cards, the phone presentation. One card per measure, each school listed under
+       it, so the two figures being compared sit one line apart and nothing scrolls sideways. */
+    .cmp-stack { display: none; margin: 14px 0 8px; }
+    .cmp-picked { list-style: none; margin: 0 0 var(--s6); padding: 0; display: grid; gap: var(--s3); }
+    .cmp-picked li { display: grid; gap: 2px; padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
+    .cmp-metric { margin: 0 0 var(--s5); }
+    .cmp-metric h3 { font-size: var(--t-fine); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 var(--s2); }
+    .cmp-metric dl { margin: 0; display: grid; gap: var(--s2); }
+    /* Both columns are fractions, never `auto`. With an auto value column the longest helper text
+       on the card sized it to its own content: "97% of programs have earnings data" took 233px,
+       leaving the school name 35px at 320px and 90px at 390px, which wrapped names into near
+       vertical fragments. Fractions cap each side regardless of what the value happens to say. */
+    .cmp-metric dl > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: var(--s3); align-items: baseline; padding-bottom: var(--s2); border-bottom: 1px solid var(--line-soft); }
+    .cmp-metric dt { color: var(--ink-soft); font-size: var(--t-fine); min-width: 0; overflow-wrap: anywhere; }
+    .cmp-metric dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+    .cmp-metric dd .schmeta { display: block; }
+    /* 930px is the width at which the table can hold its own maximum: a 210px metric column plus
+       four schools at their 160px minimum, plus the 40px page gutter each side. Below that the
+       table would scroll, and at 768px with four schools it scrolled the metric label almost out
+       of view, leaving 33px of a 142px label at the right edge. The swap is set by what the table
+       needs at capacity rather than by a device size, so the same page never scrolls or not
+       depending on how many schools someone happened to add. */
+    @media (max-width: 929px) {
+      .table-wrap { display: none; }
+      .cmp-stack { display: block; }
+    }
     .schname { font-weight: 700; }
     .schname a { color: var(--brand); text-decoration: none; }
     .schmeta { color: var(--ink-soft); font-size: .85rem; font-weight: 400; margin-top: 2px; }
@@ -52,7 +83,7 @@
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
     .good { color: var(--good); font-weight: 600; }
     .bad { color: var(--bad); font-weight: 600; }
-    .gem { display: inline-block; background: #fff7e6; color: #8a6d1a; border: 1px solid #f0d999; border-radius: 999px; padding: 1px 8px; font-size: .76rem; font-weight: 700; }
+    .gem { display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 1px 8px; font-size: .76rem; font-weight: 700; }
     .hint { color: var(--ink-soft); }
     .caveats { margin: 24px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 780px; color: var(--ink-soft); font-size: .9rem; line-height: 1.55; }
     .caveats a { color: var(--brand); }
@@ -125,12 +156,15 @@
   <script src="/assets/college-search.js"></script>
   <script>
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const money = n => n == null ? "not reported" : "$" + Math.round(n).toLocaleString();
+  // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
+  // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
+  // published cost, so the figure is real and stays, correctly written.
+  const money = n => n == null ? "not reported" : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
   const pct = f => f == null ? "n/a" : Math.round(f * 100) + "%";
   const MAX = 4;
 
   let SCHOOLS = null;
-  const picked = [];   // {unitid, s}
+  let picked = [];     // {unitid, s}; reassigned wholesale when the URL changes
 
   // Slug must match the pre-rendered /college/<slug>/ pages (name; collision adds state, then unitid).
   function slugify(name) {
@@ -181,6 +215,19 @@
       b.addEventListener("click", () => add(b.dataset.u)));
   }
 
+  /* The URL is the comparison. Adding a school PUSHES, so each step is a real navigation: the back
+     button undoes one addition, the state is shareable at every point, and a two-id URL is by
+     itself the record that someone completed a comparison. replaceState left all of that invisible,
+     because it does not register as a navigation at all.
+     Removing REPLACES, since a removal is a correction to the current state rather than a new one,
+     and pushing it would make the back button silently re-add a school someone just dismissed. */
+  function syncUrl(push) {
+    const url = picked.length
+      ? "?schools=" + picked.map(p => p.unitid).join(",")
+      : location.pathname;
+    history[push ? "pushState" : "replaceState"](null, "", url);
+  }
+
   async function add(unitid) {
     if (picked.length >= MAX || picked.some(p => p.unitid === unitid)) return;
     await load();
@@ -188,7 +235,19 @@
     if (!s) return;
     picked.push({ unitid, s });
     q.value = ""; results.innerHTML = ""; render();
-    history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+    syncUrl(true);
+  }
+
+  // Back and forward have to rebuild the comparison, or the URL and the page disagree: without
+  // this, going back would change the address bar and leave the previous render on screen.
+  async function applyFromUrl() {
+    const ids = (new URLSearchParams(location.search).get("schools") || "")
+      .split(",").map(s => s.trim()).filter(Boolean).slice(0, MAX);
+    if (ids.length) await load();
+    picked = ids
+      .map(unitid => ({ unitid, s: SCHOOLS.find(x => x.unitid === unitid) }))
+      .filter(p => p.s);
+    render();
   }
   function remove(unitid) {
     const i = picked.findIndex(p => p.unitid === unitid);
@@ -199,7 +258,7 @@
       // Return focus predictably: next remove button, else back to the search box.
       const next = cmp.querySelector("[data-rm]");
       (next || q).focus();
-      history.replaceState(null, "", picked.length ? "?schools=" + picked.map(p => p.unitid).join(",") : location.pathname);
+      syncUrl(false);
     }
   }
 
@@ -226,57 +285,91 @@
         <button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></th>`;
     }).join("")}</tr>`;
 
-    const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
-    const rows = [];
+    // Collect the comparison as (label, cells) pairs, then render it twice from the one source:
+    // a table for the pointer-and-width case, and metric-major cards for phones. Two renderings of
+    // one array, never two copies of the logic.
+    const specs = [];
+    const row = (label, cells) => { specs.push([label, cells]); return ""; };
 
-    rows.push(row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported")));
+    row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported"));
 
-    rows.push(row(bracket < 0 ? "Net price, all families" : "Net price at this income",
+    row(bracket < 0 ? "Net price, all families" : "Net price at this income",
       cols.map(s => {
         if (!s.net_price) return "not reported";
         const v = bracket < 0 ? s.net_price.avg : (s.net_price.brackets || [])[bracket];
         return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
-      })));
+      }));
 
     // Coverage first: a school with 89 of 254 programs measured should not read as equivalent to
     // one with broad coverage, however good its pass rate looks. Computed per school, never copied.
-    rows.push(row("Programs measured", cols.map(s => {
+    row("Programs measured", cols.map(s => {
       const decided = s.n_pass + s.n_fail;
       const total = decided + (s.n_insufficient || 0);
       if (!total) return "not reported";
       const share = Math.round(100 * decided / total);
       const cls = share < 50 ? "bad" : "";
       return `<span class="${cls}">${decided} of ${total}</span> <span class='schmeta'>${share}% of programs have earnings data</span>`;
-    })));
+    }));
 
-    rows.push(row("Programs clearing the bar", cols.map(s => {
+    row("Programs clearing the bar", cols.map(s => {
       const r = passRate(s), decided = s.n_pass + s.n_fail;
       if (r == null) return "not enough data";
       const cls = r >= 0.9 ? "good" : (r < 0.6 ? "bad" : "");
       return `<span class="${cls}">${Math.round(r * 100)}%</span> <span class="schmeta">of ${decided} measured</span>`;
-    })));
+    }));
 
-    rows.push(row("Programs falling short", cols.map(s =>
-      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data")));
+    row("Programs falling short", cols.map(s =>
+      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data"));
 
-    rows.push(row("Typical HS-grad benchmark", cols.map(s => money(s.threshold))));
+    row("Typical HS-grad benchmark", cols.map(s => money(s.threshold)));
 
-    rows.push(row("Students on Pell grants", cols.map(s => pct(s.pell))));
-    rows.push(row("Complete their program", cols.map(s => pct(s.completion))));
-    rows.push(row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no")));
-    rows.push(row("Full profile", cols.map(s =>
-      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`)));
+    row("Students on Pell grants", cols.map(s => pct(s.pell)));
+    row("Complete their program", cols.map(s => pct(s.completion)));
+    row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no"));
+    row("Full profile", cols.map(s =>
+      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`));
 
-    cmp.innerHTML = `<div class="table-wrap"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    const body = specs.map(([label, cells]) =>
+      `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
+
+    /* Phone presentation: one card per METRIC, listing each school beneath it.
+     *
+     * The sticky-label table was the interim repair and it did not hold. At 320px one school still
+     * overflowed the 280px content box, and with two or more schools a fragment of the outgoing
+     * column sat between the sticky label and the next full column, so a phone user read partial
+     * words and partial numbers. Grouping by metric instead of by school removes the horizontal
+     * axis entirely, and keeps the schools adjacent to each other, which is the whole point of
+     * Compare: stacking one school per card would have meant scrolling between the two figures
+     * being compared. */
+    const stack =
+      `<div class="cmp-stack">` +
+      `<ol class="cmp-picked">` + picked.map(p => {
+        const s = p.s, slug = SLUGS[p.unitid];
+        return `<li><span class="schname">${slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name)}</span>` +
+          `<span class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}</span>` +
+          `<button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></li>`;
+      }).join("") + `</ol>` +
+      specs.map(([label, cells]) =>
+        `<section class="cmp-metric"><h3>${label}</h3><dl>` +
+        cells.map((c, i) =>
+          `<div><dt>${esc(picked[i].s.name)}</dt><dd>${c}</dd></div>`).join("") +
+        `</dl></section>`).join("") +
+      `</div>`;
+
+    cmp.innerHTML =
+      `<div class="table-wrap" tabindex="0" role="region" aria-label="College comparison">` +
+      `<table class="cmp"><thead>${head}</thead><tbody>${body}</tbody></table></div>` + stack;
     cmp.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
   }
 
   // Shareable URLs: /compare/?schools=110662,223232
   (async function init() {
-    const preset = new URLSearchParams(location.search).get("schools");
-    if (preset) { for (const u of preset.split(",").slice(0, MAX)) await add(u.trim()); }
-    else render();
+    // One entry point for "the URL says what to show", shared with the back button below. The old
+    // init replayed add() per id, which pushed a history entry for each school in a shared link.
+    await applyFromUrl();
+    history.replaceState(null, "", location.search || location.pathname);
   })();
+  window.addEventListener("popstate", applyFromUrl);
 
   // No blank page if the data file fails to load.
   window.addEventListener("unhandledrejection", function () {

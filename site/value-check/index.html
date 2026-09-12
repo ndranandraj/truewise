@@ -11,14 +11,15 @@
   <meta property="og:url" content="https://truewise.dev/value-check/" />
   <link rel="canonical" href="https://truewise.dev/value-check/" />
   <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="https://truewise.dev/og.png" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" /></noscript>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .vc-search { padding: 48px 0 8px; }
     .vc-search h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -219,7 +220,10 @@
   let NATL = null;                    // national field medians (Careers), cip|credential -> field
   const stateCache = {};              // state -> {unitid: [programs]}
 
-  const money = n => n == null ? "n/a" : "$" + Number(n).toLocaleString();
+  // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
+  // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
+  // published cost, so the figure is real and stays, correctly written.
+  const money = n => n == null ? "n/a" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
                         : h === "4yr_after_completion" ? "4 years after completing" : "after completing";
@@ -296,11 +300,12 @@
         <p class="lede">Search a school for its Truewise profile: whether each program's graduates
           typically out-earn a high-school graduate (Value Check), what families pay by income, how
           fast debt pays back, and who the school serves, from the Department of Education's own data.</p>
+        <label class="field-label" for="q">${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name" : "Loading colleges"}</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" role="combobox" aria-expanded="false"
             aria-controls="results" aria-autocomplete="list"
-            placeholder="${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…" : "Loading colleges…"}"
+            placeholder="e.g. Baylor"
             value="${esc(preset)}" />
         </div>
         <p class="hint" id="hint">Try &ldquo;Baylor&rdquo;, &ldquo;Long Beach&rdquo;, or your local community college.</p>
@@ -553,7 +558,7 @@
       <td class="num">${money(x.nf.med)}</td>
       <td class="num"><span class="${x.diff >= 0 ? "pos" : "neg"}">${x.diff >= 0 ? "+" : "−"}${money(Math.abs(x.diff))}</span></td></tr>`;
     const tbl = (title, rows) => rows.length ? `<h3 class="cr-sub">${title}</h3>
-      <div class="table-wrap"><table class="prog-table"><thead><tr><th>Major</th>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Programs and earnings"><table class="prog-table"><thead><tr><th>Major</th>
         <th class="num">This school</th><th class="num">Typical nationally</th><th class="num">Difference</th>
       </tr></thead><tbody>${rows.map(row).join("")}</tbody></table></div>` : "";
     return `
@@ -596,7 +601,7 @@
   }
 
   function programTable(rows) {
-    return `<div class="table-wrap"><table class="prog-table">
+    return `<div class="table-wrap" tabindex="0" role="region" aria-label="Programs and earnings"><table class="prog-table">
       <thead><tr>
         <th>Program</th><th>Degree</th><th class="num">Earnings</th>
         <th>Premium vs HS grad</th><th class="num">Debt</th><th class="num">Debt/earn</th>

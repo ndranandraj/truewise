@@ -51,7 +51,10 @@ def build_model(con) -> tuple[dict, dict, dict]:
                value_flag
         FROM read_parquet('{vc}')
         WHERE regexp_matches(unitid, '^[0-9]+$')
-        ORDER BY inst_name, cip_desc, credential_level
+        -- unitid last so tied rows have ONE order. Without it DuckDB may return same-named
+        -- institutions in a different order per process, which is what let slug assignment drift.
+        -- The registry is the real guarantee; this removes the source of the nondeterminism.
+        ORDER BY inst_name, cip_desc, credential_level, unitid
         """
     ).fetchall()
 
