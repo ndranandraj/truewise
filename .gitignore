@@ -84,8 +84,14 @@ site/updates/
 # against 6,548 live, and committing it adds 6,500 lines of noise to unrelated diffs.
 site/sitemap.xml
 site/sitemap-*.xml
-# Per-page social share cards are rendered at deploy by the page builders (homepage og.png IS tracked):
+# Social share cards are rendered at deploy by the page builders, per-page and site-root alike:
 site/og/
+# ...and the site-root card, which pipeline.og_images rewrites on every deploy exactly like the
+# per-page ones above. Tracking it meant the committed copy differed from any local render by tens
+# of thousands of pixels purely from a different FreeType, while production shipped whatever CI
+# rendered. Same defect as the tracked sitemap: a generated artefact under version control tells you
+# about the machine that last built it, not about the site.
+site/og.png
 # ...but the compact parquet build-source IS tracked:
 !published/*.parquet
 /docs/GO_DEPLOY.md

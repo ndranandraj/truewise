@@ -1,0 +1,49 @@
+name: Reachability probe
+
+# One question, asked from a GitHub runner, that decides how the FVT Monitor has to be rebuilt.
+#
+# The monthly refresh fails on 403 from https://collegescorecard.ed.gov/data/. Two hypotheses were
+# live. The first, that ED refused the default `python-requests` agent, is DISPROVEN: an honest agent
+# naming the project, the site and the repository is refused identically. The second, that the block
+# is on GitHub's address range rather than on the request's identity, is supported but not proven:
+# the same code with the same agent downloads fine from a home network.
+#
+# What nobody has tested is whether the block covers everything or only the HTML page. The page lives
+# at collegescorecard.ed.gov; the zips live at ed-public-download.scorecard.network, a different host.
+# Every failed run died on the page and never reached a zip, so the zip host's behaviour from Actions
+# is simply unknown.
+#
+# That distinction decides the design:
+#
+#   page blocked, zips reachable  -> the Monitor survives. Skip the page scrape when the release is
+#                                    unchanged, fetch the zips directly, and keep find_bulk_urls for
+#                                    the runs where the page IS reachable so a layout change is still
+#                                    detected rather than assumed away.
+#   both blocked                  -> monthly refresh from Actions is not available at all. The job
+#                                    becomes verify-and-diff over a snapshot refreshed by hand, and
+#                                    the schedule stops pretending otherwise.
+#
+# This probe does not download anything and does not impersonate anything. It sends the project's own
+# user agent and reports the status code each host returns. Run it from the Actions tab.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Ask each host what it returns
+        run: python -m pipeline.reachability_probe
