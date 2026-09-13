@@ -37,9 +37,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -62,7 +62,7 @@ jobs:
       # problem into a pile, and the pile is then ignored as a matter of routine.
       - name: Open or update the single monitor issue
         if: steps.check.outputs.status != '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require("fs");
@@ -93,7 +93,7 @@ jobs:
       # than accumulating a record of every month something was once wrong.
       - name: Close the monitor issue once the check passes
         if: steps.check.outputs.status == '0'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const title = process.env.ISSUE_TITLE;
