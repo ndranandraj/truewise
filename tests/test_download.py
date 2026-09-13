@@ -10,6 +10,9 @@ which is what turned a one-line traceback into a two-month silence nobody was to
 
 from __future__ import annotations
 
+import pathlib
+import tempfile
+
 import pytest
 import requests
 
@@ -82,3 +85,69 @@ def test_a_layout_change_is_reported_as_a_layout_change():
     with pytest.raises(SystemExit) as err:
         dl.find_bulk_urls("<html>no downloads here</html>")
     assert "download link" in str(err.value) and "layout may have changed" in str(err.value)
+
+
+def test_macos_metadata_twins_are_not_extracted_as_data():
+    """ED's institution zip is built on a Mac, so it carries AppleDouble resource forks: a 226-byte
+    `._Most-Recent-Cohorts-Institution.csv` beside the 100 MB real one. Both end in `.csv`.
+
+    Both were extracted, and both then matched `build_spine`'s glob for the institution file. Nothing
+    broke, which is the uncomfortable part: `_find_csv` takes `hits[-1]` from a sorted list and `.`
+    sorts before `M`, so the real file won by an accident of ASCII ordering rather than by a decision.
+    One `[0]` instead of `[-1]` and the pipeline parses a resource fork as the institution table.
+    """
+    import zipfile
+
+    from pipeline.download import extract_csvs
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+        zip_path = tmp / "src.zip"
+        with zipfile.ZipFile(zip_path, "w") as zf:
+            zf.writestr("Most-Recent-Cohorts-Institution.csv", "UNITID,INSTNM\n100654,Real\n")
+            zf.writestr("._Most-Recent-Cohorts-Institution.csv", b"\x00\x05\x16\x07resource fork")
+            zf.writestr("__MACOSX/._other.csv", b"\x00\x05\x16\x07")
+        out = extract_csvs(zip_path, tmp / "raw")
+
+        names = sorted(p.name for p in out)
+        assert names == ["Most-Recent-Cohorts-Institution.csv"], (
+            f"only the real CSV should be extracted, got {names}"
+        )
+        # And the trap must be gone from disk, not merely absent from the return value: build_spine
+        # globs the directory, so a file written and not reported is exactly as dangerous.
+        on_disk = sorted(p.name for p in (tmp / "raw").glob("*.csv"))
+        assert on_disk == ["Most-Recent-Cohorts-Institution.csv"], (
+            f"a metadata twin was left in the raw directory for build_spine to glob: {on_disk}"
+        )
+
+
+def test_the_provenance_timestamp_is_actually_utc():
+    """SOURCE.txt appends "Z" to the timestamp, which asserts UTC. It was built from `utcnow()`,
+    which returns a naive datetime that merely happens to hold UTC and is deprecated for that reason.
+    The string was making a claim the value did not carry."""
+    src = (pathlib.Path(__file__).resolve().parent.parent / "pipeline" / "download.py").read_text()
+    # Strip comments first. This assertion failed on its own explanation the moment it was written,
+    # because the comment beside the fix names the thing the fix removed. That is the fourth time a
+    # check on this project has matched the prose describing it rather than the code, so it is worth
+    # treating as a habit rather than an accident: a test that reads source must read the source.
+    code = "\n".join(ln.split("#", 1)[0] for ln in src.splitlines())
+    assert "utcnow()" not in code, "utcnow() is naive and deprecated; the Z suffix would be a claim"
+    assert "dt.timezone.utc" in code, "the timestamp must come from a timezone-aware now()"
+    # And the offset must survive to the string. The first correction built an aware value and then
+    # stripped tzinfo before formatting, which produced the right text from code that had discarded
+    # the guarantee one step early: correct output, unchanged reasoning.
+    assert "replace(tzinfo=None)" not in code, (
+        "stripping the offset before formatting throws away the awareness the fix was for"
+    )
+
+    # Behaviour, not only shape: the value written must parse back as UTC.
+    import datetime as _dt
+    import re as _re
+
+    line = _re.search(r"downloaded_utc: \{now\}", src)
+    assert line, "the provenance line should interpolate the aware timestamp directly"
+    sample = _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    parsed = _dt.datetime.fromisoformat(sample.replace("Z", "+00:00"))
+    assert parsed.tzinfo is not None and parsed.utcoffset() == _dt.timedelta(0), (
+        f"the serialized timestamp must round-trip as UTC, got {sample}"
+    )

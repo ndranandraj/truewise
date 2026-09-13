@@ -99,11 +99,28 @@ def download(url: str, dest: Path, chunk: int = 1 << 20) -> None:
                 fh.write(block)
 
 
+def _is_real_csv(member: str) -> bool:
+    """True for a data file, false for the macOS metadata twins zipped alongside it.
+
+    ED's institution zip was built on a Mac, so it carries AppleDouble resource forks: a 226-byte
+    `._Most-Recent-Cohorts-Institution.csv` beside the 100 MB real one. Both end in `.csv`, so both
+    were extracted, and both then matched `build_spine`'s glob for the institution file.
+
+    Nothing broke, and that is the uncomfortable part. `_find_csv` returns `hits[-1]` from a sorted
+    list, and `.` sorts before `M`, so the real file won by an accident of ASCII ordering rather than
+    by anything anyone decided. One `[0]` instead of `[-1]`, or a source file whose name sorts
+    differently, and the pipeline would have parsed 226 bytes of resource fork as the institution
+    table. Filtering here removes the trap rather than relying on the ordering that hides it.
+    """
+    name = Path(member).name
+    return name.lower().endswith(".csv") and not name.startswith("._") and "__MACOSX" not in member
+
+
 def extract_csvs(zip_path: Path, into: Path) -> list[Path]:
     into.mkdir(parents=True, exist_ok=True)
     out: list[Path] = []
     with zipfile.ZipFile(zip_path) as zf:
-        for member in (m for m in zf.namelist() if m.lower().endswith(".csv")):
+        for member in (m for m in zf.namelist() if _is_real_csv(m)):
             target = into / Path(member).name
             with zf.open(member) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
@@ -120,7 +137,16 @@ def main() -> None:
     resp = fetch(SCORECARD_DATA_HOME)
     urls = find_bulk_urls(resp.text)
 
-    provenance = [f"snapshot_date: {today}", f"downloaded_utc: {dt.datetime.utcnow().isoformat()}Z"]
+    # Timezone-aware all the way to the string. utcnow() returns a naive datetime that merely happens
+    # to hold UTC, and is deprecated for that reason: the trailing "Z" was asserting an offset the
+    # object did not carry.
+    #
+    # The first correction built an aware value and then stripped the offset back off before
+    # formatting, so the output was right and the code still threw the guarantee away one step before
+    # it mattered. The offset now comes FROM the object, and "+00:00" is rewritten to the equivalent
+    # "Z" only to keep SOURCE.txt's existing format, which older snapshots already use.
+    now = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    provenance = [f"snapshot_date: {today}", f"downloaded_utc: {now}"]
     for name, url in urls.items():
         filename = url.rsplit("/", 1)[-1]
         zip_path = snapshot_dir / filename

@@ -46,6 +46,37 @@ ck('"usc" -> University of Southern California', top("usc") === "University of S
 ck('"nyu" -> New York University', top("nyu") === "New York University");
 ck('"mit" -> Massachusetts Institute of Technology', top("mit") === "Massachusetts Institute of Technology");
 
+/* The match reason has to survive the whole path to the reader, not merely be computed.
+ *
+ * The provider set why:"close spelling" correctly and the Value Check page never showed it: the
+ * compatibility shim mapped results to r.raw and dropped everything else, so a correct value died
+ * one function short of the screen. "The matcher produces it" was the wrong thing to have trusted,
+ * and these check the two remaining links in the chain: the shim carries it, and the card renders it
+ * as text rather than as a colour or a badge. */
+const withWhy = (q) => searchSchools(q).map((s) => s.why);
+ck(
+  '"massachusets institute" carries why="close spelling" through the shim',
+  withWhy("massachusets institute")[0] === "close spelling",
+);
+ck(
+  '"ucla" carries why="alias" through the shim',
+  withWhy("ucla")[0] === "alias",
+);
+ck(
+  'a plain name match carries no reason, so the card stays quiet when there is nothing to explain',
+  withWhy("baylor university")[0] === undefined,
+);
+// And the shim must not write onto the shared school objects: a reason from one search stuck to a
+// school would then appear in every later one.
+searchSchools("massachusets institute");
+ck(
+  "the shim copies rather than tagging the shared data",
+  SCHOOLS.every((s) => s.why === undefined),
+);
+// The renderer must put it in the card, as real text.
+const page = fs.readFileSync("site/value-check/index.html", "utf8");
+ck("the result card renders the reason", /s\.why \?/.test(page) && /class="why"/.test(page));
+
 // State detection powers the routed empty state.
 ck('detectState("zzqq texas") === TX', detectState("zzqq texas") === "TX");
 ck('detectState("something ohio") === OH', detectState("something ohio") === "OH");

@@ -150,8 +150,18 @@
             if (inName === "fuzzy") fuzzy = true;
             continue;
           }
+          // A correction is a correction wherever it happens. `fuzzy` was set only for name hits, so
+          // "baylor" matching the CITY "Taylor" counted as an exact place match and survived the
+          // whole-set filter below: Dorsey School of Beauty in Taylor, MI sat under the three real
+          // Baylors, which is the same defect the filter was written to remove, reached through the
+          // other branch. Recording it on one branch and not the other made the flag mean "matched a
+          // name loosely" when the rest of the code reads it as "needed a correction at all".
           const inPlace = tokenHit(t, placeWords, place);
-          if (inPlace) { placeHits++; continue; }
+          if (inPlace) {
+            placeHits++;
+            if (inPlace === "fuzzy") fuzzy = true;
+            continue;
+          }
           ok = false;
           break;
         }
@@ -181,11 +191,30 @@
         else if (placeHits) why = why === "alias" ? "alias" : "name and city";
         if (fuzzy) { score -= 40; why = "close spelling"; }
 
-        out.push({ s, score: score + prominence(s.enrollment), why });
+        out.push({ s, score: score + prominence(s.enrollment), why, fuzzy });
       }
 
-      out.sort((a, b) => b.score - a.score || (a.s.name || "").localeCompare(b.s.name || ""));
-      return out.slice(0, limit).map(({ s, why }) => ({
+      /* Typo tolerance is a rescue, not a garnish.
+       *
+       * "Baylor" returned the three real Baylor institutions first, correctly, and then several
+       * Taylor ones underneath. Damerau-Levenshtein distance 1 on tokens of six or more characters
+       * is what admits them: Baylor to Taylor is one substitution on a six-character token, so it
+       * qualifies as a near-miss even though the query was spelled perfectly and matched exactly.
+       * The ranking was never wrong; the tail was noise presented as results.
+       *
+       * So corrections only count when nothing matched without them. An exact result means every
+       * token landed as typed, which is evidence the spelling was right, and a correction offered
+       * alongside it is answering a question nobody asked. When there is no exact match the
+       * corrections are the whole point and all of them stay, still carrying the 40-point penalty so
+       * they rank among themselves sensibly.
+       *
+       * Deliberately not a score tweak. Pushing fuzzy hits further down leaves them in the list at
+       * some smaller number, which is the same defect with a longer scroll. */
+      const exact = out.filter((r) => !r.fuzzy);
+      const pool = exact.length ? exact : out;
+
+      pool.sort((a, b) => b.score - a.score || (a.s.name || "").localeCompare(b.s.name || ""));
+      return pool.slice(0, limit).map(({ s, why }) => ({
         id: s.unitid,
         title: s.name,
         meta: [s.city, s.state].filter(Boolean).join(", "),
@@ -247,10 +276,19 @@
     },
   };
 
-  // Backwards compatible shim: the shipped pages still call searchSchools(list, query) and expect
-  // raw school objects. They migrate to the provider contract when the shared UI lands (Stage 5).
+  /* Backwards compatible shim: the shipped pages still call searchSchools(list, query) and expect
+     raw school objects. They migrate to the provider contract when the shared UI lands (Stage 5).
+
+     It carries `why` through. The provider computes the match reason precisely so an interface can
+     tell a person why a result appeared, and this shim was dropping it on the floor, which is why
+     the Value Check page could never show "close spelling" no matter what the matcher decided.
+
+     A shallow copy rather than a property set on `raw`: these are the shared SCHOOLS objects, and
+     writing to them would leave the reason from one search stuck to a school for every later one. */
   const searchSchools = (schools, raw) =>
-    CollegeSearchProvider.search(raw, { data: schools, limit: 25 }).map((r) => r.raw);
+    CollegeSearchProvider.search(raw, { data: schools, limit: 25 }).map((r) =>
+      r.why ? { ...r.raw, why: r.why } : r.raw,
+    );
 
   const api = { normalize, ALIASES, searchSchools, CollegeSearchProvider, K12SearchProvider, editDistance };
   if (typeof module !== "undefined" && module.exports) module.exports = api; // node tests
