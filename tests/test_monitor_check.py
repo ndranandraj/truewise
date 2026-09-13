@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import pathlib
 
 import pytest
 
 from pipeline import monitor_check as mc
+
+ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
 
 
 def _snapshot(root, date: str, release: str = "06102026", *, source=True, parquet=False):
@@ -201,3 +204,58 @@ def test_the_report_says_plainly_whether_a_person_is_needed(healthy):
         assert "needs a person" in body
         # And it must point at the manual path, since the job itself cannot fetch.
         assert "make refresh" in body
+
+
+def test_the_refresh_script_decides_the_skip_before_running_the_diff():
+    """The first version wrapped the diff in `if ... else note "No comparable prior snapshot"`, which
+    turned EVERY non-zero exit into that one sentence.
+
+    It is true today, with one snapshot. The moment a second arrives it becomes a lie covering a
+    corrupt parquet, a schema change, a DuckDB error or a bug in our own diff, and the refresh would
+    continue on data nobody had compared. Same defect as the rest of this release: reporting a state
+    that was not established.
+    """
+    src = (ROOT_DIR / "refresh.sh").read_text()
+    # Comments stripped ONCE, at the top, and every assertion reads the stripped form.
+    #
+    # Writing this test tripped the same wire twice in a row: the comment beside the fix names what
+    # the fix removed, so it contains both "|| true" and "No comparable prior snapshot". That is the
+    # fifth and sixth time a check on this project has matched the prose describing it rather than
+    # the code, and the second and third time AFTER adding a guard for it in test_download.py whose
+    # comment called it a habit rather than an accident. Stripping per-assertion invites the next
+    # one; stripping once does not.
+    code = "\n".join(ln.split("#", 1)[0] for ln in src.splitlines())
+
+    assert "check_diff_readiness" in code, (
+        "the skip must be decided by asking, not inferred from the diff's exit code"
+    )
+    body = code.split("5/7 Diff against the previous snapshot", 1)[1].split("step ", 1)[0]
+    assert "|| true" not in body and "|| note" not in body, (
+        "a failing diff must stop the refresh rather than being narrated away"
+    )
+    assert "No comparable prior snapshot" not in code, (
+        "the catch-all message is what made every failure look expected"
+    )
+
+
+def test_the_monitor_can_close_an_issue_its_predecessor_opened():
+    """The old workflow raised "FVT Monitor: refresh failed 2026-09-12". An exact-title match would
+    walk past it forever: an open issue about a failure that no longer exists, left standing by the
+    very job whose purpose is to say whether anything is wrong.
+
+    Prefix match, but only for issues the bot opened, so a human filing "FVT Monitor: something looks
+    off" is not auto-closed by a passing run.
+    """
+    wf = (ROOT_DIR / ".github" / "workflows" / "fvt-monitor.yml").read_text()
+    close = wf.split("Close the monitor issue once the check passes", 1)[1]
+    assert 'startsWith("FVT Monitor:")' in close, (
+        "closing must match the legacy title too, or #2 is stranded"
+    )
+    assert 'type === "Bot"' in close, (
+        "a prefix match without an author check would close issues a person filed"
+    )
+    # The OPEN path stays exact-title, so a new alarm is one issue rather than reviving an old one.
+    opener = wf.split("Open or update the single monitor issue", 1)[1].split(
+        "Close the monitor", 1
+    )[0]
+    assert "i.title === title" in opener, "opening should still match the current title exactly"

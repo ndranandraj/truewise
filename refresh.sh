@@ -47,12 +47,31 @@ $PYTHON -m pipeline.value_check
 step "4/7 Data-quality gate"
 $PYTHON -m analysis.validate
 
-# 5. What actually changed since the last archived snapshot. Skipped honestly when there is only one.
+# 5. What actually changed since the last archived snapshot.
+#
+# The skip is decided BEFORE the diff runs, not inferred from its exit code afterwards. The first
+# version of this wrapped the diff in `if ... else note "No comparable prior snapshot"`, which turned
+# every non-zero exit into that one sentence. It is true today, with one snapshot. The moment a
+# second arrives it becomes a lie that covers a corrupt parquet, a schema change, a DuckDB error or a
+# plain bug in our own diff, and the refresh would sail past it.
+#
+# That is the same defect this whole release is about: reporting a state that was not established.
+# Asking first, then failing loudly, is the difference between "there was nothing to compare" and
+# "the comparison broke and I decided not to mention it".
 step "5/7 Diff against the previous snapshot"
-if $PYTHON -m pipeline.monitor_diff; then
-  :
+DIFF_READY="$($PYTHON - <<'PY'
+from pipeline.monitor_check import check_diff_readiness, read_snapshots
+
+f = check_diff_readiness(read_snapshots())
+print("yes" if f.ok else f"no:{f.detail}")
+PY
+)"
+if [ "${DIFF_READY#no:}" != "$DIFF_READY" ]; then
+  note "Diff skipped: ${DIFF_READY#no:}"
 else
-  note "No comparable prior snapshot, so no diff. This is expected until two exist."
+  # No `|| true`. A diff that fails here has found something or is broken, and either way the
+  # refresh stops rather than continuing on data nobody has compared.
+  $PYTHON -m pipeline.monitor_diff
 fi
 
 # 6. Repackage. The published/ directory is the build source CI deploys from, so it has to move with

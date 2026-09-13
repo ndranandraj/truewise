@@ -91,17 +91,30 @@ jobs:
 
       # Closing on a pass is what makes the issue trustworthy: it tracks the current state rather
       # than accumulating a record of every month something was once wrong.
+      #
+      # Matched by PREFIX, not by exact title, and only for issues this job's bot opened. The old
+      # workflow raised "FVT Monitor: refresh failed 2026-09-12" (#2), and an exact-title match would
+      # have walked straight past it forever: an open issue about a failure that no longer exists,
+      # left standing by the very job whose whole purpose is to say whether anything is wrong. A
+      # monitor that cannot retire its own predecessor's alarms is not tracking the current state.
+      #
+      # The bot check is what keeps the prefix safe. A human filing "FVT Monitor: something looks
+      # off" should not be auto-closed by a passing run; only issues this job created are its to
+      # close.
       - name: Close the monitor issue once the check passes
         if: steps.check.outputs.status == '0'
         uses: actions/github-script@v8
         with:
           script: |
-            const title = process.env.ISSUE_TITLE;
             const open = await github.rest.issues.listForRepo({
               owner: context.repo.owner, repo: context.repo.repo,
               state: "open", labels: "monitor", per_page: 100,
             });
-            for (const issue of open.data.filter((i) => i.title === title)) {
+            const mine = open.data.filter(
+              (i) => i.title.startsWith("FVT Monitor:") && i.user && i.user.type === "Bot",
+            );
+            if (mine.length === 0) core.notice("No open monitor issues to close.");
+            for (const issue of mine) {
               await github.rest.issues.createComment({
                 owner: context.repo.owner, repo: context.repo.repo,
                 issue_number: issue.number,
