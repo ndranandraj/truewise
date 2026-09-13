@@ -1,22 +1,40 @@
 name: FVT Monitor
 
-# Monthly refresh: pull ED's latest Scorecard data, rebuild Value Check, and commit a
-# dated snapshot so the FVT/GE Monitor accumulates a diffable history ED does not keep.
+# Monthly integrity and freshness check over what is COMMITTED. No network, no download, no commit.
+#
+# This job used to fetch ED's bulk files, rebuild, and push a dated snapshot. It cannot. A GitHub
+# runner is refused with 403 by both collegescorecard.ed.gov and ed-public-download.scorecard.network,
+# measured by `pipeline.reachability_probe` on 2026-09-13 rather than inferred. The refusal is not
+# about identity: an agent naming the project, the site and the repository is refused exactly as the
+# default one was, and the same code from a home network succeeds. Both responses came from
+# CloudFront, so both hosts sit behind that CDN and both reject the runner; whether that is one
+# distribution or two configured alike is not established and is not claimed.
+#
+# A scheduled job that cannot do its stated job is worse than no schedule, because it looks like
+# coverage. So the job's stated job changed. It now verifies the archive, the published checksums,
+# the agreement between what the site claims and what is archived, and the data-quality gate, and it
+# reports how old ED's release is. Refreshing the data is a manual step: `make refresh`.
+#
+# Permissions reflect that: it reads the repository and writes issues. It no longer needs to commit.
+
 on:
   schedule:
-    - cron: "0 12 8 * *"   # 08th of each month, 12:00 UTC
-  workflow_dispatch: {}     # allow manual runs
+    - cron: "0 12 8 * *"   # 8th of each month, 12:00 UTC
+  workflow_dispatch: {}
 
 permissions:
-  contents: write           # to commit the snapshot + summary back to the repo
-  issues: write             # to raise an issue when a monthly refresh fails
+  contents: read
+  issues: write
 
 concurrency:
   group: fvt-monitor
   cancel-in-progress: false
 
+env:
+  ISSUE_TITLE: "FVT Monitor: the committed data needs attention"
+
 jobs:
-  refresh:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,71 +47,92 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download latest Scorecard data (network)
-        run: python -m pipeline.download
-
-      - name: Build spine + Value Check + package data
+      - name: Check integrity and freshness
+        id: check
         run: |
-          python -m pipeline.build_spine
-          python -m pipeline.value_check
-          python -m pipeline.build_package_data
+          set +e
+          python -m pipeline.monitor_check --json monitor.json --markdown monitor.md
+          echo "status=$?" >> "$GITHUB_OUTPUT"
 
-      - name: Refresh Careers demand layer (best-effort; BLS/NCES URLs can drift)
-        run: |
-          python -m pipeline.download_bls && python -m pipeline.build_careers_demand \
-            || echo "Careers demand refresh skipped (source unavailable); wages unaffected."
+      - name: Publish the report in the run summary
+        if: always()
+        run: cat monitor.md >> "$GITHUB_STEP_SUMMARY" || echo "no report produced"
 
-      - name: Data-quality gate (fails the run on a bad refresh)
-        run: python -m analysis.validate
-
-      - name: Diff against the previous snapshot (skips on the first run)
-        run: python -m pipeline.monitor_diff || echo "No prior snapshot yet, diff skipped."
-
-      - name: Refresh the committed parquet build-source
-        run: |
-          cp data/parquet/value_check.parquet data/parquet/institutions.parquet published/
-          cp data/parquet/careers_demand.parquet published/ 2>/dev/null || true
-
-      - name: Commit snapshot + parquet source + package data if changed
-        run: |
-          git config user.name "truewise-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add archive/ published/ packages/truewise-data/truewise_data/data
-          if git diff --cached --quiet; then
-            echo "No changes this run."
-          else
-            git commit -m "FVT Monitor: refresh $(date -u +%Y-%m-%d)"
-            git push
-          fi
-
-      # A monthly job that fails quietly is a monitor that has stopped monitoring. The 2026-09-08
-      # run failed on a 403 and nobody was told; the last archived snapshot is 2026-07-14, so the
-      # 2026-08-08 run very likely failed the same way and went equally unnoticed. The whole point
-      # of this job is to accumulate a history ED does not keep, and for two months it accumulated
-      # nothing. A failure now opens an issue, so silence means success rather than absence.
-      - name: Report a failed refresh
-        if: failure()
+      # One issue, reused. A monthly job that opens a fresh issue each time turns a single unresolved
+      # problem into a pile, and the pile is then ignored as a matter of routine.
+      - name: Open or update the single monitor issue
+        if: steps.check.outputs.status != '0'
         uses: actions/github-script@v7
         with:
           script: |
-            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const today = new Date().toISOString().slice(0, 10);
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `FVT Monitor: refresh failed ${today}`,
-              labels: ['monitor'],
-              body: [
-                `The monthly Scorecard refresh failed. Run: ${run}`,
-                '',
-                'Most likely causes, in order:',
-                '- **403 on the data home.** A client block. The downloader identifies itself as',
-                '  `TruewiseDataRefresh/1.0`; check whether the host is refusing that agent or this',
-                '  address. Do not work around it by impersonating a browser.',
-                '- **Download link not found.** ED changed the page layout; update `BULK_FILES`.',
-                '- **Data-quality gate failed.** A real problem with the new release. Read the gate',
-                '  output before republishing anything.',
-                '',
-                'No snapshot was archived, so the Monitor has a gap for this month.',
-              ].join('\n'),
+            const fs = require("fs");
+            const body = fs.readFileSync("monitor.md", "utf8")
+              + `\n\n<sub>Run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}`
+              + `/actions/runs/${context.runId}</sub>\n`;
+            const title = process.env.ISSUE_TITLE;
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "monitor", per_page: 100,
             });
+            const existing = open.data.find((i) => i.title === title);
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: existing.number, body,
+              });
+              core.notice(`Updated issue #${existing.number} rather than opening a duplicate.`);
+            } else {
+              const made = await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, body, labels: ["monitor"],
+              });
+              core.notice(`Opened issue #${made.data.number}.`);
+            }
+
+      # Closing on a pass is what makes the issue trustworthy: it tracks the current state rather
+      # than accumulating a record of every month something was once wrong.
+      - name: Close the monitor issue once the check passes
+        if: steps.check.outputs.status == '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = process.env.ISSUE_TITLE;
+            const open = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: "open", labels: "monitor", per_page: 100,
+            });
+            for (const issue of open.data.filter((i) => i.title === title)) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number,
+                body: "Resolved: the monthly check passed. Closing automatically.",
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: issue.number, state: "closed",
+              });
+              core.notice(`Closed issue #${issue.number}.`);
+            }
+
+      # The diff runs only when there are two genuinely different snapshots to compare. Today there
+      # is one, so this is skipped and says so. Diffing a file against itself would print "no change",
+      # which is true, worthless, and indistinguishable from a real comparison.
+      - name: Historical diff, when two distinct snapshots exist
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, sys
+          report = json.load(open("monitor.json"))
+          ready = next(f for f in report["findings"] if f["name"] == "historical diff is available")
+          if not ready["ok"]:
+              print(f"Skipped: {ready['detail']}")
+              sys.exit(0)
+          import subprocess
+          sys.exit(subprocess.call([sys.executable, "-m", "pipeline.monitor_diff"]))
+          PY
+
+      - name: Fail the run when the check found something
+        if: steps.check.outputs.status != '0'
+        run: |
+          echo "The monitor reported a finding; see the summary and the monitor issue." >&2
+          exit 1

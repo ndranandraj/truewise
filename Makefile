@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -126,6 +126,16 @@ test-embed:
 # Every placeholder that reaches a reader as if it were a fact breaks the one thing this
 # site sells. Written after 461 pages spent months saying "a typical ZZ high-school
 # graduate". Reports by default; --strict for a gate.
+# The manual data refresh, end to end. Download is only step one of seven; doing it alone leaves the
+# parquets, the published package, the checksums and the dated snapshot all describing the previous
+# release. Needs open network, so not a GitHub runner.
+refresh:
+	./refresh.sh
+
+# The offline integrity + freshness check the monthly job runs. No network.
+monitor:
+	$(PYTHON) -m pipeline.monitor_check
+
 honesty-scan:
 	$(PYTHON) -m pipeline.honesty_scan
 
