@@ -150,8 +150,18 @@
             if (inName === "fuzzy") fuzzy = true;
             continue;
           }
+          // A correction is a correction wherever it happens. `fuzzy` was set only for name hits, so
+          // "baylor" matching the CITY "Taylor" counted as an exact place match and survived the
+          // whole-set filter below: Dorsey School of Beauty in Taylor, MI sat under the three real
+          // Baylors, which is the same defect the filter was written to remove, reached through the
+          // other branch. Recording it on one branch and not the other made the flag mean "matched a
+          // name loosely" when the rest of the code reads it as "needed a correction at all".
           const inPlace = tokenHit(t, placeWords, place);
-          if (inPlace) { placeHits++; continue; }
+          if (inPlace) {
+            placeHits++;
+            if (inPlace === "fuzzy") fuzzy = true;
+            continue;
+          }
           ok = false;
           break;
         }
@@ -266,10 +276,19 @@
     },
   };
 
-  // Backwards compatible shim: the shipped pages still call searchSchools(list, query) and expect
-  // raw school objects. They migrate to the provider contract when the shared UI lands (Stage 5).
+  /* Backwards compatible shim: the shipped pages still call searchSchools(list, query) and expect
+     raw school objects. They migrate to the provider contract when the shared UI lands (Stage 5).
+
+     It carries `why` through. The provider computes the match reason precisely so an interface can
+     tell a person why a result appeared, and this shim was dropping it on the floor, which is why
+     the Value Check page could never show "close spelling" no matter what the matcher decided.
+
+     A shallow copy rather than a property set on `raw`: these are the shared SCHOOLS objects, and
+     writing to them would leave the reason from one search stuck to a school for every later one. */
   const searchSchools = (schools, raw) =>
-    CollegeSearchProvider.search(raw, { data: schools, limit: 25 }).map((r) => r.raw);
+    CollegeSearchProvider.search(raw, { data: schools, limit: 25 }).map((r) =>
+      r.why ? { ...r.raw, why: r.why } : r.raw,
+    );
 
   const api = { normalize, ALIASES, searchSchools, CollegeSearchProvider, K12SearchProvider, editDistance };
   if (typeof module !== "undefined" && module.exports) module.exports = api; // node tests

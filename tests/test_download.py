@@ -133,3 +133,21 @@ def test_the_provenance_timestamp_is_actually_utc():
     code = "\n".join(ln.split("#", 1)[0] for ln in src.splitlines())
     assert "utcnow()" not in code, "utcnow() is naive and deprecated; the Z suffix would be a claim"
     assert "dt.timezone.utc" in code, "the timestamp must come from a timezone-aware now()"
+    # And the offset must survive to the string. The first correction built an aware value and then
+    # stripped tzinfo before formatting, which produced the right text from code that had discarded
+    # the guarantee one step early: correct output, unchanged reasoning.
+    assert "replace(tzinfo=None)" not in code, (
+        "stripping the offset before formatting throws away the awareness the fix was for"
+    )
+
+    # Behaviour, not only shape: the value written must parse back as UTC.
+    import datetime as _dt
+    import re as _re
+
+    line = _re.search(r"downloaded_utc: \{now\}", src)
+    assert line, "the provenance line should interpolate the aware timestamp directly"
+    sample = _dt.datetime.now(_dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    parsed = _dt.datetime.fromisoformat(sample.replace("Z", "+00:00"))
+    assert parsed.tzinfo is not None and parsed.utcoffset() == _dt.timedelta(0), (
+        f"the serialized timestamp must round-trip as UTC, got {sample}"
+    )

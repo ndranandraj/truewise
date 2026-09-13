@@ -137,11 +137,16 @@ def main() -> None:
     resp = fetch(SCORECARD_DATA_HOME)
     urls = find_bulk_urls(resp.text)
 
-    # Timezone-aware, because utcnow() returns a naive datetime that merely happens to hold UTC, and
-    # is deprecated for exactly that reason. The trailing "Z" was already asserting an offset the
-    # object did not carry, so the string was right and the value behind it was not.
-    now = dt.datetime.now(dt.timezone.utc).replace(tzinfo=None).isoformat()
-    provenance = [f"snapshot_date: {today}", f"downloaded_utc: {now}Z"]
+    # Timezone-aware all the way to the string. utcnow() returns a naive datetime that merely happens
+    # to hold UTC, and is deprecated for that reason: the trailing "Z" was asserting an offset the
+    # object did not carry.
+    #
+    # The first correction built an aware value and then stripped the offset back off before
+    # formatting, so the output was right and the code still threw the guarantee away one step before
+    # it mattered. The offset now comes FROM the object, and "+00:00" is rewritten to the equivalent
+    # "Z" only to keep SOURCE.txt's existing format, which older snapshots already use.
+    now = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+    provenance = [f"snapshot_date: {today}", f"downloaded_utc: {now}"]
     for name, url in urls.items():
         filename = url.rsplit("/", 1)[-1]
         zip_path = snapshot_dir / filename
