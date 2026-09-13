@@ -5,6 +5,8 @@
  *   node tests/layout_check.js --live       against https://truewise.dev
  *   node tests/layout_check.js --url X      against any base URL, for a preview deploy
  *   node tests/layout_check.js --open       leave the browser visible
+ *   node tests/layout_check.js --perf       also time each route (5 cold runs, adds minutes)
+ *   node tests/layout_check.js --perf --record-baseline   write tests/perf_baseline.json
  *
  * Six routes at four widths, plus the interactions the static probe cannot trigger itself. Writes
  * screenshots, a JSON result and a markdown report to layout-check-<stamp>/, and exits non-zero on
@@ -30,6 +32,9 @@ const path = require("path");
 const http = require("http");
 
 const { probe, focusState, WIDTHS, ROUTES } = require("./layout_probe.js");
+const perf = require("./perf_probe.js");
+
+const BASELINE = path.resolve(__dirname, "perf_baseline.json");
 
 const ROOT = path.resolve(__dirname, "..");
 const SITE = path.join(ROOT, "site");
@@ -189,6 +194,66 @@ async function compareInteractions(page) {
   return { findings: [], steps: [{ step: "load-with-schools", ...state }] };
 }
 
+/* ---------------------------------------------------------------------------------------------
+ * Timing. Several cold runs per route, median reported with its spread.
+ *
+ * Each run gets a FRESH context so the HTTP cache, the connection pool and the font cache all start
+ * empty. Reusing one context makes run 2 onward measure a warm cache, the median then describes a
+ * repeat visitor, and the number quietly stops answering the question it was asked.
+ * ------------------------------------------------------------------------------------------- */
+
+async function measureRoute(browser, base, route, log) {
+  const runs = [];
+  for (let i = 0; i < perf.CONDITIONS.runs; i++) {
+    const ctx = await browser.newContext({
+      viewport: perf.CONDITIONS.viewport,
+      isMobile: true,
+      hasTouch: true,
+      deviceScaleFactor: 1,
+    });
+    const page = await ctx.newPage();
+    await page.addInitScript(perf.installObservers);
+
+    /* Throttling is applied through CDP, which is Chromium-only. If it is unavailable the run must
+     * say the numbers are unthrottled rather than present them as if the conditions held. */
+    let throttled = false;
+    try {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send("Network.enable");
+      await cdp.send("Network.emulateNetworkConditions", perf.CONDITIONS.network);
+      await cdp.send("Emulation.setCPUThrottlingRate", { rate: perf.CONDITIONS.cpuThrottlingRate });
+      throttled = true;
+    } catch (e) {
+      log(`    throttling unavailable: ${String(e).split("\n")[0]}`);
+    }
+
+    try {
+      await page.goto(base + route.path, { waitUntil: "load", timeout: 60000 });
+      /* LCP is only final once the page stops producing candidates. Settle, then read. */
+      await page.waitForTimeout(2500);
+      const r = await page.evaluate(perf.readPerf);
+      runs.push({ ...r, throttled });
+    } catch (e) {
+      runs.push({ error: String(e).split("\n")[0], throttled });
+    }
+    await ctx.close();
+  }
+
+  const ok = runs.filter((r) => !r.error);
+  const summary = {
+    runs: runs.length,
+    completed: ok.length,
+    throttled: ok.every((r) => r.throttled),
+    lcp: perf.summarise(ok.map((r) => r.lcp)),
+    cls: perf.summarise(ok.map((r) => r.cls)),
+    tbt: perf.summarise(ok.map((r) => r.tbt)),
+    fcp: perf.summarise(ok.map((r) => r.fcp)),
+    transferKB: perf.summarise(ok.map((r) => r.transferKB)),
+    raw: runs,
+  };
+  return summary;
+}
+
 async function interactions(page, route) {
   if (route.kind === "careers") return careersInteractions(page);
   if (route.kind === "compare") return compareInteractions(page);
@@ -343,6 +408,47 @@ function markdown(result) {
     for (const f of all.filter((x) => !x.blocking)) L.push(`- ${f.where} ${f.kind}: ${f.detail}`);
     L.push("");
   }
+  const timed = result.routes.filter((r) => r.perf);
+  if (timed.length) {
+    const unthrottled = timed.filter((r) => !r.perf.throttled);
+    L.push("## Timing");
+    L.push("");
+    L.push(`${perf.CONDITIONS.runs} cold runs per route at ${perf.CONDITIONS.viewport.width}px, ` +
+           `CPU throttled ${perf.CONDITIONS.cpuThrottlingRate}x, network 1.6 Mbps / 150ms. Median ` +
+           `first, range in brackets.`);
+    L.push("");
+    L.push("| Route | LCP ms | CLS | TBT ms | FCP ms | Transfer KB |");
+    L.push("|---|---|---|---|---|---|");
+    const cell = (s) => (s.median == null ? "not reported" : `${s.median} (${s.min}-${s.max})`);
+    for (const r of timed) {
+      L.push(`| ${r.label} | ${cell(r.perf.lcp)} | ${cell(r.perf.cls)} | ${cell(r.perf.tbt)} | ` +
+             `${cell(r.perf.fcp)} | ${cell(r.perf.transferKB)} |`);
+    }
+    L.push("");
+    L.push("**These are recorded, not graded.** Nothing here is compared to the 2.5s Core Web");
+    L.push("Vitals threshold. That threshold matters where Google has field data, and the Chrome UX");
+    L.push("Report has none for this origin on either device type, so it currently decides nothing.");
+    L.push("The margin it was meant to settle was 3ms, and the range in each bracket above shows how");
+    L.push("much larger ordinary run-to-run variance is than that.");
+    L.push("");
+    L.push(`A finding is raised only when a median moves past the recorded baseline by more than ` +
+           `${Math.round((perf.REGRESSION.lcp.factor - 1) * 100)}% AND at least ` +
+           `${perf.REGRESSION.lcp.floor}ms for LCP, which is the size of change that means someone ` +
+           `shipped something heavy rather than that the machine was busy.`);
+    if (!result.baseline) {
+      L.push("");
+      L.push("**No baseline was recorded when this ran**, so nothing above was compared to anything." +
+             " Write one with `--perf --record-baseline`.");
+    }
+    if (unthrottled.length) {
+      L.push("");
+      L.push("**Throttling did not apply on " + unthrottled.map((r) => r.label).join(", ") +
+             "**, so those timings describe this machine at full speed and are not comparable to " +
+             "the rest.");
+    }
+    L.push("");
+  }
+
   L.push("## What this run did NOT check");
   L.push("");
   L.push("Colour contrast (that is `tests/test_contrast.py`, which recomputes WCAG ratios from the");
@@ -381,6 +487,18 @@ async function main() {
   const outDir = path.join(ROOT, `layout-check-${stamp}`);
   fs.mkdirSync(path.join(outDir, "screenshots"), { recursive: true });
 
+  /* Load the recorded baseline BEFORE the run, so a regression is measured against something that
+   * was written down rather than against whatever this run happens to produce. */
+  let baseline = null;
+  if (flag("--perf") && fs.existsSync(BASELINE)) {
+    try {
+      baseline = JSON.parse(fs.readFileSync(BASELINE, "utf8")).routes || null;
+    } catch (e) {
+      console.error(`perf_baseline.json could not be read (${e.message}); timings will be recorded ` +
+                    `and nothing will be called a regression.`);
+    }
+  }
+
   let browser;
   try {
     browser = await chromium.launch({ headless: !flag("--open") });
@@ -397,6 +515,7 @@ async function main() {
   }
   const result = {
     startedAt: new Date().toISOString(), base, states: 0, blocking: 0, advisory: 0, routes: [],
+    baseline,
   };
 
   try {
@@ -453,10 +572,21 @@ async function main() {
         }
         await ctx.close();
       }
+      if (flag("--perf")) {
+        entry.perf = await measureRoute(browser, base, route, (m) => console.log(m));
+        const r = perf.regressions(route.label, entry.perf, (result.baseline || {})[route.label]);
+        entry.perf.regressions = r;
+        result.blocking += r.length;
+      }
+
       result.routes.push(entry);
       const b = Object.values(entry.widths).reduce(
         (n, s) => n + s.findings.filter((f) => f.blocking).length, 0);
-      console.log(`${b ? "FAIL" : "ok  "}  ${route.label}`);
+      const t = entry.perf
+        ? `  LCP ${entry.perf.lcp.median}ms (${entry.perf.lcp.min}-${entry.perf.lcp.max}), ` +
+          `CLS ${entry.perf.cls.median}, TBT ${entry.perf.tbt.median}ms`
+        : "";
+      console.log(`${b ? "FAIL" : "ok  "}  ${route.label}${t}`);
     }
   } finally {
     await browser.close();
@@ -472,6 +602,37 @@ async function main() {
 
   fs.writeFileSync(path.join(outDir, "result.json"), JSON.stringify(result, null, 2));
   fs.writeFileSync(path.join(outDir, "report.md"), markdown(result));
+
+  /* Recording a baseline is an explicit act, never a side effect of a run. If every run rewrote it,
+   * a slow drift would move the baseline along with it and the comparison would always pass: the
+   * check would be measuring itself. */
+  if (flag("--perf") && flag("--record-baseline")) {
+    const routes = {};
+    for (const r of result.routes) {
+      if (!r.perf) continue;
+      routes[r.label] = {
+        lcp: r.perf.lcp, cls: r.perf.cls, tbt: r.perf.tbt,
+        fcp: r.perf.fcp, transferKB: r.perf.transferKB,
+        throttled: r.perf.throttled,
+      };
+    }
+    const unthrottled = Object.values(routes).filter((r) => !r.throttled);
+    if (unthrottled.length) {
+      console.error(`\nRefusing to record a baseline: throttling did not apply on ` +
+                    `${unthrottled.length} route(s), so these numbers describe an unthrottled ` +
+                    `machine and nothing could be honestly compared against them later.`);
+      process.exit(2);
+    }
+    fs.writeFileSync(BASELINE, JSON.stringify({
+      recordedAt: new Date().toISOString(),
+      base, conditions: perf.CONDITIONS,
+      note: "Recorded on one machine under fixed throttling. Comparable only to runs from the " +
+            "same machine under the same conditions. Not a Core Web Vitals verdict.",
+      routes,
+    }, null, 2));
+    console.log(`\nBaseline written to ${path.relative(ROOT, BASELINE)} for ` +
+                `${Object.keys(routes).length} routes.`);
+  }
 
   console.log(`\n${result.states} of ${expected} page-states measured.`);
   console.log(`${result.blocking} blocking, ${result.advisory} advisory.`);

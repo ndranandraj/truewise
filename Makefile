@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: layout-check layout-check-live refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: layout-check layout-check-live perf-check perf-baseline refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -170,6 +170,22 @@ layout-check:
 
 layout-check-live:
 	node tests/layout_check.js --live
+
+# Timing: LCP, CLS, TBT and transfer size, 5 cold runs per route under fixed mobile throttling.
+#
+# RECORDED, NOT GRADED. Nothing here is compared to the 2.5s Core Web Vitals threshold. That
+# threshold does its work where Google has field data, and the Chrome UX Report has none for this
+# origin on either device type, so it currently decides nothing. The margin it was meant to settle
+# was 3ms; ordinary run-to-run spread is tens of times that, and a threshold inside its own noise
+# reports coin flips as verdicts.
+#
+# What IS caught is a large move against a recorded baseline: the day a hero image, a third font or
+# a tag manager turns 2.5s into 6s. Record the baseline deliberately, never as a side effect.
+perf-check:
+	node tests/layout_check.js --live --perf
+
+perf-baseline:
+	node tests/layout_check.js --live --perf --record-baseline
 
 lint:
 	ruff check . && ruff format --check .
