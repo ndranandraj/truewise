@@ -1,0 +1,18 @@
+{
+  "name": "truewise-dev-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev-only JS toolchain for the Truewise test suites. Not published, not shipped to the site. The site itself loads no npm packages; site/assets and components/ are hand-written and dependency-free.",
+  "license": "CC-BY-4.0",
+  "scripts": {
+    "test:components": "node tests/components_smoke.js && node tests/table_smoke.js && node tests/ui_smoke.js && node tests/integration_smoke.js && node tests/profile_smoke.js",
+    "test:search-gold": "node tests/search_gold.js",
+    "layout-check": "node tests/layout_check.js",
+    "postinstall-note": "echo 'For the layout check, also run: npx playwright install chromium'"
+  },
+  "devDependencies": {
+    "axe-core": "^4.13.0",
+    "jsdom": "^30.0.1",
+    "playwright": "^1.63.0"
+  }
+}

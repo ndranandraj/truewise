@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: layout-check layout-check-live refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -145,13 +145,31 @@ search-probe:
 test-search-gold:
 	node tests/search_gold.js
 
-# Behavioural smokes for the Stage 3 components (jsdom; run `npm install jsdom` first).
+# Behavioural smokes for the Stage 3 components. Run `npm install` first, with NO package named:
+# dependencies are declared in package.json, and `npm install <one-package>` prunes the others.
 test-components:
 	node tests/components_smoke.js
 	node tests/table_smoke.js
 	node tests/ui_smoke.js
 	node tests/integration_smoke.js
 	node tests/profile_smoke.js
+
+# Decision B: layout and interaction, six routes at 320/390/768/desktop, in a real browser.
+#
+# Deliberately NOT part of `make test` and NOT in CI. It needs a 170 MB browser download and takes
+# minutes, and the failures it catches come from CSS and interaction changes rather than from every
+# commit. Run it before a release, and after any change to styles.css, components/ or a template.
+#
+# First run on a machine:
+#   npm install
+#   npx playwright install chromium
+#
+# It checks what is in site/, so build first. Against production instead: make layout-check-live.
+layout-check:
+	node tests/layout_check.js
+
+layout-check-live:
+	node tests/layout_check.js --live
 
 lint:
 	ruff check . && ruff format --check .

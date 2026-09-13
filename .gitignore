@@ -104,9 +104,19 @@ TRUEWISE_*.md
 truewise-stage*.md
 truewise-font-*.md
 
-# Node deps (jsdom for the component smoke; installed locally, never committed)
+# Node deps. package.json IS committed so `npm install` is reproducible and so installing one
+# package can no longer prune the others; the tree and the lock are not.
+#
+# That pruning is not hypothetical. With no package.json, `npm install playwright` removed jsdom and
+# axe-core and reported only "removed 39 packages", which would have left five smoke suites unable to
+# start on the next clean checkout.
 node_modules/
 package-lock.json
+
+# Playwright's browser binaries, and everything the layout check writes (screenshots, reports).
+# Browsers are ~170 MB and machine-specific; the reports are evidence for a single run.
+.playwright-browsers/
+layout-check-*/
 
 # Stage 4.1 canonical-profile pilot (measurements only, never deployed)
 pilot/
