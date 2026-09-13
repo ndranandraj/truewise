@@ -1387,3 +1387,44 @@ def test_careers_carries_its_data_without_javascript():
         "the noscript message still says the view needs JavaScript, which is now false: the table is"
         " in the HTML"
     )
+
+
+def test_careers_announces_a_changed_count_and_not_only_a_reveal():
+    """Narrowing the Careers list must be announced, not only revealing more of it.
+
+    Found by the layout check on its first real run. `cr-live` was written in exactly ONE place, the
+    Show more handler. Search, the family filter and sort all went through redraw() and never
+    touched it, so going from 738 combinations to 13 was silent. And because the region kept its
+    previous contents, a reader who revealed 50 rows and then searched was left with the region
+    reading "25 more shown. Showing 50 of 738" over a list of 13. Stale is worse than silent,
+    because it is false.
+
+    components/table.js has carried this fix since the browser rounds; Careers is a separate code
+    path and never got it.
+    """
+    src = (SITE / "careers" / "index.html").read_text()
+
+    # Strip comments ONCE, at the top, before any assertion reads the source.
+    #
+    # This is the sixth-plus occurrence of a check on this project matching the prose that describes
+    # a fix rather than the code performing it, and the comment added beside THIS fix names
+    # "live.textContent", "redraw" and "Show more" precisely because it is explaining what was
+    # missing. Asserting against the raw file would pass on the explanation alone.
+    code = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    code = re.sub(r"<!--.*?-->", "", code, flags=re.S)
+    code = "\n".join(re.sub(r"(?<!:)//.*$", "", ln) for ln in code.splitlines())
+
+    assert "const announce" in code, "the announcement helper is gone"
+    # redraw() is what search, the family filter and sort all call. If it does not announce, none of
+    # the three does.
+    m = re.search(r"const redraw = \(\) => \{([^}]*)\}", code)
+    assert m, "redraw() is no longer recognisable, so this guard cannot check it"
+    assert "announce()" in m.group(1), (
+        "redraw() must announce the new count; without it search, the family filter and sort are "
+        "all silent, which is the defect this test exists for"
+    )
+    # The initial render must NOT announce: a live region that speaks on page load is noise.
+    tail = code.split("const redraw", 1)[1]
+    assert re.search(r"\n\s*draw\(\);\s*\n\s*q\.focus\(\);", tail), (
+        "the initial draw() should stay a plain draw, with no announcement on first paint"
+    )

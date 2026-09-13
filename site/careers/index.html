@@ -280,7 +280,19 @@
         a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     };
     let t;
-    const redraw = () => { shown = PAGE; draw(); };
+    /* Announce the new count whenever the SET changes, not only when Show more runs.
+       Before this, `live` was written in exactly one place: the Show more handler. Search, the
+       family filter and sort all went through redraw() and never touched it, so narrowing the list
+       from 738 to 13 was completely silent to a screen reader. Worse than silent: the previous
+       Show more sentence stayed in the region, so after revealing 50 and then searching, the live
+       region still read "25 more shown. Showing 50 of 738 major-and-degree combinations" over a
+       list of 13. A stale announcement is a false one.
+       Same defect and same fix as components/table.js, which speaks its count line from search AND
+       from both filter handlers. Careers has its own code path, so it never received the fix.
+       Not called from the initial draw(): announcing the starting count on page load is noise, and
+       a live region that talks when nothing has changed gets tuned out. */
+    const announce = () => { if (live) live.textContent = count.textContent; };
+    const redraw = () => { shown = PAGE; draw(); announce(); };
     q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(redraw, 120); });
     fam.addEventListener("change", redraw);
     sort.addEventListener("change", redraw);

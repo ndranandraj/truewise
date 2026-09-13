@@ -36,14 +36,25 @@ const WIDTHS = [
 ];
 
 /** The six agreed routes. Penn State is the 489-program giant that exercises the progressive tail;
- *  Agape is the all-insufficient profile where every row must read "insufficient data". */
+ *  Agape is the all-insufficient profile where every row must read "insufficient data".
+ *
+ *  Compare CARRIES SCHOOLS ON PURPOSE. The first real run measured `/compare/` bare, which is a
+ *  search box and nothing else, and reported it clean at all four widths. The reason Compare is in
+ *  this list at all is the metric-major card stacking below 929px, and that layout does not exist
+ *  until schools are selected: the run was a clean sweep over the one state the route was added to
+ *  exercise. Penn State, UCLA and Baylor are three real unitids with contrasting coverage.
+ *
+ *  `kind` tells the harness which interaction driver applies. Careers is not a `tw-table`; it has
+ *  its own `cr-*` markup and its own live region, and treating "no .tw-table" as "nothing to drive"
+ *  silently skipped every Careers interaction while the report said clean.
+ */
 const ROUTES = [
-  { label: "homepage", path: "/" },
-  { label: "value-check", path: "/value-check/" },
-  { label: "penn-state", path: "/college/pennsylvania-state-university-main-campus/" },
-  { label: "agape", path: "/college/agape-college-of-business-and-science/" },
-  { label: "compare", path: "/compare/" },
-  { label: "careers", path: "/careers/" },
+  { label: "homepage", path: "/", kind: "static" },
+  { label: "value-check", path: "/value-check/", kind: "static" },
+  { label: "penn-state", path: "/college/pennsylvania-state-university-main-campus/", kind: "twtable" },
+  { label: "agape", path: "/college/agape-college-of-business-and-science/", kind: "twtable" },
+  { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
+  { label: "careers", path: "/careers/", kind: "careers" },
 ];
 
 /* ------------------------------------------------------------------------------------------- */

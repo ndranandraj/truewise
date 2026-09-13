@@ -97,11 +97,111 @@ const tableState = () => {
   };
 };
 
+/* The Careers page is NOT a tw-table. It has its own cr-* markup, its own live region (#cr-live) and
+ * its own Show-more, and it carries the same three obligations: the count must match the rows, the
+ * change must be announced, and focus must land on content rather than <body>. The first real run
+ * reported "no program table on this route" and skipped all of it, which read as clean. */
+const careersState = () => {
+  const c = document.getElementById("count");
+  const live = document.getElementById("cr-live");
+  const tb = document.querySelector("#list .cr-table tbody");
+  return {
+    count: c ? c.textContent.trim().replace(/\s+/g, " ") : null,
+    rows: tb ? tb.querySelectorAll("tr").length : null,
+    status: live ? live.textContent.trim().replace(/\s+/g, " ") : "",
+    hasMore: !!document.getElementById("cr-more"),
+  };
+};
+
+async function careersInteractions(page) {
+  const findings = [];
+  const steps = [];
+  const before = await page.evaluate(careersState);
+  if (before.rows == null) {
+    return { findings: [{ kind: "careers-missing", blocking: true, detail:
+      "Careers rendered no #list table, so its interactions could not be driven and nothing about " +
+      "them was established." }], steps };
+  }
+
+  if (before.hasMore) {
+    await page.evaluate(() => document.getElementById("cr-more").click());
+    await page.waitForTimeout(900);
+    const after = await page.evaluate(careersState);
+    const focus = await page.evaluate(focusState);
+    steps.push({ step: "show-more", before, after, focus });
+    if (focus.onBody) {
+      findings.push({ kind: "careers-focus", blocking: true, detail:
+        "Show more on Careers left focus on <body> rather than the first revealed row." });
+    }
+    if (!after.status) {
+      findings.push({ kind: "careers-silent", blocking: true, detail:
+        "Show more on Careers changed the list and #cr-live stayed empty." });
+    }
+    const claimed = (after.count.match(/^Showing ([\d,]+) of/) || [])[1];
+    if (claimed && +claimed.replace(/,/g, "") !== after.rows) {
+      findings.push({ kind: "careers-count", blocking: true, detail:
+        `Careers says "${after.count}" but rendered ${after.rows} rows.` });
+    }
+  }
+
+  /* The announcement is checked against what the region said BEFORE the search, not merely against
+   * emptiness. An empty region is silent; a region still holding the previous sentence is worse,
+   * because it is a confident false statement. Careers shipped exactly that: reveal 50 rows, then
+   * search, and the region kept reading "25 more shown. Showing 50 of 738" over a list of 13. */
+  const preSearchStatus = (await page.evaluate(careersState)).status;
+  await page.evaluate(() => {
+    const q = document.getElementById("q");
+    q.focus(); q.value = "nursing"; q.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await page.waitForTimeout(900);
+  const after = await page.evaluate(careersState);
+  steps.push({ step: "search", typed: "nursing", preSearchStatus, after });
+
+  const claimed = (after.count.match(/^(?:Showing )?([\d,]+)/) || [])[1];
+  if (claimed && after.rows != null && +claimed.replace(/,/g, "") < after.rows) {
+    findings.push({ kind: "careers-search-count", blocking: true, detail:
+      `Careers search says "${after.count}" while rendering ${after.rows} rows.` });
+  }
+  if (!after.status) {
+    findings.push({ kind: "careers-search-silent", blocking: true, detail:
+      `Searching Careers changed the list to "${after.count}" and the live region is empty.` });
+  } else if (after.status === preSearchStatus && preSearchStatus) {
+    findings.push({ kind: "careers-search-stale", blocking: true, detail:
+      `Searching Careers changed the list to "${after.count}" but the live region still reads ` +
+      `"${after.status}", which is now false.` });
+  }
+  return { findings, steps };
+}
+
+/* Compare carries schools in its URL, so the only thing to establish here is that they actually
+ * arrived. If they did not, every "clean" at every width described an empty page. */
+async function compareInteractions(page) {
+  const state = await page.evaluate(() => ({
+    schools: document.querySelectorAll("table thead th").length,
+    hasTable: !!document.querySelector("table"),
+    rows: document.querySelectorAll("table tbody tr").length,
+  }));
+  if (!state.hasTable || state.rows === 0) {
+    return { findings: [{ kind: "compare-empty", blocking: true, detail:
+      "Compare rendered no comparison table, so the stacked-card layout this route exists to " +
+      "exercise was never on screen and the width results describe an empty page." }], steps: [] };
+  }
+  return { findings: [], steps: [{ step: "load-with-schools", ...state }] };
+}
+
 async function interactions(page, route) {
+  if (route.kind === "careers") return careersInteractions(page);
+  if (route.kind === "compare") return compareInteractions(page);
+  if (route.kind === "static") return { skipped: "static route, no interactive table", findings: [], steps: [] };
+
   const out = [];
   const findings = [];
   const before = await page.evaluate(tableState);
-  if (before.rows == null) return { skipped: "no program table on this route", findings, steps: out };
+  if (before.rows == null) {
+    return { findings: [{ kind: "table-missing", blocking: true, detail:
+      `${route.label} is declared a program-table route and rendered no .tw-table, so none of its ` +
+      `interactions were driven.` }], steps: out };
+  }
 
   /* 1. REVEAL. Three things must agree afterwards: the rows rendered, the count line, and what was
    *    announced. "Show all 489 programs" once rendered 160 while announcing 489, and the loudest
@@ -218,9 +318,12 @@ function markdown(result) {
       return b ? `**${b} blocking**` : a ? `${a} advisory` : "clean";
     });
     const ix = r.interactions;
-    const icell = ix.skipped ? ix.skipped
+    /* "not applicable" rather than a blank or the word clean. A route whose interactions were never
+     * driven has established nothing about them, and the table should not let that read as a pass. */
+    const icell = ix.skipped ? `n/a, ${ix.skipped}`
       : ix.findings.length ? `**${ix.findings.length} blocking**`
-      : `${ix.steps.map((s) => s.step).join(", ") || "none"}: clean`;
+      : ix.steps.length ? `${ix.steps.map((s) => s.step).join(", ")}: clean`
+      : "**none driven**";
     L.push(`| ${r.label} | ${cells.join(" | ")} | ${icell} |`);
   }
   L.push("");
@@ -246,6 +349,13 @@ function markdown(result) {
   L.push("palette), screen-reader output as actually spoken, and anything on a route outside the six");
   L.push("above. Only these page-states were measured, and a clean result says nothing about the");
   L.push("other 6,542 pages.");
+  L.push("");
+  const skipped = result.routes.filter((r) => r.interactions && r.interactions.skipped);
+  if (skipped.length) {
+    L.push("Interactions were not driven on " +
+      skipped.map((r) => `**${r.label}** (${r.interactions.skipped})`).join(", ") +
+      ". Those routes are measured for layout only; nothing about their behaviour is established here.");
+  }
   return L.join("\n");
 }
 
