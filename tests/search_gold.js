@@ -37,7 +37,8 @@ for (const t of GOLD.college) {
   const label = `college  ${JSON.stringify(t.q).padEnd(38)} [${t.case}]`;
   if (t.none) {
     record(hits.length === 0, label, `expected no results, got ${hits.length}: ${hits.slice(0, 3)}`);
-  } else if (t.top) {
+  }
+  if (t.top) {
     record(
       hits[0] && hits[0].includes(t.top),
       label,
@@ -50,7 +51,20 @@ for (const t of GOLD.college) {
         `expected why=${JSON.stringify(t.why)}, got ${JSON.stringify(results[0] && results[0].why)}`,
       );
     }
-  } else if (t.within) {
+  }
+  // `absent` is checked alongside whatever else the case asserts, not instead of it: the Baylor
+  // regression was a correct top result with a wrong tail, so a case has to be able to pin both.
+  if (t.absent) {
+    for (const bad of t.absent) {
+      const found = hits.filter((h) => h.includes(bad));
+      record(
+        found.length === 0,
+        label + " (absent)",
+        `${JSON.stringify(bad)} must not appear, got ${JSON.stringify(found)}`,
+      );
+    }
+  }
+  if (t.within) {
     const slice = results.slice(0, t.within);
     const match = slice.find((r) => (r.title || r.name).includes(t.expect));
     record(
