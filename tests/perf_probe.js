@@ -53,7 +53,31 @@ function installObservers() {
         /* Shifts the user caused by interacting are excluded by the metric's own definition. */
         if (e.hadRecentInput) continue;
         window.__perf.cls += e.value;
-        window.__perf.shifts.push(e.value);
+        /* ATTRIBUTION, not just a total.
+         *
+         * The first version recorded the number alone. It reported CLS 0.345 on Compare, which is
+         * 3.45x the "good" threshold, and told nobody WHAT moved. Reproducing it by hand then
+         * failed, because layout shift only appears on a slow connection and a fast browser session
+         * shows a clean 0. A metric that can only be observed under conditions the reader cannot
+         * easily recreate has to carry its own explanation, or it is a number to worry about rather
+         * than a defect to fix. */
+        window.__perf.shifts.push({
+          value: e.value,
+          at: Math.round(e.startTime),
+          sources: (e.sources || []).slice(0, 3).map((s) => {
+            const n = s.node;
+            if (!n || !n.tagName) return "(node no longer in the document)";
+            const cls = n.className && typeof n.className === "string"
+              ? "." + n.className.trim().split(/\s+/)[0] : "";
+            const text = (n.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
+            const py = s.previousRect ? Math.round(s.previousRect.y) : null;
+            const cy = s.currentRect ? Math.round(s.currentRect.y) : null;
+            const ph = s.previousRect ? Math.round(s.previousRect.height) : null;
+            const ch = s.currentRect ? Math.round(s.currentRect.height) : null;
+            return `${n.tagName.toLowerCase()}${n.id ? "#" + n.id : ""}${cls} "${text}" ` +
+                   `moved y ${py}->${cy}, height ${ph}->${ch}`;
+          }),
+        });
       }
     }).observe({ type: "layout-shift", buffered: true });
 
@@ -84,7 +108,11 @@ function readPerf() {
     fcp: fcp ? Math.round(fcp.startTime) : null,
     domContentLoaded: nav.domContentLoadedEventEnd ? Math.round(nav.domContentLoadedEventEnd) : null,
     transferKB: nav.transferSize ? Math.round(nav.transferSize / 1024) : null,
-    largestShift: (p.shifts || []).length ? Math.max(...p.shifts) : 0,
+    shifts: (p.shifts || [])
+      .slice()
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5)
+      .map((s) => ({ value: Math.round(s.value * 1e4) / 1e4, at: s.at, sources: s.sources })),
   };
 }
 
@@ -120,6 +148,42 @@ const REGRESSION = {
   cls: { factor: 2.0, floor: 0.05 },
 };
 
+/* CLS DOES get an absolute threshold, and LCP does not. That is not an inconsistency, and the first
+ * version of this file got it wrong by treating all three metrics the same.
+ *
+ * The argument against grading LCP was specific: the question was 2.503s against 2.500s, a 3ms
+ * margin, while five cold runs of one page spread by 100ms or more. The threshold sat inside its own
+ * noise, so a verdict would have been a coin flip.
+ *
+ * Neither half of that holds for CLS. The first real run measured 0.345 on Compare against a 0.1
+ * "good" boundary: not a 3ms margin but a 3.45x overshoot. And the measurement is stable, since four
+ * of six routes returned exactly 0. A metric with a wide margin and no noise is exactly what an
+ * absolute threshold is for.
+ *
+ * It also differs in kind. LCP without field data is a proxy for a ranking signal that is not
+ * currently being applied. Layout shift is not a proxy for anything: it is content moving under
+ * someone's finger as they reach for it, and it is a defect whether or not Google is watching.
+ */
+const CLS_GOOD = 0.1;
+const CLS_POOR = 0.25;
+
+/** Absolute CLS judgement, separate from regression-against-baseline. */
+function clsFindings(route, summary) {
+  const v = summary && summary.cls && summary.cls.median;
+  if (v == null) return [];
+  if (v > CLS_POOR) {
+    return [{ kind: "cls-poor", blocking: true, detail:
+      `${route} shifts ${v} during load, over the ${CLS_POOR} "poor" boundary and ${Math.round(v / CLS_GOOD * 10) / 10}x ` +
+      `the ${CLS_GOOD} target. Content is moving under the reader as the page settles.` }];
+  }
+  if (v > CLS_GOOD) {
+    return [{ kind: "cls-needs-work", blocking: false, detail:
+      `${route} shifts ${v} during load, over the ${CLS_GOOD} target but under the ${CLS_POOR} ` +
+      `"poor" boundary.` }];
+  }
+  return [];
+}
+
 /** Compare a summary against a recorded baseline. Returns findings, never a verdict about 2.5s. */
 function regressions(route, now, base) {
   const out = [];
@@ -143,4 +207,7 @@ function regressions(route, now, base) {
   return out;
 }
 
-module.exports = { CONDITIONS, installObservers, readPerf, summarise, regressions, REGRESSION };
+module.exports = {
+  CONDITIONS, installObservers, readPerf, summarise, regressions, clsFindings,
+  REGRESSION, CLS_GOOD, CLS_POOR,
+};

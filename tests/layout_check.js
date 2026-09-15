@@ -244,6 +244,7 @@ async function measureRoute(browser, base, route, log) {
     runs: runs.length,
     completed: ok.length,
     throttled: ok.every((r) => r.throttled),
+    worstShifts: ok.flatMap((r) => r.shifts || []).sort((a, b) => b.value - a.value).slice(0, 4),
     lcp: perf.summarise(ok.map((r) => r.lcp)),
     cls: perf.summarise(ok.map((r) => r.cls)),
     tbt: perf.summarise(ok.map((r) => r.tbt)),
@@ -400,6 +401,10 @@ function markdown(result) {
       if (s) for (const f of s.findings) all.push({ where: `${r.label} @ ${w.label}`, ...f });
     }
     for (const f of r.interactions.findings) all.push({ where: `${r.label} (interaction)`, ...f });
+    if (r.perf) {
+      for (const f of (r.perf.regressions || [])) all.push({ where: `${r.label} (timing)`, ...f });
+      for (const f of (r.perf.clsFindings || [])) all.push({ where: `${r.label} (timing)`, ...f });
+    }
   }
   if (all.length) {
     L.push("## Findings");
@@ -425,7 +430,28 @@ function markdown(result) {
              `${cell(r.perf.fcp)} | ${cell(r.perf.transferKB)} |`);
     }
     L.push("");
-    L.push("**These are recorded, not graded.** Nothing here is compared to the 2.5s Core Web");
+    /* The shift attribution, printed next to the number that caused the worry. A CLS total with no
+     * named element sends the reader hunting, and layout shift only appears under throttling, so the
+     * hunt usually fails on a fast browser and the number gets dismissed. */
+    const shifty = timed.filter((r) => (r.perf.worstShifts || []).length &&
+                                       r.perf.cls.median > perf.CLS_GOOD);
+    if (shifty.length) {
+      L.push("### What moved");
+      L.push("");
+      L.push("Layout shift appears on a slow connection and vanishes on a fast one, so these are");
+      L.push("recorded during the throttled run rather than left for someone to reproduce by hand.");
+      L.push("");
+      for (const r of shifty) {
+        L.push(`**${r.label}** (CLS ${r.perf.cls.median})`);
+        L.push("");
+        for (const s of r.perf.worstShifts) {
+          L.push(`- \`${s.value}\` at ${s.at}ms: ${s.sources.join("; ") || "(no source recorded)"}`);
+        }
+        L.push("");
+      }
+    }
+
+    L.push("**LCP and TBT are recorded, not graded.** Nothing here is compared to the 2.5s Core Web");
     L.push("Vitals threshold. That threshold matters where Google has field data, and the Chrome UX");
     L.push("Report has none for this origin on either device type, so it currently decides nothing.");
     L.push("The margin it was meant to settle was 3ms, and the range in each bracket above shows how");
@@ -435,6 +461,14 @@ function markdown(result) {
            `${Math.round((perf.REGRESSION.lcp.factor - 1) * 100)}% AND at least ` +
            `${perf.REGRESSION.lcp.floor}ms for LCP, which is the size of change that means someone ` +
            `shipped something heavy rather than that the machine was busy.`);
+    L.push("");
+    L.push(`**CLS is different, and does get an absolute threshold**: over ${perf.CLS_GOOD} is ` +
+           `advisory, over ${perf.CLS_POOR} is blocking. The LCP argument does not transfer. That ` +
+           `was a 3ms margin inside a 100ms spread; layout shift here was measured at 0.345 against ` +
+           `a 0.1 target with four of six routes at exactly 0, so the margin is wide and the ` +
+           `measurement is quiet. It is also not a proxy for a ranking signal: it is content moving ` +
+           `under someone's finger as they reach for it, which is a defect whether or not Google is ` +
+           `watching.`);
     if (!result.baseline) {
       L.push("");
       L.push("**No baseline was recorded when this ran**, so nothing above was compared to anything." +
@@ -574,9 +608,15 @@ async function main() {
       }
       if (flag("--perf")) {
         entry.perf = await measureRoute(browser, base, route, (m) => console.log(m));
+        /* Two independent judgements. Regression is 'worse than it was'; the CLS threshold is
+         * 'bad regardless of what it was', which a baseline comparison can never say, because a
+         * baseline recorded on a bad day makes that day the standard. */
         const r = perf.regressions(route.label, entry.perf, (result.baseline || {})[route.label]);
+        const c = perf.clsFindings(route.label, entry.perf);
         entry.perf.regressions = r;
-        result.blocking += r.length;
+        entry.perf.clsFindings = c;
+        result.blocking += r.length + c.filter((f) => f.blocking).length;
+        result.advisory += c.filter((f) => !f.blocking).length;
       }
 
       result.routes.push(entry);
