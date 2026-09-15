@@ -204,6 +204,7 @@ async function compareInteractions(page) {
 
 async function measureRoute(browser, base, route, log) {
   const runs = [];
+  let selfTest = null;
   for (let i = 0; i < perf.CONDITIONS.runs; i++) {
     const ctx = await browser.newContext({
       viewport: perf.CONDITIONS.viewport,
@@ -232,6 +233,9 @@ async function measureRoute(browser, base, route, log) {
       /* LCP is only final once the page stops producing candidates. Settle, then read. */
       await page.waitForTimeout(2500);
       const r = await page.evaluate(perf.readPerf);
+      /* Prove the attribution on the first run of each route, after the real numbers are read so
+       * the self-test's own shift cannot contaminate them. */
+      if (i === 0) selfTest = await page.evaluate(perf.attributionSelfTest);
       runs.push({ ...r, throttled });
     } catch (e) {
       runs.push({ error: String(e).split("\n")[0], throttled });
@@ -241,6 +245,7 @@ async function measureRoute(browser, base, route, log) {
 
   const ok = runs.filter((r) => !r.error);
   const summary = {
+    attribution: selfTest,
     runs: runs.length,
     completed: ok.length,
     throttled: ok.every((r) => r.throttled),
@@ -442,7 +447,12 @@ function markdown(result) {
       L.push("recorded during the throttled run rather than left for someone to reproduce by hand.");
       L.push("");
       for (const r of shifty) {
-        L.push(`**${r.label}** (CLS ${r.perf.cls.median})`);
+        const at = r.perf.attribution;
+        const trust = !at ? " — attribution self-test did not run"
+          : at.attributed ? ""
+          : " — **attribution UNRELIABLE on this route**: a forced 320px shift at the top of the "
+            + "viewport produced no attributed entry, so the element names below are not evidence";
+        L.push(`**${r.label}** (CLS ${r.perf.cls.median})${trust}`);
         L.push("");
         for (const s of r.perf.worstShifts) {
           L.push(`- \`${s.value}\` at ${s.at}ms: ${s.sources.join("; ") || "(no source recorded)"}`);

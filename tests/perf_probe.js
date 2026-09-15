@@ -64,18 +64,33 @@ function installObservers() {
         window.__perf.shifts.push({
           value: e.value,
           at: Math.round(e.startTime),
+          /* `isConnected` and a live rect are what distinguish the two readings of a zero
+           * currentRect, and without them the first version was unreadable.
+           *
+           * It reported `.caveats` as "y 492 -> 0, height 322 -> 0" on Compare. Taken at face value
+           * that means the element was REMOVED. But `.caveats` is static HTML that nothing in the
+           * page removes, and the empty `#cmp` above it can only push it DOWN when it fills. The
+           * reading did not fit the markup, two attempts to reproduce the shift in an unthrottled
+           * browser recorded zero entries, so neither the reading nor the serialisation was ever
+           * confirmed. Rather than diagnose a page from a number I could not corroborate, the probe
+           * now records whether the node is still in the document and where it actually sits, so
+           * the next throttled run answers the question instead of restating it.
+           */
           sources: (e.sources || []).slice(0, 3).map((s) => {
             const n = s.node;
-            if (!n || !n.tagName) return "(node no longer in the document)";
+            if (!n || !n.tagName) return "(node was already gone when the shift was recorded)";
             const cls = n.className && typeof n.className === "string"
               ? "." + n.className.trim().split(/\s+/)[0] : "";
-            const text = (n.textContent || "").trim().replace(/\s+/g, " ").slice(0, 40);
-            const py = s.previousRect ? Math.round(s.previousRect.y) : null;
-            const cy = s.currentRect ? Math.round(s.currentRect.y) : null;
-            const ph = s.previousRect ? Math.round(s.previousRect.height) : null;
-            const ch = s.currentRect ? Math.round(s.currentRect.height) : null;
-            return `${n.tagName.toLowerCase()}${n.id ? "#" + n.id : ""}${cls} "${text}" ` +
-                   `moved y ${py}->${cy}, height ${ph}->${ch}`;
+            const text = (n.textContent || "").trim().replace(/\s+/g, " ").slice(0, 36);
+            const r = (rect) => (rect ? `y=${Math.round(rect.y)} h=${Math.round(rect.height)}` : "none");
+            let live = "unreadable";
+            try {
+              const b = n.getBoundingClientRect();
+              live = `y=${Math.round(b.y)} h=${Math.round(b.height)}`;
+            } catch (_) { /* detached nodes can throw; that is itself the answer */ }
+            return `${n.tagName.toLowerCase()}${n.id ? "#" + n.id : ""}${cls} "${text}" | ` +
+                   `before ${r(s.previousRect)} | after ${r(s.currentRect)} | ` +
+                   `still in document: ${n.isConnected} | actual now ${live}`;
           }),
         });
       }
@@ -167,6 +182,65 @@ const REGRESSION = {
 const CLS_GOOD = 0.1;
 const CLS_POOR = 0.25;
 
+/* SELF-TEST for the attribution, run in the page after the real measurement is taken.
+ *
+ * Everything else in this harness was validated by making it fail on purpose. The shift attribution
+ * was not, and it promptly produced a reading that did not fit the markup. Two attempts to confirm
+ * it by hand recorded zero entries, because layout shift only counts content inside the viewport and
+ * only appears under throttling, so the usual "break it and watch" check kept measuring nothing.
+ *
+ * So the probe proves itself instead: force a known shift at the TOP of the viewport, where it must
+ * be counted, and check that the observer names the element that was actually moved. If it does not,
+ * the run says the attribution is unreliable rather than printing it as fact.
+ */
+function attributionSelfTest() {
+  return new Promise((resolve) => {
+    const seen = [];
+    let po;
+    try {
+      po = new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) {
+          for (const s of e.sources || []) {
+            if (s.node && s.node.id === "tw-selftest-victim") seen.push(Math.round(e.value * 1e4) / 1e4);
+          }
+        }
+      });
+      po.observe({ type: "layout-shift" });
+    } catch (e) {
+      return resolve({ ran: false, reason: String(e) });
+    }
+
+    window.scrollTo(0, 0);
+    const victim = document.createElement("p");
+    victim.id = "tw-selftest-victim";
+    victim.textContent = "layout probe self test";
+    victim.style.cssText = "margin:0;height:60px";
+    const host = document.body;
+    host.insertBefore(victim, host.firstChild);
+
+    requestAnimationFrame(() => {
+      const spacer = document.createElement("div");
+      spacer.id = "tw-selftest-spacer";
+      spacer.style.cssText = "height:320px";
+      host.insertBefore(spacer, victim);
+      setTimeout(() => {
+        try { po.disconnect(); } catch (_) {}
+        spacer.remove();
+        victim.remove();
+        resolve({
+          ran: true,
+          attributed: seen.length > 0,
+          values: seen,
+          note: seen.length
+            ? "the observer named the element that was moved, so source attribution works here"
+            : "a 320px shift at the top of the viewport produced no attributed entry, so any " +
+              "element names printed above are NOT to be trusted",
+        });
+      }, 400);
+    });
+  });
+}
+
 /** Absolute CLS judgement, separate from regression-against-baseline. */
 function clsFindings(route, summary) {
   const v = summary && summary.cls && summary.cls.median;
@@ -209,5 +283,6 @@ function regressions(route, now, base) {
 
 module.exports = {
   CONDITIONS, installObservers, readPerf, summarise, regressions, clsFindings,
+  attributionSelfTest,
   REGRESSION, CLS_GOOD, CLS_POOR,
 };

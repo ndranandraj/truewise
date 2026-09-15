@@ -1,0 +1,249 @@
+{
+  "recordedAt": "2026-09-13T21:51:43.761Z",
+  "base": "https://truewise.dev",
+  "conditions": {
+    "cpuThrottlingRate": 4,
+    "network": {
+      "offline": false,
+      "downloadThroughput": 209715.2,
+      "uploadThroughput": 96000,
+      "latency": 150
+    },
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "runs": 5
+  },
+  "note": "Recorded on one machine under fixed throttling. Comparable only to runs from the same machine under the same conditions. Not a Core Web Vitals verdict.",
+  "routes": {
+    "homepage": {
+      "lcp": {
+        "median": 756,
+        "min": 728,
+        "max": 872,
+        "spread": 144,
+        "n": 5
+      },
+      "cls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "n": 5
+      },
+      "fcp": {
+        "median": 756,
+        "min": 728,
+        "max": 872,
+        "spread": 144,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 6,
+        "min": 6,
+        "max": 6,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    },
+    "value-check": {
+      "lcp": {
+        "median": 772,
+        "min": 724,
+        "max": 864,
+        "spread": 140,
+        "n": 5
+      },
+      "cls": {
+        "median": 0.156,
+        "min": 0.156,
+        "max": 0.156,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 25,
+        "min": 21,
+        "max": 30,
+        "spread": 9,
+        "n": 5
+      },
+      "fcp": {
+        "median": 772,
+        "min": 724,
+        "max": 864,
+        "spread": 140,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 19,
+        "min": 19,
+        "max": 19,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    },
+    "penn-state": {
+      "lcp": {
+        "median": 872,
+        "min": 852,
+        "max": 920,
+        "spread": 68,
+        "n": 5
+      },
+      "cls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 42,
+        "min": 0,
+        "max": 46,
+        "spread": 46,
+        "n": 5
+      },
+      "fcp": {
+        "median": 872,
+        "min": 852,
+        "max": 920,
+        "spread": 68,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 18,
+        "min": 18,
+        "max": 18,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    },
+    "agape": {
+      "lcp": {
+        "median": 868,
+        "min": 792,
+        "max": 888,
+        "spread": 96,
+        "n": 5
+      },
+      "cls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 36,
+        "min": 34,
+        "max": 40,
+        "spread": 6,
+        "n": 5
+      },
+      "fcp": {
+        "median": 868,
+        "min": 792,
+        "max": 888,
+        "spread": 96,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 7,
+        "min": 7,
+        "max": 7,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    },
+    "compare": {
+      "lcp": {
+        "median": 784,
+        "min": 764,
+        "max": 844,
+        "spread": 80,
+        "n": 5
+      },
+      "cls": {
+        "median": 0.345,
+        "min": 0.345,
+        "max": 0.345,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 0,
+        "min": 0,
+        "max": 5,
+        "spread": 5,
+        "n": 5
+      },
+      "fcp": {
+        "median": 784,
+        "min": 764,
+        "max": 844,
+        "spread": 80,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 9,
+        "min": 9,
+        "max": 9,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    },
+    "careers": {
+      "lcp": {
+        "median": 1088,
+        "min": 1080,
+        "max": 1160,
+        "spread": 80,
+        "n": 5
+      },
+      "cls": {
+        "median": 0,
+        "min": 0,
+        "max": 0,
+        "spread": 0,
+        "n": 5
+      },
+      "tbt": {
+        "median": 1,
+        "min": 0,
+        "max": 3,
+        "spread": 3,
+        "n": 5
+      },
+      "fcp": {
+        "median": 752,
+        "min": 732,
+        "max": 840,
+        "spread": 108,
+        "n": 5
+      },
+      "transferKB": {
+        "median": 11,
+        "min": 11,
+        "max": 11,
+        "spread": 0,
+        "n": 5
+      },
+      "throttled": true
+    }
+  }
+}
