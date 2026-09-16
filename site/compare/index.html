@@ -85,6 +85,15 @@
     .bad { color: var(--bad); font-weight: 600; }
     .gem { display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 1px 8px; font-size: .76rem; font-weight: 700; }
     .hint { color: var(--ink-soft); }
+    /* Reserve room for the comparison BEFORE it arrives, but only when the URL says one is coming.
+       #cmp is empty in the HTML and fills after a fetch. On a fast connection that happens before
+       first paint and nothing moves. On a throttled phone the shell paints at about 1s and the
+       table lands at about 3s, and the measured result was a CLS of 0.345: `.caveats` was sitting
+       at y=492, in view and being read, and jumped to y=3016. The reader's eye loses the line it
+       was on. Reserving the space costs nothing when the content arrives taller, and the class is
+       only applied when ?schools= is present, so the empty landing page keeps its natural height
+       instead of opening on a screen of blank space. */
+    html.cmp-pending #cmp { min-height: 78vh; }
     .caveats { margin: 24px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 780px; color: var(--ink-soft); font-size: .9rem; line-height: 1.55; }
     .caveats a { color: var(--brand); }
   </style>
@@ -142,6 +151,16 @@
           <option value="4">$110k and up</option>
         </select>
       </div>
+      <!-- Set before first paint, so the reservation is in place for the very first layout. A
+           class added later by the main script would arrive after the shell has already painted at
+           its short height, which is the moment the shift happens. Inline is permitted: the CSP
+           allows 'unsafe-inline' for scripts, and the page already carries its whole application
+           inline below. -->
+      <script>
+        if (new URLSearchParams(location.search).get("schools")) {
+          document.documentElement.classList.add("cmp-pending");
+        }
+      </script>
       <div id="cmp"></div>
       <div class="caveats"><strong>How to read this.</strong> "Programs clearing the bar" is the share of a
         school's programs whose graduates out-earn a typical high-school graduate in that state (the federal

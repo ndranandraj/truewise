@@ -205,7 +205,13 @@
     </div>
   </header>
 
-  <main class="wrap" id="app">
+  <!-- Same reservation as /compare/, and here it applies ALWAYS rather than conditionally, because
+       #app is replaced wholesale on every route this page has: there is no state in which the boot
+       fallback is the final content. Measured at CLS 0.156 before this, with the footer starting at
+       y=542 and ending at y=2389. The fallback is a heading and a paragraph; every view that
+       replaces it is taller than the viewport, so a min-height of 100vh is a floor the real content
+       always clears, and the footer simply starts below the fold where it belongs. -->
+  <main class="wrap" id="app" style="min-height:100vh">
     <div id="boot-fallback">
       <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">Look up any US college</h1>
       <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US college to see, program by program, whether graduates out-earn a typical high-school graduate (the federal earnings-premium test), what families actually pay by income, median debt and how long it takes to pay back, and where each major leads. Built on public College Scorecard data. Loading the data now.</p>

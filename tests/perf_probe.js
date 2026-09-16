@@ -64,17 +64,18 @@ function installObservers() {
         window.__perf.shifts.push({
           value: e.value,
           at: Math.round(e.startTime),
-          /* `isConnected` and a live rect are what distinguish the two readings of a zero
-           * currentRect, and without them the first version was unreadable.
+          /* A ZERO currentRect DOES NOT MEAN THE ELEMENT WAS REMOVED. It means the element moved
+           * out of the viewport, so its intersection with the viewport is empty.
            *
-           * It reported `.caveats` as "y 492 -> 0, height 322 -> 0" on Compare. Taken at face value
-           * that means the element was REMOVED. But `.caveats` is static HTML that nothing in the
-           * page removes, and the empty `#cmp` above it can only push it DOWN when it fills. The
-           * reading did not fit the markup, two attempts to reproduce the shift in an unthrottled
-           * browser recorded zero entries, so neither the reading nor the serialisation was ever
-           * confirmed. Rather than diagnose a page from a number I could not corroborate, the probe
-           * now records whether the node is still in the document and where it actually sits, so
-           * the next throttled run answers the question instead of restating it.
+           * Reading it as removal sent me looking for code that deletes `.caveats` from the Compare
+           * page. Nothing does. `isConnected` and a live rect settled it in one run: the element
+           * reported `still in document: true` and `actual now y=3016 h=322`, having been at y=492
+           * before. It had not gone anywhere; the comparison table rendered into the empty `#cmp`
+           * above it and pushed it 2,500px down the page.
+           *
+           * Those two fields are here so the next reader does not repeat that. The before and after
+           * rects alone are ambiguous between "moved far" and "disappeared", and the two call for
+           * opposite fixes.
            */
           sources: (e.sources || []).slice(0, 3).map((s) => {
             const n = s.node;
@@ -201,7 +202,9 @@ function attributionSelfTest() {
       po = new PerformanceObserver((list) => {
         for (const e of list.getEntries()) {
           for (const s of e.sources || []) {
-            if (s.node && s.node.id === "tw-selftest-victim") seen.push(Math.round(e.value * 1e4) / 1e4);
+            if (s.node && s.node.getAttribute && s.node.getAttribute("data-tw-selftest") === "1") {
+              seen.push(Math.round(e.value * 1e4) / 1e4);
+            }
           }
         }
       });
@@ -210,34 +213,51 @@ function attributionSelfTest() {
       return resolve({ ran: false, reason: String(e) });
     }
 
+    /* The victim must be an element that is ALREADY RENDERED and already inside the viewport.
+     *
+     * The first version of this self-test created a fresh <p>, inserted it, then pushed it down. It
+     * reported "not attributed" on all six routes, including routes where attribution demonstrably
+     * worked, because a newly inserted node is not a shifted node: the layout-shift API counts
+     * previously-painted content that moves, and has nothing to say about content that did not
+     * exist a frame ago. The self-test was failing itself rather than the thing it was testing,
+     * which is at least the right direction to fail in, but it certified nothing.
+     */
     window.scrollTo(0, 0);
-    const victim = document.createElement("p");
-    victim.id = "tw-selftest-victim";
-    victim.textContent = "layout probe self test";
-    victim.style.cssText = "margin:0;height:60px";
-    const host = document.body;
-    host.insertBefore(victim, host.firstChild);
+    const vh = window.innerHeight;
+    const victim = Array.from(document.body.querySelectorAll("p, h1, h2, li, div"))
+      .find((el) => {
+        const r = el.getBoundingClientRect();
+        return r.height > 12 && r.width > 40 && r.top >= 0 && r.bottom < vh * 0.8 &&
+               getComputedStyle(el).position === "static";
+      });
+    if (!victim) {
+      try { po.disconnect(); } catch (_) {}
+      return resolve({ ran: false, reason: "no statically positioned element inside the viewport to move" });
+    }
+    const before = Math.round(victim.getBoundingClientRect().y);
+    victim.setAttribute("data-tw-selftest", "1");
 
-    requestAnimationFrame(() => {
-      const spacer = document.createElement("div");
-      spacer.id = "tw-selftest-spacer";
-      spacer.style.cssText = "height:320px";
-      host.insertBefore(spacer, victim);
-      setTimeout(() => {
-        try { po.disconnect(); } catch (_) {}
-        spacer.remove();
-        victim.remove();
-        resolve({
-          ran: true,
-          attributed: seen.length > 0,
-          values: seen,
-          note: seen.length
-            ? "the observer named the element that was moved, so source attribution works here"
-            : "a 320px shift at the top of the viewport produced no attributed entry, so any " +
-              "element names printed above are NOT to be trusted",
-        });
-      }, 400);
-    });
+    const spacer = document.createElement("div");
+    spacer.style.cssText = "height:320px";
+    victim.parentNode.insertBefore(spacer, victim);
+
+    setTimeout(() => {
+      try { po.disconnect(); } catch (_) {}
+      const after = Math.round(victim.getBoundingClientRect().y);
+      spacer.remove();
+      victim.removeAttribute("data-tw-selftest");
+      resolve({
+        ran: true,
+        movedBy: after - before,
+        attributed: seen.length > 0,
+        values: seen,
+        note: seen.length
+          ? "a known 320px shift was attributed to the element that actually moved, so the source " +
+            "names above are evidence"
+          : "a known 320px shift of an already-painted element produced no attributed entry, so the " +
+            "element names above are NOT evidence",
+      });
+    }, 500);
   });
 }
 

@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: layout-check layout-check-live perf-check perf-baseline refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: layout-check layout-check-live perf-check perf-baseline perf-check-local refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -186,6 +186,12 @@ perf-check:
 
 perf-baseline:
 	node tests/layout_check.js --live --perf --record-baseline
+
+# Against the LOCAL build, for checking a layout or CLS fix BEFORE it is deployed.
+# Needs ./preview-build.sh first. Its numbers are not comparable to the live baseline,
+# because a local server has no CDN in front of it; read the CLS, not the LCP.
+perf-check-local:
+	node tests/layout_check.js --perf
 
 lint:
 	ruff check . && ruff format --check .
