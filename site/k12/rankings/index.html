@@ -27,7 +27,7 @@
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
     .subnav a.active { color: var(--brand-deep); border-bottom-color: var(--brand); }
-    .subnav span { color: #98a1b0; }
+    .subnav span { color: var(--none); }
     .r-head { padding: 44px 0 6px; }
     .r-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
     .r-head p.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 62ch; }
@@ -38,8 +38,16 @@
     .bars li { display: grid; grid-template-columns: 150px 1fr 56px; align-items: center; gap: 10px; padding: 4px 0; }
     .bars .st { font-size: .92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bars .track { height: 16px; background: #eef1f6; border-radius: 5px; overflow: hidden; }
-    .bars .fill { height: 100%; background: var(--brand); border-radius: 5px; }
-    .bars li.hi .fill { background: #b42318; }
+    /* display:block is what makes this a bar at all.
+       .fill is a <span>, so it is display:inline by default, and width and height do not apply to
+       an inline non-replaced element. Every fill on this page rendered at 0px wide: Massachusetts
+       at width:100% and Puerto Rico at width:5% were both invisible, and what a reader saw was 52
+       identical empty tracks. The percentages beside them were correct, so the page looked
+       populated rather than broken, which is why it survived a redesign and three review rounds. */
+    .bars .fill { display: block; height: 100%; background: var(--brand); border-radius: 5px; }
+    /* Was a raw #b42318, a red belonging to no palette this site uses. The worst-five highlight is
+       a negative series fill, which the forest palette names. */
+    .bars li.hi .fill { background: var(--series-neg); }
     .bars .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: .92rem; }
     .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 760px; color: var(--ink-soft); font-size: .9rem; }
   </style>

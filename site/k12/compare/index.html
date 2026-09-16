@@ -49,7 +49,12 @@
     table.cmp .schname { font-weight: 700; }
     table.cmp .schmeta { color: var(--ink-soft); font-size: .82rem; font-weight: 400; }
     table.cmp .rm { color: #b42318; cursor: pointer; font-size: .8rem; font-weight: 600; }
-    .yes { color: #067647; font-weight: 700; } .no { color: #98a1b0; } .na { color: #98a1b0; font-style: italic; }
+    /* .no is "not offered" and .na is "not reported", and keeping those two distinguishable was
+       the whole point of the P1 missingness work. They were set in #98a1b0, which measures 2.50:1
+       on paper against the 4.5:1 AA minimum: the two labels that carry the honesty distinction were
+       the least legible text on the page. --none is the palette's own token for this state and
+       measures 5.78:1. */
+    .yes { color: #067647; font-weight: 700; } .no { color: var(--none); } .na { color: var(--none); font-style: italic; }
     .num { font-variant-numeric: tabular-nums; }
     .empty { color: var(--ink-soft); padding: 16px 0; }
     @media (max-width: 560px) { table.cmp thead th { top: 0; } }

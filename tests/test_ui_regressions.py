@@ -1482,3 +1482,52 @@ def test_the_k12_pages_announce_when_their_results_change():
     assert re.search(r'id="sub"[^>]*role="status"', rank_code), (
         "the ranking subtitle is the live region; changing the metric must be announced"
     )
+
+
+def test_a_bar_whose_width_is_set_in_js_is_not_an_inline_element():
+    """The K-12 ranking drew 52 bars and every one measured 0px wide.
+
+    `.fill` is a <span>, so it is display:inline, and width does not apply to an inline
+    non-replaced element. Massachusetts at width:100% and Puerto Rico at width:5% rendered
+    identically: nothing. The percentages printed beside them were correct, so the page looked
+    populated rather than broken, and it survived a full redesign and three rounds of review.
+
+    Any element whose width is set from JavaScript has to be block, inline-block, flex, grid, or
+    absolutely positioned. The Careers range bar gets away with a <i> only because it is
+    position:absolute, which makes the box block-level.
+    """
+    for page, fill_sel in (
+        (SITE / "k12" / "rankings" / "index.html", ".bars .fill"),
+    ):
+        css = page.read_text()
+        rule = re.search(re.escape(fill_sel) + r"\s*\{([^}]*)\}", css)
+        assert rule, f"{fill_sel} has no rule in {page.name}"
+        body = rule.group(1)
+        assert re.search(r"display:\s*(block|inline-block|flex|grid)", body) or \
+               re.search(r"position:\s*absolute", body), (
+            f"{fill_sel} sets a width from JS but is not block-level, so the bar renders at 0px"
+        )
+
+
+def test_the_k12_not_offered_and_not_reported_labels_are_legible():
+    """`.no` (not offered) and `.na` (not reported) are the two labels the missingness work exists
+    to keep apart, and they shipped in #98a1b0: 2.50:1 on paper, against a 4.5:1 AA minimum. The
+    distinction the data careful about was the hardest text on the page to read.
+
+    Asserting on the hex rather than recomputing the ratio here, because tests/test_contrast.py
+    already does real WCAG math over the palette; this only has to stop the raw value coming back.
+
+    Comments stripped first. The comment added beside the fix names the hex it removed in order to
+    explain it, so the first version of this guard found the value in its own explanation and failed
+    on a page that had been fixed. That is the third time in one session that a check has matched the
+    prose describing a fix rather than the code performing it, which is now less a mistake than a
+    property of writing checks against files that document themselves.
+    """
+    for name in ("index.html", "rankings/index.html", "compare/index.html",
+                 "advanced-courses/index.html"):
+        raw = (SITE / "k12" / name).read_text()
+        css = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+        assert "#98a1b0" not in css, (
+            f"k12/{name} still uses #98a1b0, which fails AA at 2.50:1; use var(--none) at 5.78:1"
+        )
