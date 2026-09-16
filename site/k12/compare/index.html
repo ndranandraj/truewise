@@ -88,6 +88,7 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" />
       </div>
+      <p id="k12-live" class="rescount" role="status" aria-live="polite" style="margin:6px 0 0;font-size:.86rem;color:var(--ink-soft)"></p>
       <ul class="results" id="results"></ul>
       <div id="cmp"></div>
     </section>
@@ -118,6 +119,8 @@
   }
 
   const q = document.getElementById("q"), results = document.getElementById("results"), cmp = document.getElementById("cmp");
+  const liveEl = document.getElementById("k12-live");
+  const announce = (msg) => { if (liveEl) liveEl.textContent = msg; };
   let t;
   q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
   async function search() {
@@ -129,15 +132,36 @@
     results.innerHTML = hits.length ? hits.map(s =>
       `<li><button type="button" class="res" data-k="${s.k}" data-s="${s.s}"><b>${esc(s.n)}</b> <span class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</span></button></li>`).join("")
       : `<li class="empty">No high schools match.</li>`;
+    /* Say how many results there are. The list appeared silently before: a screen reader user typed
+       a school name and heard nothing, with no way to know whether anything had matched short of
+       arrowing into the list to find out. The count is capped at 8 by the provider's limit, so it
+       says "8 or more" rather than implying it searched and found exactly eight. */
+    announce(hits.length
+      ? `${hits.length >= 8 ? "8 or more" : hits.length} high school${hits.length === 1 ? "" : "s"} match. `
+        + `Use the buttons below to add one.`
+      : "No high schools match.");
     results.querySelectorAll("button[data-k]").forEach(b =>
       b.addEventListener("click", () => add(b.dataset.k, b.dataset.s)));
   }
   async function add(k, st) {
     if (picked.length >= MAX || picked.some(p => p.k === k)) return;
     const rec = (await loadState(st))[k];
-    if (rec) { picked.push({ k, rec }); q.value = ""; results.innerHTML = ""; render(); }
+    if (rec) {
+      picked.push({ k, rec }); q.value = ""; results.innerHTML = ""; render();
+      announce(`${esc(rec.n || "School")} added. ${picked.length} of ${MAX} schools being compared.`);
+    }
   }
-  function remove(k) { const i = picked.findIndex(p => p.k === k); if (i > -1) { picked.splice(i, 1); render(); } }
+  function remove(k) {
+    const i = picked.findIndex(p => p.k === k);
+    if (i > -1) {
+      const gone = picked[i].rec;
+      picked.splice(i, 1); render();
+      /* Removal has to speak too. It is the one action whose whole effect is that something is no
+         longer on screen, so a reader who cannot see the table has nothing else to go on. */
+      announce(`${esc((gone && gone.n) || "School")} removed. `
+        + (picked.length ? `${picked.length} of ${MAX} schools being compared.` : "No schools selected."));
+    }
+  }
 
   function render() {
     if (!picked.length) { cmp.innerHTML = `<p class="hint">Search above to add schools to compare.</p>`; return; }

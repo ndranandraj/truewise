@@ -76,7 +76,13 @@
         <label for="metric">Rank states by high schools that</label>
         <select id="metric"></select>
       </div>
-      <p id="sub" class="lede" style="font-size:.95rem;margin:4px 0 0"></p>
+      <!-- The sentence IS the live region, rather than a second hidden one saying the same thing.
+           Changing the metric replaces the whole ranking and, before this, said nothing at all to a
+           screen reader. A separate announcement element would have to be kept in step with this
+           one, and the Careers page has already shown what happens when two statements about one
+           list drift apart: the region kept announcing "Showing 50 of 738" over a list of 13. One
+           element cannot disagree with itself. -->
+      <p id="sub" class="lede" role="status" aria-live="polite" style="font-size:.95rem;margin:4px 0 0"></p>
       <ul class="bars" id="bars"></ul>
       <div class="caveats"><strong>How to read this.</strong> Each bar is the share of a state's public high
         schools reporting the selected measure to the U.S. Department of Education's Office for Civil Rights
@@ -113,9 +119,22 @@
     const rows = STATES.map(s => ({ st: s.state, v: m.get(s) })).filter(r => r.v != null);
     rows.sort((a,b) => m.hiWorst ? b.v - a.v : b.v - a.v); // always descending
     const max = Math.max(...rows.map(r => r.v), 1);
-    sub.textContent = m.hiWorst
-      ? `States where the most high schools ${m.label} are at the top.`
-      : `States where the most high schools ${m.label} are at the top.`;
+    /* One sentence per metric, because one template does not fit all nine.
+       The previous version was a ternary on hiWorst with two IDENTICAL branches, which is what a
+       copy-paste leaves behind: something was meant to differ here and never did. The cost was
+       visible on the live page. Eight metrics are a share of high schools and read correctly, and
+       the ninth is a state median ratio, which produced "States where the most high schools
+       students per counselor (state median) are at the top." That is not a sentence.
+       The direction is also stated now. On six of these metrics the top is the good end and on
+       three it is the bad end, the list looks identical either way, and only the highlight on the
+       worst five hinted at which was which. A ranking a reader can read upside down is worse than
+       no ranking. */
+    sub.textContent = m.unit === ":1"
+      ? `Ranked by each state's median number of students per counselor, highest first. `
+        + `A higher number means each counselor is responsible for more students, so the states `
+        + `at the top are the most stretched.`
+      : `States where the most high schools ${m.label} are at the top.`
+        + (m.hiWorst ? " On this measure, the top of the list is the worse end." : "");
     bars.innerHTML = rows.map((r, idx) => {
       const w = Math.round(r.v / max * 100);
       const hi = m.hiWorst && idx < 5;

@@ -1428,3 +1428,57 @@ def test_careers_announces_a_changed_count_and_not_only_a_reveal():
     assert re.search(r"\n\s*draw\(\);\s*\n\s*q\.focus\(\);", tail), (
         "the initial draw() should stay a plain draw, with no announcement on first paint"
     )
+
+
+def test_every_k12_ranking_metric_gets_a_sentence_that_parses():
+    """One sentence template did not fit all nine metrics, and the ternary meant to fix it had two
+    identical branches.
+
+    Eight metrics are a share of high schools and read correctly. The ninth is a state median ratio,
+    and it shipped as "States where the most high schools students per counselor (state median) are
+    at the top." That is not a sentence, and it was live.
+
+    Duplicated ternary branches are the tell: something was meant to differ and never did. This
+    guard asserts on the METRICS table itself rather than on one known-bad string, so adding a
+    tenth metric with a new unit fails here rather than on the page.
+    """
+    src = (SITE / "k12" / "rankings" / "index.html").read_text()
+    # Comments stripped once, at the top. The comment beside this fix quotes the broken sentence
+    # verbatim to explain it, so asserting on the raw file would pass on the explanation.
+    code = re.sub(r"<!--.*?-->", "", src, flags=re.S)
+    code = re.sub(r"/\*.*?\*/", "", code, flags=re.S)
+
+    block = code.split("const METRICS = [", 1)[1].split("];", 1)[0]
+    units = set(re.findall(r'unit:"([^"]+)"', block))
+    assert units == {"%", ":1"}, f"a new metric unit appeared: {units}; the sentence must handle it"
+
+    # The share template must appear exactly once. Twice means the duplicated-branch bug is back.
+    assert code.count("are at the top.") == 1, (
+        "the 'are at the top' template appears more than once, which is how the identical-branch "
+        "ternary looked before it was fixed"
+    )
+    assert 'm.unit === ":1"' in code, "the ratio metric has no sentence of its own"
+    # Direction must be stated: six metrics are good at the top and three are bad, and the list
+    # looks the same either way.
+    assert "the worse end" in code, "a hiWorst ranking must say the top is the bad end"
+
+
+def test_the_k12_pages_announce_when_their_results_change():
+    """Careers was silent on search because it was a separate code path from components/table.js.
+    So are the K-12 pages, and two of them had no live region at all: compare returned search hits
+    silently, and rankings replaced the entire ranked list on a select change without a word.
+    """
+    comp = (SITE / "k12" / "compare" / "index.html").read_text()
+    comp_code = re.sub(r"/\*.*?\*/", "", re.sub(r"<!--.*?-->", "", comp, flags=re.S), flags=re.S)
+    assert 'id="k12-live"' in comp_code and 'aria-live="polite"' in comp_code
+    assert comp_code.index('id="k12-live"') < comp_code.index('id="results"'), (
+        "the live region must come before the list it describes"
+    )
+    # Search, add and remove all change what is on screen, so all three must speak.
+    assert comp_code.count("announce(") >= 3, "search, add and remove must each announce"
+
+    rank = (SITE / "k12" / "rankings" / "index.html").read_text()
+    rank_code = re.sub(r"<!--.*?-->", "", rank, flags=re.S)
+    assert re.search(r'id="sub"[^>]*role="status"', rank_code), (
+        "the ranking subtitle is the live region; changing the metric must be announced"
+    )
