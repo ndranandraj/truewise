@@ -47,7 +47,13 @@
     .mini { display: inline-flex; gap: 12px; margin-top: 8px; font-size: .88rem; }
     .mini .f { color: #b42318; font-weight: 700; }
     .mini .p { color: #067647; font-weight: 700; }
-    .mini .i { color: #6b7688; }
+    /* .i is the insufficient-data count, beside .f (fall short) and .p (pass). It was #6b7688:
+       4.40:1 on paper, against a 4.5:1 AA minimum. That is the third page on this site where the
+       UNKNOWN state turned out to be the least legible text on it, after k12 .no and .na. For a
+       project whose whole argument is that unknown must be shown rather than rounded away,
+       rendering it as the hardest thing to read is the wrong kind of consistency. --none is the
+       palette's token for the state, at 5.78:1. */
+    .mini .i { color: var(--none); }
     .searchbox input:disabled { color: var(--ink-faint); cursor: progress; }
     .results li.active .school-card, .school-card:focus-visible { border-color: var(--brand); box-shadow: 0 4px 16px rgba(31,111,235,.12); outline: none; }
     .rescount { color: var(--ink-faint); font-size: .85rem; margin: 14px 0 2px; }
@@ -147,7 +153,12 @@
     .prem-val.pos { color: #067647; } .prem-val.neg { color: #b42318; }
     .minibar { position: relative; display: block; height: 6px; background: #eef1f6; border-radius: 3px; margin-top: 5px; }
     .minibar .fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px; }
-    .minibar .fill.pf { background: var(--accent); } .minibar .fill.nf { background: #e0736a; }
+    /* The fall-short fill was #e0736a, which measures 2.72:1 against its own #eef1f6 track. WCAG
+       1.4.11 asks 3.0 for a non-text mark that carries meaning, and this one carries the only
+       meaning the bar has. The pass fill beside it sits at 4.36, so the visible half was the good
+       news and the half that failed to show was the bad news. --series-neg is what the forest
+       palette calls a shortfall, and it measures 7.25. */
+    .minibar .fill.pf { background: var(--accent); } .minibar .fill.nf { background: var(--series-neg); }
     .minibar .base { position: absolute; top: -2px; width: 2px; height: 10px; background: var(--ink); opacity: .55; }
     .insuff-view { margin-top: 12px; }
     .insuff-note { color: var(--ink-soft); font-size: .92rem; max-width: 760px; line-height: 1.55; }
@@ -712,12 +723,23 @@
         <h1>${esc(s.name)}</h1>
         <div class="sub">${bits.join(" · ")}${website}</div>
       </div>
+      <!-- "Coming soon" was wrong in every case it could appear. Every one of these modules has
+           shipped; `live` is data-driven (!!s.net_price, hasRoi, hasMob, hasCareers), so a false
+           value means THIS SCHOOL has no data for it, not that the feature is unfinished. 1,238
+           institutions have no net price, and each would have been told Affordability was on its
+           way. That is a missing value rendered as a different fact, which is the one thing this
+           site is supposed to never do.
+           This whole view is currently unreachable: schools.json and slug-map.json both hold the
+           same 6,127 schools, so every ?school= resolves and redirects to /college/<slug>/. It is
+           the deliberate fallback for a unitid absent from the map, kept so there is no dead end.
+           Unreachable is not the same as harmless, and a fallback that fires in a lying state is
+           worse than no fallback. -->
       <div class="modules" aria-label="Sections">
         ${modules.map(m => `
           <a class="mod${m.live ? " live" : " soon"}" ${m.live ? `href="#${m.anchor}"` : ""}>
             <span class="mod-name">${m.name}</span>
             <span class="mod-blurb">${m.blurb}</span>
-            <span class="mod-tag">${m.live ? "Live" : "Coming soon"}</span>
+            <span class="mod-tag">${m.live ? "Live" : "No data for this school"}</span>
           </a>`).join("")}
       </div>
       <section id="value-check" class="module">
