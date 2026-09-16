@@ -4,7 +4,27 @@
 const fs = require("fs");
 
 const html = fs.readFileSync("site/compare/index.html", "utf8");
-const js = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+
+// Take the page's APPLICATION script, not merely the first inline block on the page.
+//
+// This used to be `html.match(/<script>...`, which grabs whichever inline script appears first. The
+// moment a second one was added above it (a two-line layout-shift reservation that has to run before
+// #cmp paints) the test silently evaluated that instead, and then died on `add is not defined`: an
+// error about the page's code, raised because the test had loaded the wrong code. Nothing about the
+// application had changed.
+//
+// The largest inline block is the application by a wide margin, and a length comparison cannot be
+// fooled by document order the way an index can.
+const inline = Array.from(html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g))
+  .map((m) => m[1]);
+if (!inline.length) throw new Error("site/compare/index.html has no inline script to run");
+const js = inline.reduce((a, b) => (b.length > a.length ? b : a));
+if (!/function render|const render|renderCompare/.test(js)) {
+  throw new Error(
+    "the largest inline script does not look like the compare application; refusing to assert " +
+    "against whatever this is rather than reporting a pass over the wrong code",
+  );
+}
 const data = JSON.parse(fs.readFileSync("site/value-check/data/schools.json", "utf8")).schools;
 
 const mk = () => ({

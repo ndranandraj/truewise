@@ -4,7 +4,18 @@
 const fs = require("fs");
 
 const html = fs.readFileSync("site/embed/index.html", "utf8");
-const js = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+// Largest inline block, not the first one on the page. Taking the first is a trap that has now been
+// sprung once: adding a two-line script above the application on /compare/ made its smoke test
+// evaluate the wrong code and then fail with an error about the application, which had not changed.
+// search_smoke.js already selected by size; compare_smoke.js and this file did not, so the lesson
+// had been learned in one place and left in the other two.
+const inline = Array.from(html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g))
+  .map((m) => m[1]);
+if (!inline.length) throw new Error("site/embed/index.html has no inline script to run");
+const js = inline.reduce((a, b) => (b.length > a.length ? b : a));
+if (!/function card/.test(js)) {
+  throw new Error("the largest inline script is not the embed widget; refusing to assert against it");
+}
 const schools = JSON.parse(fs.readFileSync("site/value-check/data/schools.json", "utf8")).schools;
 
 let fails = 0;
