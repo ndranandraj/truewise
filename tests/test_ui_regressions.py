@@ -1496,17 +1496,14 @@ def test_a_bar_whose_width_is_set_in_js_is_not_an_inline_element():
     absolutely positioned. The Careers range bar gets away with a <i> only because it is
     position:absolute, which makes the box block-level.
     """
-    for page, fill_sel in (
-        (SITE / "k12" / "rankings" / "index.html", ".bars .fill"),
-    ):
+    for page, fill_sel in ((SITE / "k12" / "rankings" / "index.html", ".bars .fill"),):
         css = page.read_text()
         rule = re.search(re.escape(fill_sel) + r"\s*\{([^}]*)\}", css)
         assert rule, f"{fill_sel} has no rule in {page.name}"
         body = rule.group(1)
-        assert re.search(r"display:\s*(block|inline-block|flex|grid)", body) or \
-               re.search(r"position:\s*absolute", body), (
-            f"{fill_sel} sets a width from JS but is not block-level, so the bar renders at 0px"
-        )
+        assert re.search(r"display:\s*(block|inline-block|flex|grid)", body) or re.search(
+            r"position:\s*absolute", body
+        ), f"{fill_sel} sets a width from JS but is not block-level, so the bar renders at 0px"
 
 
 def test_the_k12_not_offered_and_not_reported_labels_are_legible():
@@ -1523,8 +1520,12 @@ def test_the_k12_not_offered_and_not_reported_labels_are_legible():
     prose describing a fix rather than the code performing it, which is now less a mistake than a
     property of writing checks against files that document themselves.
     """
-    for name in ("index.html", "rankings/index.html", "compare/index.html",
-                 "advanced-courses/index.html"):
+    for name in (
+        "index.html",
+        "rankings/index.html",
+        "compare/index.html",
+        "advanced-courses/index.html",
+    ):
         raw = (SITE / "k12" / name).read_text()
         css = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
         css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
