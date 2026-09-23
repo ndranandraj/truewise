@@ -23,6 +23,8 @@ Usage (from repo root, after download_bls has produced the three raw CSVs):
 
 from __future__ import annotations
 
+import json
+
 import duckdb
 
 from pipeline.config import PARQUET_DIR, RAW_DIR
@@ -31,13 +33,30 @@ TOP_N = 6  # occupations listed per field, most annual openings first
 OEWS_WAGE_CAP = 239200  # BLS reports '#' for annual wages at or above this cap
 
 
-def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
+def ep_years(ep: str) -> tuple[str, str]:
+    """'2025-35' -> ('2025', '2035')."""
+    start, end = ep.split("-")
+    return start, start[:2] + end
+
+
+def build_demand(
+    con: duckdb.DuckDBPyConnection,
+    vintage: dict,
+    top_n: int = TOP_N,
+) -> None:
     """Create a `careers_demand` table from `xwalk`, `oews`, `ep` tables on `con`.
 
     Expects each table to already expose normalized logical columns:
       xwalk(cip, soc)  oews(soc, title, wage)  ep(soc, growth, openings)
     with cip a 4-digit code (no dot) and soc a 6-digit code (e.g. '29-1141').
+
+    `vintage` is {"oews": "May 2025", "ep": "2025-35"} as detected by download_bls from the source
+    files. It is written into every row, so every page that prints a BLS label reads it from the
+    data it is describing rather than from a string someone has to remember to update.
     """
+    start, end = ep_years(vintage["ep"])
+    oews_sql = vintage["oews"].replace("'", "''")
+    ep_sql = vintage["ep"].replace("'", "''")
     con.execute(
         f"""
         CREATE OR REPLACE TABLE careers_demand AS
@@ -51,7 +70,7 @@ def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
         ),
         ranked AS (
             SELECT *, row_number() OVER (
-                PARTITION BY cip ORDER BY openings DESC NULLS LAST, wage DESC
+                PARTITION BY cip ORDER BY openings DESC NULLS LAST, wage DESC, soc
             ) AS rn
             FROM occ
         ),
@@ -67,8 +86,9 @@ def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
             to_json({{
                 'growth_pct': a.growth_pct,
                 'annual_openings': a.annual_openings,
+                'vintage': {{'oews': '{oews_sql}', 'ep': '{ep_sql}'}},
                 'summary': 'Occupations this field commonly leads to, with BLS median pay and the '
-                    || '2024-2034 outlook. Openings are the projected annual total across those '
+                    || '{start}-{end} outlook. Openings are the projected annual total across those '
                     || 'occupations, which also serve other majors, so they are not jobs reserved '
                     || 'for this field''s graduates.',
                 'occupations': (
@@ -79,6 +99,7 @@ def build_demand(con: duckdb.DuckDBPyConnection, top_n: int = TOP_N) -> None:
                 )
             }}) AS demand_json
         FROM agg a
+        ORDER BY a.cip
         """
     )
 
@@ -130,7 +151,15 @@ def _load_raw(con: duckdb.DuckDBPyConnection) -> None:
 def main() -> None:
     con = duckdb.connect()
     _load_raw(con)
-    build_demand(con)
+    vfile = RAW_DIR / "bls_vintage.json"
+    if not vfile.exists():
+        raise SystemExit(
+            f"Missing {vfile}. Run `python -m pipeline.download_bls` first: it records which OEWS "
+            "and Employment Projections release the CSVs came from, and every page prints that."
+        )
+    vintage = json.loads(vfile.read_text())
+    build_demand(con, vintage=vintage)
+    print(f"BLS vintage: OEWS {vintage['oews']}, Employment Projections {vintage['ep']}")
     PARQUET_DIR.mkdir(parents=True, exist_ok=True)
     out = PARQUET_DIR / "careers_demand.parquet"
     con.execute(f"COPY careers_demand TO '{out}' (FORMAT PARQUET)")

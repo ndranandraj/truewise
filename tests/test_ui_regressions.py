@@ -2003,3 +2003,40 @@ def test_every_page_uses_the_one_shared_footer():
         if m and norm(m.group(0)) != reference:
             odd.append(rel)
     assert not odd, "pages with a footer that differs from the shared one: " + ", ".join(odd)
+
+
+def test_bls_labels_follow_the_published_data():
+    """BLS published May 2025 wages and the 2025-35 projections, and the site kept printing May 2024
+    and 2024-34 for months because the labels were typed by hand in five places. The release now
+    travels inside published/careers_demand.parquet. Careers and the major pages read it from the
+    data; Methodology and the README are prose, so this checks them against the same data."""
+    import json
+
+    import duckdb
+
+    rows = (
+        duckdb.connect()
+        .execute(
+            "SELECT demand_json FROM read_parquet(?)",
+            [str(ROOT / "published" / "careers_demand.parquet")],
+        )
+        .fetchall()
+    )
+    vintages = {json.dumps(json.loads(r[0]).get("vintage"), sort_keys=True) for r in rows}
+    assert len(vintages) == 1, f"the demand layer mixes releases: {vintages}"
+    v = json.loads(vintages.pop())
+    assert v and v.get("oews") and v.get("ep"), "the demand layer must carry its BLS vintage"
+
+    meth = re.sub(r"\s+", " ", (SITE / "methodology" / "index.html").read_text())
+    readme = re.sub(r"\s+", " ", (ROOT / "README.md").read_text())
+    for name, text in (("methodology", meth), ("README", readme)):
+        assert f"OEWS {v['oews']}" in text or f"OEWS** ({v['oews']})" in text, (
+            f"{name} names a different OEWS release than the data ({v['oews']})"
+        )
+        assert v["ep"] in text, f"{name} names a different projections release than the data"
+
+    for path in (PIPELINE / "build_majors_pages.py", SITE / "careers" / "index.html"):
+        src = path.read_text()
+        assert not re.search(r"May 20\d\d wages|\(20\d\d to 20\d\d\)", src), (
+            f"{path.name} hard-codes a BLS release; read it from demand.vintage"
+        )

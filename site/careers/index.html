@@ -351,6 +351,11 @@
     if (!f) { app.innerHTML = `<a class="backlink" href="/careers/" id="back">← All majors</a><p class="empty">Major not found.</p>`; wireBack(); return; }
     const creds = all.slice().sort((a, b) => (a.cred || "").localeCompare(b.cred || ""));
     const d = f.demand;
+    // The BLS release travels with the data (build_careers_demand writes it into every field), so
+    // this label cannot fall behind the numbers it describes. Before, it was typed into the page.
+    const blsLabel = d && d.vintage
+      ? "OEWS " + d.vintage.oews + " wages and Employment Projections " + d.vintage.ep
+      : "OEWS wages and Employment Projections";
     const demandHtml = d && d.occupations && d.occupations.length ? `
       <div class="demand">
         <h3>Where it leads, and the outlook</h3>
@@ -391,8 +396,8 @@
         the middle half (25th to 75th percentile) of school-level medians, so it shows how much the same major
         varies by where you study. "Clear the bar" is the share of programs whose graduates out-earn a typical
         high-school graduate (the federal earnings-premium test). These describe past graduates, not a promise.
-        Earnings source: ${DATA_VINTAGE}. Occupation pay and outlook: U.S. Bureau of Labor Statistics, OEWS
-        May 2024 wages and Employment Projections 2024-34. <a href="/methodology/">Methodology</a>.</div>`;
+        Earnings source: ${DATA_VINTAGE}. Occupation pay and outlook: U.S. Bureau of Labor Statistics,
+        ${blsLabel}. <a href="/methodology/">Methodology</a>.</div>`;
     app.querySelectorAll(".credlink").forEach(a =>
       a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
     wireBack();

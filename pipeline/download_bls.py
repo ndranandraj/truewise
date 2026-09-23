@@ -26,13 +26,22 @@ Usage (run from the repo root, on a machine with network access):
 from __future__ import annotations
 
 import io
+import json
+import re
 import zipfile
 
 from pipeline.config import RAW_DIR
 
 CIP_SOC_XLSX = "https://nces.ed.gov/ipeds/cipcode/Files/CIP2020_SOC2018_Crosswalk.xlsx"
-OEWS_NAT_ZIP = "https://www.bls.gov/oes/special-requests/oesm23nat.zip"
+OEWS_NAT_ZIP = "https://www.bls.gov/oes/special-requests/oesm25nat.zip"
 EP_XLSX = "https://www.bls.gov/emp/tables/occupational-projections-and-openings.xlsx"
+VINTAGE_JSON = "bls_vintage.json"
+
+# The vintage every Careers and major page prints is read from the source files themselves and
+# written to data/raw/bls_vintage.json, then carried inside careers_demand.parquet. It used to be
+# typed by hand in five places, which is how the site kept saying "May 2024" and "2024-34" for four
+# months after BLS published May 2025 wages and the 2025-35 projections.
+_VINTAGE: dict[str, str] = {}
 
 BROWSER_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -40,7 +49,7 @@ BROWSER_UA = (
 )
 SOURCE_PAGES = {
     "crosswalk": "https://nces.ed.gov/ipeds/cipcode/resources.aspx (CIP 2020 to SOC 2018 crosswalk)",
-    "oews": "https://www.bls.gov/oes/tables.htm (OEWS, May 2024, National, 'All data' zip)",
+    "oews": "https://www.bls.gov/oes/tables.htm (OEWS, latest May release, National, 'All data' zip)",
     "ep": "https://www.bls.gov/emp/tables/occupational-projections-and-openings.htm",
 }
 
@@ -87,7 +96,13 @@ def _oews(pd) -> None:
             with z.open(member) as fh:
                 df = pd.read_excel(fh, dtype=str)
     else:
+        member = src
         df = pd.read_excel(io.BytesIO(raw), dtype=str)
+    year = re.search(r"_M(20\d\d)_dl", member) or re.search(r"oesm(\d\d)nat", src)
+    if not year:
+        raise ValueError(f"cannot tell which OEWS year {member!r} is; refusing to guess")
+    y = year.group(1)
+    _VINTAGE["oews"] = f"May {y if len(y) == 4 else '20' + y}"
     grp = _pick(df.columns, "o_group")
     df = df[df[grp].str.lower() == "detailed"]
     out = pd.DataFrame(
@@ -118,6 +133,16 @@ def _ep(pd) -> None:
             continue
     if frame is None:
         raise KeyError("no EP sheet with change-percent + openings columns")
+    years = sorted(
+        {
+            int(m.group(1))
+            for c in frame.columns
+            if (m := re.search(r"employment,\s*(20\d\d)", str(c).lower()))
+        }
+    )
+    if len(years) < 2:
+        raise ValueError("cannot find the projection's base and target years; refusing to guess")
+    _VINTAGE["ep"] = f"{years[0]}-{str(years[-1])[2:]}"
     typ = _pick(frame.columns, "occupation type")
     frame = frame[frame[typ].str.lower() == "line item"]  # detailed occupations only
     out = pd.DataFrame(
@@ -145,6 +170,9 @@ def main() -> None:
             print(f"  [SKIP] {name}: {e}")
             print(f"         Download by hand from {SOURCE_PAGES[name]}")
             print(f"         and drop the file in {RAW_DIR}, then re-run.")
+    if _VINTAGE:
+        (RAW_DIR / VINTAGE_JSON).write_text(json.dumps(_VINTAGE, indent=2) + "\n")
+        print(f"  vintage: {_VINTAGE} -> {RAW_DIR / VINTAGE_JSON}")
     print(f"\n{ok}/3 sources ready in {RAW_DIR}.")
     if ok < 3:
         raise SystemExit("Not all Careers demand sources are available yet (see notes above).")

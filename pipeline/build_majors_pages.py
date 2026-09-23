@@ -19,6 +19,7 @@ import duckdb
 
 from pipeline import tokens_gen as tk
 from pipeline.build_careers import build_fields
+from pipeline.build_careers_demand import ep_years
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
 from pipeline.config import PARQUET_DIR, ROOT
@@ -294,12 +295,12 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         rng = (
             f"{money(c['p25'])} to {money(c['p75'])}"
             if c.get("p25") is not None and c.get("p75") is not None
-            else "n/a"
+            else "insufficient data"
         )
-        passp = "n/a" if c.get("pass_pct") is None else f"{c['pass_pct']}%"
+        passp = "insufficient data" if c.get("pass_pct") is None else f"{c['pass_pct']}%"
         parts.append(
             f"      <tr><td>{esc(c['credential'])}</td><td class='num'>{money(c['med'])}</td>"
-            f"<td class='num'>{rng}</td><td class='num'>{c.get('schools') or 'n/a'}</td>"
+            f"<td class='num'>{rng}</td><td class='num'>{c.get('schools') or 'insufficient data'}</td>"
             f"<td class='num'>{passp}</td></tr>\n"
         )
     parts.append("    </tbody></table></div>\n")
@@ -314,12 +315,16 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     if demand:
         g = demand.get("growth_pct")
         opn = demand.get("annual_openings")
-        gtxt = "n/a" if g is None else f"{g:+g}%"
-        otxt = "n/a" if opn is None else f"{int(round(opn)):,}"
+        # BLS unknowns read "not published", the site rule for BLS figures.
+        gtxt = "not published" if g is None else f"{g:+g}%"
+        otxt = "not published" if opn is None else f"{int(round(opn)):,}"
+        # The projection years come from the data (see build_careers_demand), not from this file.
+        ep_start, ep_end = ep_years(demand["vintage"]["ep"])
         parts.append('    <h2 class="sec">Job outlook</h2>\n')
         parts.append(
-            f'    <p class="idline">Projected employment growth <b>{gtxt}</b> (2024 to 2034), about '
-            f"<b>{otxt}</b> openings a year across the occupations this field commonly leads to.</p>\n"
+            f'    <p class="idline">Projected employment growth <b>{gtxt}</b> ({ep_start} to {ep_end}), '
+            f"about <b>{otxt}</b> openings a year across the occupations this field commonly leads "
+            "to.</p>\n"
         )
         occ = demand.get("occupations") or []
         if occ:
@@ -329,8 +334,12 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
             )
             for o in occ:
                 w = money(o.get("wage"))
-                gr = "n/a" if o.get("growth") is None else f"{o['growth']:+g}%"
-                op = "n/a" if o.get("openings") is None else f"{int(round(o['openings'])):,}"
+                gr = "not published" if o.get("growth") is None else f"{o['growth']:+g}%"
+                op = (
+                    "not published"
+                    if o.get("openings") is None
+                    else f"{int(round(o['openings'])):,}"
+                )
                 parts.append(
                     f"      <tr><td>{esc(o.get('title'))}</td><td class='num'>{w}</td>"
                     f"<td class='num'>{gr}</td><td class='num'>{op}</td></tr>\n"

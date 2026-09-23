@@ -80,7 +80,7 @@ def test_build_demand_lists_occupations_with_outlook():
         "INSERT INTO ep VALUES (?,?,?)",
         [("29-1141", 6.0, 193100.0), ("15-1252", 17.0, 153900.0)],
     )
-    bcd.build_demand(con)
+    bcd.build_demand(con, vintage={"oews": "May 2025", "ep": "2025-35"})
 
     d = dict(con.execute("SELECT cip_code, demand_json FROM careers_demand").fetchall())
     assert set(d) == {"5138", "1101"}
@@ -89,3 +89,6 @@ def test_build_demand_lists_occupations_with_outlook():
     assert nursing["growth_pct"] == 6
     assert nursing["occupations"][0]["title"] == "Registered Nurses"
     assert nursing["occupations"][0]["wage"] == 81000
+    # The release travels with the data, so no page has to be told which BLS year it is showing.
+    assert nursing["vintage"] == {"oews": "May 2025", "ep": "2025-35"}
+    assert "2025-2035 outlook" in nursing["summary"]
