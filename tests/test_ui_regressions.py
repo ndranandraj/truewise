@@ -1575,3 +1575,35 @@ def test_every_inline_script_on_a_hand_written_page_parses(tmp_path):
                 failures.append(f"{rel} script {i}: {r.stderr.strip().splitlines()[-1]}")
     assert checked >= 5, f"only {checked} inline scripts found; the page scan itself is broken"
     assert not failures, "inline scripts that do not parse:\n" + "\n".join(failures)
+
+
+def test_the_profile_program_table_fits_a_laptop_and_keeps_program_names_whole():
+    """The program table needed 1,058px in an 858px column at 1280px, and the Program column came out
+    narrowest of eight at 87px, so names split inside words ("Financ / e", "Informat / ion").
+
+    Measured fix, all eight sampled profiles fitting with no horizontal scroll: headers may wrap,
+    Program has a 10em floor, the 1-year marker may wrap, "insufficient data" runs at fine size, the
+    premium bar is 32px and side padding is one spacing step. Each rule below is one of those, so
+    removing any of them brings a column's width back above what the page can hold.
+    """
+    raw = (ROOT / "components" / "components.css").read_text()
+    css = re.sub(r"/\*.*?\*/", "", raw, flags=re.S)
+
+    def rule(selector):
+        m = re.search(r"(?m)^" + re.escape(selector) + r"\s*\{([^}]*)\}", css)
+        assert m, f"{selector} rule is missing from components.css"
+        return m.group(1)
+
+    assert "nowrap" not in rule(".tw-th"), (
+        "table headers held on one line set the column widths again"
+    )
+    assert re.search(r"min-width:\s*10em", rule(".tw-td--program")), (
+        "Program lost its width floor; below it, overflow-wrap:anywhere splits ordinary words"
+    )
+    assert "nowrap" not in rule(".tw-oneyr"), (
+        "the 1-year marker on one line widens the earnings column"
+    )
+    assert "var(--t-fine)" in rule(".tw-td__insuf"), (
+        "'insufficient' at body size widens every numeric column"
+    )
+    assert re.search(r"width:\s*32px", rule(".tw-prem__bar")), "the premium bar grew back"

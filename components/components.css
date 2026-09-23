@@ -179,9 +179,16 @@
   color: var(--text-secondary);
   font-size: var(--t-fine);
 }
+/* WHY THE PROFILE TABLE WAS 200px TOO WIDE ON A LAPTOP. Eight columns at 12px of side padding, with
+   every header held on one line, needed 1,058px in an 858px column. The Program column, the one a
+   reader actually scans, came out narrowest of the eight at 87px, so program names wrapped to three
+   lines and split inside words. The fixes below, measured on eight profiles at 1280px (Penn State,
+   UCLA, UT Austin, NYU, Phoenix, Harvard, ASU, Agape): headers may wrap, side padding is one step of
+   the spacing scale, the premium bar is 32px, the 1-year marker and the "insufficient data" label may
+   wrap or run smaller, and Program has a floor. All eight then fit with no horizontal scroll. */
 .tw-th,
 .tw-td {
-  padding: 10px 12px;
+  padding: 10px var(--s2);
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
@@ -190,7 +197,10 @@
   background: var(--sand);
   font-weight: 700;
   color: var(--text-secondary);
-  white-space: nowrap;
+  /* Headers wrap onto two lines rather than set the column width: "Recent completers" held on one
+     line was 162px, wider than the Program column beside it. Bottom-aligned so a two-line header
+     and a one-line header still share a baseline with the rows below. */
+  vertical-align: bottom;
 }
 .tw-th--num,
 .tw-td--num {
@@ -227,6 +237,11 @@
      minimum, which is the measurement doing the damage. It still prefers ordinary break points and
      splits inside a word only when there is no other option. */
   overflow-wrap: anywhere;
+  /* The floor that stops `anywhere` from doing damage. `anywhere` splits inside a word only when the
+     word cannot fit; the mid-word breaks ("Financ / e", "Informat / ion") happened because the column
+     had been squeezed to 87px, not because of `anywhere`. At 10em every ordinary word fits whole,
+     while the 36-character slash-joined CIP names that need `anywhere` on a 320px phone still get it. */
+  min-width: 10em;
 }
 .tw-tr--insuf .tw-td {
   background: var(--sand);
@@ -234,6 +249,9 @@
 .tw-td__insuf {
   color: var(--text-muted);
   font-style: italic;
+  /* Fine size, because in an unassessed row this label sits in every numeric column, and at body
+     size the unbreakable word "insufficient" set each of those columns to at least 96px. */
+  font-size: var(--t-fine);
   border-bottom: 1px dashed var(--line);
 }
 .tw-verdict {
@@ -261,7 +279,7 @@
 .tw-prem__bar {
   display: inline-block;
   height: 8px;
-  width: 42px;
+  width: 32px;
   border-radius: var(--r-sm);
 }
 .tw-prem__bar--pos {
@@ -433,14 +451,8 @@
   font-size: var(--t-label);
   font-weight: 600;
   color: var(--caution);
-  white-space: nowrap;
-}
-/* Below the narrowest supported width the marker wraps rather than overflow. Belt and braces with
-   the container above: the container stops it escaping the cell, this stops it setting the floor. */
-@media (max-width: 359px) {
-  .tw-oneyr {
-    white-space: normal;
-  }
+  /* Allowed to wrap at every width. Held on one line it made "$169,099 / 1-year earnings" 114px wide,
+     setting the Median earnings column for the whole table on any profile with a single 1-year row. */
 }
 
 /* B14 suppressed value */
