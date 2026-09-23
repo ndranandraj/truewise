@@ -170,12 +170,13 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="/styles.css" />
 {extra_ld}  <style>
-    .pg {{ max-width: 860px; padding: 8px 0 64px; }}
-    /* Keep the homepage gutter on inner pages: desktop stays at the centred 860px box with no
-       inset, but once the box fills the viewport add the same 40px / 20px horizontal gutter the
-       shared .wrap uses so headings and rules never touch the screen edge on tablet and mobile. */
-    @media (max-width: 900px) {{ .pg {{ padding-left: var(--s8); padding-right: var(--s8); }} }}
-    @media (max-width: 520px) {{ .pg {{ padding-left: var(--s5); padding-right: var(--s5); }} }}
+    /* One page shell for the whole site. The main element keeps the shared .wrap container, the
+       same one the header and the app pages use, and the 860px column sits against its left edge
+       rather than centring. So a page title starts where the logo starts on every page, instead of
+       jumping 150px sideways between a profile and Careers. The column cap is on the children, and
+       the horizontal gutter is the one .wrap already gives: 40px, then 20px on phones. */
+    .pg {{ padding-top: 8px; padding-bottom: 64px; }}
+    .pg > * {{ max-width: 860px; }}
     /* Type below is token-only. Every size here used to be an ad-hoc rem value, because
        design/tokens.json had no type block for this file to reach for; it has one now, so a step
        change lands on 6,127 profiles and the homepage together instead of one or the other. */

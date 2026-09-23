@@ -42,26 +42,42 @@ def test_styles_has_no_bare_verdict_rule():
 
 
 def test_inner_pages_keep_a_mobile_gutter():
-    """`.pg` sets `padding: 8px 0 64px`, which overrides the shared `.wrap` gutter and left the
-    Majors and Lists content touching both viewport edges at 390px (2026-09-02 forest review).
-    The shared head() must restore a horizontal gutter once the 860px box fills the viewport,
-    matching the homepage: 40px down to 520px, then 20px."""
+    """Inner pages must keep the shared .wrap gutter (40px, then 20px on phones).
+
+    `.pg` once set `padding: 8px 0 64px`, which zeroed the .wrap gutter and left Majors and Lists
+    touching both viewport edges at 390px (2026-09-02 forest review). The page shell now leaves the
+    horizontal padding to .wrap entirely, so the guard is that nothing zeroes it again.
+    """
     head_css = (PIPELINE / "build_college_pages.py").read_text()
-    assert "@media (max-width: 900px) {{ .pg {{ padding-left: var(--s8);" in head_css, (
-        "inner pages must regain a horizontal gutter once the box fills the viewport"
+    shell = re.search(r"\.pg \{\{([^}]*)\}\}", head_css)
+    assert shell, "head() should still style .pg"
+    assert "padding:" not in shell.group(1), "use padding-top/bottom so the .wrap gutter survives"
+    assert not re.search(r"\.pg \{\{[^}]*padding:\s*\S+\s+0", head_css), (
+        ".pg must not zero the horizontal gutter"
     )
-    assert "@media (max-width: 520px) {{ .pg {{ padding-left: var(--s5);" in head_css, (
-        "inner pages must use the homepage 20px gutter on phones"
-    )
-    # And it must reach the shipped pages, on every generator that uses head(). Those trees are
-    # gitignored and CI runs pytest without building the site, so only assert on what is present.
-    for page in ("majors/index.html", "lists/index.html", "colleges/index.html"):
-        built = SITE / page
-        if not built.exists():
-            continue
-        assert "@media (max-width: 520px) { .pg { padding-left: var(--s5);" in built.read_text(), (
-            f"{page} shipped without the mobile gutter"
-        )
+
+
+def test_every_page_title_starts_where_the_logo_starts():
+    """One shell: main keeps the .wrap container and narrow columns sit against its left edge.
+
+    Profiles, majors, lists and findings centred an 860px box, Methodology a 760px one, and the
+    app pages used the full 1240px container. At 1280px the page title started at 210px, 260px or
+    60px depending on the page. Capping the column on main itself (with .wrap's auto margins)
+    is what centres it, so the cap belongs on the children.
+    """
+    sources = {
+        "build_college_pages.py": (PIPELINE / "build_college_pages.py").read_text(),
+        "methodology": (SITE / "methodology" / "index.html").read_text(),
+        "about": (SITE / "about" / "index.html").read_text(),
+    }
+    for name, text in sources.items():
+        css = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        for cls in ("pg", "doc"):
+            rule = re.search(r"\." + cls + r" \{+([^}]*)\}", css)
+            if rule:
+                assert "max-width" not in rule.group(1), (
+                    f"{name}: .{cls} caps main itself, which centres the column off the shared edge"
+                )
 
 
 def _css_without_comments() -> str:
