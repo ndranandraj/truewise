@@ -1660,12 +1660,12 @@ def test_careers_stacks_on_phones_and_never_shows_unknown_as_a_value():
     )
 
 
-def test_every_hand_written_page_uses_the_one_shared_header():
+def test_every_hand_written_page_uses_the_one_shared_header(tmp_path, monkeypatch):
     """Three K-12 pages kept an old header after the others were unified: "Find a college" first
     rather than last, no About link, no brand tagline, and no mobile menu at all, so on a phone
     those pages had no way to reach the rest of the site except the logo.
 
-    Compared against the header on a generated college profile, which is what 6,500+ pages carry.
+    Compared against the header head() emits for generated pages, which is what 6,500+ pages carry.
     Whitespace is normalised, and so is aria-current, the one attribute a page is meant to set for
     itself (it marks that page's own nav link). Anything else that differs is a second header.
     """
@@ -1676,7 +1676,14 @@ def test_every_hand_written_page_uses_the_one_shared_header():
             return None
         return re.sub(r"\s+", " ", re.sub(r' aria-current="[^"]*"', "", m.group(0)))
 
-    reference = header(next((SITE / "college").glob("*/index.html")).read_text())
+    # The reference comes from head() itself, the generator every profile is built from, not from a
+    # built page: CI runs on a clean checkout where site/college/ does not exist, and the first
+    # version of this test raised StopIteration there while passing on a machine with a build.
+    from pipeline import build_college_pages as bcp
+
+    monkeypatch.setattr(bcp, "SITE", tmp_path)
+    monkeypatch.setattr(bcp, "_PG_CSS_WRITTEN", False)
+    reference = header(bcp.head("t", "d", "/x/"))
     assert reference and "nav-toggle" in reference, "the reference header lost its mobile menu"
     generated = re.compile(r"^(college|colleges|majors|lists|og|embed)/")
     odd = []
