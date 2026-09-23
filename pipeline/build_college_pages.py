@@ -176,7 +176,9 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
        jumping 150px sideways between a profile and Careers. The column cap is on the children, and
        the horizontal gutter is the one .wrap already gives: 40px, then 20px on phones. */
     .pg {{ padding-top: 8px; padding-bottom: 64px; }}
-    .pg > * {{ max-width: 860px; }}
+    /* :where() gives the cap zero specificity, so any narrower measure a child sets (source notes,
+       prose at var(--measure)) still wins. The first version of this rule overrode them all. */
+    :where(.pg) > * {{ max-width: 860px; }}
     /* Type below is token-only. Every size here used to be an ad-hoc rem value, because
        design/tokens.json had no type block for this file to reach for; it has one now, so a step
        change lands on 6,127 profiles and the homepage together instead of one or the other. */

@@ -496,7 +496,8 @@ function markdown(result) {
   L.push("## What this run did NOT check");
   L.push("");
   L.push("Colour contrast (that is `tests/test_contrast.py`, which recomputes WCAG ratios from the");
-  L.push("palette), screen-reader output as actually spoken, and anything on a route outside the six");
+  L.push("palette), screen-reader output as actually spoken, and anything on a route outside the " +
+    ROUTES.length);
   L.push("above. Only these page-states were measured, and a clean result says nothing about the");
   L.push("other 6,542 pages.");
   L.push("");

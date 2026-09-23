@@ -78,6 +78,12 @@ def test_every_page_title_starts_where_the_logo_starts():
                 assert "max-width" not in rule.group(1), (
                     f"{name}: .{cls} caps main itself, which centres the column off the shared edge"
                 )
+            # The column cap must carry zero specificity. Written as `.pg > *` it tied with, and
+            # being later overrode, every child's own narrower measure: the source notes on 6,127
+            # profiles widened from about 66ch to the full 860px in the first preview.
+            assert not re.search(r"(?<!\()\." + cls + r" > \*", css), (
+                f"{name}: cap .{cls} children with :where(.{cls}) > * so child measures still win"
+            )
 
 
 def _css_without_comments() -> str:

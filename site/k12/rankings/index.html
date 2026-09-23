@@ -35,8 +35,11 @@
     .metric-row label { font-weight: 600; color: var(--ink); }
     .metric-row select { border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .bars { list-style: none; padding: 0; margin: 18px 0; max-width: 760px; }
-    .bars li { display: grid; grid-template-columns: 150px 1fr 56px; align-items: center; gap: 10px; padding: 4px 0; }
-    .bars .st { font-size: .92rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* The label column was a fixed 150px with an ellipsis, which cut "District of Columbia" at every
+       width. It now scales with the row and wraps a long name onto a second line instead of hiding
+       it: a state name is the one thing in this row that must be readable in full. */
+    .bars li { display: grid; grid-template-columns: clamp(8em, 34%, 12em) 1fr 56px; align-items: center; gap: 10px; padding: 4px 0; }
+    .bars .st { font-size: .92rem; color: var(--ink); line-height: 1.3; overflow-wrap: break-word; }
     .bars .track { height: 16px; background: var(--line-soft); border-radius: 5px; overflow: hidden; }
     /* display:block is what makes this a bar at all.
        .fill is a <span>, so it is display:inline by default, and width and height do not apply to
