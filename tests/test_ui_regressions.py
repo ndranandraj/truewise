@@ -1970,3 +1970,36 @@ def test_site_review_fixes_hold():
     assert "else None" in site_py.split('s["hidden_gem"]', 1)[1][:200], (
         "an unassessable school's hidden_gem must be None, not False"
     )
+
+
+def test_every_page_uses_the_one_shared_footer():
+    """There were eight footers. The 6,500+ generated pages carried the shortest, without All majors,
+    Lists, Findings or Updates, and "Not affiliated with the US Department of Education" appeared on
+    five page types and no profile. Every hand-written page now carries FOOTER from the generator,
+    byte for byte after whitespace. The homepage alone adds its data-vintage paragraph."""
+    from pipeline.build_college_pages import FOOTER
+
+    def norm(text):
+        text = re.sub(
+            r'\s*<p class="muted"><span id="data-vintage">.*?</span></p>', "", text, flags=re.S
+        )
+        return re.sub(r"\s+", " ", text).strip()
+
+    reference = norm(FOOTER)
+    assert "Not affiliated with the US Department of Education" in reference
+    for href in ("/majors/", "/lists/", "/findings/", "/updates/"):
+        assert f'href="{href}"' in reference, f"the shared footer lost {href}"
+    generated = re.compile(
+        r"^(college|colleges|majors|lists|og|embed|findings|updates|components)/"
+    )
+    odd = []
+    for page in sorted(SITE.rglob("*.html")):
+        rel = page.relative_to(SITE).as_posix()
+        if generated.match(rel):
+            continue
+        m = re.search(
+            r'<footer class="site-footer">.*?</footer>', page.read_text(errors="ignore"), re.S
+        )
+        if m and norm(m.group(0)) != reference:
+            odd.append(rel)
+    assert not odd, "pages with a footer that differs from the shared one: " + ", ".join(odd)
