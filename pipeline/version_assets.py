@@ -23,10 +23,10 @@ import re
 from pipeline.config import ROOT
 
 SITE = ROOT / "site"
-# Both deployed stylesheets are fingerprinted: styles.css (the whole site) and components.css (the
-# canonical profile's component styles). A rebrand that changes only components.css must bust only its
-# own cache, so each sheet carries an independent ?v=<hash> of its own content.
-SHEETS = ("styles.css", "components.css")
+# Every deployed stylesheet is fingerprinted: styles.css (the whole site), components.css (the
+# canonical profile's component styles) and pg.css (the generated pages). A change to one must bust
+# only its own cache, so each sheet carries an independent ?v=<hash> of its own content.
+SHEETS = ("styles.css", "components.css", "pg.css")
 
 
 def _link_re(name: str) -> re.Pattern:

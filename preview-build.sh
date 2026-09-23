@@ -35,7 +35,7 @@ fi
 # nothing tracked is at risk.
 step "Removing the generated trees"
 rm -rf site/college site/colleges site/majors site/findings site/lists site/updates \
-       site/og site/components site/components.css \
+       site/og site/components site/components.css site/pg.css \
        site/sitemap.xml site/sitemap-0.xml site/sitemap-core.xml site/sitemap-college.xml \
        site/sitemap-colleges.xml site/sitemap-majors.xml site/sitemap-lists.xml \
        site/sitemap-findings.xml \

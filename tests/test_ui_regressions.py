@@ -49,10 +49,10 @@ def test_inner_pages_keep_a_mobile_gutter():
     horizontal padding to .wrap entirely, so the guard is that nothing zeroes it again.
     """
     head_css = (PIPELINE / "build_college_pages.py").read_text()
-    shell = re.search(r"\.pg \{\{([^}]*)\}\}", head_css)
+    shell = re.search(r"\.pg \{\{?([^}]*)\}\}?", head_css)
     assert shell, "head() should still style .pg"
     assert "padding:" not in shell.group(1), "use padding-top/bottom so the .wrap gutter survives"
-    assert not re.search(r"\.pg \{\{[^}]*padding:\s*\S+\s+0", head_css), (
+    assert not re.search(r"\.pg \{\{?[^}]*padding:\s*\S+\s+0", head_css), (
         ".pg must not zero the horizontal gutter"
     )
 
@@ -722,7 +722,7 @@ def test_the_profile_argument_is_set_in_the_editorial_serif():
     115 characters a line. Serif plus a measure, on the two elements that carry the reasoning."""
     src = (PIPELINE / "build_college_pages.py").read_text()
     for cls in (".verdict", ".calc-big"):
-        rule = re.search(rf"\n\s*{re.escape(cls)} \{{\{{(.+?)\}}\}}", src)
+        rule = re.search(rf"\n\s*{re.escape(cls)} \{{\{{?(.+?)\}}\}}?", src)
         assert rule, f"{cls} rule not found in head()"
         body = rule.group(1)
         assert "var(--display)" in body, f"{cls} should carry the editorial serif"
@@ -1871,3 +1871,23 @@ def test_phase_three_polish_holds():
     assert ".doc p, .doc li { max-width: var(--measure); }" in meth, (
         "Methodology prose lost its measure"
     )
+
+
+def test_generated_pages_share_one_cached_stylesheet(tmp_path, monkeypatch):
+    """head() inlined the same 6.8KB style block into 6,500+ pages, so no page could reuse a cached
+    copy. It now links /pg.css, written from PG_CSS, fingerprinted by version_assets and cached by
+    _headers like styles.css. The link must come after extra_ld, where the inline block was, because
+    profiles load /components.css through extra_ld and the page rules were written to follow it."""
+    from pipeline import build_college_pages as bcp
+    from pipeline import version_assets
+
+    monkeypatch.setattr(bcp, "SITE", tmp_path)
+    monkeypatch.setattr(bcp, "_PG_CSS_WRITTEN", False)
+    page = bcp.head(
+        "t", "d", "/x/", extra_ld='  <link rel="stylesheet" href="/components.css" />\n'
+    )
+    assert "<style" not in page, "head() is inlining styles again"
+    assert page.index('href="/components.css"') < page.index('href="/pg.css"'), "cascade order"
+    assert (tmp_path / "pg.css").read_text() == bcp.PG_CSS, "head() must ship the sheet it links"
+    assert "pg.css" in version_assets.SHEETS, "pg.css must be fingerprinted"
+    assert "/pg.css\n  Cache-Control" in (SITE / "_headers").read_text(), "pg.css must be cached"
