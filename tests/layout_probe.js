@@ -55,6 +55,16 @@ const ROUTES = [
   { label: "agape", path: "/college/agape-college-of-business-and-science/", kind: "twtable" },
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
+  /* Added for the design pass: every page family whose shell, type or tables Phase 2 changes needs
+   * a before and an after, and none of these were measured until now. */
+  { label: "k12-hub", path: "/k12/", kind: "static" },
+  { label: "k12-rankings", path: "/k12/rankings/", kind: "static" },
+  { label: "k12-compare", path: "/k12/compare/", kind: "static" },
+  { label: "k12-courses", path: "/k12/advanced-courses/", kind: "static" },
+  { label: "methodology", path: "/methodology/", kind: "static" },
+  { label: "major", path: "/majors/computer-science/", kind: "static" },
+  { label: "finding", path: "/findings/stats-grad-exposure/", kind: "static" },
+  { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },
 ];
 
 /* ------------------------------------------------------------------------------------------- */
