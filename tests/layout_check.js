@@ -626,13 +626,31 @@ async function main() {
           isMobile: w.mobile,
           hasTouch: w.mobile,
         });
+        /* Only the site under test is fetched. The pages also load Cloudflare's analytics beacon from
+         * another host, and when that host was slow the whole run timed out on the homepage before
+         * measuring anything. A third party's latency is not a finding about this site. */
+        const siteHost = new URL(base).host;
+        await ctx.route("**/*", (r) =>
+          new URL(r.request().url()).host === siteHost ? r.continue() : r.abort());
         const page = await ctx.newPage();
         const url = base + route.path;
         /* setup runs before navigation (for example, blocking a data file to reach a failure state);
          * prepare runs after load and before measuring (for example, adding schools to a comparison),
          * so the page is measured in the state a reader actually reaches, not only as first served. */
         if (route.setup) await route.setup(page);
-        const resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+        /* A page that never settles is a finding about that page and width, not a reason to abandon
+         * the other routes. One timeout used to throw out of the loop and end the run with nothing
+         * measured. */
+        let resp;
+        try {
+          resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+        } catch (e) {
+          entry.widths[w.label] = { findings: [{ kind: "load-timeout", blocking: true,
+            detail: `${url} did not finish loading: ${String(e).split("\n")[0]}` }] };
+          result.blocking++;
+          await ctx.close();
+          continue;
+        }
 
         /* A 404 that gets measured and reported as clean is worse than a crash. */
         if (resp && resp.status() >= 400) {
