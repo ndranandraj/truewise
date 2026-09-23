@@ -19,7 +19,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=a38c4362c9" />
+  <link rel="stylesheet" href="/styles.css?v=f1751e6abe" />
   <style>
     .c-head { padding: 40px 0 4px; }
     .c-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -344,7 +344,10 @@
 
     row("Students on Pell grants", cols.map(s => pct(s.pell)));
     row("Complete their program", cols.map(s => pct(s.completion)));
-    row("Truewise flag", cols.map(s => s.hidden_gem ? `<span class="gem">&#9733; Hidden gem</span>` : "no"));
+    // Was "Truewise flag" / "no": jargon, and a bare "no" read like a verdict against the school.
+    // hidden_gem is three-state: null means an input was missing, so the rule could not be applied.
+    row("Hidden gem", cols.map(s => s.hidden_gem === true ? `<span class="gem">&#9733; Yes</span>`
+      : s.hidden_gem === false ? "No" : `<span class="schmeta">insufficient data</span>`));
     row("Full profile", cols.map(s =>
       `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`));
 

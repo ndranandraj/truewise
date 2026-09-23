@@ -19,7 +19,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=a38c4362c9" />
+  <link rel="stylesheet" href="/styles.css?v=f1751e6abe" />
   <style>
     .cr-head { padding: 44px 0 6px; }
     .cr-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -334,7 +334,8 @@
     fam.addEventListener("change", redraw);
     sort.addEventListener("change", redraw);
     draw();
-    q.focus();
+    // No focus() here. Focusing the search box on every load raised the keyboard over the page on
+    // phones and made a screen reader start at the input instead of the heading above it.
   }
 
   // ---- Field detail view ----

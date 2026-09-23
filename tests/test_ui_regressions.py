@@ -1449,7 +1449,9 @@ def test_careers_announces_a_changed_count_and_not_only_a_reveal():
     )
     # The initial render must NOT announce: a live region that speaks on page load is noise.
     tail = code.split("const redraw", 1)[1]
-    assert re.search(r"\n\s*draw\(\);\s*\n\s*q\.focus\(\);", tail), (
+    # Anchored on the plain draw() that closes the list render, followed only by comments. It used to
+    # anchor on the q.focus() after it, which the 23 September review removed.
+    assert re.search(r"\n\s*draw\(\);\s*\n(?:\s*//[^\n]*\n)*\s*\}", tail), (
         "the initial draw() should stay a plain draw, with no announcement on first paint"
     )
 
@@ -1898,3 +1900,73 @@ def test_generated_pages_share_one_cached_stylesheet(tmp_path, monkeypatch):
     assert (tmp_path / "pg.css").read_text() == bcp.PG_CSS, "head() must ship the sheet it links"
     assert "pg.css" in version_assets.SHEETS, "pg.css must be fingerprinted"
     assert "/pg.css\n  Cache-Control" in (SITE / "_headers").read_text(), "pg.css must be cached"
+
+
+def test_homepage_examples_are_real_programs():
+    """Two of the three homepage examples were invented: "Nursing, ADN, (your local CC), $61,200,
+    +78%" and "Cosmetology, Cert., (example), $24,100, -30%" matched no program, yet sat under a
+    Department of Education source line on the first screen of the site. Every example row must name
+    a real institution and reproduce its earnings and premium from the published data exactly."""
+    import duckdb
+
+    html = (SITE / "index.html").read_text()
+    rows = re.findall(
+        r'<p class="program">([^<]+)</p>\s*<p class="earned">[^<]*<b>\$([\d,]+)</b></p>\s*</div>\s*'
+        r'<span class="verdict-pill (up|down)">[^;]*;\s*(?:&minus;)?\+?(\d+)%</span>',
+        html,
+    )
+    assert len(rows) == 3, f"expected three example rows, found {len(rows)}"
+    fields = {
+        "Psychology": ("42%", "Bachelor%"),
+        "Nursing": ("5138%", "Associate%"),
+        "Cosmetology": ("1204%", "Undergraduate%"),
+    }
+    con = duckdb.connect()
+    for program, earned, direction, pct in rows:
+        field, _cred, inst = (x.strip() for x in program.split(",", 2))
+        cip, cred = fields[field]
+        hit = con.execute(
+            "SELECT earnings, earnings_premium_state / earnings_threshold_state "
+            "FROM read_parquet(?) WHERE inst_name = ? AND cip_code LIKE ? "
+            "AND credential_desc LIKE ? AND earnings_horizon = '4yr_after_completion'",
+            [str(ROOT / "published" / "value_check.parquet"), inst, cip, cred],
+        ).fetchall()
+        assert len(hit) == 1, f"{program!r} is not exactly one real program in the data"
+        earnings, ratio = hit[0]
+        assert int(earnings) == int(earned.replace(",", "")), (
+            f"{program}: earnings differ from data"
+        )
+        assert round(abs(ratio) * 100) == int(pct), f"{program}: premium {ratio:.3f} vs {pct}%"
+        assert (ratio > 0) == (direction == "up"), f"{program}: arrow points the wrong way"
+
+
+def test_site_review_fixes_hold():
+    """Fixes from the 23 September full-site review, each a statement the site made that was false.
+
+    Four pages called the 2021-22 CRDC the most recent after ED published 2023-24. Value Check kept
+    the label "Loading colleges" above a loaded search box. Careers focused its search box on every
+    load. Compare printed "No" for hidden gem on schools the rule could not be applied to.
+    """
+    for page in (
+        "methodology/index.html",
+        "k12/index.html",
+        "k12/rankings/index.html",
+        "k12/advanced-courses/index.html",
+    ):
+        text = re.sub(r"\s+", " ", (SITE / page).read_text())
+        for claim in ("the most recent;", "latest public-use", "not yet published"):
+            assert claim not in text, f"{page} still says 2021-22 is current: {claim!r}"
+
+    vc = (SITE / "value-check" / "index.html").read_text()
+    loaded = vc.split("loadSchools().then(() => {", 1)[1].split("});", 1)[0]
+    assert "label.textContent" in loaded, "the search label must update when the list arrives"
+
+    careers = re.sub(r"//[^\n]*", "", (SITE / "careers" / "index.html").read_text())
+    assert "q.focus()" not in careers, "Careers must not focus its search box on load"
+
+    compare = (SITE / "compare" / "index.html").read_text()
+    assert "s.hidden_gem === false" in compare, "hidden gem must be three-state in Compare"
+    site_py = (PIPELINE / "build_site.py").read_text()
+    assert "else None" in site_py.split('s["hidden_gem"]', 1)[1][:200], (
+        "an unassessable school's hidden_gem must be None, not False"
+    )

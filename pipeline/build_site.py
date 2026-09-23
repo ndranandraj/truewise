@@ -246,14 +246,19 @@ def build_model(con) -> tuple[dict, dict, dict]:
     }
     for s in schools.values():
         pr = _pass_rate(s)
-        s["hidden_gem"] = bool(
+        # Three states, not two. A school missing any of the three inputs cannot be judged against
+        # the rule, and the old bool() made that False, so Compare printed "No" for 1,566 schools
+        # (about a quarter) that had never been assessed. None means "insufficient data".
+        known = (
             med_pell is not None
             and s.get("pell") is not None
             and s.get("completion") is not None
             and pr is not None
-            and s["pell"] >= med_pell
-            and s["completion"] >= med_compl
-            and pr >= med_pr
+        )
+        s["hidden_gem"] = (
+            bool(s["pell"] >= med_pell and s["completion"] >= med_compl and pr >= med_pr)
+            if known
+            else None
         )
 
     return schools, by_state, benchmarks

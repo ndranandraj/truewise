@@ -19,7 +19,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
-  <link rel="stylesheet" href="/styles.css?v=a38c4362c9" />
+  <link rel="stylesheet" href="/styles.css?v=f1751e6abe" />
   <style>
     .vc-search { padding: 48px 0 8px; }
     .vc-search h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
@@ -455,7 +455,16 @@
     // while the 445 KB index is still downloading is preserved in the field, and run() replays
     // it the moment the data lands.
     if (SCHOOLS) { if (preset) run(); else { buildLanding(); landing.style.display = ""; } }
-    else { run(); loadSchools().then(() => { q.placeholder = "Search " + SCHOOLS.length.toLocaleString() + " colleges by name…"; run(); }); }
+    else { run(); loadSchools().then(() => {
+      // The label was written once at render, while the list was still loading, and only the
+      // placeholder was updated afterwards, so the page kept saying "Loading colleges" above a box
+      // that was ready. Both now change together.
+      const n = SCHOOLS.length.toLocaleString();
+      q.placeholder = "Search " + n + " colleges by name…";
+      const label = document.querySelector('label[for="q"]');
+      if (label) label.textContent = "Search " + n + " colleges by name";
+      run();
+    }); }
   }
 
   // ---- School view ----
