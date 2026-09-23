@@ -655,7 +655,15 @@ async function main() {
          * measured. */
         let resp;
         try {
-          resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+          try {
+            resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+          } catch (first) {
+            /* One retry. A single stalled request once timed out Penn State at desktop while the
+             * same page passed at the other three widths in the same run; without a retry that
+             * stall would block a deploy. A page that genuinely hangs fails twice and is reported. */
+            console.log(`  retrying ${route.label} @ ${w.label} after: ${String(first).split("\n")[0]}`);
+            resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
+          }
         } catch (e) {
           entry.widths[w.label] = { findings: [{ kind: "load-timeout", blocking: true,
             detail: `${url} did not finish loading: ${String(e).split("\n")[0]}` }] };
