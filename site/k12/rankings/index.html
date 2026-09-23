@@ -29,8 +29,8 @@
     .subnav a.active { color: var(--brand-deep); border-bottom-color: var(--brand); }
     .subnav span { color: var(--none); }
     .r-head { padding: 44px 0 6px; }
-    .r-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
-    .r-head p.lede { font-size: 1.1rem; color: var(--ink-soft); max-width: 62ch; }
+    .r-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
+    .r-head p.lede { font-size: var(--t-sub); max-width: var(--measure); color: var(--ink-soft); }
     .metric-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0 4px; }
     .metric-row label { font-weight: 600; color: var(--ink); }
     .metric-row select { border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
@@ -96,7 +96,7 @@
       <h1>State report cards</h1>
       <p class="lede">How US states compare on high-school opportunity: which states' public high schools
         offer advanced courses, and where students go without a counselor. Pick a measure to rank the states.</p>
-      <noscript><p class="lede" style="font-size:.95rem">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
+      <noscript><p class="lede" style="font-size:var(--t-ui)">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
       <div class="metric-row">
         <label for="metric">Rank states by high schools that</label>
         <select id="metric"></select>
@@ -107,7 +107,7 @@
            one, and the Careers page has already shown what happens when two statements about one
            list drift apart: the region kept announcing "Showing 50 of 738" over a list of 13. One
            element cannot disagree with itself. -->
-      <p id="sub" class="lede" role="status" aria-live="polite" style="font-size:.95rem;margin:4px 0 0"></p>
+      <p id="sub" class="lede" role="status" aria-live="polite" style="font-size:var(--t-ui);margin:4px 0 0"></p>
       <ul class="bars" id="bars"></ul>
       <div class="caveats"><strong>How to read this.</strong> Each bar is the share of a state's public high
         schools reporting the selected measure to the U.S. Department of Education's Office for Civil Rights

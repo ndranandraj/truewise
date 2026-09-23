@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .vc-search { padding: 48px 0 8px; }
-    .vc-search h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
-    .vc-search p.lede { font-size: 1.1rem; }
+    .vc-search h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
+    .vc-search p.lede { font-size: var(--t-sub); max-width: var(--measure); }
     .searchbox {
       display: flex; align-items: center; gap: 10px; margin: 20px 0 6px;
       border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px;
@@ -60,7 +60,7 @@
     .empty-help { max-width: 620px; margin: 16px 0; padding: 16px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-alt); line-height: 1.6; }
     .empty-help a { color: var(--brand); font-weight: 600; }
     .landing { margin: 26px 0 8px; max-width: 860px; }
-    .landing h2 { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 26px 0 10px; }
+    .landing h2 { font-size: var(--t-label); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 26px 0 10px; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 7px 14px; font-size: .9rem; color: var(--ink); text-decoration: none; background: #fff; transition: border-color .15s, color .15s; }
     .chip:hover { border-color: var(--brand); color: var(--brand); }
@@ -76,7 +76,7 @@
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
     .school-head { padding: 8px 0 4px; }
-    .school-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+    .school-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 6px; }
     .school-head .sub { color: var(--ink-soft); }
     .school-head .sub a { color: var(--brand); text-decoration: none; }
     .modules { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 18px 0 8px; }
@@ -88,7 +88,7 @@
     .mod-tag { margin-top: 6px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     .mod.live .mod-tag { color: var(--accent); }
     .mod.soon .mod-tag { color: #6b7688; }
-    .module h2 { font-size: 1.3rem; letter-spacing: -.02em; margin: 26px 0 6px; }
+    .module h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 26px 0 6px; }
     .summary {
       margin: 16px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt);
       border: 1px solid var(--line); max-width: 760px; font-size: 1.02rem;

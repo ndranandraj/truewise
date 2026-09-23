@@ -1705,3 +1705,33 @@ def test_hand_written_pages_carry_no_old_blue():
         text = re.sub(r"\s+", "", text).lower()
         for value in old:
             assert value.replace(" ", "") not in text, f"{rel} still uses the old blue {value}"
+
+
+def test_page_titles_and_ledes_use_the_type_tokens():
+    """Page titles came in five sizes (41.6 to 48px) and ledes in three, one per hand-written page.
+
+    Every page title, section heading and lede on a hand-written page now takes its size from the
+    type tokens, the same ones the generated pages use, so moving between Careers, a profile and
+    Methodology no longer changes the size of the thing that says where you are. The homepage hero
+    keeps --t-display as the single exception, and it lives in styles.css, not here.
+    """
+    pages = [
+        "value-check/index.html",
+        "compare/index.html",
+        "careers/index.html",
+        "k12/index.html",
+        "k12/rankings/index.html",
+        "k12/compare/index.html",
+        "k12/advanced-courses/index.html",
+        "methodology/index.html",
+        "about/index.html",
+    ]
+    for page in pages:
+        css = re.sub(r"/\*.*?\*/", "", (SITE / page).read_text(), flags=re.S)
+        for sel, body in re.findall(r"([^{}\n]*\b(?:h1|h2|\.lede)\b[^{}\n]*)\{([^}]*)\}", css):
+            size = re.search(r"font-size:\s*([^;]+)", body)
+            if not size or "<" in sel or "`" in sel:
+                continue
+            assert size.group(1).strip().startswith("var(--t-"), (
+                f"{page}: {sel.strip()} sets font-size {size.group(1).strip()}, use a type token"
+            )

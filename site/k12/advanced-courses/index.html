@@ -29,8 +29,8 @@
     .subnav a.active { color: var(--brand-deep); border-bottom-color: var(--brand); }
     .subnav span { color: var(--none); }
     .k-head { padding: 44px 0 6px; }
-    .k-head h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.03em; margin: 0 0 10px; }
-    .k-head p.lede { font-size: 1.1rem; }
+    .k-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
+    .k-head p.lede { font-size: var(--t-sub); max-width: var(--measure); }
     .searchbox { display: flex; align-items: center; gap: 10px; margin: 20px 0 6px; border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px; max-width: 620px; background: #fff; transition: border-color .15s; }
     .searchbox:focus-within { border-color: var(--brand); }
     .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.1rem; padding: 12px 0; background: transparent; }
@@ -56,7 +56,7 @@
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
     .sch-head { padding: 8px 0 4px; }
-    .sch-head h1 { font-size: clamp(1.5rem, 3.2vw, 2.1rem); letter-spacing: -0.02em; margin: 0 0 6px; }
+    .sch-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 6px; }
     .sch-head .sub { color: var(--ink-soft); }
     .sec-h { font-size: 1.15rem; letter-spacing: -.02em; margin: 26px 0 6px; }
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0 6px; max-width: 820px; }
@@ -66,7 +66,7 @@
     .course .status.yes { color: #067647; } .course .status.no { color: #b42318; }
     .course .detail { color: var(--ink-soft); font-size: .92rem; margin-top: 6px; line-height: 1.5; }
     .equity { margin: 18px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt); border: 1px solid var(--line); max-width: 800px; }
-    .equity h2 { font-size: 1.2rem; margin: 0 0 8px; letter-spacing: -.02em; }
+    .equity h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 8px; }
     .equity .read { font-size: 1.02rem; color: var(--ink); line-height: 1.55; }
     .equity .gap { font-weight: 800; }
     .equity .gap.under { color: #b42318; } .equity .gap.over { color: #067647; }

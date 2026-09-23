@@ -22,8 +22,8 @@
   <link rel="stylesheet" href="/styles.css?v=554d548831" />
   <style>
     .c-head { padding: 40px 0 4px; }
-    .c-head h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); letter-spacing: -0.03em; margin: 0 0 10px; }
-    .c-head p.lede { font-size: 1.08rem; color: var(--ink-soft); max-width: 64ch; line-height: 1.6; }
+    .c-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
+    .c-head p.lede { font-size: var(--t-sub); max-width: var(--measure); color: var(--ink-soft); }
     .searchbox { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; max-width: 620px; margin: 20px 0 6px; background: #fff; }
     .searchbox input { border: 0; outline: 0; font-size: 1rem; flex: 1; color: var(--ink); }
     .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
@@ -138,7 +138,7 @@
       </div>
       <ul class="results" id="results"></ul>
       <p id="live" class="sr-only" role="status" aria-live="polite"></p>
-      <noscript><p class="lede" style="font-size:.95rem">This comparison tool needs JavaScript. You can still
+      <noscript><p class="lede" style="font-size:var(--t-ui)">This comparison tool needs JavaScript. You can still
         browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
       <div class="income-row" id="income-row" style="display:none">
         <label for="income">Show net price for families earning</label>
