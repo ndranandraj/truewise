@@ -421,7 +421,10 @@ a:hover { color: var(--brand-deep); }
 
 @media (max-width: 680px) {
   .site-header nav { gap: 0; }
-  .site-header nav a:not(.nav-cta) { display: none; }
+  /* Direct children only. Written as `nav a`, this also matched the links inside the mobile menu,
+     which live in nav > details > .menu, and at (0,2,2) it outranked the menu's own display:block,
+     so the menu opened empty on every page at phone width. */
+  .site-header nav > a:not(.nav-cta) { display: none; }
   .nav-toggle { display: block; position: relative; margin-left: var(--s3); }
   .nav-toggle summary {
     list-style: none; cursor: pointer;

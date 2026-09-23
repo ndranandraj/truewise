@@ -69,8 +69,11 @@ def main() -> None:
             # student-to-counselor ratio; a real reported 0 counselors is meaningful.
             "counselor_ratio": round(enroll / couns) if (couns and enroll) else None,
             "no_counselor": couns == 0,
-            "police": bool(r["fte_police"] and r["fte_police"] > 0),
-            "guard": bool(r["fte_guards"] and r["fte_guards"] > 0),
+            # Three states: True, False, or None when the school did not report the count. bool() made
+            # a missing count False, so 817 schools read "No" for police and 1,335 for guards without
+            # having reported either.
+            "police": None if r["fte_police"] is None else r["fte_police"] > 0,
+            "guard": None if r["fte_guards"] is None else r["fte_guards"] > 0,
             "uncert_pct": round(100 * uncert / teach) if (uncert is not None and teach) else None,
         }
         by_state[state][r["combokey"]] = {

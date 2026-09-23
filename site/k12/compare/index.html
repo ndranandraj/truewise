@@ -46,7 +46,25 @@
     table.cmp tbody th { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
     table.cmp .schname { font-weight: 700; }
     table.cmp .schmeta { color: var(--ink-soft); font-size: .82rem; font-weight: 400; }
-    table.cmp .rm { color: var(--bad); cursor: pointer; font-size: .8rem; font-weight: 600; }
+    /* Remove is a real button, named for its school, in a list above the table. It was a clickable
+       div, which a keyboard could not reach. */
+    .picked { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px; }
+    .picked li { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 4px 4px 4px 14px; background: var(--surface); font-weight: 600; font-size: var(--t-fine); }
+    .picked .rm { font: inherit; font-weight: 600; color: var(--bad); background: none; border: 0; border-radius: var(--r-pill); padding: 6px 10px; min-height: 32px; cursor: pointer; }
+    .picked .rm:hover { background: var(--bad-bg); }
+    .picked .rm:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    /* Phones: metric first. Each measure becomes a card listing every school's value, the approach
+       College Compare uses. As a table, the second school began around 368px in a 390px screen and
+       names were squeezed into narrow columns. */
+    @media (max-width: 768px) {
+      .table-wrap { overflow-x: visible; border: 0; }
+      table.cmp thead { display: none; }
+      table.cmp, table.cmp tbody, table.cmp tr, table.cmp th, table.cmp td { display: block; width: 100%; }
+      table.cmp tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 4px 0; }
+      table.cmp tbody th { white-space: normal; border: 0; padding: 8px 12px 4px; color: var(--ink); }
+      table.cmp td { border: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 12px; }
+      table.cmp td::before { content: attr(data-label); flex: 1 1 auto; min-width: 0; font-size: var(--t-fine); color: var(--ink-soft); }
+    }
     /* .no is "not offered" and .na is "not reported", and keeping those two distinguishable was
        the whole point of the P1 missingness work. They were set in #98a1b0, which measures 2.50:1
        on paper against the 4.5:1 AA minimum: the two labels that carry the honesty distinction were
@@ -173,6 +191,10 @@
     if (i > -1) {
       const gone = picked[i].rec;
       picked.splice(i, 1); render();
+      // Focus goes somewhere real after the button it was on disappears: the next school's Remove
+      // button, or the search box when none are left. Otherwise it fell to <body>.
+      const next = cmp.querySelectorAll("button.rm")[Math.min(i, picked.length - 1)];
+      (next || q).focus();
       /* Removal has to speak too. It is the one action whose whole effect is that something is no
          longer on screen, so a reader who cannot see the table has nothing else to go on. */
       announce(`${esc((gone && gone.n) || "School")} removed. `
@@ -185,19 +207,21 @@
     const cols = picked.map(p => p.rec);
     const head = `<tr><th></th>${picked.map(p => {
       const s = p.rec;
-      return `<th><div class="schname">${esc(s.name)}</div><div class="schmeta">${esc(s.district || "")} · ${esc(s.state)}</div>
-        <div class="rm" data-k="${p.k}">remove</div></th>`;
+      return `<th><div class="schname">${esc(s.name)}</div><div class="schmeta">${esc(s.district || "")} · ${esc(s.state)}</div></th>`;
     }).join("")}</tr>`;
-    const row = (label, cells) => `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`;
+    const chips = `<ul class="picked" aria-label="Schools being compared">${picked.map(p =>
+      `<li><span>${esc(p.rec.name)}</span><button type="button" class="rm" data-k="${p.k}" aria-label="Remove ${esc(p.rec.name)} from comparison">Remove</button></li>`).join("")}</ul>`;
+    const row = (label, cells) => `<tr><th scope="row">${label}</th>${cells.map((c, j) => `<td data-label="${esc(cols[j].name)}">${c}</td>`).join("")}</tr>`;
+    const staffYN = v => v === true ? `<span class="yes">Yes</span>` : v === false ? `<span class="no">No</span>` : `<span class="na">Not reported</span>`;
     const rows = [];
     rows.push(row("Students", cols.map(s => `<span class="num">${num(s.enroll)}</span>`)));
     COURSES.forEach(([key, label]) => rows.push(row(label, cols.map(s => yn(s.courses[key].offered)))));
     rows.push(row("Students per counselor", cols.map(s =>
       s.staff.no_counselor ? `<span class="no">No counselor</span>` : s.staff.counselor_ratio != null ? `<span class="num">${s.staff.counselor_ratio}:1</span>` : `<span class="na">Not reported</span>`)));
-    rows.push(row("Police officer on staff", cols.map(s => s.staff.police ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
-    rows.push(row("Security guards", cols.map(s => s.staff.guard ? `<span class="yes">Yes</span>` : `<span class="no">No</span>`)));
+    rows.push(row("Police officer on staff", cols.map(s => staffYN(s.staff.police))));
+    rows.push(row("Security guards", cols.map(s => staffYN(s.staff.guard))));
     rows.push(row("Teachers not certified", cols.map(s => s.staff.uncert_pct != null ? `<span class="num">${s.staff.uncert_pct}%</span>` : `<span class="na">Not reported</span>`)));
-    cmp.innerHTML = `<div class="table-wrap" tabindex="0" role="region" aria-label="High school comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
+    cmp.innerHTML = chips + `<div class="table-wrap" tabindex="0" role="region" aria-label="High school comparison"><table class="cmp"><thead>${head}</thead><tbody>${rows.join("")}</tbody></table></div>`;
     cmp.querySelectorAll(".rm").forEach(b => b.addEventListener("click", () => remove(b.dataset.k)));
   }
   render();

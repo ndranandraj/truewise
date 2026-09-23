@@ -1958,8 +1958,10 @@ def test_site_review_fixes_hold():
             assert claim not in text, f"{page} still says 2021-22 is current: {claim!r}"
 
     vc = (SITE / "value-check" / "index.html").read_text()
-    loaded = vc.split("loadSchools().then(() => {", 1)[1].split("});", 1)[0]
-    assert "label.textContent" in loaded, "the search label must update when the list arrives"
+    # The behaviour (loading, failed with Retry, ready) is exercised in tests/value_check_states.js.
+    ready = vc.split("const ready = () => {", 1)[1].split("};", 1)[0]
+    assert "label.textContent" in ready, "the search label must update when the list arrives"
+    assert 'schoolsState = "failed"' in vc, "Value Check needs an explicit failed state"
 
     careers = re.sub(r"//[^\n]*", "", (SITE / "careers" / "index.html").read_text())
     assert "q.focus()" not in careers, "Careers must not focus its search box on load"

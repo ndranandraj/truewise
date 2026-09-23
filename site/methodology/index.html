@@ -25,6 +25,10 @@
     /* Running text keeps the reading measure. At 16px across the full column Methodology ran about
        95 characters a line, and it is the long-read page. Boxes, tables and code keep the column. */
     .doc p, .doc li { max-width: var(--measure); }
+    /* The citation is one unbroken string ending in a DOI URL, which pushed the page to 370px at a
+       320px viewport. It may wrap anywhere; it is still one text node, so it copies whole. */
+    .citation { background: var(--bg-alt); padding: 12px 14px; border-radius: var(--r-md); line-height: 1.5;
+      font-size: var(--t-fine); overflow-wrap: anywhere; }
     .doc h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 8px; }
     .doc .updated { color: var(--ink-faint); font-size: .9rem; margin: 0 0 28px; }
     .doc h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 34px 0 8px; }
@@ -170,7 +174,7 @@
     <h2>Cite this</h2>
     <div class="callout">
       <p style="margin:0 0 8px">If you use the Truewise dataset or code, please cite it:</p>
-      <p class="mono" style="display:block;background:var(--bg-alt);padding:12px 14px;border-radius:8px;line-height:1.5;font-size:.85rem">Anandraj. (2026). Truewise: open US college program value data from the College Scorecard (Version 0.1.0) [Data set and software]. Zenodo. https://doi.org/10.5281/zenodo.21781702</p>
+      <p class="mono citation">Anandraj. (2026). Truewise: open US college program value data from the College Scorecard (Version 0.1.0) [Data set and software]. Zenodo. https://doi.org/10.5281/zenodo.21781702</p>
       <p class="repro" style="margin:8px 0 0">That DOI (<a href="https://doi.org/10.5281/zenodo.21781702">10.5281/zenodo.21781702</a>) always resolves to the
         latest version. To cite the exact version you used, v0.1.0 is
         <a href="https://doi.org/10.5281/zenodo.21781703">10.5281/zenodo.21781703</a>. Every release is archived on Zenodo with its

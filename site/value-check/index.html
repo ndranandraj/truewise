@@ -245,6 +245,11 @@
   const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
   const app = document.getElementById("app");
   let SCHOOLS = null;                 // school index
+  // The college list has three states, and the search view shows each one: "loading", "ready" or
+  // "failed". There used to be no failed state. A blocked or failed download left the page on
+  // "Loading colleges" for good, because the global handler only replaces the static fallback and
+  // the search view had already replaced it.
+  let schoolsState = "loading";
   let BENCH = {};                     // national benchmarks (mobility medians)
   let NATL = null;                    // national field medians (Careers), cip|credential -> field
   const stateCache = {};              // state -> {unitid: [programs]}
@@ -252,7 +257,7 @@
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
-  const money = n => n == null ? "n/a" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
+  const money = n => n == null ? "insufficient data" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
                         : h === "4yr_after_completion" ? "4 years after completing" : "after completing";
@@ -260,6 +265,7 @@
   async function loadSchools() {
     if (SCHOOLS) return SCHOOLS;
     const r = await fetch("data/schools.json");
+    if (!r.ok) throw new Error("schools.json " + r.status);
     const j = await r.json();
     SCHOOLS = j.schools;
     BENCH = j.benchmarks || {};
@@ -384,7 +390,10 @@
       active = -1;
       q.removeAttribute("aria-activedescendant");
       const raw = q.value.trim();
-      if (!SCHOOLS) { hint.style.display = "none"; rescount.style.display = ""; rescount.textContent = "Loading colleges…"; return; }
+      if (!SCHOOLS) {
+        if (schoolsState === "failed") return;  // keep the failure message; the query stays in the box
+        hint.style.display = "none"; rescount.style.display = ""; rescount.textContent = "Loading colleges…"; return;
+      }
       if (normalize(raw).length < 2) {
         current = []; results.innerHTML = ""; rescount.style.display = "none";
         hint.style.display = ""; q.setAttribute("aria-expanded", "false");
@@ -455,16 +464,37 @@
     // while the 445 KB index is still downloading is preserved in the field, and run() replays
     // it the moment the data lands.
     if (SCHOOLS) { if (preset) run(); else { buildLanding(); landing.style.display = ""; } }
-    else { run(); loadSchools().then(() => {
-      // The label was written once at render, while the list was still loading, and only the
-      // placeholder was updated afterwards, so the page kept saying "Loading colleges" above a box
-      // that was ready. Both now change together.
-      const n = SCHOOLS.length.toLocaleString();
-      q.placeholder = "Search " + n + " colleges by name…";
+    else {
       const label = document.querySelector('label[for="q"]');
-      if (label) label.textContent = "Search " + n + " colleges by name";
+      // Ready: the label and placeholder change together. The label used to be written once at
+      // render and never updated, so it said "Loading colleges" above a working search box.
+      const ready = () => {
+        schoolsState = "ready";
+        const n = SCHOOLS.length.toLocaleString();
+        q.placeholder = "Search " + n + " colleges by name…";
+        if (label) label.textContent = "Search " + n + " colleges by name";
+        run();
+      };
+      // Failed: say so, keep the query, and offer a retry and a route that needs no data.
+      const failed = () => {
+        schoolsState = "failed";
+        if (label) label.textContent = "College list did not load";
+        hint.style.display = "none"; landing.style.display = "none";
+        rescount.style.display = "";
+        rescount.innerHTML = 'The college list did not load, so search cannot run right now. '
+          + 'Anything you typed is kept. <button type="button" class="btn btn--secondary" id="vc-retry">Retry</button> '
+          + 'or <a href="/colleges/">browse every college by state</a>.';
+        document.getElementById("vc-retry").addEventListener("click", () => {
+          schoolsState = "loading";
+          if (label) label.textContent = "Loading colleges";
+          rescount.textContent = "Loading colleges…";
+          attempt();
+        });
+      };
+      const attempt = () => loadSchools().then(ready, failed);
       run();
-    }); }
+      attempt();
+    }
   }
 
   // ---- School view ----

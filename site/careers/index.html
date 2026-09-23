@@ -52,7 +52,12 @@
     .cr-table a.mlink:hover { color: var(--brand); text-decoration: underline; }
     .cr-table td.fam { color: var(--ink-soft); font-size: .84rem; }
     .rangebar { position: relative; height: 7px; background: var(--line-soft); border-radius: var(--r-sm); min-width: 120px; margin-top: 5px; }
-    .rangebar > i { position: absolute; top: 0; height: 100%; background: var(--series-3); border-radius: var(--r-sm); }
+    /* The range is printed as figures; the bar beside it is a picture of the same thing. It was the
+       only way to read the range in the enhanced listing, with a band at 1.62:1 against its track.
+       The band is now --series-2, 4.27:1 against the track, and the median mark 3.1:1 against it. */
+    .rangecell { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+    .rangetxt { font-size: var(--t-fine); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rangebar > i { position: absolute; top: 0; height: 100%; background: var(--series-2); border-radius: var(--r-sm); }
     .rangebar > b { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--brand-deep); border-radius: var(--r-sm); }
     .clearbar { display: inline-block; min-width: 44px; }
     .clearbar.hi { color: var(--good); font-weight: 700; } .clearbar.lo { color: var(--bad); font-weight: 700; }
@@ -75,7 +80,19 @@
       .cr-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
       .cr-table td.mname { display: block; text-align: left; min-width: 0; padding-bottom: 8px; }
       .cr-table td.mname::before { content: none; }
-      .cr-table td .rangebar { flex: 1 1 auto; min-width: 0; max-width: 60%; align-self: center; }
+      .cr-table td .rangecell { flex: 1 1 auto; min-width: 0; max-width: 60%; align-items: flex-end; }
+      .cr-table td .rangebar { width: 100%; min-width: 0; }
+      /* The same card pattern for the two tables on a major's detail view. The listing was fixed and
+         the detail view was not: at 390px the degree table was about 428px in a 350px column and the
+         page itself grew to 448px. */
+      .cred-table thead, .occ thead { display: none; }
+      .cred-table, .cred-table tbody, .cred-table tr, .cred-table td,
+      .occ, .occ tbody, .occ tr, .occ td { display: block; width: 100%; }
+      .cred-table tbody tr, .occ tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
+      .cred-table td, .occ td { border: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 12px; text-align: right; }
+      .cred-table td::before, .occ td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+      .cred-table td.rhead, .occ td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
+      .cred-table td.rhead::before, .occ td.rhead::before { content: none; }
     }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
@@ -237,6 +254,8 @@
         <!-- A reveal moves focus into the table, which a screen reader announces as a row rather
              than as "25 more of 738". This says the rest. Polite so it does not interrupt. -->
         <p class="cr-count" id="cr-live" role="status" aria-live="polite"></p>
+        <p class="cr-count cr-legend">Typical range is the middle half of schools (25th to 75th percentile of
+          their median earnings); the dark mark is the median.</p>
         <div id="list"></div>
       </section>`;
     const q = document.getElementById("q"), fam = document.getElementById("fam"), sort = document.getElementById("sort");
@@ -284,7 +303,8 @@
           const cls = f.pass_pct == null ? "unk" : f.pass_pct >= 50 ? "hi" : "lo";
           const hasBand = f.p25 != null && f.p75 != null;
           const bandCell = hasBand
-            ? '<div class="rangebar"><i style="left:' + left + '%;width:' + width + '%"></i><b style="left:' + medPos + '%"></b></div>'
+            ? '<div class="rangecell"><span class="rangetxt">' + money(f.p25) + ' to ' + money(f.p75) + '</span>'
+              + '<div class="rangebar" aria-hidden="true"><i style="left:' + left + '%;width:' + width + '%"></i><b style="left:' + medPos + '%"></b></div></div>'
             : '<span class="unk-txt">insufficient data</span>';
           return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
             <td class="mname"><a href="?field=${f.cip}&cred=${f.cred}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
@@ -351,6 +371,8 @@
     if (!f) { app.innerHTML = `<a class="backlink" href="/careers/" id="back">← All majors</a><p class="empty">Major not found.</p>`; wireBack(); return; }
     const creds = all.slice().sort((a, b) => (a.cred || "").localeCompare(b.cred || ""));
     const d = f.demand;
+    // A range needs both ends. With either missing it is one unknown, not two joined by a dash.
+    const rangeTxt = r => r.p25 == null || r.p75 == null ? "insufficient data" : money(r.p25) + " to " + money(r.p75);
     // The BLS release travels with the data (build_careers_demand writes it into every field), so
     // this label cannot fall behind the numbers it describes. Before, it was typed into the page.
     const blsLabel = d && d.vintage
@@ -361,7 +383,7 @@
         <h3>Where it leads, and the outlook</h3>
         <p class="cr-count">${d.summary || "Occupations this field commonly leads to, with Bureau of Labor Statistics pay and 10-year outlook."}</p>
         <table class="occ"><thead><tr><th>Occupation</th><th class="num">Median pay</th><th class="num">Projected growth</th><th class="num">Annual openings</th></tr></thead>
-          <tbody>${d.occupations.map(o => `<tr><td>${esc(o.title)}</td><td class="num">${money(o.wage)}</td><td class="num">${growthTxt(o.growth)}</td><td class="num">${o.openings == null ? "not published" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+          <tbody>${d.occupations.map(o => `<tr><td class="rhead">${esc(o.title)}</td><td class="num" data-label="Median pay">${money(o.wage)}</td><td class="num" data-label="Projected growth">${growthTxt(o.growth)}</td><td class="num" data-label="Annual openings">${o.openings == null ? "not published" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
       </div>` : `
       <div class="demand soon"><b>Occupation outlook is on the way.</b> Job growth and annual openings for the
         careers this field leads to are being added from the Bureau of Labor Statistics, mapped through the
@@ -374,7 +396,7 @@
       </div>
       <div class="headline">
         <div><div class="big">${money(f.med)}</div><div class="lbl">median earnings, ${esc(f.cred_short)}</div></div>
-        <div><div class="big">${money(f.p25)} – ${money(f.p75)}</div><div class="lbl">typical range across schools</div></div>
+        <div><div class="big">${rangeTxt(f)}</div><div class="lbl">typical range across schools</div></div>
         <div><div class="big">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
       </div>
       <p class="cr-count">Based on ${f.programs.toLocaleString()} programs at ${f.schools.toLocaleString()} schools reporting this degree.</p>
@@ -383,9 +405,9 @@
           <h2>By degree level</h2>
           <table class="cred-table"><thead><tr><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
             <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background: var(--brand-50)"' : ""}>
-              <td><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
-              <td class="num">${money(c.med)}</td><td>${money(c.p25)} – ${money(c.p75)}</td>
-              <td class="num">${c.pass_pct == null ? "insufficient data" : c.pass_pct + "%"}</td><td class="num">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+              <td class="rhead"><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
+              <td class="num" data-label="Median earnings">${money(c.med)}</td><td data-label="Typical range">${rangeTxt(c)}</td>
+              <td class="num" data-label="Clear the bar">${c.pass_pct == null ? "insufficient data" : c.pass_pct + "%"}</td><td class="num" data-label="Schools">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
         </section>` : ""}
       <section class="module">
         <h2>Outlook</h2>
