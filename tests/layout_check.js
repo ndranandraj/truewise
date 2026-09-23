@@ -356,25 +356,37 @@ async function interactionsFor(page, route, w) {
 
   /* 2. SORT. The sort buttons carry no id, so focus restoration is keyed on data-tw-focus. A sort
    *    that drops focus to <body> is invisible to a screenshot and obvious to a keyboard user. */
-  const hasSort = await page.evaluate(() => !!document.querySelector("button.tw-th__sort"));
-  if (hasSort) {
-    const label = await page.evaluate(() => {
-      const b = document.querySelector("button.tw-th__sort");
-      b.focus(); const t = b.textContent.trim(); b.click(); return t;
-    });
+  /*    Sort with the control a reader at this width actually has. On a phone the header row is
+   *    removed and sorting moves to the visible "Sort by" select; the first version of this step
+   *    clicked the hidden header button by script at 390, which no reader can do, and reported the
+   *    focus loss that followed as a defect in the page. */
+  const label = await page.evaluate(() => {
+    const visible = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+    const b = document.querySelector("button.tw-th__sort");
+    const sel = document.querySelector("select.tw-sort__select");
+    if (!b && !sel) return { none: true };
+    if (visible(b)) { b.focus(); const t = b.textContent.trim(); b.click(); return { label: t }; }
+    if (!visible(sel)) return { hidden: true };
+    const opt = [...sel.options].find((o) => o.value);
+    sel.focus(); sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true }));
+    return { label: opt.textContent.trim() + " (Sort by select)" };
+  });
+  if (label.hidden) {
+    findings.push({ kind: "sort-unreachable", blocking: true, detail:
+      "The table can be sorted, but no sort control is visible at this width." });
+  } else if (!label.none) {
     await page.waitForTimeout(700);
     const focus = await page.evaluate(focusState);
     const aria = await page.evaluate(() =>
       [...document.querySelectorAll("th[aria-sort]")].map((t) => t.getAttribute("aria-sort")));
-    out.push({ step: "sort", label, focus, ariaSort: aria });
-
+    out.push({ step: "sort", label: label.label, focus, ariaSort: aria });
     if (focus.onBody) {
       findings.push({ kind: "sort-focus", blocking: true, detail:
-        `Sorting by "${label}" dropped focus to <body>.` });
+        `Sorting by "${label.label}" dropped focus to <body>.` });
     }
     if (!aria.some((v) => v === "ascending" || v === "descending")) {
       findings.push({ kind: "sort-aria", blocking: true, detail:
-        `Sorting by "${label}" left every th aria-sort at "none", so the sorted column is not ` +
+        `Sorting by "${label.label}" left every th aria-sort at "none", so the sorted column is not ` +
         `announced.` });
     }
   }
@@ -720,8 +732,11 @@ async function main() {
       }
 
       result.routes.push(entry);
+      /* Interaction findings count too. The first extended run printed "ok" beside two routes whose
+       * only blocking findings came from interactions, while the total said 2 blocking. */
       const b = Object.values(entry.widths).reduce(
-        (n, s) => n + s.findings.filter((f) => f.blocking).length, 0);
+        (n, s) => n + s.findings.filter((f) => f.blocking).length, 0)
+        + Object.values(entry.interactions).reduce((n, ix) => n + (ix.findings || []).length, 0);
       const t = entry.perf
         ? `  LCP ${entry.perf.lcp.median}ms (${entry.perf.lcp.min}-${entry.perf.lcp.max}), ` +
           `CLS ${entry.perf.cls.median}, TBT ${entry.perf.tbt.median}ms`
