@@ -122,6 +122,7 @@ const ROUTES = [
     } },
   { label: "k12-courses", path: "/k12/advanced-courses/", kind: "static" },
   { label: "methodology", path: "/methodology/", kind: "static" },
+  { label: "embed-docs", path: "/about/embed/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },
   { label: "finding", path: "/findings/stats-grad-exposure/", kind: "static" },
   { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },

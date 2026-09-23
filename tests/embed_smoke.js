@@ -25,12 +25,14 @@ const ck = (name, cond) => { console.log((cond ? "PASS  " : "FAIL  ") + name); i
 async function render(search) {
   const app = { innerHTML: "" };
   global.document = { getElementById: (id) => (id === "app" ? app : { textContent: "" }) };
-  global.location = { search };
+  let replacedTo = null;
+  global.location = { search, replace: (u) => { replacedTo = u; } };
   global.fetch = async () => ({ json: async () => ({ schools }) });
   global.URLSearchParams = URLSearchParams;
   global.navigator = {};
   eval(js);
   await new Promise((r) => setTimeout(r, 0)); // let the async IIFE settle
+  render.replacedTo = replacedTo;
   return app.innerHTML;
 }
 
@@ -48,10 +50,14 @@ async function render(search) {
   const missing = await render("?school=000000");
   ck("unknown id shows a graceful fallback", missing.includes("No college found"));
 
-  // No param: the docs/snippet view with a copy-paste iframe.
-  const docs = await render("");
-  ck("no-param view shows the embed docs", docs.includes("Embed a college's value check"));
-  ck("docs include a copy-paste iframe snippet", docs.includes("&lt;iframe") && docs.includes("/embed/?school="));
+  // No param: the how-to moved to /about/embed/, in the shared site design. The widget sends
+  // visitors there rather than drawing its own docs.
+  await render("");
+  ck("no-param view sends visitors to the how-to page", render.replacedTo === "/about/embed/");
+  const docs = fs.readFileSync("site/about/embed/index.html", "utf8");
+  ck("the how-to carries a copyable snippet that works as it is",
+    docs.includes("&lt;iframe") && docs.includes("/embed/?school=223232"));
+  ck("the how-to uses the shared stylesheet", docs.includes('href="/styles.css'));
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL EMBED CHECKS PASSED");
   process.exit(fails ? 1 : 0);

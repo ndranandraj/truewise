@@ -62,13 +62,6 @@
     .more:hover { text-decoration: underline; }
     .src { margin: 12px 0 0; font-size: .74rem; color: var(--ink-soft); }
     .src a { color: var(--brand-deep); }
-    /* Docs view (shown when no ?school= is given). */
-    .docs { max-width: 640px; margin: 0 auto; padding: 8px 4px; }
-    .docs h2 { font-family: var(--display); font-weight: 600; font-size: 1.2rem; margin: 18px 0 8px; }
-    .docs p { color: var(--ink-soft); line-height: 1.6; }
-    .docs code, .snippet { font-family: var(--mono); }
-    .snippet { display: block; white-space: pre-wrap; word-break: break-all; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; font-size: .82rem; color: var(--ink); margin: 8px 0 4px; }
-    .copy { border: 0; background: var(--brand-deep); color: var(--text-on-brand); font-weight: 600; border-radius: var(--r-md); padding: 8px 14px; cursor: pointer; font-size: .85rem; }
   </style>
 </head>
 <body>
@@ -132,27 +125,11 @@
     </div>`;
   }
 
-  function docs() {
-    const snippet = `<iframe src="https://truewise.dev/embed/?school=223232"\n  width="480" height="330" style="border:0" loading="lazy"\n  title="Truewise value check"></iframe>`;
-    app.innerHTML = `<div class="docs">
-      <h2>Embed a college's value check</h2>
-      <p>Drop a Truewise value-check card into any article or page. It shows, for one college, how
-        many of its programs leave graduates out-earning a typical high-school graduate, from public
-        U.S. Department of Education data. Free to use with a link back.</p>
-      <p>Paste this where you want the card, changing <code>school=</code> to the college's ID. You
-        can find the ID in the address bar on any
-        <a href="${BASE}/value-check/" target="_blank" rel="noopener">Value Check</a> result
-        (the <code>?school=</code> number).</p>
-      <code class="snippet" id="snip">${esc(snippet)}</code>
-      <button class="copy" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('snip').textContent).then(()=>{this.textContent='Copied';})">Copy</button>
-      <h2>Live example</h2>
-      <iframe src="/embed/?school=223232" width="480" height="330" style="border:0;max-width:100%" title="Truewise value check example"></iframe>
-    </div>`;
-  }
-
+  // The how-to lives at /about/embed/, in the shared site design. This page is only the widget,
+  // which stays self-contained because it renders inside other people's pages.
   (async function () {
     const id = new URLSearchParams(location.search).get("school");
-    if (!id) { docs(); return; }
+    if (!id) { location.replace("/about/embed/"); return; }
     try {
       const schools = (await (await fetch(`${BASE}/value-check/data/schools.json`)).json()).schools;
       const s = schools.find(x => String(x.unitid) === String(id));

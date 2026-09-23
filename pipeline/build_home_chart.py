@@ -101,7 +101,7 @@ def render_svg(
     W: int = 480,
     BAR_W: int = 42,
     GAP: int = 14,
-    caption_right: str = "earn more than a high-school graduate &#8594;",
+    caption_right: str = "earn more than the HS line &#8594;",
     ids: str = "",
 ) -> str:
     """A vertical histogram. Defaults are the approved 480x260 desktop geometry.
@@ -118,7 +118,7 @@ def render_svg(
     so the only honest fix is a second, narrower chart for narrow columns, which build_block emits
     alongside this one and CSS swaps at the breakpoint.
     """
-    H = 260
+    H = 276
     n = len(counts)
 
     def place(x: int, anchor: str, label: str, size: int = 13) -> tuple[int, str]:
@@ -188,17 +188,32 @@ def render_svg(
         f'<text x="{hsx}" y="{top_y + 4}" text-anchor="{hsa}" font-size="13" fill="{TEXT}" '
         f'font-weight="600">HS line</text>'
     )
-    # Axis captions.
+    # Bin edges on the axis. The bars carried percentages on top but nothing said what range each
+    # covered, so "12%" above the second bar could not be read as "12% of programs earn 0 to 25%
+    # more". Edge ticks rather than per-bar range labels, because "100-150% more" cannot fit a 41px
+    # phone slot at a readable size, and a tick at each boundary is the standard histogram axis.
+    # The 0% tick falls exactly on the dashed high-school line, which is the point of the chart.
+    for i, edge in enumerate(EDGES[1:-1]):
+        tx = x0 + (i + 1) * slot - GAP // 2
+        parts.append(
+            f'<line x1="{tx}" y1="{base_y}" x2="{tx}" y2="{base_y + 5}" stroke="{BASELINE}" '
+            f'stroke-width="1"/>'
+        )
+        parts.append(
+            f'<text x="{tx}" y="{base_y + 19}" text-anchor="middle" font-size="13" '
+            f'fill="{TEXT_DIM}">{edge}%</text>'
+        )
+    # Axis captions, one line below the ticks.
     elx, ela = place(x0 + BAR_W // 2, "middle", "earn less")
     parts.append(
-        f'<text x="{elx}" y="{base_y + 22}" text-anchor="{ela}" '
+        f'<text x="{elx}" y="{base_y + 40}" text-anchor="{ela}" '
         f'font-size="13" fill="{TEXT}" font-weight="600">earn less</text>'
     )
     # Right-aligned to the plot edge. At 13px mono the two captions would otherwise meet around
     # x=107, since "earn less" centred under the first bar already reaches it.
     erx, era = place(x0 + n * slot - GAP, "end", caption_right)
     parts.append(
-        f'<text x="{erx}" y="{base_y + 22}" text-anchor="{era}" font-size="13" '
+        f'<text x="{erx}" y="{base_y + 40}" text-anchor="{era}" font-size="13" '
         f'fill="{TEXT_DIM}">{caption_right}</text>'
     )
     # Provenance, on the face of the chart rather than only in the description: a reader should be

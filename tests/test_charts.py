@@ -86,7 +86,11 @@ def test_home_chart_matches_the_approved_geometry():
     chart shipped at 360x230 with 9.5px labels on 32px bars, which is under the 12px floor the
     record sets for mono metadata and too small to read on a phone."""
     svg = _home_chart_svg()
-    assert 'viewBox="0 0 480 260"' in svg, "chart is not on the approved 480x260 canvas"
+    # 276, not the plan's 260: 16px were added below the bars on 2026-09-23 for bin-edge ticks
+    # (0%, 25% ... 150%). An acceptance review found the bars carried shares with no visible range.
+    assert 'viewBox="0 0 480 276"' in svg, "chart is not on the approved 480x276 canvas"
+    for edge in ("0%", "25%", "50%", "75%", "100%", "150%"):
+        assert f">{edge}</text>" in svg, f"the axis lost its {edge} bin edge"
     widths = {int(w) for w in re.findall(r"<rect[^>]*width=\"(\d+)\"", svg)}
     assert widths == {42}, f"bars must be 42 wide, found {sorted(widths)}"
     xs = [int(x) for x in re.findall(r'<rect x="(\d+)"', svg)]

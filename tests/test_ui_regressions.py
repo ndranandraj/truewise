@@ -1815,7 +1815,12 @@ def test_hand_written_pages_use_colour_and_radius_tokens():
     Every colour and radius in a hand-written page's CSS is now a token. Shadows may use the ink
     tint rgba(12,21,18,...), since the palette defines no shadow token, and a circle may use 50%.
     """
-    for page in [*HAND_WRITTEN_APP_PAGES, "methodology/index.html", "about/index.html"]:
+    for page in [
+        *HAND_WRITTEN_APP_PAGES,
+        "methodology/index.html",
+        "about/index.html",
+        "about/embed/index.html",
+    ]:
         src = (SITE / page).read_text()
         css = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", src, flags=re.S))
         css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
@@ -1918,11 +1923,13 @@ def test_homepage_examples_are_real_programs():
     +78%" and "Cosmetology, Cert., (example), $24,100, -30%" matched no program, yet sat under a
     Department of Education source line on the first screen of the site. Every example row must name
     a real institution and reproduce its earnings and premium from the published data exactly."""
+    import json
+
     import duckdb
 
     html = (SITE / "index.html").read_text()
     rows = re.findall(
-        r'<p class="program">([^<]+)</p>\s*<p class="earned">[^<]*<b>\$([\d,]+)</b></p>\s*</div>\s*'
+        r'<p class="program"><a href="/college/([\w-]+)/">([^<]+)</a></p>\s*<p class="earned">[^<]*<b>\$([\d,]+)</b></p>\s*</div>\s*'
         r'<span class="verdict-pill (up|down)">[^;]*;\s*(?:&minus;)?\+?(\d+)%</span>',
         html,
     )
@@ -1933,17 +1940,21 @@ def test_homepage_examples_are_real_programs():
         "Cosmetology": ("1204%", "Undergraduate%"),
     }
     con = duckdb.connect()
-    for program, earned, direction, pct in rows:
+    registry = json.loads((ROOT / "published" / "slug_registry.json").read_text())
+    for slug, program, earned, direction, pct in rows:
         field, _cred, inst = (x.strip() for x in program.split(",", 2))
         cip, cred = fields[field]
         hit = con.execute(
-            "SELECT earnings, earnings_premium_state / earnings_threshold_state "
+            "SELECT earnings, earnings_premium_state / earnings_threshold_state, unitid "
             "FROM read_parquet(?) WHERE inst_name = ? AND cip_code LIKE ? "
             "AND credential_desc LIKE ? AND earnings_horizon = '4yr_after_completion'",
             [str(ROOT / "published" / "value_check.parquet"), inst, cip, cred],
         ).fetchall()
         assert len(hit) == 1, f"{program!r} is not exactly one real program in the data"
-        earnings, ratio = hit[0]
+        earnings, ratio, unitid = hit[0]
+        assert registry.get(unitid) == slug, (
+            f"{program}: links to /college/{slug}/ but its institution's page is {registry.get(unitid)}"
+        )
         assert int(earnings) == int(earned.replace(",", "")), (
             f"{program}: earnings differ from data"
         )

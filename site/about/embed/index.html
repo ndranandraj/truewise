@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Embed a college's value check | Truewise</title>
+  <meta name="description" content="Put a Truewise value-check card for any US college on your own site: pick the college, copy one line. Free, from public federal data, with a link back." />
+  <meta property="og:title" content="Embed a college's value check" />
+  <meta property="og:description" content="A value-check card for any US college, for your own site. Free, from federal data." />
+  <meta property="og:site_name" content="Truewise US education data" />
+  <meta property="og:url" content="https://truewise.dev/about/embed/" />
+  <link rel="canonical" href="https://truewise.dev/about/embed/" />
+  <meta property="og:image" content="https://truewise.dev/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://truewise.dev/og.png" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preload" href="/fonts/source-serif-4-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="/styles.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://truewise.dev/#website",
+        "name": "Truewise",
+        "url": "https://truewise.dev",
+        "description": "Open, honest US federal education data for students and families.",
+        "inLanguage": "en-US",
+        "license": "https://creativecommons.org/licenses/by/4.0/"
+      },
+      {
+        "@type": "Person",
+        "@id": "https://truewise.dev/about/embed/#anandraj",
+        "name": "Anandraj",
+        "description": "Independent data practitioner; builder and maintainer of Truewise.",
+        "url": "https://ndranandraj.com",
+        "sameAs": [
+          "https://ndranandraj.com",
+          "https://www.linkedin.com/in/anandraj-r-78b86198/",
+          "https://github.com/ndranandraj"
+        ]
+      }
+    ]
+  }
+  </script>
+  <style>
+    /* The docs page uses the shared site design. The widget it documents, /embed/?school=, stays
+       self-contained on purpose: it renders inside other people's pages. */
+    .doc { padding-top: 40px; padding-bottom: 64px; }
+    :where(.doc) > * { max-width: 720px; }
+    .doc h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 8px; }
+    .doc h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 32px 0 8px; }
+    .doc p, .doc li { max-width: var(--measure); color: var(--ink-soft); line-height: 1.65; }
+    .doc ol { padding-left: 1.2em; }
+    .picked-school { margin: 10px 0 0; font-weight: 600; color: var(--ink); }
+    .emb-results { list-style: none; padding: 0; margin: 8px 0 0; max-width: 620px; }
+    .emb-results button { display: block; width: 100%; text-align: left; font: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 10px 12px; margin: 0 0 6px; cursor: pointer; color: var(--ink); }
+    .emb-results button:hover { border-color: var(--control-border-hover); }
+    .emb-results .meta { color: var(--ink-soft); font-size: var(--t-fine); }
+    .snippet { display: block; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; font-family: var(--mono); font-size: var(--t-fine); color: var(--ink); margin: 8px 0; }
+    .emb-preview { border: 0; width: 100%; max-width: 480px; height: 330px; }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <div class="brand-group">
+        <a class="brand" href="/">true<span>wise</span></a>
+        <span class="brand-tagline">Honest US education data</span>
+      </div>
+      <nav aria-label="Primary">
+        <a href="/careers/">Careers</a>
+        <a href="/k12/">High schools</a>
+        <a href="/#data">Data</a>
+        <a href="/methodology/">Methodology</a>
+        <a href="/about/" aria-current="true">About</a>
+        <a class="nav-cta" href="/value-check/">Find a college</a>
+        <details class="nav-toggle">
+          <summary aria-label="Menu">&#9776;</summary>
+          <div class="menu">
+            <a href="/careers/">Careers</a>
+            <a href="/k12/">High schools</a>
+            <a href="/#data">Data</a>
+            <a href="/methodology/">Methodology</a>
+            <a href="/about/" aria-current="true">About</a>
+          </div>
+        </details>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap doc">
+    <h1>Embed a college's value check</h1>
+    <p>Put a Truewise value-check card for one college on your own page: how many of its programs
+      leave graduates out-earning a typical high-school graduate in its state, from public U.S.
+      Department of Education data. Free to use, with a link back to the full profile.</p>
+
+    <h2>1. Pick the college</h2>
+    <label class="field-label" for="emb-q">Search colleges by name</label>
+    <div class="searchbox">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="emb-q" type="search" autocomplete="off" placeholder="e.g. Baylor" aria-describedby="emb-status" />
+    </div>
+    <p class="hint" id="emb-status" role="status" aria-live="polite">Showing the code for Baylor University until you pick another college.</p>
+    <ul class="emb-results" id="emb-results"></ul>
+
+    <h2>2. Copy this line into your page</h2>
+    <code class="snippet" id="emb-snippet">&lt;iframe src="https://truewise.dev/embed/?school=223232" width="480" height="330" style="border:0" loading="lazy" title="Truewise value check: Baylor University"&gt;&lt;/iframe&gt;</code>
+    <button type="button" class="btn btn--secondary" id="emb-copy">Copy</button>
+
+    <h2>3. What it looks like</h2>
+    <iframe class="emb-preview" id="emb-preview" src="/embed/?school=223232" loading="lazy" title="Truewise value check: Baylor University"></iframe>
+
+    <h2>Terms</h2>
+    <p>The card is free to use on any site, including commercial ones, as long as it stays unmodified
+      and keeps its link to Truewise. The numbers describe past graduates, not a promise, and every
+      one is explained on the <a href="/methodology/">methodology page</a>.</p>
+    <noscript><p>Picking a college needs JavaScript. The line above works as it is for Baylor
+      University; to embed another college, replace 223232 with that college's federal ID (its
+      IPEDS UNITID).</p></noscript>
+  </main>
+  <script src="/assets/college-search.js"></script>
+  <script>
+  (function () {
+    const q = document.getElementById("emb-q");
+    const results = document.getElementById("emb-results");
+    const status = document.getElementById("emb-status");
+    const snippet = document.getElementById("emb-snippet");
+    const preview = document.getElementById("emb-preview");
+    const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+    let schools = null;
+    const line = (s) => '<iframe src="https://truewise.dev/embed/?school=' + s.unitid
+      + '" width="480" height="330" style="border:0" loading="lazy" title="Truewise value check: '
+      + esc(s.name) + '"></iframe>';
+    const pick = (s) => {
+      snippet.textContent = line(s);
+      preview.src = "/embed/?school=" + encodeURIComponent(s.unitid);
+      preview.title = "Truewise value check: " + s.name;
+      results.innerHTML = "";
+      q.value = s.name;
+      status.textContent = "Code updated for " + s.name + ".";
+    };
+    const load = () => schools ? Promise.resolve(schools)
+      : fetch("/value-check/data/schools.json").then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+          .then(j => (schools = j.schools));
+    let t;
+    q.addEventListener("input", () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        load().then(list => {
+          const hits = TWSearch.searchSchools(list, q.value).slice(0, 8);
+          results.innerHTML = hits.map((s, i) => '<li><button type="button" data-i="' + i + '">' + esc(s.name)
+            + ' <span class="meta">' + esc(s.city || "") + (s.city ? ", " : "") + esc(s.state) + '</span></button></li>').join("");
+          results.querySelectorAll("button").forEach(b => b.addEventListener("click", () => pick(hits[+b.dataset.i])));
+          status.textContent = q.value.trim().length < 2 ? "" : hits.length + " match" + (hits.length === 1 ? "" : "es") + ".";
+        }, () => { status.textContent = "The college list did not load. The code above still works for Baylor University."; });
+      }, 150);
+    });
+    document.getElementById("emb-copy").addEventListener("click", function () {
+      const b = this;
+      if (!navigator.clipboard) { status.textContent = "Select the line above and copy it."; return; }
+      navigator.clipboard.writeText(snippet.textContent).then(
+        () => { b.textContent = "Copied"; status.textContent = "Copied to the clipboard."; },
+        () => { status.textContent = "Select the line above and copy it."; });
+    });
+  })();
+  </script>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/compare/">Compare</a> &middot; <a href="/majors/">All majors</a> &middot; <a href="/lists/">Lists</a> &middot; <a href="/findings/">Findings</a> &middot; <a href="/updates/">Updates</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+      <p class="muted">A portfolio &amp; social-impact project &middot; Not affiliated with the US Department of Education.</p>
+    </div>
+  </footer>
+  <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
+</body>
+</html>
