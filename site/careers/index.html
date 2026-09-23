@@ -32,6 +32,12 @@
     .cr-field--grow { flex: 1; min-width: 220px; }
     .cr-label { font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
     .cr-controls input, .cr-controls select { width: 100%; }
+    /* On a phone the three controls sized to their content: 350, 308 and 141px wide, three ragged
+       edges. Search takes the full row and the two selects split the row below evenly. */
+    @media (max-width: 600px) {
+      .cr-field--grow { flex: 1 1 100%; min-width: 0; }
+      .cr-field:not(.cr-field--grow) { flex: 1 1 calc(50% - var(--s3)); }
+    }
     .cr-count { color: var(--ink-soft); font-size: .9rem; margin: 6px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-lg); }
     .cr-table { width: 100%; border-collapse: collapse; font-size: var(--t-ui); }

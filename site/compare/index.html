@@ -319,13 +319,15 @@
 
     // Coverage first: a school with 89 of 254 programs measured should not read as equivalent to
     // one with broad coverage, however good its pass rate looks. Computed per school, never copied.
+    // Coverage is not a verdict. It was drawn in the failing red below 50%, which is nearly every
+    // school, since most programs are too small to publish earnings. Missing data must never take
+    // the colour of a bad result, so the count is plain and the sentence says what it means.
     row("Programs measured", cols.map(s => {
       const decided = s.n_pass + s.n_fail;
       const total = decided + (s.n_insufficient || 0);
       if (!total) return "not reported";
       const share = Math.round(100 * decided / total);
-      const cls = share < 50 ? "bad" : "";
-      return `<span class="${cls}">${decided} of ${total}</span> <span class='schmeta'>${share}% of programs have earnings data</span>`;
+      return `<b>${decided} of ${total}</b> <span class='schmeta'>${share}% of programs have earnings data</span>`;
     }));
 
     row("Programs clearing the bar", cols.map(s => {

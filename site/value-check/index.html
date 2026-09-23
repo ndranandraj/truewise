@@ -180,6 +180,7 @@
     .caveats a { color: var(--brand); }
     .empty { color: var(--ink-soft); padding: 20px 0; }
   </style>
+  <noscript><style>#boot-status { display: none; }</style></noscript>
 </head>
 <body>
   <header class="site-header">
@@ -216,10 +217,25 @@
        replaces it is taller than the viewport, so a min-height of 100vh is a floor the real content
        always clears, and the footer simply starts below the fold where it belongs. -->
   <main class="wrap" id="app" style="min-height:100vh">
+    <!-- The static first view is the search view itself, so the page never opens as a paragraph
+         and nothing jumps when the script takes over. The box is disabled until the college list
+         arrives, and the browse link works whether or not the script ever runs. -->
     <div id="boot-fallback">
-      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">Look up any US college</h1>
-      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US college to see, program by program, whether graduates out-earn a typical high-school graduate (the federal earnings-premium test), what families actually pay by income, median debt and how long it takes to pay back, and where each major leads. Built on public College Scorecard data. Loading the data now.</p>
-      <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
+      <section class="vc-search">
+        <h1>Look up any US college</h1>
+        <p class="lede">Search a school for its Truewise profile: whether each program's graduates
+          typically out-earn a high-school graduate (Value Check), what families pay by income, how
+          fast debt pays back, and who the school serves, from the Department of Education's own data.</p>
+        <label class="field-label" for="q-boot">Search colleges by name</label>
+        <div class="searchbox">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q-boot" class="boot-input" type="search" placeholder="e.g. Baylor" disabled aria-describedby="boot-status" />
+        </div>
+        <p class="hint" id="boot-status">Loading the college list. You can also <a href="/colleges/">browse every college by state</a>.</p>
+        <noscript><p class="hint">Search needs JavaScript. Every college is listed by state on
+          <a href="/colleges/">All colleges</a>, and every number is explained on the
+          <a href="/methodology/">methodology page</a>.</p></noscript>
+      </section>
     </div>
   </main>
   <button id="to-top" aria-label="Back to top" title="Back to top">↑</button>

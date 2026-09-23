@@ -50,6 +50,9 @@
   <style>
     .doc { padding-top: 40px; padding-bottom: 64px; }
     :where(.doc) > * { max-width: 720px; }
+    /* Running text keeps the reading measure. At 16px across the full column Methodology ran about
+       95 characters a line, and it is the long-read page. Boxes, tables and code keep the column. */
+    .doc p, .doc li { max-width: var(--measure); }
     .doc h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 8px; }
     .doc h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 32px 0 8px; }
     .doc p, .doc li { color: var(--ink-soft); line-height: 1.65; font-size: 1.02rem; }

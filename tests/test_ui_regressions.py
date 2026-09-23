@@ -1767,11 +1767,11 @@ def test_every_form_control_uses_the_one_control_spec():
         code = re.sub(r"/\*.*?\*/", "", re.sub(r"<!--.*?-->", "", src, flags=re.S), flags=re.S)
         for tag in re.findall(r"<select\b[^>]*>", code):
             assert 'class="control"' in tag, f"{page}: {tag} should use the shared .control"
-        for tag in re.findall(r"<input\b[^>]*>", code):
+        # An input inside the shared .searchbox is styled by it, so it takes no class of its own.
+        outside = re.sub(r'<div class="searchbox">.*?</div>', "", code, flags=re.S)
+        for tag in re.findall(r"<input\b[^>]*>", outside):
             if re.search(r'type="(hidden|checkbox|radio)"', tag):
                 continue
-            if 'id="q"' in tag and "searchbox" in code and 'class="control"' not in tag:
-                continue  # inside the shared .searchbox, which styles its input
             assert 'class="control"' in tag, f"{page}: {tag} should use the shared .control"
         for body in re.findall(r"\n\s*\.searchbox \{([^}]*)\}", code):
             props = {p.split(":")[0].strip() for p in body.split(";") if ":" in p}
@@ -1842,3 +1842,32 @@ def test_the_primary_nav_says_where_you_are():
         assert current == [(href, value)], f"{page}: primary nav marks {current}, want {href}"
     css = (SITE / "styles.css").read_text()
     assert "nav a[aria-current]" in css, "the current nav link has no visible style"
+
+
+def test_phase_three_polish_holds():
+    """Four small fixes from the design pass, each of which had a reader-facing cost.
+
+    Value Check opened as a paragraph ending "Loading the data now", with no search box until the
+    script ran; during the template-literal outage that paragraph was the whole page. The static
+    first view is now the search view with the box disabled and a browse link that needs no script.
+    Compare drew coverage below 50% in the failing red, which is nearly every school. K-12 Compare
+    printed "n/a" for a missing count. Methodology ran about 95 characters a line.
+    """
+    vc = (SITE / "value-check" / "index.html").read_text()
+    boot = vc.split('<div id="boot-fallback">', 1)[1].split("</main>", 1)[0]
+    assert 'class="searchbox"' in boot and " disabled" in boot, "no static, disabled search box"
+    assert 'href="/colleges/"' in boot, "the static view needs a route that works without script"
+
+    cmp_src = (SITE / "compare" / "index.html").read_text()
+    measured = cmp_src.split('row("Programs measured"', 1)[1].split("}));", 1)[0]
+    assert '"bad"' not in measured, "coverage must not take the colour of a failing result"
+
+    k12 = re.sub(
+        r"/\*.*?\*/", "", (SITE / "k12" / "compare" / "index.html").read_text(), flags=re.S
+    )
+    assert '"n/a"' not in k12, "K-12 unknowns read 'Not reported', never 'n/a'"
+
+    meth = (SITE / "methodology" / "index.html").read_text()
+    assert ".doc p, .doc li { max-width: var(--measure); }" in meth, (
+        "Methodology prose lost its measure"
+    )
