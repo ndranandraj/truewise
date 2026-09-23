@@ -60,3 +60,43 @@ def test_page_bakes_the_range(tmp_path, monkeypatch):
     assert "—" not in h and "&mdash;" not in h
     idx = (site / "findings" / "index.html").read_text()
     assert 'href="/findings/stats-grad-exposure/"' in idx
+
+
+def test_the_exposure_page_describes_the_rule_the_way_the_rule_is_written():
+    """The page once said the rule compares graduate programs to "a working bachelor's-degree
+    holder aged 25 to 34", and applied one national figure to every program.
+
+    The final rule (91 FR 40136) does not. A graduate program is held to the LOWEST of three
+    bachelor's-holder figures: the institution's state, the same field in that state, or the same
+    field nationally. Where same-state, same-field data is too thin the threshold is $1, which ED
+    estimates exempts about 2,650 graduate programs. The same-field comparison bites hardest on
+    exactly the fields the page listed as most exposed, so the page overstated both the count and
+    which fields it fell on.
+
+    The range is still worth publishing, but only labelled as what it is. This guard asserts the
+    labels, not the numbers, because the numbers move with every data refresh and the labels must
+    not. Comments are stripped first: the fix documents the old wording in order to explain it.
+    """
+    import pathlib
+    import re
+
+    from pipeline import build_stats_exposure as bse
+
+    src = pathlib.Path(bse.__file__).read_text()
+    code = re.sub(r'"""[\s\S]*?"""', "", src)
+    code = "\n".join(ln.split("#", 1)[0] for ln in code.splitlines())
+
+    assert "lowest" in code and "$1" in code, (
+        "the page must describe the lowest-of-three rule and the $1 exemption"
+    )
+    assert "likely overestimate" in code, (
+        "the headline range must be labelled a likely overestimate"
+    )
+    assert "working bachelor's-degree holder aged 25 to 34. ED has not published" not in code, (
+        "the old one-national-line description of the rule is back"
+    )
+    # The fields list is where the same-field test bites hardest; it must not be presented as a
+    # list of programs that will fail.
+    assert "Fields with the most exposed programs" not in code, (
+        "the field list is titled as exposure again"
+    )

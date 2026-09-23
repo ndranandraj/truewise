@@ -1,8 +1,9 @@
 """STATS grad-program exposure: which graduate programs are at risk under the final
 Earnings Accountability (STATS) rule, framed as a reproducible framework + sensitivity range.
 
-The rule (Federal Register 2026-07-01) judges GRADUATE programs against a bachelor's-degree-
-holder earnings benchmark (Census, BA holders aged 25-34), using 4th-year earnings; a program
+The rule (Federal Register 2026-07-01) judges GRADUATE programs against the LOWEST of three
+bachelor's-holder earnings figures (Census, aged 25-34, not enrolled: same state, same field in state,
+same field nationally), with a $1 threshold where field data is thin; 4th-year earnings; a program
 that fails 2 of 3 consecutive years loses Direct Loan eligibility (effective 2027-07-01, first
 losses possible 2028-29). ED has NOT yet published the exact bachelor's-holder threshold, and the
 count of exposed programs is very sensitive to it, so we publish the whole exposure curve and a
@@ -98,9 +99,9 @@ def render_page(s) -> str:
     lo, hi = s["band"]
     title = "How many graduate programs are exposed under the new earnings rule?"
     desc = (
-        f"Under the final STATS earnings-accountability rule, roughly {lo:,} to {hi:,} US graduate "
-        f"programs would fall below a typical bachelor's-holder's earnings on the most recent data, "
-        f"mostly master's degrees in teaching, counseling, and the arts. Reproducible, from federal data."
+        f"On the most recent federal data, {lo:,} to {hi:,} US graduate programs fall below a single "
+        f"national bachelor's-holder earnings line. The final STATS rule uses field-level thresholds and "
+        f"a $1 exemption, so the true count is likely lower. Reproducible, from federal data."
     )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
@@ -115,7 +116,7 @@ def render_page(s) -> str:
         "Which graduate programs are exposed?",
         big=f"{lo:,}-{hi:,}",
         big_color=OG_BAD,
-        sub="US graduate programs fall below a typical bachelor's-holder's earnings.",
+        sub="Graduate programs below one national bachelor's line. Likely an overestimate.",
     )
     p = [head(title, desc, canonical, ld, og_image="/og/findings/stats-grad-exposure.png")]
     p.append('  <main class="wrap pg">\n')
@@ -124,23 +125,27 @@ def render_page(s) -> str:
     )
     p.append("    <h1>Which graduate programs are exposed under the new earnings rule?</h1>\n")
     p.append(
-        f'    <div class="verdict">Depending on where the Department of Education sets the '
-        f"bachelor's-holder benchmark, likely between <b>{money(BAND[0])}</b> and <b>{money(BAND[1])}</b> "
-        f"based on Census data, roughly <b>{lo:,} to {hi:,}</b> graduate programs would fall below it "
-        f"on the most recent earnings data. That is out of <b>{s['denom']:,}</b> graduate programs with "
-        f"reported four-year earnings (about 1 in 5 of {s['total']:,}; the rest are privacy-suppressed).</div>\n"
+        f'    <div class="verdict">Against a single national bachelor\'s-holder earnings line of '
+        f"<b>{money(BAND[0])}</b> to <b>{money(BAND[1])}</b>, <b>{lo:,} to {hi:,}</b> graduate programs "
+        f"fall below it on the most recent earnings data, out of <b>{s['denom']:,}</b> with reported "
+        f"four-year earnings (about 1 in 5 of {s['total']:,}; the rest are privacy-suppressed). "
+        f"<b>Treat this as a likely overestimate.</b> The final rule does not hold graduate programs to one "
+        f"national line: each is held to the lowest of three bachelor's-holder figures, and many get a $1 "
+        f"threshold that exempts them. The true count is very likely lower, and we cannot yet say by how much.</div>\n"
     )
     p.append(
         '    <p class="src">This is <b>exposure on the most recent snapshot, not a prediction</b>. '
-        "The rule fails a program only after two of three consecutive years below the line, and ED "
-        "has not yet published the exact benchmark. We publish the whole curve so the number updates "
-        "the moment ED sets it.</p>\n"
+        "The rule fails a program only after two of three consecutive years below its threshold. ED has "
+        "not published the thresholds; first results are expected in 2027. For scale, ED's own estimate "
+        "in the final rule is about 3,302 programs failing in the first year across all programs, "
+        "undergraduate and graduate together, under coverage rules that differ from this page's, so the "
+        "two figures are not directly comparable.</p>\n"
     )
 
     # Exposure curve.
     p.append('    <h2 class="sec">Exposure by benchmark</h2>\n')
     p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Benchmark comparison"><table class="t"><thead><tr><th>Bachelor\'s-holder benchmark</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Benchmark comparison"><table class="t"><thead><tr><th>Single national line</th>'
         '<th class="num">Grad programs below</th><th class="num">Share of grad programs with earnings</th>'
         "</tr></thead><tbody>\n"
     )
@@ -149,7 +154,7 @@ def render_page(s) -> str:
         mark = ' style="background:var(--bg-alt)"' if inband else ""
         p.append(
             f"      <tr{mark}><td>{money(row['benchmark'])}"
-            f"{' &nbsp;<b>(likely range)</b>' if inband else ''}</td>"
+            f"{' &nbsp;<b>(likely national figure)</b>' if inband else ''}</td>"
             f"<td class='num'>{row['n_below']:,}</td><td class='num'>{row['pct']}%</td></tr>\n"
         )
     p.append("    </tbody></table></div>\n")
@@ -177,7 +182,7 @@ def render_page(s) -> str:
 
     # Top exposed fields.
     p.append(
-        f'    <h2 class="sec">Fields with the most exposed programs (below {money(REF)})</h2>\n'
+        f'    <h2 class="sec">Fields with the most programs below a national {money(REF)} line</h2>\n'
     )
     p.append(
         '    <div class="tscroll" tabindex="0" role="region" aria-label="Coverage by field of study"><table class="t"><thead><tr><th>Field of study</th>'
@@ -190,8 +195,12 @@ def render_page(s) -> str:
         )
     p.append("    </tbody></table></div>\n")
     p.append(
-        '    <p class="src">These are the classic high-debt, modest-pay graduate fields: master\'s '
-        "degrees in teaching, counseling, psychology, social work, and the arts.</p>\n"
+        '    <p class="src"><b>Read this list with more caution than anything else on this page.</b> '
+        "Where the data allows, the rule compares a graduate program with bachelor's holders in the same "
+        "field, and bachelor's holders in teaching, counseling, social work and the arts also earn "
+        f"modestly. For these fields the real threshold is likely well below {money(REF)}, so many of "
+        "these programs would pass. The list shows where graduate earnings are low in absolute terms, "
+        "not which programs will fail.</p>\n"
     )
 
     # Method + caveats.
@@ -202,12 +211,21 @@ def render_page(s) -> str:
         f"doctoral, first-professional, and graduate certificate) with a reported four-year median "
         f"earnings figure: {s['denom']:,} of {s['total']:,}. The rest are privacy-suppressed and never "
         "guessed.</li>\n"
-        "      <li><b>The benchmark.</b> The rule compares graduate programs to the median earnings of a "
-        "working bachelor's-degree holder aged 25 to 34. ED has not published the exact figure. NCES puts "
-        "the median for that group at <b>$66,600</b> for those working full-time year-round (2022); the "
-        "rule's broader 'working' population includes part-time workers and so runs below the full-time "
-        "figure. We therefore use a likely band of $58,000 to $66,000, and show the full curve so the "
-        "number updates the moment ED sets the benchmark.</li>\n"
+        "      <li><b>What the rule actually compares against.</b> For a graduate program the threshold "
+        "is Census median earnings of working bachelor's-degree holders aged 25 to 34 who were not "
+        "enrolled, taking the <b>lowest</b> of three figures: the state where the institution is located, "
+        "the same field of study in that state, or the same field nationally. National figures replace "
+        "state ones when most of an institution's students come from out of state. Where same-state, "
+        "same-field data is too thin, the threshold is set to <b>$1</b>, which ED estimates exempts about "
+        "2,650 graduate programs.</li>\n"
+        "      <li><b>What this page applies instead.</b> One figure, a national bachelor's-holder median. "
+        "NCES puts it at <b>$66,600</b> for full-time year-round workers (2022), and the rule's broader "
+        "working population runs lower, hence the $58,000 to $66,000 band. This page does not apply the "
+        "same-field comparison or the $1 exemption, because the field-level Census figures are not in "
+        "this dataset. The exemption can only reduce the count, and the field comparison lowers most "
+        "thresholds, especially in modestly paid fields and lower-earning states. It can raise one in a "
+        "high-earning state and field, so the range is a likely overestimate rather than a strict "
+        "ceiling.</li>\n"
         "      <li><b>The horizon.</b> Earnings are median earnings in the fourth tax year after "
         "completing, the same measure the rule uses.</li>\n"
         "      <li><b>Not a verdict.</b> A program only loses Direct Loan eligibility after failing two of "
@@ -258,8 +276,9 @@ def render_index() -> str:
     p.append('    <ul class="schoollist">\n')
     p.append(
         '      <li><a href="/findings/stats-grad-exposure/">Which graduate programs are exposed under '
-        'the new earnings rule?</a><div class="meta">The STATS rule holds graduate programs to a '
-        "bachelor's-holder earnings line; here is the reproducible exposure range.</div></li>\n"
+        'the new earnings rule?</a><div class="meta">How many graduate programs fall below a national '
+        "bachelor's-holder earnings line, and why the rule's field-level test means the true count is "
+        "likely lower.</div></li>\n"
     )
     p.append("    </ul>\n")
     p.append("  </main>\n")
