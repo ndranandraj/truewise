@@ -67,7 +67,7 @@ def render_css_root(tokens: dict) -> str:
     """The exact text of the :root {...} block, markers included."""
     lines = [
         ":root {",
-        f"{START} — generated from design/tokens.json by `make tokens`. Do not edit by hand. */",
+        f"{START}: generated from design/tokens.json by `make tokens`. Do not edit by hand. */",
     ]
     for name, spec in tokens["color"].items():
         lines.append(f"  --{name}: {spec['value']};")

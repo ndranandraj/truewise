@@ -195,7 +195,6 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     /* Caution tokens, 4.67 on their own background; the pill also states its meaning in words. */
     .gem {{ display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: var(--t-label); font-weight: 600; margin-left: 6px; }}
     .cta-row {{ margin: 18px 0 8px; }}
-    .cta-row a.primary {{ display: inline-block; background: var(--brand); color: #fff; font-weight: 700; text-decoration: none; padding: 11px 18px; border-radius: var(--r-lg); }}
     h2.sec {{ font-size: var(--t-section); letter-spacing: -0.02em; line-height: 1.2; margin: 30px 0 8px; }}
     .tscroll {{ overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0; }}
     table.t {{ width: 100%; border-collapse: collapse; font-size: var(--t-ui); }}
@@ -232,8 +231,6 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     /* Serves a <button> on the profile calculator and an <a download> on the lists, so it
        declares both. 11px of padding on a 15px step at line-height 1.5 is a 46px target,
        past the 44px floor the phone pass asked for. */
-    .dl-btn {{ display: inline-block; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; border-radius: var(--r-lg); padding: 11px 16px; font-size: var(--t-ui); font-weight: 600; cursor: pointer; }}
-    .dl-btn:hover {{ background: var(--bg-alt); }}
     .dl-note {{ color: var(--ink-faint); font-size: var(--t-fine); }}
     .upd {{ border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }}
     .upd h2.sec {{ margin: 4px 0 6px; font-size: var(--t-sub); }}
@@ -568,7 +565,7 @@ def college_page(s, programs, slug) -> str:
     parts.append(f'    <p class="idline">{idline}</p>\n')
     parts.append(f'    <div class="verdict">{verdict}</div>\n')
     parts.append(
-        f'    <div class="cta-row"><a class="primary" href="/value-check/?school={esc(s["unitid"])}">See the full breakdown &rarr;</a></div>\n'
+        f'    <div class="cta-row"><a class="btn" href="/value-check/?school={esc(s["unitid"])}">See the full breakdown &rarr;</a></div>\n'
     )
 
     # Net price by income, plus a "what would this cost me" calculator.

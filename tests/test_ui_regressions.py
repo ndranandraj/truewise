@@ -688,11 +688,13 @@ def test_no_generator_or_stylesheet_invents_a_type_size():
     token, and this test fails if a new rem or px size appears in either.
 
     Four sizes are deliberately not tokens and are named here so the exemption is explicit rather
-    than a hole: the three text inputs sit at 16px because iOS Safari zooms the page when a focused
-    input is smaller, and the finding-band figure is a display number, not a step on a text scale.
+    than a hole: the text inputs and selects (hero search, component search, .searchbox, .control,
+    the table filter select) sit at 16px because iOS Safari zooms the page when a focused field is
+    smaller, and the finding-band figure is a display number, not a step on a text scale.
     """
     exempt = re.compile(
         r"hero-search input|tw-search__input|tw-field__input\[type=\"search\"\]"
+        r"|^\.searchbox input$|^\.control$|^\.tw-filters__select$"
         r"|finding-stat b|^\.brand$"
     )
     for path in [
@@ -1649,8 +1651,8 @@ def test_careers_stacks_on_phones_and_never_shows_unknown_as_a_value():
     assert re.search(r"@media \(max-width: 768px\)[^@]*\.cr-table thead \{ display: none", code), (
         "the phone layout that stacks rows into cards is gone"
     )
-    assert re.search(r"\.dl-btn \{[^}]*min-height: 44px", code), (
-        "the Show more button lost its style"
+    assert 'class="btn btn--secondary" id="cr-more"' in code, (
+        "the Show more button lost its style; it should be the shared secondary button"
     )
     assert '"n/a"' not in code and ">n/a<" not in src, "unknown must read 'insufficient data'"
     assert 'f.pass_pct == null ? "unk"' in code, (
@@ -1735,3 +1737,58 @@ def test_page_titles_and_ledes_use_the_type_tokens():
             assert size.group(1).strip().startswith("var(--t-"), (
                 f"{page}: {sel.strip()} sets font-size {size.group(1).strip()}, use a type token"
             )
+
+
+HAND_WRITTEN_APP_PAGES = [
+    "value-check/index.html",
+    "compare/index.html",
+    "careers/index.html",
+    "k12/index.html",
+    "k12/rankings/index.html",
+    "k12/compare/index.html",
+    "k12/advanced-courses/index.html",
+    "404.html",
+]
+
+
+def test_every_form_control_uses_the_one_control_spec():
+    """Search boxes and selects came in four heights (35 to 48px) and four radii (0 to 12px).
+
+    Most drew their edge in --line, which is too faint to meet the 3:1 non-text contrast a control
+    boundary needs, and Careers set 15px text, which makes iOS Safari zoom the page on focus. Every
+    select and text field on a hand-written page now takes .control, or sits in a .searchbox, both
+    defined once in styles.css. A page may set a search box's margin and nothing else.
+    """
+    for page in HAND_WRITTEN_APP_PAGES:
+        src = (SITE / page).read_text()
+        code = re.sub(r"/\*.*?\*/", "", re.sub(r"<!--.*?-->", "", src, flags=re.S), flags=re.S)
+        for tag in re.findall(r"<select\b[^>]*>", code):
+            assert 'class="control"' in tag, f"{page}: {tag} should use the shared .control"
+        for tag in re.findall(r"<input\b[^>]*>", code):
+            if re.search(r'type="(hidden|checkbox|radio)"', tag):
+                continue
+            if 'id="q"' in tag and "searchbox" in code and 'class="control"' not in tag:
+                continue  # inside the shared .searchbox, which styles its input
+            assert 'class="control"' in tag, f"{page}: {tag} should use the shared .control"
+        for body in re.findall(r"\n\s*\.searchbox \{([^}]*)\}", code):
+            props = {p.split(":")[0].strip() for p in body.split(";") if ":" in p}
+            assert props <= {"margin"}, f"{page}: .searchbox restyles {props - {'margin'}}"
+
+
+def test_buttons_come_in_three_styles():
+    """Primary buttons used 3px corners on the homepage and 10px elsewhere, at heights from 22 to
+    47px. Generated primary links and download buttons now use .btn and .btn--secondary from
+    styles.css, which is where all three styles are defined."""
+    css = (SITE / "styles.css").read_text()
+    for sel in (".btn {", ".btn--secondary {", ".btn--text {"):
+        assert sel in css, f"styles.css lost {sel}"
+    for gen in (
+        "build_college_pages.py",
+        "build_majors_pages.py",
+        "build_stats_exposure.py",
+        "build_lists.py",
+    ):
+        text = (PIPELINE / gen).read_text()
+        assert 'class="primary"' not in text and 'class="dl-btn"' not in text, (
+            f"{gen} still emits a one-off button class"
+        )

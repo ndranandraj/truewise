@@ -242,7 +242,7 @@ def render_page(s) -> str:
         "2026-07-01).</p>\n"
     )
     p.append(
-        '    <div class="cta-row"><a class="primary" href="/data/value_check.parquet" download>'
+        '    <div class="cta-row"><a class="btn" href="/data/value_check.parquet" download>'
         "Download the dataset &darr;</a></div>\n"
     )
     p.append("  </main>\n")

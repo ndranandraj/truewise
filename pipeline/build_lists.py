@@ -96,7 +96,7 @@ def _download_block(slug) -> str:
     """
     fname = csv_filename(slug)
     return (
-        f'    <p class="dl"><a class="dl-btn" href="{CSV_DIR}/{fname}" download>'
+        f'    <p class="dl"><a class="btn btn--secondary" href="{CSV_DIR}/{fname}" download>'
         "Download this table (CSV)</a>"
         '<span class="dl-note"> Free to reuse with attribution (CC BY 4.0).</span></p>\n'
     )

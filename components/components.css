@@ -627,9 +627,10 @@
   font-weight: 600;
   color: var(--brand-strong);
   background: var(--paper);
-  border: 1px solid var(--line);
+  border: 1px solid var(--control-border);
   border-radius: var(--r-md);
-  padding: 11px 16px;
+  padding: 0 16px;
+  min-height: 44px;
   cursor: pointer;
 }
 .tw-more:hover {
@@ -646,8 +647,10 @@
 }
 .tw-filters__select {
   font: inherit;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
+  font-size: 16px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--control-border);
   border-radius: var(--r-md);
   background: var(--paper);
   color: var(--text);

@@ -24,13 +24,7 @@
     .vc-search { padding: 48px 0 8px; }
     .vc-search h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
     .vc-search p.lede { font-size: var(--t-sub); max-width: var(--measure); }
-    .searchbox {
-      display: flex; align-items: center; gap: 10px; margin: 20px 0 6px;
-      border: 2px solid var(--line); border-radius: 12px; padding: 4px 6px 4px 14px;
-      max-width: 620px; background: #fff; transition: border-color .15s;
-    }
-    .searchbox:focus-within { border-color: var(--brand); }
-    .searchbox input { border: 0; outline: 0; flex: 1; font-size: 1.1rem; padding: 12px 0; background: transparent; }
+    .searchbox { margin: 20px 0 6px; }
     .hint { color: var(--ink-soft); font-size: .9rem; margin: 4px 0 0; }
     .results { list-style: none; padding: 0; margin: 18px 0; max-width: 720px; }
     .results li { margin: 0 0 10px; }
@@ -136,7 +130,6 @@
     /* Program table + controls */
     .vc-controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
     .vc-tools { display: flex; gap: 8px; }
-    .vc-tools input, .vc-tools select { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: .9rem; background: #fff; color: var(--ink); }
     .baseline { color: var(--ink-soft); font-size: .92rem; max-width: 760px; margin: 8px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
     .prog-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
@@ -756,8 +749,8 @@
             <button data-f="insufficient" aria-pressed="false">Not enough data (${totI})</button>
           </div>
           <div class="vc-tools">
-            <input id="prog-search" type="search" placeholder="Find a program…" aria-label="Find a program" />
-            <select id="prog-sort" aria-label="Sort programs">
+            <input id="prog-search" class="control" type="search" placeholder="Find a program…" aria-label="Find a program" />
+            <select id="prog-sort" class="control" aria-label="Sort programs">
               <option value="premium">Sort: Premium</option>
               <option value="earnings">Sort: Earnings</option>
               <option value="debt">Sort: Debt</option>

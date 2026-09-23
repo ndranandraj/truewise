@@ -24,8 +24,7 @@
     .c-head { padding: 40px 0 4px; }
     .c-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
     .c-head p.lede { font-size: var(--t-sub); max-width: var(--measure); color: var(--ink-soft); }
-    .searchbox { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; max-width: 620px; margin: 20px 0 6px; background: #fff; }
-    .searchbox input { border: 0; outline: 0; font-size: 1rem; flex: 1; color: var(--ink); }
+    .searchbox { margin: 20px 0 6px; }
     .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
     .results li { border: 1px solid var(--line); border-top: 0; overflow: hidden; }
     .results li:first-child { border-top: 1px solid var(--line); border-radius: 8px 8px 0 0; }
@@ -37,7 +36,6 @@
     .results li.empty { padding: 10px 12px; cursor: default; color: var(--ink-soft); }
     .income-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 22px 0 2px; }
     .income-row label { font-weight: 600; }
-    .income-row select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .table-wrap { overflow-x: auto; margin: 14px 0 8px; }
     /* The table is the wide presentation only. Below the breakpoint set further down it is
        replaced outright by .cmp-stack, so it needs no sticky column, no scroll cue and no
@@ -142,7 +140,7 @@
         browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
       <div class="income-row" id="income-row" style="display:none">
         <label for="income">Show net price for families earning</label>
-        <select id="income">
+        <select id="income" class="control">
           <option value="-1">All families (average)</option>
           <option value="0">Under $30k</option>
           <option value="1">$30k to $48k</option>

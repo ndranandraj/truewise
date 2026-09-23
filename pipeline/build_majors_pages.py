@@ -278,7 +278,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         f"programs, College Scorecard).</div>\n"
     )
     parts.append(
-        f'    <div class="cta-row"><a class="primary" href="/careers/?field={esc(cip)}">'
+        f'    <div class="cta-row"><a class="btn" href="/careers/?field={esc(cip)}">'
         "Explore this major &rarr;</a></div>\n"
     )
 

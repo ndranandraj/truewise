@@ -31,7 +31,7 @@
     .cr-field { display: flex; flex-direction: column; gap: var(--s1); min-width: 0; }
     .cr-field--grow { flex: 1; min-width: 220px; }
     .cr-label { font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
-    .cr-controls input, .cr-controls select { border: 1px solid var(--control-border); border-radius: var(--r-md); padding: 12px; font-size: var(--t-ui); background: #fff; color: var(--ink); width: 100%; }
+    .cr-controls input, .cr-controls select { width: 100%; }
     .cr-count { color: var(--ink-soft); font-size: .9rem; margin: 6px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: 12px; }
     .cr-table { width: 100%; border-collapse: collapse; font-size: .93rem; }
@@ -53,11 +53,9 @@
     /* Unknown is shown in words, in the palette's own colour for the state: never red like a failing
        major, and never as a bar with no data behind it. */
     .clearbar.unk, .unk-txt { color: var(--none); font-style: italic; font-weight: 400; }
-    /* "Show 25 more" was an unstyled browser button: grey, square, 22px tall. Same look as the
-       Lists pages' .dl-btn, with a 44px target and the site focus ring. */
-    .dl-btn { display: inline-block; margin-top: 12px; font: inherit; font-size: var(--t-ui); font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r-lg); padding: 11px 16px; min-height: 44px; cursor: pointer; }
-    .dl-btn:hover { background: var(--bg-alt); }
-    .dl-btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    /* "Show 25 more" was an unstyled browser button, grey and 22px tall. It is now the shared
+       secondary button from styles.css; only its spacing lives here. */
+    #cr-more { margin-top: 12px; }
     /* Phones: each row becomes a labelled card, the same pattern the college profile table uses. At
        390px the table was 801px wide in a 348px window and the earnings column began at the right
        edge of the screen, so the page hid the one number it exists to show. Sorting stays available
@@ -213,15 +211,15 @@
         <div class="cr-controls">
           <div class="cr-field cr-field--grow">
             <label class="cr-label" for="q">Search majors</label>
-            <input id="q" type="search" placeholder="e.g. nursing" value="${esc(preset)}" autocomplete="off" />
+            <input id="q" class="control" type="search" placeholder="e.g. nursing" value="${esc(preset)}" autocomplete="off" />
           </div>
           <div class="cr-field">
             <label class="cr-label" for="fam">Field of study</label>
-            <select id="fam"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
+            <select id="fam" class="control"><option value="">All fields</option>${families.map(f => `<option>${esc(f)}</option>`).join("")}</select>
           </div>
           <div class="cr-field">
             <label class="cr-label" for="sort">Sort by</label>
-            <select id="sort">
+            <select id="sort" class="control">
               <option value="med">Earnings</option>
               <option value="pass">Clear the bar</option>
               <option value="schools">Most common</option>
@@ -290,7 +288,7 @@
             <td class="num" data-label="Clear the bar"><span class="clearbar ${cls}">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</span></td>
             <td class="num" data-label="Schools">${(f.schools || 0).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
-        ${rows.length > shown ? `<button type="button" class="dl-btn" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
+        ${rows.length > shown ? `<button type="button" class="btn btn--secondary" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
       const moreBtn = document.getElementById("cr-more");
       if (moreBtn) moreBtn.addEventListener("click", () => {
         /* Focus the first row that just appeared, not the button.

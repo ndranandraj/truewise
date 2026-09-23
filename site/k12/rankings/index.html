@@ -33,7 +33,6 @@
     .r-head p.lede { font-size: var(--t-sub); max-width: var(--measure); color: var(--ink-soft); }
     .metric-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 18px 0 4px; }
     .metric-row label { font-weight: 600; color: var(--ink); }
-    .metric-row select { border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 1rem; background: #fff; color: var(--ink); }
     .bars { list-style: none; padding: 0; margin: 18px 0; max-width: 760px; }
     /* The label column was a fixed 150px with an ellipsis, which cut "District of Columbia" at every
        width. It now scales with the row and wraps a long name onto a second line instead of hiding
@@ -99,7 +98,7 @@
       <noscript><p class="lede" style="font-size:var(--t-ui)">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
       <div class="metric-row">
         <label for="metric">Rank states by high schools that</label>
-        <select id="metric"></select>
+        <select id="metric" class="control"></select>
       </div>
       <!-- The sentence IS the live region, rather than a second hidden one saying the same thing.
            Changing the metric replaces the whole ranking and, before this, said nothing at all to a

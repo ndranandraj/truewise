@@ -6,7 +6,7 @@
  * Edit design/tokens.json and run `make tokens`.
  */
 :root {
-  /* @tokens:start — generated from design/tokens.json by `make tokens`. Do not edit by hand. */
+  /* @tokens:start: generated from design/tokens.json by `make tokens`. Do not edit by hand. */
   --ink: #0c1512;
   --ink-soft: #2c3a34;
   --ink-faint: #646f6a;

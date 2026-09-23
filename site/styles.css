@@ -38,7 +38,7 @@
 }
 
 :root {
-  /* @tokens:start — generated from design/tokens.json by `make tokens`. Do not edit by hand. */
+  /* @tokens:start: generated from design/tokens.json by `make tokens`. Do not edit by hand. */
   --ink: #0c1512;
   --ink-soft: #2c3a34;
   --ink-faint: #646f6a;
@@ -225,6 +225,43 @@ a:hover { color: var(--brand-deep); }
 .hero-search button:hover { background: var(--brand); }
 .hero-hint { color: var(--ink-faint); font-size: var(--t-ui); margin: 0; }
 .hero-hint b { color: var(--brand); font-weight: 600; }
+
+/* One control spec for the hand-written pages, the same as .tw-field__input in components.css:
+   44px tall, --r-md corners, a --control-border edge (3:1 against paper, which the old --line edge
+   was not), and one focus treatment. Text is 16px rather than --t-ui because iOS Safari zooms the
+   page when a field under 16px takes focus, and that applies to selects as well as inputs. The
+   hero search above stays its own component: it is the one place a larger, framed field is the
+   point of the page. */
+.searchbox {
+  display: flex; align-items: center; gap: var(--s3); min-height: 44px; max-width: 620px;
+  padding: 0 var(--s3) 0 var(--s4); border: 1px solid var(--control-border); border-radius: var(--r-md);
+  background: var(--surface); transition: border-color .15s, box-shadow .15s;
+}
+.searchbox:hover { border-color: var(--control-border-hover); }
+.searchbox:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); }
+.searchbox input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; padding: 10px 0; color: var(--ink); }
+.searchbox input::placeholder, .control::placeholder { color: var(--ink-faint); }
+.control {
+  font: inherit; font-size: 16px; min-height: 44px; padding: 0 var(--s3); max-width: 100%;
+  border: 1px solid var(--control-border); border-radius: var(--r-md); background: var(--surface); color: var(--ink);
+}
+.control:hover { border-color: var(--control-border-hover); }
+.control:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* Three button styles and no more: .btn (primary, forest fill), .btn--secondary (outline) and
+   .btn--text (a button that reads as a link). Same height, corners and weight for all three. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s5); border: 1px solid var(--brand-deep); border-radius: var(--r-md);
+  background: var(--brand-deep); color: var(--text-on-brand); font: inherit; font-size: var(--t-ui);
+  font-weight: 600; line-height: 1.2; text-decoration: none; cursor: pointer;
+}
+.btn:hover { background: var(--brand); border-color: var(--brand); color: var(--text-on-brand); }
+.btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.btn--secondary { background: var(--surface); color: var(--ink); border-color: var(--control-border); }
+.btn--secondary:hover { background: var(--bg-alt); color: var(--ink); border-color: var(--control-border-hover); }
+.btn--text { background: none; border-color: transparent; color: var(--brand); padding: 0 var(--s1); }
+.btn--text:hover { background: none; border-color: transparent; color: var(--brand-deep); text-decoration: underline; }
 
 /* Example result list: ruled, not boxed */
 .example-card { background: transparent; border: 0; border-top: 2px solid var(--ink); border-radius: 0; box-shadow: none; overflow: visible; padding-top: var(--s4); }
