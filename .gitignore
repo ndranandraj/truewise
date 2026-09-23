@@ -111,7 +111,8 @@ truewise-font-*.md
 # axe-core and reported only "removed 39 packages", which would have left five smoke suites unable to
 # start on the next clean checkout.
 node_modules/
-package-lock.json
+# package-lock.json IS committed: CI runs `npm ci`, which refuses to run without it, and it pins the
+# Playwright version CI uses to the one run locally.
 
 # Playwright's browser binaries, and everything the layout check writes (screenshots, reports).
 # Browsers are ~170 MB and machine-specific; the reports are evidence for a single run.

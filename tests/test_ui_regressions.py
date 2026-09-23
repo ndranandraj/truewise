@@ -2053,3 +2053,25 @@ def test_bls_labels_follow_the_published_data():
         assert not re.search(r"May 20\d\d wages|\(20\d\d to 20\d\d\)", src), (
             f"{path.name} hard-codes a BLS release; read it from demand.vintage"
         )
+
+
+def test_workflow_inputs_are_tracked_files():
+    """The first deploy with the browser check failed before running anything: `npm ci` needs
+    package-lock.json, and .gitignore excluded it, so it existed on every developer machine and in
+    no checkout. Anything a workflow step needs from the repo must be a tracked file."""
+    import subprocess
+
+    import pytest
+
+    if not (ROOT / ".git").exists():
+        pytest.skip("not a git checkout, so there is no tracked-file list to check against")
+    tracked = set(
+        subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    )
+    workflows = "".join(p.read_text() for p in (ROOT / ".github" / "workflows").glob("*.yml"))
+    if "npm ci" in workflows or "cache: npm" in workflows:
+        assert "package-lock.json" in tracked, (
+            "workflows run npm ci but package-lock.json is untracked"
+        )
+    for script in re.findall(r"node (tests/[\w./-]+\.js)", workflows):
+        assert script in tracked, f"a workflow runs {script}, which is not tracked"
