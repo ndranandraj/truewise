@@ -1532,3 +1532,46 @@ def test_the_k12_not_offered_and_not_reported_labels_are_legible():
         assert "#98a1b0" not in css, (
             f"k12/{name} still uses #98a1b0, which fails AA at 2.50:1; use var(--none) at 5.78:1"
         )
+
+
+def test_every_inline_script_on_a_hand_written_page_parses(tmp_path):
+    """Value Check shipped with a script that could not parse, and every test passed.
+
+    A comment added to explain a fix sat inside a JavaScript template literal and wrote a word in
+    backticks. A backtick ends a template literal, so the whole 40 KB application became a syntax
+    error: "Unexpected identifier 'live'". The page the main "Find a college" button leads to
+    showed its loading paragraph and never drew a search box. Nothing in the suite noticed,
+    because the smoke tests load helper modules and fragments, not the page's own script as the
+    browser does.
+
+    So: every inline script on every hand-written page is handed to `node --check`, which parses
+    without running. It is the cheapest possible test and it covers the failure that matters
+    most, a page that does not start at all.
+    """
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed, so inline scripts cannot be parsed here")
+
+    generated = re.compile(r"^(college|colleges|majors|lists|og)/")
+    block = re.compile(
+        r"<script(?![^>]*\ssrc=)(?![^>]*application/(?:ld\+)?json)[^>]*>([\s\S]*?)</script>"
+    )
+    checked, failures = 0, []
+    for page in sorted(SITE.rglob("*.html")):
+        rel = page.relative_to(SITE).as_posix()
+        if generated.match(rel):
+            continue
+        for i, code in enumerate(block.findall(page.read_text(errors="ignore"))):
+            if not code.strip():
+                continue
+            f = tmp_path / f"{rel.replace('/', '_')}_{i}.js"
+            f.write_text(code)
+            r = subprocess.run([node, "--check", str(f)], capture_output=True, text=True)
+            checked += 1
+            if r.returncode:
+                failures.append(f"{rel} script {i}: {r.stderr.strip().splitlines()[-1]}")
+    assert checked >= 5, f"only {checked} inline scripts found; the page scan itself is broken"
+    assert not failures, "inline scripts that do not parse:\n" + "\n".join(failures)

@@ -680,6 +680,13 @@
     const hasMob = mobilitySection !== "";
     const careersSection = careersModule(progs, NATL || {});
     const hasCareers = careersSection !== "";
+    /* A module whose data is missing for this school says "No data for this school", never
+       "Coming soon": every module has shipped, and live is data-driven, so false means the school's
+       data is absent, not that the feature is unfinished. This view is the fallback for a unitid
+       missing from slug-map.json and is currently unreachable, but it must not lie if it fires.
+       Do not put backticks or dollar-brace in any comment near here: this file builds its views
+       inside template literals, and a backtick in a comment there ends the literal and takes the
+       whole page down. That is exactly how this page broke on 22 September 2026. */
     const modules = [
       { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
       { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
@@ -723,17 +730,6 @@
         <h1>${esc(s.name)}</h1>
         <div class="sub">${bits.join(" · ")}${website}</div>
       </div>
-      <!-- "Coming soon" was wrong in every case it could appear. Every one of these modules has
-           shipped; `live` is data-driven (!!s.net_price, hasRoi, hasMob, hasCareers), so a false
-           value means THIS SCHOOL has no data for it, not that the feature is unfinished. 1,238
-           institutions have no net price, and each would have been told Affordability was on its
-           way. That is a missing value rendered as a different fact, which is the one thing this
-           site is supposed to never do.
-           This whole view is currently unreachable: schools.json and slug-map.json both hold the
-           same 6,127 schools, so every ?school= resolves and redirects to /college/<slug>/. It is
-           the deliberate fallback for a unitid absent from the map, kept so there is no dead end.
-           Unreachable is not the same as harmless, and a fallback that fires in a lying state is
-           worse than no fallback. -->
       <div class="modules" aria-label="Sections">
         ${modules.map(m => `
           <a class="mod${m.live ? " live" : " soon"}" ${m.live ? `href="#${m.anchor}"` : ""}>
