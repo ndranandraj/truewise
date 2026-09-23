@@ -50,6 +50,29 @@
     .rangebar > b { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--brand-deep); border-radius: 2px; }
     .clearbar { display: inline-block; min-width: 44px; }
     .clearbar.hi { color: #067647; font-weight: 700; } .clearbar.lo { color: #b42318; font-weight: 700; }
+    /* Unknown is shown in words, in the palette's own colour for the state: never red like a failing
+       major, and never as a bar with no data behind it. */
+    .clearbar.unk, .unk-txt { color: var(--none); font-style: italic; font-weight: 400; }
+    /* "Show 25 more" was an unstyled browser button: grey, square, 22px tall. Same look as the
+       Lists pages' .dl-btn, with a 44px target and the site focus ring. */
+    .dl-btn { display: inline-block; margin-top: 12px; font: inherit; font-size: var(--t-ui); font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: var(--r-lg); padding: 11px 16px; min-height: 44px; cursor: pointer; }
+    .dl-btn:hover { background: var(--bg-alt); }
+    .dl-btn:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    /* Phones: each row becomes a labelled card, the same pattern the college profile table uses. At
+       390px the table was 801px wide in a 348px window and the earnings column began at the right
+       edge of the screen, so the page hid the one number it exists to show. Sorting stays available
+       through the Sort by control above the table, so the header row is not needed here. */
+    @media (max-width: 768px) {
+      .table-wrap { overflow-x: visible; border: 0; }
+      .cr-table thead { display: none; }
+      .cr-table, .cr-table tbody, .cr-table tr, .cr-table td, .cr-table caption { display: block; width: 100%; }
+      .cr-table tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
+      .cr-table td, .cr-table tbody tr:last-child td { border: 0; white-space: normal; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 12px; text-align: right; }
+      .cr-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+      .cr-table td.mname { display: block; text-align: left; min-width: 0; padding-bottom: 8px; }
+      .cr-table td.mname::before { content: none; }
+      .cr-table td .rangebar { flex: 1 1 auto; min-width: 0; max-width: 60%; align-self: center; }
+    }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -121,31 +144,31 @@
           <caption>The highest-earning major and degree combinations. Showing 25 of 738; the full list needs JavaScript, and every major here has its own page.</caption>
           <thead><tr><th>Major</th><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
           <tbody>
-          <tr data-cip="5105" data-cred="8"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td>Grad cert</td><td class="num">$224,001</td><td>$195,421 to $264,760</td><td class="num">100%</td><td class="num">16</td></tr>
-          <tr data-cip="5105" data-cred="5"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$211,240</td><td>$201,547 to $233,908</td><td class="num">100%</td><td class="num">25</td></tr>
-          <tr data-cip="5114" data-cred="5"><td class="mname"><a href="/majors/medical-clinical-sciences-graduate-medical-studies/">Medical Clinical Sciences/Graduate Medical Studies</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$202,941</td><td>$178,862 to $246,042</td><td class="num">100%</td><td class="num">14</td></tr>
-          <tr data-cip="5104" data-cred="7"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$173,649</td><td>$160,853 to $187,404</td><td class="num">100%</td><td class="num">62</td></tr>
-          <tr data-cip="5202" data-cred="7"><td class="mname"><a href="/majors/business-administration-management-and-operations/">Business Administration, Management and Operations</a><div class="fam">Business &amp; Management</div></td><td>First prof.</td><td class="num">$166,604</td><td>$138,548 to $258,635</td><td class="num">100%</td><td class="num">5</td></tr>
-          <tr data-cip="5104" data-cred="6"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$156,942</td><td>$128,406 to $174,160</td><td class="num">100%</td><td class="num">7</td></tr>
-          <tr data-cip="1107" data-cred="5"><td class="mname"><a href="/majors/computer-science/">Computer Science</a><div class="fam">Computer &amp; Information Sciences</div></td><td>Master's</td><td class="num">$149,320</td><td>$127,022 to $174,359</td><td class="num">100%</td><td class="num">59</td></tr>
-          <tr data-cip="1427" data-cred="5"><td class="mname"><a href="/majors/systems-engineering/">Systems Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$144,012</td><td>$128,376 to $152,478</td><td class="num">100%</td><td class="num">28</td></tr>
-          <tr data-cip="5108" data-cred="5"><td class="mname"><a href="/majors/allied-health-and-medical-assisting-services/">Allied Health and Medical Assisting Services</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$141,538</td><td>$114,583 to $220,796</td><td class="num">100%</td><td class="num">16</td></tr>
-          <tr data-cip="4008" data-cred="6"><td class="mname"><a href="/majors/physics/">Physics</a><div class="fam">Physical Sciences</div></td><td>Doctoral</td><td class="num">$141,253</td><td>$132,984 to $166,997</td><td class="num">100%</td><td class="num">9</td></tr>
-          <tr data-cip="5120" data-cred="5"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$137,591</td><td>$118,314 to $149,554</td><td class="num">100%</td><td class="num">18</td></tr>
-          <tr data-cip="5120" data-cred="6"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$137,496</td><td>$132,308 to $143,512</td><td class="num">100%</td><td class="num">45</td></tr>
-          <tr data-cip="3030" data-cred="5"><td class="mname"><a href="/majors/computational-science/">Computational Science</a><div class="fam">Interdisciplinary Studies</div></td><td>Master's</td><td class="num">$137,367</td><td>$137,367 to $139,524</td><td class="num">100%</td><td class="num">6</td></tr>
-          <tr data-cip="5107" data-cred="6"><td class="mname"><a href="/majors/health-and-medical-administrative-services/">Health and Medical Administrative Services</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$136,922</td><td>$109,207 to $148,488</td><td class="num">100%</td><td class="num">7</td></tr>
-          <tr data-cip="5138" data-cred="7"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$136,765</td><td>$119,485 to $148,739</td><td class="num">100%</td><td class="num">33</td></tr>
-          <tr data-cip="5120" data-cred="7"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$135,992</td><td>$132,186 to $141,806</td><td class="num">100%</td><td class="num">94</td></tr>
-          <tr data-cip="5138" data-cred="6"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>Doctoral</td><td class="num">$135,276</td><td>$124,259 to $158,368</td><td class="num">100%</td><td class="num">158</td></tr>
-          <tr data-cip="1409" data-cred="5"><td class="mname"><a href="/majors/computer-engineering/">Computer Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$132,260</td><td>$118,843 to $151,922</td><td class="num">100%</td><td class="num">30</td></tr>
-          <tr data-cip="5117" data-cred="7"><td class="mname"><a href="/majors/optometry/">Optometry</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$130,042</td><td>$126,389 to $134,430</td><td class="num">100%</td><td class="num">18</td></tr>
-          <tr data-cip="5109" data-cred="7"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td>First prof.</td><td class="num">$130,026</td><td>$115,870 to $133,193</td><td class="num">100%</td><td class="num">5</td></tr>
-          <tr data-cip="1410" data-cred="5"><td class="mname"><a href="/majors/electrical-electronics-and-communications-engineering/">Electrical, Electronics, and Communications Engineering</a><div class="fam">Engineering</div></td><td>Master's</td><td class="num">$129,886</td><td>$110,946 to $145,958</td><td class="num">100%</td><td class="num">72</td></tr>
-          <tr data-cip="0180" data-cred="7"><td class="mname"><a href="/majors/veterinary-medicine/">Veterinary Medicine</a><div class="fam">Agriculture &amp; Natural Resources</div></td><td>First prof.</td><td class="num">$127,974</td><td>$122,885 to $133,414</td><td class="num">100%</td><td class="num">26</td></tr>
-          <tr data-cip="3031" data-cred="5"><td class="mname"><a href="/majors/human-computer-interaction/">Human Computer Interaction</a><div class="fam">Interdisciplinary Studies</div></td><td>Master's</td><td class="num">$127,652</td><td>$115,320 to $161,848</td><td class="num">100%</td><td class="num">9</td></tr>
-          <tr data-cip="5109" data-cred="5"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td>Master's</td><td class="num">$126,666</td><td>$117,269 to $135,359</td><td class="num">100%</td><td class="num">234</td></tr>
-          <tr data-cip="5138" data-cred="8"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td>Grad cert</td><td class="num">$126,283</td><td>$115,372 to $138,734</td><td class="num">100%</td><td class="num">51</td></tr>
+          <tr data-cip="5105" data-cred="8"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td data-label="Degree">Grad cert</td><td class="num" data-label="Median earnings">$224,001</td><td data-label="Typical range">$195,421 to $264,760</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">16</td></tr>
+          <tr data-cip="5105" data-cred="5"><td class="mname"><a href="/majors/advanced-graduate-dentistry-and-oral-sciences/">Advanced/Graduate Dentistry and Oral Sciences</a><div class="fam">Health Professions</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$211,240</td><td data-label="Typical range">$201,547 to $233,908</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">25</td></tr>
+          <tr data-cip="5114" data-cred="5"><td class="mname"><a href="/majors/medical-clinical-sciences-graduate-medical-studies/">Medical Clinical Sciences/Graduate Medical Studies</a><div class="fam">Health Professions</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$202,941</td><td data-label="Typical range">$178,862 to $246,042</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">14</td></tr>
+          <tr data-cip="5104" data-cred="7"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$173,649</td><td data-label="Typical range">$160,853 to $187,404</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">62</td></tr>
+          <tr data-cip="5202" data-cred="7"><td class="mname"><a href="/majors/business-administration-management-and-operations/">Business Administration, Management and Operations</a><div class="fam">Business &amp; Management</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$166,604</td><td data-label="Typical range">$138,548 to $258,635</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">5</td></tr>
+          <tr data-cip="5104" data-cred="6"><td class="mname"><a href="/majors/dentistry/">Dentistry</a><div class="fam">Health Professions</div></td><td data-label="Degree">Doctoral</td><td class="num" data-label="Median earnings">$156,942</td><td data-label="Typical range">$128,406 to $174,160</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">7</td></tr>
+          <tr data-cip="1107" data-cred="5"><td class="mname"><a href="/majors/computer-science/">Computer Science</a><div class="fam">Computer &amp; Information Sciences</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$149,320</td><td data-label="Typical range">$127,022 to $174,359</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">59</td></tr>
+          <tr data-cip="1427" data-cred="5"><td class="mname"><a href="/majors/systems-engineering/">Systems Engineering</a><div class="fam">Engineering</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$144,012</td><td data-label="Typical range">$128,376 to $152,478</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">28</td></tr>
+          <tr data-cip="5108" data-cred="5"><td class="mname"><a href="/majors/allied-health-and-medical-assisting-services/">Allied Health and Medical Assisting Services</a><div class="fam">Health Professions</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$141,538</td><td data-label="Typical range">$114,583 to $220,796</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">16</td></tr>
+          <tr data-cip="4008" data-cred="6"><td class="mname"><a href="/majors/physics/">Physics</a><div class="fam">Physical Sciences</div></td><td data-label="Degree">Doctoral</td><td class="num" data-label="Median earnings">$141,253</td><td data-label="Typical range">$132,984 to $166,997</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">9</td></tr>
+          <tr data-cip="5120" data-cred="5"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$137,591</td><td data-label="Typical range">$118,314 to $149,554</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">18</td></tr>
+          <tr data-cip="5120" data-cred="6"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td data-label="Degree">Doctoral</td><td class="num" data-label="Median earnings">$137,496</td><td data-label="Typical range">$132,308 to $143,512</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">45</td></tr>
+          <tr data-cip="3030" data-cred="5"><td class="mname"><a href="/majors/computational-science/">Computational Science</a><div class="fam">Interdisciplinary Studies</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$137,367</td><td data-label="Typical range">$137,367 to $139,524</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">6</td></tr>
+          <tr data-cip="5107" data-cred="6"><td class="mname"><a href="/majors/health-and-medical-administrative-services/">Health and Medical Administrative Services</a><div class="fam">Health Professions</div></td><td data-label="Degree">Doctoral</td><td class="num" data-label="Median earnings">$136,922</td><td data-label="Typical range">$109,207 to $148,488</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">7</td></tr>
+          <tr data-cip="5138" data-cred="7"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$136,765</td><td data-label="Typical range">$119,485 to $148,739</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">33</td></tr>
+          <tr data-cip="5120" data-cred="7"><td class="mname"><a href="/majors/pharmacy-pharmaceutical-sciences-and-administration/">Pharmacy, Pharmaceutical Sciences, and Administration</a><div class="fam">Health Professions</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$135,992</td><td data-label="Typical range">$132,186 to $141,806</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">94</td></tr>
+          <tr data-cip="5138" data-cred="6"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td data-label="Degree">Doctoral</td><td class="num" data-label="Median earnings">$135,276</td><td data-label="Typical range">$124,259 to $158,368</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">158</td></tr>
+          <tr data-cip="1409" data-cred="5"><td class="mname"><a href="/majors/computer-engineering/">Computer Engineering</a><div class="fam">Engineering</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$132,260</td><td data-label="Typical range">$118,843 to $151,922</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">30</td></tr>
+          <tr data-cip="5117" data-cred="7"><td class="mname"><a href="/majors/optometry/">Optometry</a><div class="fam">Health Professions</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$130,042</td><td data-label="Typical range">$126,389 to $134,430</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">18</td></tr>
+          <tr data-cip="5109" data-cred="7"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$130,026</td><td data-label="Typical range">$115,870 to $133,193</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">5</td></tr>
+          <tr data-cip="1410" data-cred="5"><td class="mname"><a href="/majors/electrical-electronics-and-communications-engineering/">Electrical, Electronics, and Communications Engineering</a><div class="fam">Engineering</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$129,886</td><td data-label="Typical range">$110,946 to $145,958</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">72</td></tr>
+          <tr data-cip="0180" data-cred="7"><td class="mname"><a href="/majors/veterinary-medicine/">Veterinary Medicine</a><div class="fam">Agriculture &amp; Natural Resources</div></td><td data-label="Degree">First prof.</td><td class="num" data-label="Median earnings">$127,974</td><td data-label="Typical range">$122,885 to $133,414</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">26</td></tr>
+          <tr data-cip="3031" data-cred="5"><td class="mname"><a href="/majors/human-computer-interaction/">Human Computer Interaction</a><div class="fam">Interdisciplinary Studies</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$127,652</td><td data-label="Typical range">$115,320 to $161,848</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">9</td></tr>
+          <tr data-cip="5109" data-cred="5"><td class="mname"><a href="/majors/allied-health-diagnostic-intervention-and-treatment-professions/">Allied Health Diagnostic, Intervention, and Treatment Professions</a><div class="fam">Health Professions</div></td><td data-label="Degree">Master's</td><td class="num" data-label="Median earnings">$126,666</td><td data-label="Typical range">$117,269 to $135,359</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">234</td></tr>
+          <tr data-cip="5138" data-cred="8"><td class="mname"><a href="/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/">Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing</a><div class="fam">Health Professions</div></td><td data-label="Degree">Grad cert</td><td class="num" data-label="Median earnings">$126,283</td><td data-label="Typical range">$115,372 to $138,734</td><td class="num" data-label="Clear the bar">100%</td><td class="num" data-label="Schools">51</td></tr>
           </tbody>
         </table></div>
         <!-- CAREERS_CORE_END -->
@@ -162,7 +185,7 @@
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
-  const money = n => n == null ? "n/a" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
+  const money = n => n == null ? "insufficient data" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   async function load() {
@@ -248,14 +271,24 @@
           const left = maxP75 ? Math.round((f.p25 || 0) / maxP75 * 100) : 0;
           const width = maxP75 ? Math.max(2, Math.round(((f.p75 || 0) - (f.p25 || 0)) / maxP75 * 100)) : 0;
           const medPos = maxP75 ? Math.round((f.med || 0) / maxP75 * 100) : 0;
-          const cls = (f.pass_pct ?? 0) >= 50 ? "hi" : "lo";
+          /* Unknown is its own state, never a colour or a shape borrowed from a known one.
+             Before: a null pass rate took the "lo" class and was drawn red like a failing major, and
+             a major with no earnings range still drew a 2%-wide stub bar, while the static version of
+             the same row correctly said "insufficient data". Both now say so in words.
+             data-label gives each cell its column name when the row stacks into a card on a phone.
+             No backticks or dollar-brace in this comment: the row below is a template literal. */
+          const cls = f.pass_pct == null ? "unk" : f.pass_pct >= 50 ? "hi" : "lo";
+          const hasBand = f.p25 != null && f.p75 != null;
+          const bandCell = hasBand
+            ? '<div class="rangebar"><i style="left:' + left + '%;width:' + width + '%"></i><b style="left:' + medPos + '%"></b></div>'
+            : '<span class="unk-txt">insufficient data</span>';
           return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
             <td class="mname"><a href="?field=${f.cip}&cred=${f.cred}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
-            <td>${esc(f.cred_short)}</td>
-            <td class="num">${money(f.med)}</td>
-            <td><div class="rangebar"><i style="left:${left}%;width:${width}%"></i><b style="left:${medPos}%"></b></div></td>
-            <td class="num"><span class="clearbar ${cls}">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</span></td>
-            <td class="num">${(f.schools || 0).toLocaleString()}</td></tr>`;
+            <td data-label="Degree">${esc(f.cred_short)}</td>
+            <td class="num" data-label="Median earnings">${money(f.med)}</td>
+            <td data-label="Typical range">${bandCell}</td>
+            <td class="num" data-label="Clear the bar"><span class="clearbar ${cls}">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</span></td>
+            <td class="num" data-label="Schools">${(f.schools || 0).toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
         ${rows.length > shown ? `<button type="button" class="dl-btn" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
       const moreBtn = document.getElementById("cr-more");
@@ -302,7 +335,7 @@
 
   // ---- Field detail view ----
   function growthTxt(g) {
-    if (g == null) return "n/a";
+    if (g == null) return "not published";
     const c = g >= 0 ? "grow-pos" : "grow-neg";
     return `<span class="${c}">${g >= 0 ? "+" : ""}${g}%</span>`;
   }
@@ -318,7 +351,7 @@
         <h3>Where it leads, and the outlook</h3>
         <p class="cr-count">${d.summary || "Occupations this field commonly leads to, with Bureau of Labor Statistics pay and 10-year outlook."}</p>
         <table class="occ"><thead><tr><th>Occupation</th><th class="num">Median pay</th><th class="num">Projected growth</th><th class="num">Annual openings</th></tr></thead>
-          <tbody>${d.occupations.map(o => `<tr><td>${esc(o.title)}</td><td class="num">${money(o.wage)}</td><td class="num">${growthTxt(o.growth)}</td><td class="num">${o.openings == null ? "n/a" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+          <tbody>${d.occupations.map(o => `<tr><td>${esc(o.title)}</td><td class="num">${money(o.wage)}</td><td class="num">${growthTxt(o.growth)}</td><td class="num">${o.openings == null ? "not published" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
       </div>` : `
       <div class="demand soon"><b>Occupation outlook is on the way.</b> Job growth and annual openings for the
         careers this field leads to are being added from the Bureau of Labor Statistics, mapped through the
@@ -332,7 +365,7 @@
       <div class="headline">
         <div><div class="big">${money(f.med)}</div><div class="lbl">median earnings, ${esc(f.cred_short)}</div></div>
         <div><div class="big">${money(f.p25)} – ${money(f.p75)}</div><div class="lbl">typical range across schools</div></div>
-        <div><div class="big">${f.pass_pct == null ? "n/a" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
+        <div><div class="big">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
       </div>
       <p class="cr-count">Based on ${f.programs.toLocaleString()} programs at ${f.schools.toLocaleString()} schools reporting this degree.</p>
       ${creds.length > 1 ? `
@@ -342,7 +375,7 @@
             <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background:rgba(31,111,235,.07)"' : ""}>
               <td><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
               <td class="num">${money(c.med)}</td><td>${money(c.p25)} – ${money(c.p75)}</td>
-              <td class="num">${c.pass_pct == null ? "n/a" : c.pass_pct + "%"}</td><td class="num">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+              <td class="num">${c.pass_pct == null ? "insufficient data" : c.pass_pct + "%"}</td><td class="num">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
         </section>` : ""}
       <section class="module">
         <h2>Outlook</h2>

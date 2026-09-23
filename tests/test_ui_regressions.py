@@ -1607,3 +1607,30 @@ def test_the_profile_program_table_fits_a_laptop_and_keeps_program_names_whole()
         "'insufficient' at body size widens every numeric column"
     )
     assert re.search(r"width:\s*32px", rule(".tw-prem__bar")), "the premium bar grew back"
+
+
+def test_careers_stacks_on_phones_and_never_shows_unknown_as_a_value():
+    """At 390px the Careers table was 801px wide in a 348px window, so the earnings column, the one
+    number the page exists to show, began at the right edge of the screen. "Show 25 more" was an
+    unstyled browser button 22px tall. And an unknown pass rate printed "n/a" and took the red "lo"
+    class, drawn like a failing major, while a row with no earnings range still drew a stub bar.
+    """
+    src = (SITE / "careers" / "index.html").read_text()
+    code = re.sub(r"/\*.*?\*/", "", re.sub(r"<!--.*?-->", "", src, flags=re.S), flags=re.S)
+
+    core = src.split("<!-- CAREERS_CORE_START -->", 1)[1].split("<!-- CAREERS_CORE_END -->", 1)[0]
+    rows = core.count("<tr data-cip")
+    assert core.count('data-label="') == rows * 5, (
+        "every non-name static cell needs its column label"
+    )
+
+    assert re.search(r"@media \(max-width: 768px\)[^@]*\.cr-table thead \{ display: none", code), (
+        "the phone layout that stacks rows into cards is gone"
+    )
+    assert re.search(r"\.dl-btn \{[^}]*min-height: 44px", code), (
+        "the Show more button lost its style"
+    )
+    assert '"n/a"' not in code and ">n/a<" not in src, "unknown must read 'insufficient data'"
+    assert 'f.pass_pct == null ? "unk"' in code, (
+        "an unknown pass rate must not borrow the failing colour"
+    )

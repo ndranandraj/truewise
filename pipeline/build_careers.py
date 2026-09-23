@@ -215,7 +215,9 @@ def static_core(fields: list[dict]) -> str:
         slug = slugs.get(f["cip"])
         name = _esc(f["name"])
         link = f'<a href="/majors/{slug}/">{name}</a>' if slug else name
-        pass_txt = "n/a" if f["pass_pct"] is None else f"{f['pass_pct']}%"
+        # Unknown reads "insufficient data", never "n/a": the same rule as every other page, and the
+        # phrase the methodology defines. "n/a" says "does not apply", which is a different claim.
+        pass_txt = "insufficient data" if f["pass_pct"] is None else f"{f['pass_pct']}%"
         band = (
             f"{_money(f['p25'])} to {_money(f['p75'])}"
             if f["p25"] is not None and f["p75"] is not None
@@ -224,11 +226,11 @@ def static_core(fields: list[dict]) -> str:
         out.append(
             f'          <tr data-cip="{_esc(f["cip"])}" data-cred="{_esc(f["cred"])}">'
             f'<td class="mname">{link}<div class="fam">{_esc(f["family"])}</div></td>'
-            f"<td>{_esc(f['cred_short'])}</td>"
-            f'<td class="num">{_money(f["med"])}</td>'
-            f"<td>{band}</td>"
-            f'<td class="num">{pass_txt}</td>'
-            f'<td class="num">{(f["schools"] or 0):,}</td></tr>'
+            f'<td data-label="Degree">{_esc(f["cred_short"])}</td>'
+            f'<td class="num" data-label="Median earnings">{_money(f["med"])}</td>'
+            f'<td data-label="Typical range">{band}</td>'
+            f'<td class="num" data-label="Clear the bar">{pass_txt}</td>'
+            f'<td class="num" data-label="Schools">{(f["schools"] or 0):,}</td></tr>'
         )
     body = "\n".join(out)
     return (
