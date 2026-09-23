@@ -1634,3 +1634,30 @@ def test_careers_stacks_on_phones_and_never_shows_unknown_as_a_value():
     assert 'f.pass_pct == null ? "unk"' in code, (
         "an unknown pass rate must not borrow the failing colour"
     )
+
+
+def test_every_hand_written_page_uses_the_one_shared_header():
+    """Three K-12 pages kept an old header after the others were unified: "Find a college" first
+    rather than last, no About link, no brand tagline, and no mobile menu at all, so on a phone
+    those pages had no way to reach the rest of the site except the logo.
+
+    Compared against the header on a generated college profile, which is what 6,500+ pages carry.
+    Whitespace is normalised; anything else that differs is a second header.
+    """
+
+    def header(text):
+        m = re.search(r'<header class="site-header">.*?</header>', text, re.S)
+        return re.sub(r"\s+", " ", m.group(0)) if m else None
+
+    reference = header(next((SITE / "college").glob("*/index.html")).read_text())
+    assert reference and "nav-toggle" in reference, "the reference header lost its mobile menu"
+    generated = re.compile(r"^(college|colleges|majors|lists|og|embed)/")
+    odd = []
+    for page in sorted(SITE.rglob("index.html")):
+        rel = page.relative_to(SITE).as_posix()
+        if generated.match(rel):
+            continue
+        h = header(page.read_text(errors="ignore"))
+        if h is not None and h != reference:
+            odd.append(rel)
+    assert not odd, "pages with a header that differs from the shared one: " + ", ".join(odd)
