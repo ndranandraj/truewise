@@ -22,7 +22,7 @@
   <style>
     /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
        sticky, so without the offset the subnav slides under the header while scrolling. */
-    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 65px; z-index: 20; }
+    .subnav { border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 65px; z-index: 20; }
     .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
@@ -33,26 +33,26 @@
     .searchbox { margin: 18px 0 6px; }
     .results { list-style: none; padding: 0; margin: 8px 0; max-width: 620px; }
     .results li { margin-bottom: 6px; }
-    .results button.res { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #fff; font: inherit; color: inherit; }
+    .results button.res { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--r-lg); cursor: pointer; background: var(--surface); font: inherit; color: inherit; }
     .results button.res:hover { border-color: var(--brand); }
     .results button.res:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .results li .meta { color: var(--ink-soft); font-size: .86rem; }
     .results li.empty { padding: 9px 12px; color: var(--ink-soft); }
     .hint { color: var(--ink-soft); font-size: .9rem; }
-    .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; }
-    table.cmp { border-collapse: collapse; width: 100%; font-size: .93rem; }
+    .table-wrap { overflow-x: auto; margin-top: 18px; border: 1px solid var(--line); border-radius: var(--r-lg); }
+    table.cmp { border-collapse: collapse; width: 100%; font-size: var(--t-ui); }
     table.cmp th, table.cmp td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
     table.cmp thead th { background: var(--bg-alt); }
     table.cmp tbody th { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
     table.cmp .schname { font-weight: 700; }
     table.cmp .schmeta { color: var(--ink-soft); font-size: .82rem; font-weight: 400; }
-    table.cmp .rm { color: #b42318; cursor: pointer; font-size: .8rem; font-weight: 600; }
+    table.cmp .rm { color: var(--bad); cursor: pointer; font-size: .8rem; font-weight: 600; }
     /* .no is "not offered" and .na is "not reported", and keeping those two distinguishable was
        the whole point of the P1 missingness work. They were set in #98a1b0, which measures 2.50:1
        on paper against the 4.5:1 AA minimum: the two labels that carry the honesty distinction were
        the least legible text on the page. --none is the palette's own token for this state and
        measures 5.78:1. */
-    .yes { color: #067647; font-weight: 700; } .no { color: var(--none); } .na { color: var(--none); font-style: italic; }
+    .yes { color: var(--good); font-weight: 700; } .no { color: var(--none); } .na { color: var(--none); font-style: italic; }
     .num { font-variant-numeric: tabular-nums; }
     .empty { color: var(--ink-soft); padding: 16px 0; }
     @media (max-width: 560px) { table.cmp thead th { top: 0; } }
@@ -102,7 +102,7 @@
       <noscript><p class="lede" style="font-size:var(--t-ui)">This ranking is interactive and needs JavaScript. The method is on the <a href="/methodology/">methodology page</a>.</p></noscript>
       <label class="field-label" for="q">Search a public high school to add</label>
       <div class="searchbox">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" />
       </div>
       <p id="k12-live" class="rescount" role="status" aria-live="polite" style="margin:6px 0 0;font-size:.86rem;color:var(--ink-soft)"></p>
@@ -214,7 +214,7 @@
     host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
       + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
       + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
-      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + '<p><button type="button" onclick="location.reload()" class="btn">Retry</button>'
       + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
   });
 

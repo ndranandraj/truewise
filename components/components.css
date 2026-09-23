@@ -195,7 +195,7 @@
 }
 .tw-th {
   background: var(--sand);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary);
   /* Headers wrap onto two lines rather than set the column width: "Recent completers" held on one
      line was 162px, wider than the Program column beside it. Bottom-aligned so a two-line header
@@ -209,7 +209,7 @@
 }
 .tw-th__sort {
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary);
   background: none;
   border: 0;

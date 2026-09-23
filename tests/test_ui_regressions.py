@@ -1792,3 +1792,27 @@ def test_buttons_come_in_three_styles():
         assert 'class="primary"' not in text and 'class="dl-btn"' not in text, (
             f"{gen} still emits a one-off button class"
         )
+
+
+def test_hand_written_pages_use_colour_and_radius_tokens():
+    """23 raw colours and 9 off-scale radii lived in the hand-written pages' CSS.
+
+    They were the old slate and the old red and green (#6b7688, #b42318, #067647), a gold from a
+    retired palette, white, and corners of 9, 12 and 14px on a 3 / 6 / 10px scale. None failed
+    contrast; together they are why the app pages looked slightly off-brand next to the profiles.
+    Every colour and radius in a hand-written page's CSS is now a token. Shadows may use the ink
+    tint rgba(12,21,18,...), since the palette defines no shadow token, and a circle may use 50%.
+    """
+    for page in [*HAND_WRITTEN_APP_PAGES, "methodology/index.html", "about/index.html"]:
+        src = (SITE / page).read_text()
+        css = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", src, flags=re.S))
+        css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+        hexes = re.findall(r"#[0-9a-fA-F]{3,8}\b", css)
+        assert not hexes, f"{page}: raw colours {sorted(set(hexes))}; use palette tokens"
+        rgbas = [c for c in re.findall(r"rgba?\([^)]*\)", css) if not c.startswith("rgba(12,21,18")]
+        assert not rgbas, f"{page}: raw colours {sorted(set(rgbas))}; use tokens or the ink tint"
+        for value in re.findall(r"border-radius:\s*([^;}]+)", css):
+            for part in value.split():
+                assert part in {"0", "50%"} or part.startswith("var(--r"), (
+                    f"{page}: border-radius {value.strip()!r} is off the 3/6/10px scale"
+                )

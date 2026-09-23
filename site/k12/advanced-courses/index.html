@@ -22,7 +22,7 @@
   <style>
     /* Sits BELOW the sticky site header (64px + 1px border), not underneath it. Both bars are
        sticky, so without the offset the subnav slides under the header while scrolling. */
-    .subnav { border-bottom: 1px solid var(--line); background: #fff; position: sticky; top: 65px; z-index: 20; }
+    .subnav { border-bottom: 1px solid var(--line); background: var(--surface); position: sticky; top: 65px; z-index: 20; }
     .subnav .wrap { display: flex; gap: 4px; flex-wrap: wrap; }
     .subnav a, .subnav span { padding: 13px 14px; font-size: .95rem; font-weight: 600; text-decoration: none; border-bottom: 2px solid transparent; }
     .subnav a { color: var(--ink-soft); } .subnav a:hover { color: var(--brand); }
@@ -35,19 +35,19 @@
     .hint { color: var(--ink-soft); font-size: .9rem; margin: 4px 0 0; }
     .results { list-style: none; padding: 0; margin: 18px 0; max-width: 720px; }
     .results li { margin: 0 0 10px; }
-    .school-card { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; background: #fff; transition: border-color .15s, box-shadow .15s; }
+    .school-card { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
     .school-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(12,21,18,.08); }
     .school-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
     .school-card .meta { color: var(--ink-soft); font-size: .9rem; }
     .chips { display: inline-flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    .chip { font-size: .74rem; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
-    .chip.on { background: #ecfdf3; color: #067647; } .chip.off { background: #f4f5f7; color: var(--none); }
-    .chip.unk { background: #fff; color: var(--none); border: 1px dashed #d0d5dd; }
+    .chip { font-size: .74rem; font-weight: 700; border-radius: var(--r-pill); padding: 3px 9px; }
+    .chip.on { background: var(--good-bg); color: var(--good); } .chip.off { background: var(--none-bg); color: var(--none); }
+    .chip.unk { background: var(--surface); color: var(--none); border: 1px dashed var(--control-border); }
     .statebar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 4px; }
     .statebar-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); margin-right: 4px; }
-    .stchip { font-size: .82rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft); cursor: pointer; font: inherit; font-size: .82rem; }
+    .stchip { font-size: .82rem; padding: 4px 10px; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; font: inherit; font-size: .82rem; }
     .stchip:hover { border-color: var(--brand); color: var(--ink); }
-    .stchip.on { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+    .stchip.on { background: var(--brand); border-color: var(--brand); color: var(--surface); font-weight: 600; }
     .stchip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .rescount { margin: 6px 0 0; font-size: .86rem; color: var(--ink-soft); }
 
@@ -58,23 +58,23 @@
     .sch-head .sub { color: var(--ink-soft); }
     .sec-h { font-size: 1.15rem; letter-spacing: -.02em; margin: 26px 0 6px; }
     .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0 6px; max-width: 820px; }
-    .course { border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; background: #fff; }
+    .course { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; background: var(--surface); }
     .course h3 { margin: 0 0 4px; font-size: 1.05rem; }
     .course .status { font-weight: 700; font-size: .95rem; }
-    .course .status.yes { color: #067647; } .course .status.no { color: #b42318; }
+    .course .status.yes { color: var(--good); } .course .status.no { color: var(--bad); }
     .course .detail { color: var(--ink-soft); font-size: .92rem; margin-top: 6px; line-height: 1.5; }
-    .equity { margin: 18px 0 6px; padding: 16px 18px; border-radius: 12px; background: var(--bg-alt); border: 1px solid var(--line); max-width: 800px; }
+    .equity { margin: 18px 0 6px; padding: 16px 18px; border-radius: var(--r-lg); background: var(--bg-alt); border: 1px solid var(--line); max-width: 800px; }
     .equity h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 8px; }
     .equity .read { font-size: 1.02rem; color: var(--ink); line-height: 1.55; }
     .equity .gap { font-weight: 800; }
-    .equity .gap.under { color: #b42318; } .equity .gap.over { color: #067647; }
+    .equity .gap.under { color: var(--bad); } .equity .gap.over { color: var(--good); }
     .bar2 { margin: 12px 0 2px; max-width: 520px; }
     .bar2 .row { display: flex; align-items: center; gap: 10px; margin: 5px 0; font-size: .9rem; }
     .bar2 .lbl { width: 92px; color: var(--ink-soft); flex: 0 0 auto; }
-    .bar2 .track { flex: 1; height: 12px; background: var(--line-soft); border-radius: 6px; overflow: hidden; }
-    .bar2 .fill { height: 100%; background: var(--brand); border-radius: 6px; }
+    .bar2 .track { flex: 1; height: 12px; background: var(--line-soft); border-radius: var(--r-md); overflow: hidden; }
+    .bar2 .fill { height: 100%; background: var(--brand); border-radius: var(--r-md); }
     .bar2 .val { width: 42px; text-align: right; font-variant-numeric: tabular-nums; }
-    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 12px 12px 0; max-width: 800px; color: var(--ink-soft); font-size: .9rem; }
+    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; max-width: 800px; color: var(--ink-soft); font-size: .9rem; }
     .caveats a { color: var(--brand); }
     .empty { color: var(--ink-soft); padding: 20px 0; }
   </style>
@@ -162,7 +162,7 @@
           (counselors, security)? From the federal Civil Rights Data Collection.</p>
         <label class="field-label" for="q">Search ${INDEX.length.toLocaleString()} public high schools by name</label>
         <div class="searchbox">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7688" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q" type="search" autocomplete="off" placeholder="e.g. Lincoln High School" value="${esc(preset)}" />
         </div>
         <p class="hint">Try your high school, or a well-known one like “Lane Tech” or “Stuyvesant”.</p>
@@ -350,7 +350,7 @@
     host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
       + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
       + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
-      + '<p><button type="button" onclick="location.reload()" style="border:0;border-radius:10px;padding:10px 16px;background:var(--brand);color:#fff;font-weight:700;cursor:pointer">Retry</button>'
+      + '<p><button type="button" onclick="location.reload()" class="btn">Retry</button>'
       + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';
   });
 

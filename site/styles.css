@@ -238,6 +238,8 @@ a:hover { color: var(--brand-deep); }
   background: var(--surface); transition: border-color .15s, box-shadow .15s;
 }
 .searchbox:hover { border-color: var(--control-border-hover); }
+/* Search icons draw in currentColor; this is their one colour, instead of four slate hexes. */
+.searchbox svg, .hero-search svg { color: var(--ink-faint); flex: none; }
 .searchbox:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); }
 .searchbox input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; padding: 10px 0; color: var(--ink); }
 .searchbox input::placeholder, .control::placeholder { color: var(--ink-faint); }
@@ -335,8 +337,12 @@ a:hover { color: var(--brand-deep); }
   padding: var(--s6) var(--s6) 0 0; background: transparent; position: relative; min-width: 0;
 }
 .live-card:last-child { border-right: 0; padding-right: 0; }
+/* Every column after the first starts a gutter's width past the divider. Without this the headings
+   in the second and third columns sat against the rule, 1px from it. */
+.live-card + .live-card { padding-left: var(--s6); }
+.live-card:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .live-card:hover { transform: none; box-shadow: none; color: inherit; }
-.live-card:hover h3 { color: var(--brand); }
+.live-card:hover h2, .live-card:hover h3 { color: var(--brand); }
 .live-card.flagship { border: 0; border-right: 1px solid var(--line); box-shadow: none; }
 .live-card.flagship:last-child { border-right: 0; }
 /* The badge lives INSIDE the h3, so it sits beside the heading rather than as a block above it,
@@ -346,7 +352,7 @@ a:hover { color: var(--brand-deep); }
    the heading also realigns the three module headings, which the block badge pushed 30px apart.
    align-self is kept as a guard, so it cannot stretch again if it is ever moved back out. */
 .live-card .tag { position: static; display: inline-block; align-self: start; margin-left: var(--s3); background: var(--brand); color: var(--text-on-brand); font-family: var(--ui); font-size: var(--t-label); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; border-radius: var(--r-sm); padding: 2px var(--s2); vertical-align: middle; }
-.live-card h3 { margin: 0 0 var(--s2); font-family: var(--display); font-size: var(--t-sub); font-weight: 600; }
+.live-card h2, .live-card h3 { margin: 0 0 var(--s2); font-family: var(--display); font-size: var(--t-sub); font-weight: 600; }
 .live-card p { margin: 0; color: var(--ink-soft); font-size: var(--t-ui); line-height: 1.55; flex: 1; }
 /* align-self again: as a flex item this is blockified, so the underline spanned the whole column
    and read as a rule rather than a link. It also made the three CTAs look unequal, because the
@@ -397,6 +403,7 @@ a:hover { color: var(--brand-deep); }
   .finding-band .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s7); }
   .live-modules { grid-template-columns: minmax(0, 1fr); }
   .live-card, .live-card.flagship { border-right: 0; border-bottom: 1px solid var(--line); padding: var(--s5) 0; }
+  .live-card + .live-card { padding-left: 0; }
   .live-card:last-child, .live-card.flagship:last-child { border-bottom: 0; }
   .profile-strip { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
   .panel.alt .wrap { grid-template-columns: minmax(0, 1fr); gap: var(--s7); }
