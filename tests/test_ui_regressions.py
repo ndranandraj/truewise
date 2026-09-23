@@ -1666,12 +1666,15 @@ def test_every_hand_written_page_uses_the_one_shared_header():
     those pages had no way to reach the rest of the site except the logo.
 
     Compared against the header on a generated college profile, which is what 6,500+ pages carry.
-    Whitespace is normalised; anything else that differs is a second header.
+    Whitespace is normalised, and so is aria-current, the one attribute a page is meant to set for
+    itself (it marks that page's own nav link). Anything else that differs is a second header.
     """
 
     def header(text):
         m = re.search(r'<header class="site-header">.*?</header>', text, re.S)
-        return re.sub(r"\s+", " ", m.group(0)) if m else None
+        if not m:
+            return None
+        return re.sub(r"\s+", " ", re.sub(r' aria-current="[^"]*"', "", m.group(0)))
 
     reference = header(next((SITE / "college").glob("*/index.html")).read_text())
     assert reference and "nav-toggle" in reference, "the reference header lost its mobile menu"
@@ -1816,3 +1819,26 @@ def test_hand_written_pages_use_colour_and_radius_tokens():
                 assert part in {"0", "50%"} or part.startswith("var(--r"), (
                     f"{page}: border-radius {value.strip()!r} is off the 3/6/10px scale"
                 )
+
+
+def test_the_primary_nav_says_where_you_are():
+    """On /careers/ the Careers link looked identical to the other four, while the K-12 subnav did
+    show its active tab. Each section page now marks its own nav link aria-current, in the static
+    markup so it holds without JavaScript, and styles.css underlines it."""
+    expected = {
+        "careers/index.html": ("/careers/", "page"),
+        "methodology/index.html": ("/methodology/", "page"),
+        "about/index.html": ("/about/", "page"),
+        "value-check/index.html": ("/value-check/", "page"),
+        "k12/index.html": ("/k12/", "page"),
+        "k12/rankings/index.html": ("/k12/", "true"),
+        "k12/compare/index.html": ("/k12/", "true"),
+        "k12/advanced-courses/index.html": ("/k12/", "true"),
+    }
+    for page, (href, value) in expected.items():
+        html = (SITE / page).read_text()
+        nav = re.search(r'<nav aria-label="Primary">(.*?)(?:<details|</nav>)', html, re.S).group(1)
+        current = re.findall(r'<a[^>]*href="([^"]+)"[^>]*aria-current="([^"]+)"', nav)
+        assert current == [(href, value)], f"{page}: primary nav marks {current}, want {href}"
+    css = (SITE / "styles.css").read_text()
+    assert "nav a[aria-current]" in css, "the current nav link has no visible style"

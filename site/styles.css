@@ -193,6 +193,15 @@ a:hover { color: var(--brand-deep); }
 .site-header nav { display: flex; align-items: center; gap: var(--s6); min-width: 0; }
 .site-header nav a { color: var(--ink-soft); text-decoration: none; font-size: var(--t-ui); font-weight: 500; white-space: nowrap; }
 .site-header nav a:hover { color: var(--brand); }
+/* Where you are. The header never said: on /careers/ the Careers link looked like the other four.
+   The current section is underlined in brand green, the same signal the K-12 subnav uses, and is
+   marked aria-current in the markup so it is announced as well as seen. Colour alone would not be
+   enough, so the underline carries it. The Find a college button is already a filled shape. */
+.site-header nav a[aria-current]:not(.nav-cta) {
+  color: var(--ink); text-decoration: underline; text-decoration-color: var(--brand);
+  text-decoration-thickness: 2px; text-underline-offset: 8px;
+}
+.site-header .menu a[aria-current] { color: var(--brand-deep); font-weight: 600; }
 .site-header nav a.nav-cta { background: var(--brand-deep); color: var(--text-on-brand); padding: var(--s3) var(--s5); border-radius: var(--r-md); font-weight: 600; }
 .site-header nav a.nav-cta:hover { background: var(--brand); color: var(--text-on-brand); }
 
