@@ -40,13 +40,13 @@
     .cr-table th.num, .cr-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .cr-table tbody tr:last-child td { border-bottom: 0; }
     .cr-table tbody tr { cursor: pointer; }
-    .cr-table tbody tr:hover { background: rgba(31,111,235,.06); }
+    .cr-table tbody tr:hover { background: var(--brand-50); }
     .cr-table td.mname { white-space: normal; min-width: 230px; font-weight: 500; }
     .cr-table a.mlink { color: var(--ink); text-decoration: none; font-weight: 600; }
     .cr-table a.mlink:hover { color: var(--brand); text-decoration: underline; }
     .cr-table td.fam { color: var(--ink-soft); font-size: .84rem; }
-    .rangebar { position: relative; height: 7px; background: #eef1f6; border-radius: 4px; min-width: 120px; margin-top: 5px; }
-    .rangebar > i { position: absolute; top: 0; height: 100%; background: #bcd3f5; border-radius: 4px; }
+    .rangebar { position: relative; height: 7px; background: var(--line-soft); border-radius: 4px; min-width: 120px; margin-top: 5px; }
+    .rangebar > i { position: absolute; top: 0; height: 100%; background: var(--series-3); border-radius: 4px; }
     .rangebar > b { position: absolute; top: -3px; width: 3px; height: 13px; background: var(--brand-deep); border-radius: 2px; }
     .clearbar { display: inline-block; min-width: 44px; }
     .clearbar.hi { color: #067647; font-weight: 700; } .clearbar.lo { color: #b42318; font-weight: 700; }
@@ -79,7 +79,7 @@
     .fld-head { padding: 8px 0 4px; }
     .fld-head h1 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); letter-spacing: -0.02em; margin: 0 0 6px; }
     .fld-head .sub { color: var(--ink-soft); }
-    .headline { display: flex; gap: 26px; flex-wrap: wrap; margin: 18px 0 6px; padding: 18px 20px; border: 1px solid var(--brand); border-radius: 14px; background: #fff; box-shadow: 0 6px 22px rgba(31,111,235,.08); max-width: 760px; }
+    .headline { display: flex; gap: 26px; flex-wrap: wrap; margin: 18px 0 6px; padding: 18px 20px; border: 1px solid var(--brand); border-radius: 14px; background: #fff; box-shadow: 0 6px 22px rgba(12,21,18,.08); max-width: 760px; }
     .headline .big { font-size: 2rem; font-weight: 800; color: var(--brand-deep); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
     .headline .lbl { color: var(--ink-soft); font-size: .9rem; }
     .module h2 { font-size: 1.3rem; letter-spacing: -.02em; margin: 28px 0 8px; }
@@ -372,7 +372,7 @@
         <section class="module">
           <h2>By degree level</h2>
           <table class="cred-table"><thead><tr><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
-            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background:rgba(31,111,235,.07)"' : ""}>
+            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background: var(--brand-50)"' : ""}>
               <td><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
               <td class="num">${money(c.med)}</td><td>${money(c.p25)} – ${money(c.p75)}</td>
               <td class="num">${c.pass_pct == null ? "insufficient data" : c.pass_pct + "%"}</td><td class="num">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>

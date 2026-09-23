@@ -1661,3 +1661,25 @@ def test_every_hand_written_page_uses_the_one_shared_header():
         if h is not None and h != reference:
             odd.append(rel)
     assert not odd, "pages with a header that differs from the shared one: " + ", ".join(odd)
+
+
+def test_hand_written_pages_carry_no_old_blue():
+    """The site moved to the forest palette, but five hand-written pages kept the old blue.
+
+    Careers drew its earnings range in #bcd3f5 on #eef1f6 tracks, and seven hover and focus shadows
+    across Value Check, Careers and the K-12 cards were tinted rgba(31,111,235). On a green site the
+    blue read as a leftover, and the range band at 1.35:1 against its track was barely visible. The
+    replacements are tokens (series-3, line-soft, brand-50) or an ink tint for shadows.
+
+    Comments stripped, since a comment explaining a fix may name the value it removed.
+    """
+    old = ("31,111,235", "#bcd3f5", "#eef1f6", "#1f6feb")
+    for page in sorted(SITE.glob("**/index.html")):
+        rel = page.relative_to(SITE).as_posix()
+        if rel.split("/")[0] in {"school", "state", "majors", "lists", "findings"}:
+            continue
+        text = re.sub(r"<!--.*?-->", "", page.read_text(), flags=re.S)
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+        text = re.sub(r"\s+", "", text).lower()
+        for value in old:
+            assert value.replace(" ", "") not in text, f"{rel} still uses the old blue {value}"
