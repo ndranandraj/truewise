@@ -150,7 +150,7 @@
 
   <main class="wrap" id="app">
     <div id="boot-fallback">
-      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">What a major pays</h1>
+      <h1 style="font-size:var(--t-title);line-height:1.08;letter-spacing:-.03em;margin:36px 0 10px">What a major pays</h1>
       <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Median earnings by field of study from the U.S. Department of Education College Scorecard: what graduates of each major typically earn, the pay range across programs, the degree ladder from certificate to doctorate, and the federal job outlook.</p>
       <!-- The no-JavaScript core, written by pipeline/build_careers.py between the markers below.
            This page used to degrade to nothing: the table was built entirely in the browser from a
@@ -196,7 +196,7 @@
       <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Sorting, searching and the degree ladder need JavaScript. The table above is the full set of columns for the highest-earning combinations, every major links to its own page, and the complete dataset is on the <a href="/#data">data section</a> with the method on the <a href="/methodology/">methodology page</a>.</p></noscript>
     </div>
   </main>
-  <button id="to-top" aria-label="Back to top" title="Back to top" style="position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:1.1rem;cursor:pointer;box-shadow:0 4px 14px rgba(12,21,18,.12);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;">↑</button>
+  <button id="to-top" aria-label="Back to top" title="Back to top" style="position:fixed;right:20px;bottom:20px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:var(--t-sub);cursor:pointer;box-shadow:0 4px 14px rgba(12,21,18,.12);opacity:0;pointer-events:none;transition:opacity .2s;z-index:20;">↑</button>
 
   <script>
   const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
@@ -453,7 +453,7 @@
     }
     if (!host) return;
     host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
-      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<h2 style="font-size:var(--t-section);margin:0 0 8px">Data did not load</h2>'
       + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
       + '<p><button type="button" onclick="location.reload()" class="btn">Retry</button>'
       + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';

@@ -396,7 +396,7 @@
   // No blank page if the data file fails to load.
   window.addEventListener("unhandledrejection", function () {
     cmp.innerHTML = '<section style="padding:24px 0;max-width:560px">'
-      + '<h2 style="font-size:1.3rem;margin:0 0 8px">Data did not load</h2>'
+      + '<h2 style="font-size:var(--t-section);margin:0 0 8px">Data did not load</h2>'
       + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the college data. '
       + 'This is usually temporary, please retry.</p>'
       + '<p><button type="button" onclick="location.reload()" class="btn">Retry</button>'

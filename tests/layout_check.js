@@ -178,6 +178,43 @@ async function careersInteractions(page) {
   return { findings, steps };
 }
 
+/* The phone menu: open it, see its links, reach them by keyboard, follow one. It opened empty on
+ * every page for weeks because a desktop-only run never opened it. */
+async function menuInteractions(page) {
+  const findings = [];
+  const steps = [];
+  const toggle = page.locator(".site-header .nav-toggle summary");
+  if (!(await toggle.count()) || !(await toggle.isVisible())) {
+    return { findings: [{ kind: "menu-missing", blocking: true,
+      detail: "No visible menu button in the header at phone width, so the rest of the site is unreachable except by the logo." }], steps };
+  }
+  await toggle.click();
+  const links = page.locator(".site-header .nav-toggle .menu a");
+  const n = await links.count();
+  let visible = 0;
+  for (let i = 0; i < n; i++) if (await links.nth(i).isVisible()) visible++;
+  steps.push({ step: "open-menu", links: n, visible });
+  if (!n || visible !== n) {
+    findings.push({ kind: "menu-empty", blocking: true,
+      detail: `The menu opened with ${visible} of ${n} links visible.` });
+    return { findings, steps };
+  }
+  await toggle.focus();
+  await page.keyboard.press("Tab");
+  const focused = await page.evaluate(() => !!document.activeElement.closest(".nav-toggle .menu"));
+  steps.push({ step: "tab-into-menu", focused });
+  if (!focused) findings.push({ kind: "menu-keyboard", blocking: true,
+    detail: "Tab from the open menu button did not reach the first menu link." });
+  const href = await links.first().getAttribute("href");
+  await Promise.all([page.waitForLoadState("load").catch(() => {}), links.first().click()]);
+  const path = await page.evaluate(() => location.pathname + location.hash);
+  steps.push({ step: "follow-link", href, landed: path });
+  if (!path.startsWith(href.split("#")[0])) findings.push({ kind: "menu-follow", blocking: true,
+    detail: `Following the first menu link (${href}) landed on ${path}.` });
+  await page.goBack({ waitUntil: "load" }).catch(() => {});
+  return { findings, steps };
+}
+
 /* Compare carries schools in its URL, so the only thing to establish here is that they actually
  * arrived. If they did not, every "clean" at every width described an empty page. */
 async function compareInteractions(page) {
@@ -260,10 +297,24 @@ async function measureRoute(browser, base, route, log) {
   return summary;
 }
 
-async function interactions(page, route) {
+async function interactions(page, route, w) {
+  /* At phone width every route also gets the menu check. It runs LAST, because it follows a link
+   * and comes back, which would discard a prepared state (schools added, a blocked download). */
+  const own = await interactionsFor(page, route, w);
+  if (!(w && w.label === "390")) return own;
+  const menu = await menuInteractions(page);
+  const ownRan = !own.skipped;
+  return {
+    findings: [...(own.findings || []), ...menu.findings],
+    steps: [...(ownRan ? own.steps || [] : []), ...menu.steps],
+  };
+}
+
+async function interactionsFor(page, route, w) {
+  if (route.check) return route.check(page, w);
   if (route.kind === "careers") return careersInteractions(page);
   if (route.kind === "compare") return compareInteractions(page);
-  if (route.kind === "static") return { skipped: "static route, no interactive table", findings: [], steps: [] };
+  if (route.kind === "static" || !route.kind) return { skipped: "static route, no interactive table", findings: [], steps: [] };
 
   const out = [];
   const findings = [];
@@ -388,13 +439,13 @@ function markdown(result) {
       const a = s.findings.length - b;
       return b ? `**${b} blocking**` : a ? `${a} advisory` : "clean";
     });
-    const ix = r.interactions;
-    /* "not applicable" rather than a blank or the word clean. A route whose interactions were never
-     * driven has established nothing about them, and the table should not let that read as a pass. */
-    const icell = ix.skipped ? `n/a, ${ix.skipped}`
+    /* One cell per width that drove interactions. "n/a" rather than a blank or the word clean: a
+     * route whose interactions were never driven has established nothing about them. */
+    const icell = Object.entries(r.interactions).map(([wl, ix]) => `${wl}: ` + (
+      ix.skipped ? `n/a, ${ix.skipped}`
       : ix.findings.length ? `**${ix.findings.length} blocking**`
       : ix.steps.length ? `${ix.steps.map((s) => s.step).join(", ")}: clean`
-      : "**none driven**";
+      : "**none driven**")).join("; ") || "**none driven**";
     L.push(`| ${r.label} | ${cells.join(" | ")} | ${icell} |`);
   }
   L.push("");
@@ -405,7 +456,9 @@ function markdown(result) {
       const s = r.widths[w.label];
       if (s) for (const f of s.findings) all.push({ where: `${r.label} @ ${w.label}`, ...f });
     }
-    for (const f of r.interactions.findings) all.push({ where: `${r.label} (interaction)`, ...f });
+    for (const [wl, ix] of Object.entries(r.interactions)) {
+      for (const f of ix.findings || []) all.push({ where: `${r.label} (interaction @ ${wl})`, ...f });
+    }
     if (r.perf) {
       for (const f of (r.perf.regressions || [])) all.push({ where: `${r.label} (timing)`, ...f });
       for (const f of (r.perf.clsFindings || [])) all.push({ where: `${r.label} (timing)`, ...f });
@@ -501,10 +554,10 @@ function markdown(result) {
   L.push("above. Only these page-states were measured, and a clean result says nothing about the");
   L.push("other 6,542 pages.");
   L.push("");
-  const skipped = result.routes.filter((r) => r.interactions && r.interactions.skipped);
+  const skipped = result.routes.filter((r) => Object.values(r.interactions).some((ix) => ix.skipped));
   if (skipped.length) {
-    L.push("Interactions were not driven on " +
-      skipped.map((r) => `**${r.label}** (${r.interactions.skipped})`).join(", ") +
+    L.push("Some interactions were not driven on " +
+      skipped.map((r) => `**${r.label}** (${Object.values(r.interactions).find((ix) => ix.skipped).skipped})`).join(", ") +
       ". Those routes are measured for layout only; nothing about their behaviour is established here.");
   }
   return L.join("\n");
@@ -575,6 +628,10 @@ async function main() {
         });
         const page = await ctx.newPage();
         const url = base + route.path;
+        /* setup runs before navigation (for example, blocking a data file to reach a failure state);
+         * prepare runs after load and before measuring (for example, adding schools to a comparison),
+         * so the page is measured in the state a reader actually reaches, not only as first served. */
+        if (route.setup) await route.setup(page);
         const resp = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
 
         /* A 404 that gets measured and reported as clean is worse than a crash. */
@@ -586,7 +643,19 @@ async function main() {
           continue;
         }
 
-        const r = await page.evaluate(probe, {});
+        let prepared = null;
+        if (route.prepare && !(resp && resp.status() >= 400)) {
+          try { prepared = await route.prepare(page); }
+          catch (e) { prepared = { error: String(e).split("\n")[0] }; }
+        }
+        if (prepared && prepared.error) {
+          entry.widths[w.label] = { findings: [{ kind: "prepare-failed", blocking: true,
+            detail: `Could not reach the state this route measures: ${prepared.error}` }] };
+          result.blocking++;
+          await ctx.close();
+          continue;
+        }
+        const r = await page.evaluate(probe, { intendedWidth: w.width });
         /* The probe refuses to measure a zero-width viewport. If that happens under Playwright the
          * viewport was not applied, which invalidates the whole state rather than the page. */
         if (r.inconclusive) {
@@ -605,13 +674,15 @@ async function main() {
         result.blocking += r.findings.filter((f) => f.blocking).length;
         result.advisory += r.findings.filter((f) => !f.blocking).length;
 
-        /* Interactions run once per route, at the widest viewport, where every control is present.
-         * Running them at all four would quadruple the time to re-prove the same code path. */
-        if (w.label === "desktop") {
-          entry.interactions = await interactions(page, route);
-          result.blocking += (entry.interactions.findings || []).length;
+        /* Interactions run at 390 as well as desktop. Phone controls are not the desktop controls at
+         * a smaller size: the menu, the stacked cards and the switchers only exist at phone width, and
+         * a desktop-only run passed while the mobile menu opened empty on every page. */
+        if (w.label === "desktop" || w.label === "390") {
+          const got = await interactions(page, route, w);
+          entry.interactions[w.label] = got;
+          result.blocking += (got.findings || []).length;
           await page.screenshot({
-            path: path.join(outDir, "screenshots", `${route.label}-after-interaction.png`),
+            path: path.join(outDir, "screenshots", `${route.label}-${w.label}-after-interaction.png`),
             fullPage: true,
           });
         }

@@ -50,16 +50,76 @@ const WIDTHS = [
  */
 const ROUTES = [
   { label: "homepage", path: "/", kind: "static" },
-  { label: "value-check", path: "/value-check/", kind: "static" },
+  /* Value Check, ready: a search must produce results and the label must say the list is loaded. */
+  { label: "value-check", path: "/value-check/", kind: "flow",
+    check: async (page) => {
+      const findings = [];
+      await page.fill("#q", "baylor");
+      await page.waitForTimeout(600);
+      const st = await page.evaluate(() => ({
+        results: document.querySelectorAll("#results li").length,
+        label: (document.querySelector('label[for="q"]') || {}).textContent || "",
+      }));
+      if (!st.results) findings.push({ kind: "vc-no-results", blocking: true, detail: 'Typing "baylor" produced no results.' });
+      if (!/^Search [\d,]+ colleges/.test(st.label)) findings.push({ kind: "vc-label", blocking: true,
+        detail: `After a successful search the label reads "${st.label}".` });
+      return { findings, steps: [{ step: "search-baylor", ...st }] };
+    } },
+  /* Value Check, failed: the college list is blocked. The page must say so and offer a way on. */
+  { label: "value-check-failed", path: "/value-check/", kind: "flow",
+    setup: async (page) => { await page.route("**/data/schools.json", (r) => r.abort()); },
+    prepare: async (page) => { await page.waitForFunction(
+      () => /did not load/.test((document.getElementById("rescount") || {}).textContent || ""), null, { timeout: 8000 }); },
+    check: async (page) => {
+      const st = await page.evaluate(() => ({
+        label: (document.querySelector('label[for="q"]') || {}).textContent || "",
+        retry: !!document.getElementById("vc-retry"),
+        browse: !!document.querySelector('#rescount a[href="/colleges/"]'),
+      }));
+      const findings = [];
+      if (!st.retry || !st.browse) findings.push({ kind: "vc-failed", blocking: true,
+        detail: `The failed state offers retry=${st.retry}, browse link=${st.browse}.` });
+      return { findings, steps: [{ step: "failed-state", ...st }] };
+    } },
   { label: "penn-state", path: "/college/pennsylvania-state-university-main-campus/", kind: "twtable" },
   { label: "agape", path: "/college/agape-college-of-business-and-science/", kind: "twtable" },
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
+  /* A real major's detail view: a different layout from the listing, and the one that overflowed. */
+  { label: "careers-detail", path: "/careers/?field=1107&cred=5", kind: "static",
+    prepare: async (page) => { await page.waitForSelector(".fld-head h1", { timeout: 10000 }); } },
   /* Added for the design pass: every page family whose shell, type or tables Phase 2 changes needs
    * a before and an after, and none of these were measured until now. */
   { label: "k12-hub", path: "/k12/", kind: "static" },
   { label: "k12-rankings", path: "/k12/rankings/", kind: "static" },
   { label: "k12-compare", path: "/k12/compare/", kind: "static" },
+  /* K-12 Compare with two schools added, measured in that state, then Remove driven by keyboard. */
+  { label: "k12-compare-2", path: "/k12/compare/", kind: "flow",
+    prepare: async (page) => {
+      for (const name of ["Stuyvesant High School", "Lane Technical"]) {
+        await page.fill("#q", name);
+        await page.waitForSelector("#results button[data-k]", { timeout: 10000 });
+        await page.click("#results button[data-k]");
+        await page.waitForTimeout(300);
+      }
+      await page.waitForSelector("#cmp tbody tr", { timeout: 10000 });
+    },
+    check: async (page) => {
+      const findings = [];
+      const n = await page.locator("#cmp button.rm").count();
+      if (n !== 2) return { findings: [{ kind: "k12-remove", blocking: true,
+        detail: `Expected two Remove buttons after adding two schools, found ${n}.` }], steps: [] };
+      await page.locator("#cmp button.rm").first().focus();
+      await page.keyboard.press("Enter");
+      await page.waitForTimeout(100);
+      const st = await page.evaluate(() => ({
+        left: document.querySelectorAll("#cmp button.rm").length,
+        focus: document.activeElement && (document.activeElement.matches("#cmp button.rm") || document.activeElement.id === "q"),
+      }));
+      if (st.left !== 1) findings.push({ kind: "k12-remove", blocking: true, detail: "Enter on Remove did not remove the school." });
+      if (!st.focus) findings.push({ kind: "k12-focus", blocking: true, detail: "Focus was lost after removing a school." });
+      return { findings, steps: [{ step: "keyboard-remove", ...st }] };
+    } },
   { label: "k12-courses", path: "/k12/advanced-courses/", kind: "static" },
   { label: "methodology", path: "/methodology/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },
@@ -84,7 +144,12 @@ function probe(opts) {
    * that from being reported as a defect; anything genuinely overflowing exceeds it by far more. */
   const TOL = o.tolerance == null ? 1 : o.tolerance;
 
-  const vw = window.innerWidth;
+  /* Measure against the width that was ASKED for, not the one the browser reports. A mobile browser
+   * widens its layout viewport to fit content that overflows, so a 320px request on a page with a
+   * 370px citation reported innerWidth 370, the document measured 370 against 370, and the check
+   * called Methodology clean at 320px. The requested width is the phone the reader actually has. */
+  const intended = o.intendedWidth || window.innerWidth;
+  const vw = intended;
 
   /* A viewport of zero is not a narrow viewport. It happens when the page is measured before the
    * browser has laid anything out, or in a hidden pane, and every box then reports as overflowing a
@@ -108,6 +173,13 @@ function probe(opts) {
   const findings = [];
   const add = (kind, blocking, detail, extra) =>
     findings.push(Object.assign({ kind, blocking, detail }, extra || {}));
+
+  if (o.intendedWidth && window.innerWidth > o.intendedWidth + TOL) {
+    add("viewport-widened", true,
+      `The browser widened the layout viewport to ${window.innerWidth}px for a ${o.intendedWidth}px ` +
+      `screen, which it only does when content forces it: something on this page is wider than ` +
+      `the phone.`);
+  }
 
   const describe = (el) => {
     if (!el || !el.tagName) return "(none)";

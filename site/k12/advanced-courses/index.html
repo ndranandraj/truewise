@@ -117,7 +117,7 @@
 
   <main class="wrap" id="app">
     <div id="boot-fallback">
-      <h1 style="font-size:clamp(1.8rem,4vw,2.6rem);letter-spacing:-.03em;margin:36px 0 10px">Advanced courses at US high schools</h1>
+      <h1 style="font-size:var(--t-title);line-height:1.08;letter-spacing:-.03em;margin:36px 0 10px">Advanced courses at US high schools</h1>
       <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US public high school to see which advanced courses it offers, AP, calculus, physics, chemistry, computer science, dual enrollment and more, plus counselors and support staff, from the U.S. Department of Education Civil Rights Data Collection (2021-22). Loading the data now.</p>
       <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
     </div>
@@ -348,7 +348,7 @@
     }
     if (!host) return;
     host.innerHTML = '<section style="padding:40px 0;max-width:560px">'
-      + '<h2 style="font-size:1.4rem;margin:0 0 8px">Data did not load</h2>'
+      + '<h2 style="font-size:var(--t-section);margin:0 0 8px">Data did not load</h2>'
       + '<p style="color:var(--ink-soft);line-height:1.6">Something went wrong fetching the data for this page. This is usually temporary, please retry.</p>'
       + '<p><button type="button" onclick="location.reload()" class="btn">Retry</button>'
       + ' <a href="/" style="margin-left:12px;color:var(--brand)">Home</a></p></section>';

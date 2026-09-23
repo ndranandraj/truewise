@@ -65,6 +65,33 @@ jobs:
           python -m analysis.validate
           pytest -q
 
+      # The browser checks, before anything is published. Until 2026-09-23 no JavaScript test and
+      # no browser check ran in any workflow, so a mobile menu that opened empty on every page went
+      # out green. These run against the site just built, with its real data.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: JavaScript tests that need the built site
+        run: |
+          npm ci
+          node tests/integration_smoke.js
+          node tests/compare_smoke.js
+          node tests/search_smoke.js
+          node tests/embed_smoke.js
+          node tests/search_gold.js
+      - name: Browser layout and interaction check (blocks deploy)
+        run: |
+          npx playwright install --with-deps chromium
+          node tests/layout_check.js
+      - name: Keep the layout report and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-check
+          path: layout-check-*/
+          retention-days: 14
+
       - name: Publish downloadable datasets on the domain
         # Serve the parquet(s) from truewise.dev/data/ so downloads hit Cloudflare and are
         # counted in the zone's request analytics. Kept out of the repo (built at deploy).

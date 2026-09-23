@@ -1823,6 +1823,17 @@ def test_hand_written_pages_use_colour_and_radius_tokens():
         assert not hexes, f"{page}: raw colours {sorted(set(hexes))}; use palette tokens"
         rgbas = [c for c in re.findall(r"rgba?\([^)]*\)", css) if not c.startswith("rgba(12,21,18")]
         assert not rgbas, f"{page}: raw colours {sorted(set(rgbas))}; use tokens or the ink tint"
+        # Inline style attributes too. The guard read only <style> blocks, so Methodology's citation
+        # kept an 8px corner and a .85rem size in a style="" attribute, and the retry headings kept
+        # one-off rem sizes, all invisible to it.
+        for attr in re.findall(r'style="([^"]*)"', src):
+            hexes = re.findall(r"#[0-9a-fA-F]{3,8}\b", attr)
+            assert not hexes, f'{page}: inline raw colour {hexes} in style="{attr[:60]}"'
+            for size in re.findall(r"font-size:\s*([^;]+)", attr):
+                assert size.strip().startswith("var(--t-") or size.strip() == "inherit", (
+                    f"{page}: inline font-size {size.strip()!r}; use a type token"
+                )
+            css += "\n" + attr
         for value in re.findall(r"border-radius:\s*([^;}]+)", css):
             for part in value.split():
                 assert part in {"0", "50%"} or part.startswith("var(--r"), (
