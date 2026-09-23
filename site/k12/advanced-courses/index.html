@@ -118,14 +118,14 @@
   <main class="wrap" id="app">
     <div id="boot-fallback">
       <h1 style="font-size:var(--t-title);line-height:1.08;letter-spacing:-.03em;margin:36px 0 10px">Advanced courses at US high schools</h1>
-      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US public high school to see which advanced courses it offers, AP, calculus, physics, chemistry, computer science, dual enrollment and more, plus counselors and support staff, from the U.S. Department of Education Civil Rights Data Collection (2021-22). Loading the data now.</p>
+      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US public high school to see which advanced courses it offers, AP, calculus, physics, chemistry, computer science, dual enrollment and more, plus counselors and support staff, from the U.S. Department of Education Civil Rights Data Collection (2023-24). Loading the data now.</p>
       <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
     </div>
   </main>
 
   <script src="/assets/college-search.js"></script>
   <script>
-  const VINTAGE = "U.S. Dept. of Education, Civil Rights Data Collection, 2021-22";
+  const VINTAGE = "U.S. Dept. of Education, Civil Rights Data Collection, 2023-24";
   const app = document.getElementById("app");
   let INDEX = null;
   const stateCache = {};
@@ -318,7 +318,7 @@
         by each school to the U.S. Department of Education's Office for Civil Rights. Participation rates are the share of
         all students enrolled at the school taking a course (the CRDC does not break enrollment out by grade); the counselor ratio is students per full-time-equivalent
         counselor. Counts a school withheld or that were too small to report are shown as unavailable, never guessed. Data
-        is from the <b>2021-22</b> collection; ED released the newer 2023-24 collection in September 2026, and Truewise will move to it once its measures are checked against this one. Course offerings are fairly stable year to year.
+        is from the <b>2023-24</b> collection, released by ED in September 2026. In 2023-24, ED published a high school's AP or IB answer of "No" as a not-applicable code; because the survey asks every high school both questions as required Yes/No items, Truewise reads that code as "No" (except at justice facilities, where it stays unknown). <a href="/methodology/#k12">Method</a>.
         Source: ${VINTAGE}.</div>`;
     wireBack();
     window.scrollTo({ top: 0 });

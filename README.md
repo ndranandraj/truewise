@@ -68,7 +68,7 @@ df = tw.load_value_check(decided_only=True)  # earnings vs a HS-grad benchmark, 
 
 - U.S. Dept. of Education **College Scorecard** (Field-of-Study + Institution), release 2026-06-10.
 - **NCES CIP-to-SOC crosswalk**, **BLS OEWS** (May 2025) and **Employment Projections** (2025-35).
-- **Civil Rights Data Collection (CRDC)**, 2021-22.
+- **Civil Rights Data Collection (CRDC)**, 2023-24.
 
 ## Cite this
 

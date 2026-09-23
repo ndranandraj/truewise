@@ -45,6 +45,11 @@ def main() -> None:
     )
     cols = [d[0] for d in cur.description]
     rows = [dict(zip(cols, r, strict=True)) for r in cur.fetchall()]
+    # The collection travels inside the data (build_k12_source names it), so no label can lag it.
+    vintages = {r.get("crdc_vintage") for r in rows}
+    if len(vintages) != 1 or None in vintages:
+        raise SystemExit(f"k12.parquet must name exactly one CRDC collection, found {vintages}")
+    vintage = vintages.pop()
 
     def _rate(part, whole):
         # Share of students taking a course, only where it is offered and has enrollment.
@@ -180,14 +185,10 @@ def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "schools").mkdir(exist_ok=True)
     (OUT_DIR / "states.json").write_text(
-        json.dumps(
-            {"generated": True, "vintage": "2021-22", "states": states}, separators=(",", ":")
-        )
+        json.dumps({"generated": True, "vintage": vintage, "states": states}, separators=(",", ":"))
     )
     (OUT_DIR / "index.json").write_text(
-        json.dumps(
-            {"generated": True, "vintage": "2021-22", "schools": index}, separators=(",", ":")
-        )
+        json.dumps({"generated": True, "vintage": vintage, "schools": index}, separators=(",", ":"))
     )
     for state, schools in by_state.items():
         (OUT_DIR / "schools" / f"{state}.json").write_text(

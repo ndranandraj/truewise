@@ -50,6 +50,7 @@ def _mk_crdc(folder):
                 "LEA_NAME": "Test ISD",
                 "SCH_STATUS_CHARTER": "No",
                 "SCH_STATUS_MAGNET": "No",
+                "JJ": "No",
                 "SCH_GRADE_G09": "No",
                 "SCH_GRADE_G10": "No",
                 "SCH_GRADE_G11": "No",
@@ -62,6 +63,7 @@ def _mk_crdc(folder):
                 "LEA_NAME": "Test ISD",
                 "SCH_STATUS_CHARTER": "No",
                 "SCH_STATUS_MAGNET": "No",
+                "JJ": "No",
                 "SCH_GRADE_G09": "No",
                 "SCH_GRADE_G10": "No",
                 "SCH_GRADE_G11": "No",
@@ -274,3 +276,72 @@ def test_a_release_without_any_no_is_refused(monkeypatch):
     )
     with pytest.raises(SystemExit, match="SCH_APENR_IND"):
         _check_indicator_vocabulary(con)
+
+
+def _as_2023_24(folder, justice="No", ap_courses="-9"):
+    """Rewrite the fixture in the 2023-24 layout, where AP and IB "No" is published as -9."""
+    path = folder / "School Characteristics.csv"
+    rows = list(csv.DictReader(open(path)))
+    for r in rows:
+        r.pop("JJ")
+        r["SCH_JUST_IND"] = justice
+    _write(path, rows)
+    _course_file(
+        folder,
+        "Advanced Placement.csv",
+        "SCH_APENR_IND",
+        "-9",
+        "SCH_APENR",
+        {"SCH_APCOURSES": ap_courses},
+    )
+    _course_file(folder, "International Baccalaureate.csv", "SCH_IBENR_IND", "-9", "SCH_IBENR", {})
+
+
+def test_2023_24_reads_minus9_as_no_at_a_regular_high_school(tmp_path):
+    """ED's form asks every high school AP and IB as required Yes/No; 2023-24 publishes "No" as -9."""
+    _mk_crdc(tmp_path)
+    _as_2023_24(tmp_path)
+    hs = _build_k12_table(tmp_path).execute("SELECT * FROM k12").fetchdf().to_dict("records")[0]
+    assert hs["crdc_vintage"] == "2023-24"
+    assert hs["offers_ap"] is False and hs["offers_ib"] is False
+
+
+def test_2023_24_minus9_stays_unknown_where_a_skip_is_plausible(tmp_path):
+    _mk_crdc(tmp_path)
+    _as_2023_24(tmp_path, justice="Yes")
+    hs = _build_k12_table(tmp_path).execute("SELECT * FROM k12").fetchdf().to_dict("records")[0]
+    assert hs["offers_ap"] is None and hs["offers_ib"] is None, "a justice facility's -9 is unknown"
+
+    _mk_crdc(tmp_path)
+    _as_2023_24(tmp_path, ap_courses="3")
+    hs = _build_k12_table(tmp_path).execute("SELECT * FROM k12").fetchdf().to_dict("records")[0]
+    assert hs["offers_ap"] is None, "a -9 indicator beside a real course count is inconsistent"
+
+
+def test_crdc_labels_follow_the_published_data():
+    """Every page that names the CRDC collection names the one published/k12.parquet was built from."""
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    con = duckdb.connect()
+    (vintage,) = con.execute(
+        f"SELECT DISTINCT crdc_vintage FROM read_parquet('{root / 'published' / 'k12.parquet'}')"
+    ).fetchone()
+    pages = [
+        "site/index.html",
+        "site/methodology/index.html",
+        "site/k12/index.html",
+        "site/k12/rankings/index.html",
+        "site/k12/advanced-courses/index.html",
+        "README.md",
+    ]
+    for page in pages:
+        text = (root / page).read_text()
+        named = set(
+            re.findall(r"(?:CRDC|Civil Rights Data Collection)[^.<]{0,12}?(20\d\d-\d\d)", text)
+        )
+        named |= set(re.findall(r"<b>(20\d\d-\d\d)</b> (?:CRDC|collection)", text))
+        named |= set(re.findall(r"(20\d\d-\d\d)\s+federal collection", text))
+        assert named, f"{page} should name the CRDC collection"
+        assert named == {vintage}, f"{page} names {named}, the data is {vintage}"

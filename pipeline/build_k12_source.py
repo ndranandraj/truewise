@@ -96,10 +96,52 @@ HS_WHERE = (
 )
 
 
+def _detect_vintage(con: duckdb.DuckDBPyConnection) -> str:
+    """Name the CRDC collection from its School Characteristics layout, or refuse.
+
+    2021-22 flags justice facilities in a column called JJ; 2023-24 renamed it SCH_JUST_IND. A
+    layout that is neither is a release nobody has checked, so the build stops.
+    """
+    cols = {r[0] for r in con.execute("DESCRIBE chars").fetchall()}
+    if "SCH_JUST_IND" in cols:
+        return "2023-24"
+    if "JJ" in cols:
+        return "2021-22"
+    raise SystemExit("Unrecognised CRDC layout: check this release field by field first.")
+
+
+# 2023-24 publishes a high school's AP and IB "No" as -9. The School Form asks every school with
+# grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), and the data
+# dictionary lists both as Yes/No; nothing documents a recoding. Read as "No", the national rates
+# match 2021-22 (AP 53.5% against 54.1%, IB 3.8% in both), so -9 at a regular high school is read
+# as "No". It stays unknown at justice facilities, where a genuine skip is plausible, and for AP
+# wherever the course count is not also -9 (63 schools report courses under a -9 indicator).
+# Disclosed on Methodology. Only this release gets the rule; any other release without a "No" is
+# refused by _check_indicator_vocabulary.
+MINUS9_AS_NO = {
+    "2023-24": {
+        "SCH_APENR_IND": "c.SCH_JUST_IND = 'No' AND a.SCH_APCOURSES = '-9'",
+        "SCH_IBENR_IND": "c.SCH_JUST_IND = 'No'",
+    }
+}
+
+
+def _offer_ind_read(col: str, vintage: str) -> str:
+    """_offer_ind, plus the documented -9 reading for the release it applies to."""
+    short = col.split(".", 1)[1]
+    cond = MINUS9_AS_NO.get(vintage, {}).get(short)
+    if cond is None:
+        return _offer_ind(col)
+    return (
+        f"CASE WHEN upper({col}) = 'YES' THEN TRUE WHEN upper({col}) = 'NO' THEN FALSE "
+        f"WHEN {col} = '-9' AND {cond} THEN FALSE END"
+    )
+
+
 MIN_HS_FOR_VOCAB_CHECK = 100
 
 
-def _check_indicator_vocabulary(con: duckdb.DuckDBPyConnection) -> None:
+def _check_indicator_vocabulary(con: duckdb.DuckDBPyConnection, vintage: str = "") -> None:
     """Refuse a release where a Yes/No offer indicator has no "No" among high schools.
 
     The 2023-24 CRDC publishes a high school's AP and IB "No" as -9 (Not Applicable/Skipped):
@@ -116,6 +158,8 @@ def _check_indicator_vocabulary(con: duckdb.DuckDBPyConnection) -> None:
         ("ib", "SCH_IBENR_IND"),
         ("dual", "SCH_DUAL_IND"),
     ):
+        if col in MINUS9_AS_NO.get(vintage, {}):
+            continue  # this release's "No" is -9, read by the documented rule above
         n_no = con.execute(
             f"SELECT count(*) FROM chars c JOIN {view_name} x USING (COMBOKEY) "
             f"WHERE ({HS_WHERE}) AND upper(x.{col}) = 'NO'"
@@ -152,7 +196,8 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
         for v in ("enr", "ap", "calc", "phys", "cs", "chem", "dual", "ib", "gt")
         for r in con.execute(f"DESCRIBE {v}").fetchall()
     )
-    _check_indicator_vocabulary(con)
+    vintage = _detect_vintage(con)
+    _check_indicator_vocabulary(con, vintage)
 
     def _sum(alias: str, prefix: str) -> str:
         return _sum_races(alias, prefix, present=present)
@@ -161,6 +206,7 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
         f"""
         CREATE OR REPLACE TABLE k12 AS
         SELECT
+            '{vintage}'                                  AS crdc_vintage,
             c.COMBOKEY                                   AS combokey,
             c.LEA_STATE                                  AS state,
             c.SCH_NAME                                   AS name,
@@ -168,7 +214,7 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
             (upper(c.SCH_STATUS_CHARTER) = 'YES')        AS charter,
             (upper(c.SCH_STATUS_MAGNET) = 'YES')         AS magnet,
             {_sum("e", "SCH_ENR")}                          AS enroll_total,
-            {_offer_ind("a.SCH_APENR_IND")}              AS offers_ap,
+            {_offer_ind_read("a.SCH_APENR_IND", vintage)}              AS offers_ap,
             {_posn("a.SCH_APCOURSES")}                   AS ap_courses,
             {_sum("a", "SCH_APENR")}                        AS ap_enroll,
             {_offer_cnt("m.SCH_MATHCLASSES_CALC")}       AS offers_calc,
@@ -181,7 +227,7 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
             {_sum("ch", "SCH_SCIENR_CHEM")}                 AS chem_enroll,
             {_offer_ind("d.SCH_DUAL_IND")}               AS offers_dual,
             {_sum("d", "SCH_DUALENR")}                      AS dual_enroll,
-            {_offer_ind("ib.SCH_IBENR_IND")}             AS offers_ib,
+            {_offer_ind_read("ib.SCH_IBENR_IND", vintage)}             AS offers_ib,
             {_sum("ib", "SCH_IBENR")}                       AS ib_enroll,
             {_offer_ind("g.SCH_GT_IND")}                 AS offers_gt,
             {_sum("g", "SCH_GTENR")}                        AS gt_enroll,
@@ -210,10 +256,10 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
 
 
 def main() -> None:
-    folder = Path(sys.argv[1]) if len(sys.argv) > 1 else (RAW_DIR / "crdc")
+    folder = Path(sys.argv[1]) if len(sys.argv) > 1 else (RAW_DIR / "crdc-2023-24")
     if not folder.exists():
         raise SystemExit(
-            f"CRDC folder {folder} not found. Put the CRDC 'School' CSVs in {RAW_DIR / 'crdc'} "
+            f"CRDC folder {folder} not found. Put the CRDC 'School' CSVs in {RAW_DIR / 'crdc-2023-24'} "
             "or pass the folder path as an argument."
         )
     con = duckdb.connect()
