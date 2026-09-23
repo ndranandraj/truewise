@@ -236,3 +236,41 @@ def test_negative_crdc_codes_are_unknown_not_no(tmp_path, monkeypatch):
     assert s["breadth3"] == 0  # nothing KNOWN offered among the three (unknowns are not counted)
     idx = json.loads((tmp_path / "k12-data" / "index.json").read_text())["schools"][0]
     assert idx["ap"] is None and idx["c"] is None and idx["p"] is False
+
+
+def test_race_sums_include_the_nonbinary_column_when_published():
+    """2021-22 reports 10,810 students in SCH_ENR_*_X; summing only _M and _F left them out."""
+    from pipeline.build_k12_source import _sum_races
+
+    without = _sum_races("e", "SCH_ENR", races=("WH",))
+    assert "SCH_ENR_WH_X" not in without
+    present = frozenset({"SCH_ENR_WH_M", "SCH_ENR_WH_F", "SCH_ENR_WH_X"})
+    assert "e.SCH_ENR_WH_X" in _sum_races("e", "SCH_ENR", races=("WH",), present=present)
+
+
+def test_a_release_without_any_no_is_refused(monkeypatch):
+    """2023-24 publishes a high school's AP "No" as -9. Built naively, every such school would read
+    "not reported" and the AP offer rate would be computed over offering schools only."""
+    import duckdb
+    import pytest
+
+    from pipeline import build_k12_source as b
+    from pipeline.build_k12_source import _check_indicator_vocabulary
+
+    monkeypatch.setattr(b, "MIN_HS_FOR_VOCAB_CHECK", 1)
+
+    con = duckdb.connect()
+    con.execute(
+        "CREATE VIEW chars AS SELECT * FROM (VALUES ('1','Yes','No','No','No'),('2','Yes','No','No','No')) "
+        "t(COMBOKEY, SCH_GRADE_G09, SCH_GRADE_G10, SCH_GRADE_G11, SCH_GRADE_G12)"
+    )
+    for view, col in (("ap", "SCH_APENR_IND"), ("ib", "SCH_IBENR_IND"), ("dual", "SCH_DUAL_IND")):
+        con.execute(
+            f"CREATE VIEW {view} AS SELECT * FROM (VALUES ('1','Yes'),('2','No')) t(COMBOKEY, {col})"
+        )
+    _check_indicator_vocabulary(con)
+    con.execute(
+        "CREATE OR REPLACE VIEW ap AS SELECT * FROM (VALUES ('1','Yes'),('2','-9')) t(COMBOKEY, SCH_APENR_IND)"
+    )
+    with pytest.raises(SystemExit, match="SCH_APENR_IND"):
+        _check_indicator_vocabulary(con)

@@ -61,14 +61,24 @@ def _offer_cnt(col: str) -> str:
     )
 
 
-def _sum_races(alias: str, prefix: str, races=RACES) -> str:
-    """Sum a metric across the given race codes and both sexes.
+def _sum_races(alias: str, prefix: str, races=RACES, present: frozenset[str] | None = None) -> str:
+    """Sum a metric across the given race codes and every published sex category.
+
+    2023-24 added a third category (_X) beside _M and _F. It is included whenever the file has
+    the column, so a release that populates it is not silently undercounted. `present` is the
+    set of column names in the loaded files; without it only _M and _F are used.
 
     Summing the race-by-sex components (not the TOT_* columns) is deliberate: CRDC sometimes
     suppresses a total (e.g. TOT_ENR_F = -11) while the underlying race cells are present, so
     the components give a complete count where the total would silently undercount.
     """
-    return " + ".join(_pos(f"{alias}.{prefix}_{r}_{s}") for r in races for s in ("M", "F"))
+    sexes = ("M", "F", "X")
+    return " + ".join(
+        _pos(f"{alias}.{prefix}_{r}_{s}")
+        for r in races
+        for s in sexes
+        if s != "X" or (present is not None and f"{prefix}_{r}_{s}" in present)
+    )
 
 
 def _find(folder: Path, name: str) -> str:
@@ -78,6 +88,43 @@ def _find(folder: Path, name: str) -> str:
             f"Missing '{name}*.csv' in {folder}. Point me at the CRDC 'School' folder."
         )
     return str(hits[-1])
+
+
+HS_WHERE = (
+    "upper(c.SCH_GRADE_G09) = 'YES' OR upper(c.SCH_GRADE_G10) = 'YES' "
+    "OR upper(c.SCH_GRADE_G11) = 'YES' OR upper(c.SCH_GRADE_G12) = 'YES'"
+)
+
+
+MIN_HS_FOR_VOCAB_CHECK = 100
+
+
+def _check_indicator_vocabulary(con: duckdb.DuckDBPyConnection) -> None:
+    """Refuse a release where a Yes/No offer indicator has no "No" among high schools.
+
+    The 2023-24 CRDC publishes a high school's AP and IB "No" as -9 (Not Applicable/Skipped):
+    10,102 high schools that answered "No" to AP in 2021-22 show -9 in 2023-24, and not one high
+    school shows "No". Read naively, every high school without AP would become "not reported",
+    and the offer rate would be computed over the schools that offer AP only. A "No"-less
+    indicator is a coding change to resolve by hand, not data to publish.
+    """
+    n_hs = con.execute(f"SELECT count(*) FROM chars c WHERE {HS_WHERE}").fetchone()[0]
+    if n_hs < MIN_HS_FOR_VOCAB_CHECK:
+        return  # a hand-made fixture, not a release; a real release has about 27,000 high schools
+    for view_name, col in (
+        ("ap", "SCH_APENR_IND"),
+        ("ib", "SCH_IBENR_IND"),
+        ("dual", "SCH_DUAL_IND"),
+    ):
+        n_no = con.execute(
+            f"SELECT count(*) FROM chars c JOIN {view_name} x USING (COMBOKEY) "
+            f"WHERE ({HS_WHERE}) AND upper(x.{col}) = 'NO'"
+        ).fetchone()[0]
+        if n_no == 0:
+            raise SystemExit(
+                f"{col}: no high school reports 'No'. This release codes 'No' differently "
+                "(2023-24 publishes it as -9). Resolve how to read -9 before building K-12."
+            )
 
 
 def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
@@ -100,6 +147,16 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
     view("gt", "Gifted and Talented")
     view("ss", "School Support")
 
+    present = frozenset(
+        r[0]
+        for v in ("enr", "ap", "calc", "phys", "cs", "chem", "dual", "ib", "gt")
+        for r in con.execute(f"DESCRIBE {v}").fetchall()
+    )
+    _check_indicator_vocabulary(con)
+
+    def _sum(alias: str, prefix: str) -> str:
+        return _sum_races(alias, prefix, present=present)
+
     con.execute(
         f"""
         CREATE OR REPLACE TABLE k12 AS
@@ -110,24 +167,24 @@ def build(con: duckdb.DuckDBPyConnection, folder: Path) -> None:
             c.LEA_NAME                                   AS district,
             (upper(c.SCH_STATUS_CHARTER) = 'YES')        AS charter,
             (upper(c.SCH_STATUS_MAGNET) = 'YES')         AS magnet,
-            {_sum_races("e", "SCH_ENR")}                          AS enroll_total,
+            {_sum("e", "SCH_ENR")}                          AS enroll_total,
             {_offer_ind("a.SCH_APENR_IND")}              AS offers_ap,
             {_posn("a.SCH_APCOURSES")}                   AS ap_courses,
-            {_sum_races("a", "SCH_APENR")}                        AS ap_enroll,
+            {_sum("a", "SCH_APENR")}                        AS ap_enroll,
             {_offer_cnt("m.SCH_MATHCLASSES_CALC")}       AS offers_calc,
-            {_sum_races("m", "SCH_MATHENR_CALC")}                 AS calc_enroll,
+            {_sum("m", "SCH_MATHENR_CALC")}                 AS calc_enroll,
             {_offer_cnt("p.SCH_SCICLASSES_PHYS")}        AS offers_physics,
-            {_sum_races("p", "SCH_SCIENR_PHYS")}                  AS phys_enroll,
+            {_sum("p", "SCH_SCIENR_PHYS")}                  AS phys_enroll,
             {_offer_cnt("cs.SCH_COMPCLASSES_CSCI")}      AS offers_cs,
-            {_sum_races("cs", "SCH_COMPENR_CSCI")}                AS cs_enroll,
+            {_sum("cs", "SCH_COMPENR_CSCI")}                AS cs_enroll,
             {_offer_cnt("ch.SCH_SCICLASSES_CHEM")}       AS offers_chem,
-            {_sum_races("ch", "SCH_SCIENR_CHEM")}                 AS chem_enroll,
+            {_sum("ch", "SCH_SCIENR_CHEM")}                 AS chem_enroll,
             {_offer_ind("d.SCH_DUAL_IND")}               AS offers_dual,
-            {_sum_races("d", "SCH_DUALENR")}                      AS dual_enroll,
+            {_sum("d", "SCH_DUALENR")}                      AS dual_enroll,
             {_offer_ind("ib.SCH_IBENR_IND")}             AS offers_ib,
-            {_sum_races("ib", "SCH_IBENR")}                       AS ib_enroll,
+            {_sum("ib", "SCH_IBENR")}                       AS ib_enroll,
             {_offer_ind("g.SCH_GT_IND")}                 AS offers_gt,
-            {_sum_races("g", "SCH_GTENR")}                        AS gt_enroll,
+            {_sum("g", "SCH_GTENR")}                        AS gt_enroll,
             -- Support staff (FTE; NULL when the school did not report, so a true 0 is meaningful).
             {_posn("ss.SCH_FTECOUNSELORS")}              AS fte_counselors,
             {_posn("ss.SCH_FTESECURITY_LEO")}            AS fte_police,
