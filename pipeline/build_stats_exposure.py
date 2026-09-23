@@ -255,7 +255,7 @@ def render_page(s) -> str:
 # The findings this module publishes, as directory names under site/findings/. This is the
 # authoritative list: pipeline/prune_orphans.py checks the built tree against it, so a retired
 # finding cannot linger on disk and ship from a local deploy (site/findings/data-audit/ did).
-PUBLISHED_FINDINGS = ("stats-grad-exposure",)
+PUBLISHED_FINDINGS = ("stats-grad-exposure", "fvtge-reporting")
 
 
 def render_index() -> str:
@@ -274,6 +274,12 @@ def render_index() -> str:
         "its method and dataset. Corrections welcome.</p>\n"
     )
     p.append('    <ul class="schoollist">\n')
+    p.append(
+        '      <li><a href="/findings/fvtge-reporting/">Which colleges had not filed their federal '
+        'earnings-transparency data?</a><div class="meta">The Department of Education\u2019s list of '
+        "colleges that had not submitted required FVT/GE files as of 6 August 2026, searchable, with "
+        "what the College Scorecard shows about them.</div></li>\n"
+    )
     p.append(
         '      <li><a href="/findings/stats-grad-exposure/">Which graduate programs are exposed under '
         'the new earnings rule?</a><div class="meta">How many graduate programs fall below a national '

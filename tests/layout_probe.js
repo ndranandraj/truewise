@@ -125,6 +125,19 @@ const ROUTES = [
   { label: "embed-docs", path: "/about/embed/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },
   { label: "finding", path: "/findings/stats-grad-exposure/", kind: "static" },
+  /* The FVT/GE finding's college search, driven: a name must produce rows with the status. */
+  { label: "finding-fvtge", path: "/findings/fvtge-reporting/", kind: "flow",
+    check: async (page) => {
+      await page.fill("#fv-q", "palomar");
+      await page.waitForTimeout(800);
+      const st = await page.evaluate(() => ({
+        rows: document.querySelectorAll("#fv-rows tr").length,
+        status: (document.getElementById("fv-status") || {}).textContent || "",
+      }));
+      const findings = st.rows ? [] : [{ kind: "fvtge-search", blocking: true,
+        detail: `Searching "palomar" returned no rows (status: "${st.status}").` }];
+      return { findings, steps: [{ step: "search-palomar", ...st }] };
+    } },
   { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },
 ];
 

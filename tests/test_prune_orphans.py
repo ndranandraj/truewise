@@ -22,7 +22,7 @@ def _site(
     tmp_path,
     *,
     slugs=("alpha-college",),
-    findings=(FINDING,),
+    findings=PUBLISHED_FINDINGS,
     index=True,
     slug_map=True,
     cards=None,
@@ -76,7 +76,7 @@ def test_a_retired_page_and_its_card_are_both_found_in_one_pass(tmp_path):
 
 
 def test_findings_cards_use_the_published_list(tmp_path):
-    site = _site(tmp_path, cards={"findings": [FINDING, "data-audit"]})
+    site = _site(tmp_path, cards={"findings": [*PUBLISHED_FINDINGS, "data-audit"]})
     assert find_orphans(site) == ["/og/findings/data-audit.png"]
 
 

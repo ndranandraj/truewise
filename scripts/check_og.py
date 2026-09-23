@@ -33,6 +33,7 @@ DEFAULT_PATHS = [
     "/college/georgia-institute-of-technology-main-campus/",
     "/lists/highest-paying-majors/",
     "/findings/stats-grad-exposure/",
+    "/findings/fvtge-reporting/",
 ]
 
 _OG = re.compile(r'<meta\s+property=["\']og:image["\']\s+content=["\']([^"\']+)["\']', re.I)
