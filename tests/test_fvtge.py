@@ -64,6 +64,16 @@ def test_the_association_is_standardised_and_every_cell_reported(built):
     assert len(s["cells"]) == 9
 
 
+def test_the_homepage_line_matches_eds_list(built):
+    s, _, _ = built
+    home = (bf.ROOT / "site" / "index.html").read_text()
+    line = re.search(r'<p class="hero-latest">(.*?)</p>', home, re.S)
+    assert line, "the homepage should point to the FVT/GE finding"
+    text = line.group(1)
+    assert f"{s['missing']:,} of {s['total']:,}" in text
+    assert "6 August 2026" in text and 'href="/findings/fvtge-reporting/"' in text
+
+
 def test_downloads_cover_every_college_on_the_list(built):
     s, _, out = built
     rows = json.loads((out / "institutions.json").read_text())

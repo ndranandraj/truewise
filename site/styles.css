@@ -234,6 +234,9 @@ a:hover { color: var(--brand-deep); }
 .hero-search button:hover { background: var(--brand); }
 .hero-hint { color: var(--ink-faint); font-size: var(--t-ui); margin: 0; }
 .hero-hint b { color: var(--brand); font-weight: 600; }
+.hero-latest { margin: var(--s5) 0 0; font-size: var(--t-ui); color: var(--ink-soft); max-width: 60ch; }
+.hero-latest span { display: inline-block; margin-right: var(--s2); padding: 0 var(--s2); border-radius: var(--r-sm); background: var(--brand-50); color: var(--brand-deep); font-size: var(--t-fine); font-weight: 600; }
+.hero-latest a { color: var(--brand); font-weight: 600; white-space: nowrap; }
 
 /* One control spec for the hand-written pages, the same as .tw-field__input in components.css:
    44px tall, --r-md corners, a --control-border edge (3:1 against paper, which the old --line edge
