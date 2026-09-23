@@ -2086,3 +2086,31 @@ def test_workflow_inputs_are_tracked_files():
         )
     for script in re.findall(r"node (tests/[\w./-]+\.js)", workflows):
         assert script in tracked, f"a workflow runs {script}, which is not tracked"
+
+
+def test_committed_pages_carry_no_stylesheet_stamp():
+    """preview-build.sh writes styles.css?v=<hash> into every page, including the hand-written ones
+    git tracks, so any `git add site` after a preview picked the stamps up; it happened on three
+    separate commits. The deploy stamps at build time, so the repo should hold the plain reference.
+    Reads the STAGED version of each tracked page, so a freshly stamped working tree still passes
+    and only a stamp that is about to be committed fails."""
+    import subprocess
+
+    import pytest
+
+    if not (ROOT / ".git").exists():
+        pytest.skip("not a git checkout")
+    files = subprocess.run(
+        ["git", "ls-files", "site/*.html", "site/**/*.html"],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    ).stdout.split()
+    stamped = []
+    for rel in files:
+        staged = subprocess.run(
+            ["git", "show", f":{rel}"], cwd=ROOT, capture_output=True, text=True
+        ).stdout
+        if re.search(r'\.css\?v=[0-9a-f]+"', staged):
+            stamped.append(rel)
+    assert not stamped, "stylesheet stamps staged for commit: " + ", ".join(stamped)
