@@ -225,7 +225,7 @@
         <h1>Look up any US college</h1>
         <p class="lede">Search a school for its Truewise profile: whether each program's graduates
           typically out-earn a high-school graduate (Value Check), what families pay by income, how
-          fast debt pays back, and who the school serves, from the Department of Education's own data.</p>
+          debt compares with graduates' earnings gain, and who the school serves, from the Department of Education's own data.</p>
         <label class="field-label" for="q-boot">Search colleges by name</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -334,7 +334,7 @@
         <h1>Look up any US college</h1>
         <p class="lede">Search a school for its Truewise profile: whether each program's graduates
           typically out-earn a high-school graduate (Value Check), what families pay by income, how
-          fast debt pays back, and who the school serves, from the Department of Education's own data.</p>
+          debt compares with graduates' earnings gain, and who the school serves, from the Department of Education's own data.</p>
         <label class="field-label" for="q">${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name" : "Loading colleges"}</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -366,8 +366,8 @@
         .filter(ab => ABBR_TO_STATE[ab]).sort((a, b) => ABBR_TO_STATE[a].localeCompare(ABBR_TO_STATE[b]));
       const lists = [
         ["/lists/highest-paying-majors/", "Highest-paying majors", "Ranked by median graduate earnings"],
-        ["/lists/fastest-debt-payback-majors/", "Fastest debt payback", "Where the earnings premium clears debt soonest"],
-        ["/lists/programs-where-debt-does-not-pay-back/", "Where debt does not pay back", "Programs whose graduates do not out-earn the bar"],
+        ["/lists/fastest-debt-payback-majors/", "Debt vs earnings gain", "Bachelor's majors with the least debt per year of earnings gain"],
+        ["/lists/programs-where-debt-does-not-pay-back/", "Below the line, with debt", "Fields with the most programs below the high-school line that report debt"],
       ];
       landing.innerHTML =
         `<h2>Largest colleges</h2><div class="chips">`
@@ -534,15 +534,15 @@
       const med = median(paybacks);
       const medTxt = (Math.round(med * 10) / 10);
       summary = `Across <b>${paybacks.length}</b> program${paybacks.length !== 1 ? "s" : ""} with both
-        reported debt and an earnings premium, the typical one recoups what students borrowed in about
+        reported debt and an earnings premium, the typical one's median debt equals about
         <b class="big">${medTxt} year${medTxt === 1 ? "" : "s"}</b> of that premium`
         + (fastest ? `. Fastest here: <b>${esc(fastest.program)}</b>, about ${fastest.payback} year${fastest.payback === 1 ? "" : "s"}.` : ".");
     } else {
-      summary = `No program here has both reported debt and an earnings premium, so a payback can't be computed.`;
+      summary = `No program here has both reported debt and an earnings premium, so this ratio can't be computed.`;
     }
     if (noPremium) {
       summary += ` <span style="color:var(--bad)"><b>${noPremium}</b> program${noPremium !== 1 ? "s" : ""}</span>
-        don't out-earn a high-school graduate, so they have no premium and don't pay back on this measure.`;
+        don't out-earn a high-school graduate, so they have no earnings gain to set against debt.`;
     }
 
     let costLine = "";
@@ -555,7 +555,7 @@
         const cmed = median(cost);
         costLine = `<p class="prose-line" style="margin-top:14px"><b>Counting the whole degree, not just loans:</b>
           at this school's average net price of <b>${money(np.avg)}</b> a year, a typical undergraduate program
-          whose graduates clear the bar pays back its full cost in about <b>${cmed.toFixed(1)} years</b>
+          whose graduates clear the bar costs about <b>${cmed.toFixed(1)} years</b> of that earnings gain
           (assuming the standard time to finish: 2 years for an associate's, 4 for a bachelor's). Adjust the
           family-income assumption under <a href="#affordability">Affordability</a> above.</p>`;
       }
@@ -563,15 +563,15 @@
 
     return `
       <section id="roi" class="module">
-        <h2>Return on investment: how fast does the payoff cover the cost?</h2>
+        <h2>Debt compared with the earnings gain</h2>
         <p class="prose-line">A simple way to weigh a program: how many years of its earnings premium over a
-          high-school graduate it takes to recoup what students borrowed. Lower is faster. See the
-          <b>Debt payback</b> column in the table above for every program.</p>
+          high-school graduate equal what students borrowed. Lower means less debt per year of gain. See the
+          <b>Debt as years of gain</b> column in the table above for every program.</p>
         <div class="summary">${summary}</div>
         ${costLine}
-        <p class="afford-note">Debt payback divides a program's median federal debt by its yearly earnings
-          premium over a typical high-school graduate: how long that extra pay would take to cover what was
-          borrowed. It counts only borrowed money, not grants or cash paid; the whole-degree view adds net
+        <p class="afford-note">Debt as years of gain divides a program's median federal debt by its yearly earnings
+          premium over a typical high-school graduate. It is a ratio, not a repayment time: it ignores
+          interest, taxes and living costs. It counts only borrowed money, not grants or cash paid; the whole-degree view adds net
           price and assumes a standard time to finish. These describe past graduates, not a promise or advice.</p>
       </section>`;
   }
@@ -679,7 +679,7 @@
       <thead><tr>
         <th>Program</th><th>Degree</th><th class="num">Earnings</th>
         <th>Premium vs HS grad</th><th class="num">Debt</th><th class="num">Debt/earn</th>
-        <th class="num">Debt payback</th><th class="num">Recent completers</th>
+        <th class="num">Debt as years of gain</th><th class="num">Recent completers</th>
       </tr></thead><tbody>${rows}</tbody></table></div>`;
   }
 
@@ -738,7 +738,7 @@
     const modules = [
       { name: "Value Check", live: true, anchor: "value-check", blurb: "Do graduates out-earn a HS grad?" },
       { name: "Affordability", live: !!s.net_price, anchor: "affordability", blurb: "What families really pay" },
-      { name: "ROI", live: hasRoi, anchor: "roi", blurb: "Earnings vs debt, payback" },
+      { name: "ROI", live: hasRoi, anchor: "roi", blurb: "Earnings vs debt" },
       { name: "Mobility", live: hasMob, anchor: "mobility", blurb: "Moving students up" },
       { name: "Careers", live: hasCareers, anchor: "careers", blurb: "Where a major leads" },
     ];
@@ -809,7 +809,7 @@
               <option value="premium">Sort: Premium</option>
               <option value="earnings">Sort: Earnings</option>
               <option value="debt">Sort: Debt</option>
-              <option value="payback">Sort: Payback</option>
+              <option value="payback">Sort: Debt as years of gain</option>
               <option value="grads">Sort: Graduates</option>
               <option value="name">Sort: A to Z</option>
             </select>

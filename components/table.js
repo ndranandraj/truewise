@@ -41,7 +41,7 @@
     { key: "premium", label: "vs a high-school grad", kind: "num", get: (r) => r.premium },
     { key: "verdict", label: "Verdict", kind: "text", get: (r) => r.verdict, sortable: false },
     { key: "debt", label: "Median debt", kind: "num", get: (r) => r.debt },
-    { key: "payback", label: "Years to repay", kind: "num", get: (r) => r.payback },
+    { key: "payback", label: "Debt as years of gain", kind: "num", get: (r) => r.payback },
     { key: "completers", label: "Recent completers", kind: "num", get: (r) => r.completers },
   ];
 
@@ -195,7 +195,7 @@
     _matching() {
       const q = this.query.trim().toLowerCase();
       return this.rows.filter((r) => {
-        if (this.verdict && r.verdict !== this.verdict) return false;
+        if (this.verdict && r.verdict !== this.verdict && !(this.verdict === "insufficient" && r.verdict === "nobench")) return false;
         if (this.credential && (r.credential || "") !== this.credential) return false;
         if (!q) return true;
         return (
@@ -328,8 +328,21 @@
       );
     }
 
+    _paybackCell(r) {
+      // Mirrors payback_text in pipeline/build_profile_pilot.py.
+      if (r.payback != null) return this._num(r.payback, (v) => v.toFixed(1) + " yrs");
+      if (r.verdict === "fail" && r.debt != null) return '<span class="tw-td__insuf">no earnings gain</span>';
+      return this._num(null);
+    }
+
     _verdictCell(r) {
+      // Mirrors verdict_chip in pipeline/build_profile_pilot.py.
       if (r.verdict === "insufficient") return `<span class="tw-verdict tw-verdict--insuf">insufficient data</span>`;
+      if (r.verdict === "nobench") return `<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>`;
+      if (r.grad) {
+        const pass = r.verdict === "pass";
+        return `<span class="tw-verdict tw-verdict--${pass ? "pass" : "fail"}">${pass ? "above" : "below"} HS line</span>`;
+      }
       if (r.verdict === "pass") return `<span class="tw-verdict tw-verdict--pass">clears the bar</span>`;
       return `<span class="tw-verdict tw-verdict--fail">falls short</span>`;
     }
@@ -414,7 +427,7 @@
             `<td class="tw-td tw-td--num" data-label="vs a high-school grad">${this._premiumCell(r)}</td>`,
             `<td class="tw-td" data-label="Verdict">${this._verdictCell(r)}</td>`,
             `<td class="tw-td tw-td--num" data-label="Median debt">${this._num(r.debt, money)}</td>`,
-            `<td class="tw-td tw-td--num" data-label="Years to repay">${this._num(r.payback, (v) => v.toFixed(1) + " yrs")}</td>`,
+            `<td class="tw-td tw-td--num" data-label="Debt as years of gain">${this._paybackCell(r)}</td>`,
             `<td class="tw-td tw-td--num" data-label="Recent completers">${this._num(r.completers, (v) => v.toLocaleString())}</td>`,
           ].join("");
           return `<tr class="tw-tr${suppressed ? " tw-tr--insuf" : ""}">${cells}</tr>`;

@@ -462,14 +462,14 @@ def render_og_card(s, slug) -> None:
     decided = s["n_pass"] + s["n_fail"]
     passed, fail = s["n_pass"], s["n_fail"]
     if decided and fail:
-        card_big, card_color = f"{passed} of {decided} pay off", BRAND_DEEP
+        card_big, card_color = f"{passed} of {decided} clear the bar", BRAND_DEEP
     elif decided:
-        card_big, card_color = f"All {decided} pay off", GOOD
+        card_big, card_color = f"All {decided} clear the bar", GOOD
     else:
         card_big, card_color = None, BRAND_DEEP
     render_card(
         SITE / "og" / "college" / f"{slug}.png",
-        "College · does it pay off?",
+        "College · graduate earnings vs a high-school grad",
         name,
         big=card_big,
         big_color=card_color,
@@ -571,14 +571,14 @@ def college_page(s, programs, slug) -> str:
 
     # A share card carrying this school's real pass/fail split, so a posted link is not generic.
     if decided and fail:
-        card_big, card_color = f"{passed} of {decided} pay off", BRAND_DEEP
+        card_big, card_color = f"{passed} of {decided} clear the bar", BRAND_DEEP
     elif decided:
-        card_big, card_color = f"All {decided} pay off", GOOD
+        card_big, card_color = f"All {decided} clear the bar", GOOD
     else:
         card_big, card_color = None, BRAND_DEEP
     render_card(
         SITE / "og" / "college" / f"{slug}.png",
-        "College · does it pay off?",
+        "College · graduate earnings vs a high-school grad",
         name,
         big=card_big,
         big_color=card_color,
@@ -746,9 +746,24 @@ def state_index(st, schools_in_state) -> str:
     # health when the truth is that none could be assessed: those schools have no state benchmark,
     # so no program CAN fall short. Saying nothing was measured is the honest line, and "statewide"
     # is not a word that applies to a group with no state.
+    # Counts are per campus page, so a program ED reports for several campuses appears on each.
+    total_dec = sum(s["n_pass"] + s["n_fail"] for _, s, _ in schools_in_state)
+    if not known_state(st):
+        lede = None
+    elif total_dec:
+        lede = (
+            f"{n} school{'' if n == 1 else 's'}. Across their pages, {total_dec:,} programs have an "
+            f"earnings verdict and {total_fail:,} fall short of a typical {esc(st_name)} "
+            "high-school graduate."
+        )
+    else:
+        lede = (
+            f"{n} school{'' if n == 1 else 's'}. None of their programs can be judged here: the "
+            f"federal data has no high-school earnings benchmark for {esc(st_name)}, so programs "
+            "are listed without a verdict."
+        )
     lede = (
-        f"{n} schools with earnings data, {total_fail} programs statewide leave graduates earning "
-        "less than a typical high-school graduate."
+        lede
         if known_state(st)
         else f"{n} schools whose state the federal data does not report. Without a state, there is "
         "no state high-school-graduate benchmark to compare against, so their programs are listed "

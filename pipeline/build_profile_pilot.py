@@ -84,8 +84,9 @@ def _rows_for(con, unitid: str) -> tuple[dict, list[dict]]:
     }
     prog = con.sql(
         f"""
-        SELECT cip_code, cip_desc, credential_desc, earnings, earnings_premium_state,
-               debt_median, debt_payback_years, completers_count, value_flag, earnings_horizon
+        SELECT cip_code, cip_desc, credential_desc, credential_level, earnings,
+               earnings_premium_state, earnings_threshold_state, debt_median, debt_payback_years,
+               completers_count, value_flag, earnings_horizon
         FROM '{PARQUET}' WHERE unitid = '{unitid}'
         -- Selection policy for the static tranche: ASSESSED programs (a real earnings verdict) first,
         -- then by completers within each group. A program with a verdict is the valuable, crawlable
@@ -139,19 +140,34 @@ def major_slug_for(cip_code) -> str | None:
 def _row_from(r) -> dict:
     """Map one parquet program record to the canonical row shape (shared by _rows_for and all_profiles)."""
     decided = r["value_flag"] in ("passes_earnings_premium", "fails_earnings_premium")
+    # ED published earnings but there is no state line to compare them with (the school is not in
+    # ED's current institution file: mostly closed or merged schools and territories). The earnings
+    # are real and are shown; only the verdict is withheld. They used to read "insufficient data".
+    nobench = (
+        not decided
+        and _num(r.get("earnings")) is not None
+        and _num(r.get("earnings_threshold_state")) is None
+    )
+    shown = decided or nobench
     return {
         "program": plain_name(str(r["cip_code"]), r["cip_desc"]) or tidy_official(r["cip_desc"]),
         "credential": r["credential_desc"],
-        "earnings": None if not decided else _num(r["earnings"]),
+        "earnings": _num(r["earnings"]) if shown else None,
         "premium": None if not decided else _num(r["earnings_premium_state"]),
         "verdict": "pass"
         if r["value_flag"] == "passes_earnings_premium"
         else "fail"
         if r["value_flag"] == "fails_earnings_premium"
+        else "nobench"
+        if nobench
         else "insufficient",
-        # Horizon only for a DISPLAYED assessed value. Insufficient rows hide their earnings, so their
+        # Graduate credentials are compared with the high-school line here, which is not the federal
+        # graduate test (the 2026 rule uses a bachelor's-holder line), so their verdict is worded
+        # as a comparison, not as clearing the federal bar.
+        "grad": str(r.get("credential_level") or "") in GRAD_LEVELS,
+        # Horizon only for a DISPLAYED value. Insufficient rows hide their earnings, so their
         # horizon must stay None or they would trip the 1-year label/notice for a figure never shown.
-        "horizon": r["earnings_horizon"] if decided else None,
+        "horizon": r["earnings_horizon"] if shown else None,
         "debt": _num(r["debt_median"]),
         "payback": _num(r["debt_payback_years"]),
         "completers": _num(r["completers_count"]),
@@ -173,11 +189,22 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
         from pipeline import build_site as _bs
 
         parquet = _bs.PARQUET_DIR / "value_check.parquet"
+    have = {r[0] for r in con.sql(f"DESCRIBE SELECT * FROM '{parquet}'").fetchall()}
+
+    def col(name: str) -> str:
+        # Hand-made test fixtures omit some columns; supply NULL so the row shape is unchanged.
+        return name if name in have else f"NULL AS {name}"
+
+    grp = "coalesce(opeid6, unitid)" if "opeid6" in have else "unitid"
+    lvl = "credential_level" if "credential_level" in have else "NULL"
     df = con.sql(
         f"""
         SELECT unitid, inst_name, state, control, cip_code, cip_desc, credential_desc,
-               earnings, earnings_premium_state, debt_median, debt_payback_years,
-               completers_count, value_flag, earnings_horizon
+               {col("credential_level")}, earnings, earnings_premium_state,
+               {col("earnings_threshold_state")},
+               debt_median, debt_payback_years, completers_count, value_flag, earnings_horizon,
+               {col("opeid6")},
+               count(*) OVER (PARTITION BY {grp}, cip_code, {lvl}) AS n_campuses
         FROM '{parquet}'
         WHERE TRY_CAST(unitid AS BIGINT) IS NOT NULL
         ORDER BY unitid,
@@ -190,9 +217,19 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
         u = str(r.unitid)
         if u not in out:
             out[u] = (
-                {"unitid": u, "name": r.inst_name, "state": r.state, "control": r.control},
+                {
+                    "unitid": u,
+                    "name": r.inst_name,
+                    "state": r.state,
+                    "control": r.control,
+                    "opeid6": r.opeid6,
+                    # Programs whose figures ED reports for several campuses under one OPEID.
+                    "shared": 0,
+                },
                 [],
             )
+        if r.n_campuses and r.n_campuses > 1:
+            out[u][0]["shared"] += 1
         out[u][1].append(
             _row_from(
                 {
@@ -200,8 +237,10 @@ def all_profiles(con, parquet=None) -> dict[str, tuple[dict, list[dict]]]:
                     "cip_code": r.cip_code,
                     "cip_desc": r.cip_desc,
                     "credential_desc": r.credential_desc,
+                    "credential_level": r.credential_level,
                     "earnings": r.earnings,
                     "earnings_premium_state": r.earnings_premium_state,
+                    "earnings_threshold_state": r.earnings_threshold_state,
                     "debt_median": r.debt_median,
                     "debt_payback_years": r.debt_payback_years,
                     "completers_count": r.completers_count,
@@ -237,6 +276,37 @@ def _program_cell(r: dict) -> str:
     return f'<a class="tw-prog" href="/majors/{_esc(slug)}/">{name}</a>' if slug else name
 
 
+GRAD_LEVELS = ("4", "5", "6", "7", "8")
+
+
+def payback_text(r: dict) -> str | None:
+    """Median debt over the yearly earnings gain. Mirrored by _paybackCell in site/components/table.js.
+
+    A program whose graduates earn no more than a high-school graduate has no gain to set against
+    its debt. That is a known answer, not missing data, so it says so instead of "insufficient data".
+    """
+    if r["payback"] is not None:
+        return f"{r['payback']:.1f} yrs"
+    if r["verdict"] == "fail" and r.get("debt") is not None:
+        return '<span class="tw-td__insuf">no earnings gain</span>'
+    return None
+
+
+def verdict_chip(r: dict) -> str:
+    """The verdict cell. Mirrored exactly by _verdictCell in site/components/table.js."""
+    if r["verdict"] == "insufficient":
+        return '<span class="tw-verdict tw-verdict--insuf">insufficient data</span>'
+    if r["verdict"] == "nobench":
+        return '<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>'
+    if r.get("grad"):
+        word = "above" if r["verdict"] == "pass" else "below"
+        mod = "pass" if r["verdict"] == "pass" else "fail"
+        return f'<span class="tw-verdict tw-verdict--{mod}">{word} HS line</span>'
+    if r["verdict"] == "pass":
+        return '<span class="tw-verdict tw-verdict--pass">clears the bar</span>'
+    return '<span class="tw-verdict tw-verdict--fail">falls short</span>'
+
+
 def _static_row(r: dict) -> str:
     """One <tr> of static, crawlable HTML using the final component classes."""
 
@@ -245,11 +315,7 @@ def _static_row(r: dict) -> str:
         inner = val if val is not None else '<span class="tw-td__insuf">insufficient data</span>'
         return f'<td class="{cls}" data-label="{label}">{inner}</td>'
 
-    verdict = {
-        "pass": '<span class="tw-verdict tw-verdict--pass">clears the bar</span>',
-        "fail": '<span class="tw-verdict tw-verdict--fail">falls short</span>',
-        "insufficient": '<span class="tw-verdict tw-verdict--insuf">insufficient data</span>',
-    }[r["verdict"]]
+    verdict = verdict_chip(r)
     prem = None
     if r["premium"] is not None:
         sign = "+" if r["premium"] >= 0 else "-"
@@ -276,7 +342,7 @@ def _static_row(r: dict) -> str:
         + cell("vs a high-school grad", prem, True)
         + f'<td class="tw-td" data-label="Verdict">{verdict}</td>'
         + cell("Median debt", _money(r["debt"]), True)
-        + cell("Years to repay", None if r["payback"] is None else f"{r['payback']:.1f} yrs", True)
+        + cell("Debt as years of gain", payback_text(r), True)
         + cell(
             "Recent completers",
             None if r["completers"] is None else format(r["completers"], ","),
@@ -292,7 +358,7 @@ HEAD = (
     '<th scope="col" class="tw-th tw-th--num">vs a high-school grad</th>'
     '<th scope="col" class="tw-th">Verdict</th>'
     '<th scope="col" class="tw-th tw-th--num">Median debt</th>'
-    '<th scope="col" class="tw-th tw-th--num">Years to repay</th>'
+    '<th scope="col" class="tw-th tw-th--num">Debt as years of gain</th>'
     '<th scope="col" class="tw-th tw-th--num">Recent completers</th>'
 )
 

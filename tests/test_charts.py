@@ -186,7 +186,7 @@ def test_home_chart_shows_its_denominator():
     of without opening the accessibility description. It used to live only in <desc>."""
     svg = _home_chart_svg()
     visible = " ".join(re.findall(r"<text[^>]*>([^<]*)</text>", svg))
-    assert re.search(r"n = [\d,]+ judged programs", visible), (
+    assert re.search(r"n = [\d,]+ judged undergrad programs", visible), (
         "the provenance line is missing from the visible chart"
     )
 

@@ -22,6 +22,7 @@ import re
 import duckdb
 
 from pipeline.config import ROOT
+from pipeline.program_unit import programs_sql, undergrad
 from pipeline.tokens_gen import HOME_BAR as BAR  # light brand tint for the "earn more" bars
 from pipeline.tokens_gen import HOME_TEXT as TEXT
 from pipeline.tokens_gen import HOME_TEXT_DIM as TEXT_DIM
@@ -62,7 +63,8 @@ BASELINE = "rgba(255,255,255,.28)"
 def compute_bins() -> tuple[list[int], int, int, float]:
     """Return (counts per bucket, total decided, fall-short count, median premium %)."""
     con = duckdb.connect()
-    con.execute(f"CREATE VIEW v AS SELECT * FROM read_parquet('{PARQUET}')")
+    # The headline population: undergraduate programs, each counted once (pipeline/program_unit.py).
+    con.execute(f"CREATE VIEW v AS SELECT * FROM {programs_sql(PARQUET)} WHERE {undergrad()}")
     case = "CASE\n"
     for i in range(len(LABELS)):
         lo, hi = EDGES[i], EDGES[i + 1]
@@ -150,8 +152,8 @@ def render_svg(
         f'aria-labelledby="distTitle{ids} distDesc{ids}" style="max-width:{W}px;height:auto">',
         f'<title id="distTitle{ids}">How far college programs out-earn a high-school '
         "graduate</title>",
-        f'<desc id="distDesc{ids}">Of {total:,} judged programs, {counts[0]:,} (about {pct[0]}%) '
-        f"leave graduates earning less than a typical high-school graduate; the median program "
+        f'<desc id="distDesc{ids}">Of {total:,} judged undergraduate programs, {counts[0]:,} (about {pct[0]}%) '
+        f"have graduates who earn less than a typical high-school graduate; the median program "
         f"earns {median}% more. Bars, left to right: "
         + "; ".join(f"{LABELS[i]} {counts[i]:,}" for i in range(len(counts)))
         + ".</desc>",
@@ -220,7 +222,7 @@ def render_svg(
     # able to see what the percentages are a share of without opening the accessibility text.
     parts.append(
         f'<text x="{x0}" y="{H - 12}" font-size="13" fill="{TEXT_DIM}">'
-        f"n = {total:,} judged programs</text>"
+        f"n = {total:,} judged undergrad programs</text>"
     )
     parts.append("</svg>")
     return "".join(parts)

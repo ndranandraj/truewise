@@ -91,6 +91,43 @@ def diff_between(newer: Path, older: Path) -> dict | None:
     return {k: (len(v) if hasattr(v, "__len__") else v) for k, v in d.items()}
 
 
+# Corrections to published figures, newest first. A correction is logged here, in plain words, with
+# what the page said before and what it says now, so a reader who quoted the old figure can see why.
+CORRECTIONS = [
+    {
+        "date": "September 2026",
+        "title": "The headline now counts each undergraduate program once",
+        "body": (
+            "We said 1 in 11 college programs with reported earnings (5,396 of 60,202) have "
+            "graduates who earn less than a typical high-school graduate. Two things were wrong "
+            "with that count. The Department of Education reports field-of-study earnings for each "
+            "federal institution ID and repeats the same figures on every campus sharing it, and we "
+            "counted each campus as a separate program, so shared programs were counted several "
+            "times. The count also included graduate programs judged against the high-school line, "
+            "which is not how the federal rule judges them. Counting each program once and "
+            "limiting the headline to certificates, associate's and bachelor's degrees, the figure "
+            "is 1 in 10 (4,308 of 41,198, 10.5%). Across all credentials, counted once, it is 8.1%. "
+            "Lists, majors, careers pass rates and both findings were recomputed the same way. "
+            "College pages are unchanged except that they now say when a program's figures are "
+            "shared with other campuses."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "September 2026",
+        "title": "Relabelled the debt measure",
+        "body": (
+            'Profiles called a column "Years to repay" and two lists described majors that "pay '
+            'off their debt fastest" and programs "where debt does not pay back". The figure is '
+            "median federal debt divided by the yearly earnings gain over a high-school graduate. "
+            "It is a ratio, not a repayment time, and the data does not show whether anyone repaid. "
+            'It is now labelled "Debt as years of gain", and the list titles say what they measure.'
+        ),
+        "link": "/methodology/",
+    },
+]
+
+
 def render(snaps: list[dict]) -> str:
     canonical = f"{BASE}/updates/"
     title = "Update log: every check of the federal data"
@@ -104,11 +141,19 @@ def render(snaps: list[dict]) -> str:
     p.append('    <nav class="crumbs">Updates</nav>\n')
     p.append("    <h1>Update log</h1>\n")
     p.append(
-        '    <div class="verdict">We say Truewise checks the federal data monthly. This page is the '
-        "evidence, not the claim: one entry per snapshot, each with the exact files fetched, when they "
-        "were fetched, and a checksum anyone can recompute. The Department of Education publishes only "
-        "the current release, so this archive is the history it does not keep.</div>\n"
+        '    <div class="verdict">A monitor checks the federal data on the 8th of each month. This page '
+        "lists every snapshot it recorded, gaps included: one entry per snapshot, each with the exact "
+        "files fetched, when they were fetched, and a checksum anyone can recompute. The Department of "
+        "Education publishes only the current release, so this archive is the history it does not "
+        "keep. Corrections to our own figures are listed first.</div>\n"
     )
+    p.append('    <h2 class="sec">Corrections</h2>\n')
+    for c in CORRECTIONS:
+        p.append(
+            f'    <div class="upd"><p class="upd-meta">{esc(c["date"])}</p>'
+            f"<p><b>{esc(c['title'])}.</b> {esc(c['body'])} "
+            f'<a href="{c["link"]}">Method</a>.</p></div>\n'
+        )
 
     if not snaps:
         p.append(

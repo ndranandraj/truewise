@@ -23,6 +23,7 @@ import duckdb
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
+from pipeline.program_unit import programs_sql
 from pipeline.tokens_gen import BAD as OG_BAD
 
 SITE = ROOT / "site"
@@ -41,7 +42,7 @@ def compute_exposure(con) -> dict:
         raise SystemExit("No value_check.parquet, run the pipeline first.")
     con.execute(
         f"""CREATE OR REPLACE VIEW grad AS
-        SELECT *, earnings_median_4yr AS earn FROM read_parquet('{vc}')
+        SELECT *, earnings_median_4yr AS earn FROM {programs_sql(vc)}
         WHERE credential_level IN {GRAD_LEVELS} AND regexp_matches(unitid, '^[0-9]+$')"""
     )
     total = con.sql("SELECT count(*) FROM grad").fetchone()[0]

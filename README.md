@@ -10,10 +10,11 @@ U.S. Department of Education.
 
 ## The headline finding
 
-Of the college programs with reported earnings, about **1 in 11 (9%)** leave graduates
-earning less than a typical high-school graduate, measured up to four years after finishing,
-using the Department of Education's own College Scorecard figures. Only about **26% of
-programs** have earnings data (the rest are privacy-suppressed by ED for small cohorts); we
+Of the undergraduate programs with reported earnings, about **1 in 10 (10.5%)** have
+graduates who earn less than a typical high-school graduate, measured up to four years after
+finishing, using the Department of Education's own College Scorecard figures. Each program is
+counted once, even where ED repeats its figures on several campuses. Only about **28% of
+undergraduate programs** have earnings data (the rest are privacy-suppressed by ED for small cohorts); we
 compute the rate on the reported set and say so. Among cosmetology programs specifically,
 **96%** fall short.
 

@@ -21,6 +21,7 @@ import json
 import duckdb
 
 from pipeline.config import PARQUET_DIR, ROOT
+from pipeline.program_unit import programs_sql
 
 OUT_DIR = ROOT / "site" / "careers" / "data"
 MIN_PROGRAMS = 5  # a field needs at least this many decided programs to be reported
@@ -114,7 +115,7 @@ def build_fields(con) -> list[dict]:
             quantile_cont(earnings, 0.25)                                      AS p25,
             quantile_cont(earnings, 0.75)                                      AS p75,
             count(*) FILTER (WHERE value_flag = 'passes_earnings_premium')     AS n_pass
-        FROM read_parquet('{vc}')
+        FROM {programs_sql(vc)}
         WHERE regexp_matches(unitid, '^[0-9]+$') AND earnings IS NOT NULL
               AND value_flag != 'insufficient_data'
         GROUP BY cip_code, credential_level

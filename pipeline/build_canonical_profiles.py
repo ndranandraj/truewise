@@ -96,7 +96,12 @@ def canonical_page(
     # A 1-year figure is only ever DISPLAYED for an assessed row (horizon is None on insufficient
     # rows), so this is exactly "does the page show at least one 1-year earnings value".
     has_1yr = any(r.get("horizon") == "1yr_after_completion" for r in rows)
-    bench_txt = money(benchmark) if benchmark is not None else "a typical high-school graduate"
+    bench_txt = money(benchmark) if benchmark is not None else None
+    # "(about $34,809/yr)" only when there is a benchmark. Without one this used to print
+    # "(a typical high-school graduate/yr)" on 530 pages.
+    bench_clause = f" (about {esc(bench_txt)}/yr)" if bench_txt else ""
+    nobench = sum(1 for r in rows if r["verdict"] == "nobench")
+    grad_assessed = sum(1 for r in rows if r.get("grad") and r["verdict"] in ("pass", "fail"))
     # "in <somewhere>" only when there is a somewhere. For the 461 schools with no city and a
     # non-state code, the place is dropped from the title and the sentence rather than guessed at.
     located = known_state(st)
@@ -129,24 +134,36 @@ def canonical_page(
     # Honest headline + meta description carrying real numbers.
     if decided and fail:
         desc = (
-            f"At {at_where}, {fail} of {decided} assessed programs leave graduates earning "
+            f"At {at_where}, {fail} of {decided} assessed programs have graduates who earn "
             f"less than a typical {of_state}high-school graduate. {size} Program-by-program "
             "earnings, from federal data."
         )
         verdict = (
-            f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> leave graduates out-earning a "
-            f"typical {esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr) and "
+            f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> have graduates out-earning a "
+            f"typical {esc(of_state)}high-school graduate{bench_clause} and "
             f"<b>{fail}</b> fall short. Another <b>{total - decided}</b> could not be assessed."
         )
     elif decided:
         desc = (
-            f"At {at_where}, all {decided} assessed programs leave graduates out-earning a "
+            f"At {at_where}, all {decided} assessed programs have graduates out-earning a "
             f"typical {of_state}high-school graduate. {size} Program earnings, from federal data."
         )
         verdict = (
-            f"All <b>{decided}</b> assessed programs leave graduates out-earning a typical "
-            f"{esc(of_state)}high-school graduate (about {esc(bench_txt)}/yr). "
+            f"All <b>{decided}</b> assessed programs have graduates out-earning a typical "
+            f"{esc(of_state)}high-school graduate{bench_clause}. "
             f"Another <b>{total - decided}</b> could not be assessed."
+        )
+    elif nobench:
+        desc = (
+            f"At {at_where}, the Department of Education reports earnings for {nobench} "
+            f"program{'' if nobench == 1 else 's'}, with no state benchmark to compare them with. "
+            f"{size} From federal data."
+        )
+        verdict = (
+            f"The Department of Education reports graduate earnings for <b>{nobench}</b> of "
+            f"{esc(name)}'s <b>{total}</b> programs, shown below. Its current institution file has "
+            "no record for this school (often a closed or merged school), so there is no state "
+            "high-school benchmark to compare them with, and no verdict is given."
         )
     else:
         desc = (
@@ -218,7 +235,7 @@ def canonical_page(
         {
             "rows": static_rows,
             "coverage": {"measured": decided, "total": total},
-            "caption": f"Programs by earnings versus a typical {st_name} high-school graduate.",
+            "caption": f"Programs by earnings versus a typical {of_state}high-school graduate.",
         }
     )
     profile_attrs = (
@@ -299,6 +316,24 @@ def canonical_page(
             "figures reflect different career stages and should not be compared as if measured at the "
             "same time.</p>\n"
         )
+    # Graduate rows: the comparison is shown, but it is not the federal graduate test.
+    if grad_assessed:
+        parts.append(
+            '    <p class="tw-source">Graduate programs are compared with a high-school graduate here '
+            "too, marked <b>above</b> or <b>below HS line</b>. That is not how the federal rule "
+            "judges them: from 2026, graduate programs are compared with bachelor's-degree holders. "
+            'See <a href="/findings/stats-grad-exposure/">the graduate finding</a>.</p>\n'
+        )
+    # Programs whose figures ED reports once for every campus under the same federal ID.
+    if meta.get("shared"):
+        k = meta["shared"]
+        parts.append(
+            f'    <p class="tw-source">{k} of these program{"" if k == 1 else "s"} '
+            f"{'is' if k == 1 else 'are'} reported by the Department of Education for all campuses "
+            f"under one federal ID (OPEID {esc(str(meta.get('opeid6') or ''))}), so the same earnings "
+            "and debt appear on each of those campuses' pages. Truewise's totals count such a "
+            "program once.</p>\n"
+        )
     # The canonical program table: static core + island + progressive tail, honest coverage label.
     parts.append(f"    <div {profile_attrs}>\n")
     parts.append(
@@ -313,7 +348,7 @@ def canonical_page(
         '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
     )
     parts.append(
-        f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(st_name)} '
+        f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(of_state)}'
         "high-school graduate.</caption>"
     )
     parts.append(f"<thead><tr>{HEAD}</tr></thead><tbody>{body_rows}</tbody></table></div>\n")
@@ -326,9 +361,19 @@ def canonical_page(
         else "measured four years after completion"
     )
     parts.append(
+        '    <p class="tw-source"><b>Debt as years of gain</b> is median federal debt divided by how '
+        "much more graduates earn per year than a typical high-school graduate. It is not how long "
+        "repayment takes: it ignores interest, taxes and living costs.</p>\n"
+    )
+    parts.append(
         '    <p class="tw-source">Source: U.S. Department of Education College Scorecard, release '
-        f"{SCORECARD_RELEASE}. Earnings are medians {window_txt}, compared with the "
-        f"state high-school-graduate benchmark ({esc(bench_txt)}/yr). Debt is federal loans only. "
+        f"{SCORECARD_RELEASE}. Earnings are medians {window_txt}"
+        + (
+            f", compared with the state high-school-graduate benchmark ({esc(bench_txt)}/yr). "
+            if bench_txt
+            else ". No state high-school benchmark is available for this school. "
+        )
+        + "Debt is federal loans only. "
         "Suppressed values are shown as insufficient data, never imputed. Figures describe past "
         "graduates and are never a promise.</p>\n"
     )

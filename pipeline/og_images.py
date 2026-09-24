@@ -180,9 +180,9 @@ if __name__ == "__main__":
     card(
         SITE / "og.png",
         "Open, honest US education data",
-        "Does a college program pay off?",
-        big="1 in 11",
+        "Do graduates out-earn a high-school graduate?",
+        big="1 in 10",
         big_color=BAD,
-        sub="college programs leave graduates earning less than a high-school graduate.",
+        sub="undergraduate programs have graduates who earn less than a high-school graduate.",
     )
     print("wrote sample cards")

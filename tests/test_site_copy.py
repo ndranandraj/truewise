@@ -19,8 +19,13 @@ METH = ROOT / "site" / "methodology" / "index.html"
 
 
 def _con():
+    """v is the headline population: undergraduate programs, each counted once
+    (pipeline/program_unit.py). raw is the per-campus table the profiles and examples use."""
+    from pipeline.program_unit import programs_sql, undergrad
+
     con = duckdb.connect()
-    con.execute(f"CREATE VIEW v AS SELECT * FROM read_parquet('{PARQUET}')")
+    con.execute(f"CREATE VIEW v AS SELECT * FROM {programs_sql(PARQUET)} WHERE {undergrad()}")
+    con.execute(f"CREATE VIEW raw AS SELECT * FROM read_parquet('{PARQUET}')")
     return con
 
 
@@ -31,8 +36,8 @@ def test_headline_figures_match_data():
         "count(*) FILTER (WHERE value_flag != 'insufficient_data'), "
         "count(*) FILTER (WHERE value_flag = 'fails_earnings_premium') FROM v"
     ).fetchone()
-    one_in = round(decided / fails)  # 1 in 11
-    share = round(100 * decided / total)  # 26
+    one_in = round(decided / fails)  # 1 in 10
+    share = round(100 * decided / total)  # 28
     cosmo = round(
         con.execute(
             "SELECT 100.0 * count(*) FILTER (WHERE value_flag = 'fails_earnings_premium') "
@@ -44,12 +49,12 @@ def test_headline_figures_match_data():
         "count(*) FILTER (WHERE value_flag = 'fails_earnings_premium') "
         "FROM v WHERE earnings_horizon = '4yr_after_completion'"
     ).fetchone()
-    strict = round(d4 / f4)  # 1 in 14
+    strict = round(d4 / f4)  # 1 in 13
     # Reported-earnings split: has earnings vs of-those-judgeable (the precise wording fix).
     has_earn, no_bench = con.execute(
         "SELECT count(*) FILTER (WHERE earnings IS NOT NULL), "
         "count(*) FILTER (WHERE earnings IS NOT NULL AND earnings_threshold_state IS NULL) FROM v"
-    ).fetchone()  # 62,902 and 2,700
+    ).fetchone()
 
     home = HOME.read_text()
     meth = METH.read_text()
@@ -109,7 +114,7 @@ def test_baylor_example_card_matches_data():
     bay = (
         _con()
         .execute(
-            "SELECT earnings, earnings_premium_state, earnings_threshold_state FROM v "
+            "SELECT earnings, earnings_premium_state, earnings_threshold_state FROM raw "
             "WHERE inst_name ILIKE '%Baylor Univ%' AND cip_desc ILIKE 'Psychology, General%' "
             "AND credential_level = '3'"
         )
@@ -121,3 +126,37 @@ def test_baylor_example_card_matches_data():
     home = HOME.read_text()
     assert earn in home, f"homepage example card missing Baylor earnings {earn}"
     assert prem_pct in home, f"homepage example card missing Baylor premium {prem_pct}"
+
+
+def test_methodology_matches_the_summary_it_cites(tmp_path, monkeypatch):
+    """Methodology quotes the sensitivity, graduate-weighted and correction figures from the summary
+    JSON. They moved when programs began to be counted once (September 2026); this keeps them tied."""
+    import json
+
+    from analysis import summary
+
+    monkeypatch.setattr(summary, "PARQUET_DIR", PARQUET.parent)
+    monkeypatch.setattr(summary, "OUT", tmp_path / "s.json")
+    summary.main()
+    d = json.loads((tmp_path / "s.json").read_text())
+    meth = METH.read_text()
+    pct = lambda x: f"{100 * x:.1f}%"  # noqa: E731
+    assert f"<b>{pct(d['fail_rate_poststratified_all_programs'])}</b>" in meth
+    assert f"<b>{pct(d['fail_rate_weighted_by_graduates'])}</b>" in meth
+    assert (
+        f"{d['programs_fail_earnings_premium']:,} fall short ({pct(d['fail_rate_among_decided'])}"
+        in meth
+    )
+    ref = d["reference"]
+    allc, old = ref["all_credentials"], ref["per_campus_rows_before_2026_09_correction"]
+    assert f"({allc['fails']:,} of {allc['decided']:,})" in meth
+    assert f"({old['fails']:,} of {old['decided']:,})" in meth
+    assert "robust to the most likely objection" not in meth, (
+        "the sensitivity test no longer says so"
+    )
+    upd = (ROOT / "pipeline" / "build_updates.py").read_text()
+    assert f"{old['fails']:,} of {old['decided']:,}" in upd, (
+        "the correction must quote the old figure"
+    )
+    new = f"{d['programs_fail_earnings_premium']:,} of {d['programs_decided']:,}"
+    assert new in upd, "the correction must quote the new figure"

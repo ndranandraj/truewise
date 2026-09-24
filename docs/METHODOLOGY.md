@@ -43,10 +43,12 @@ planned addition).
 
 ## Coverage (2026-06-10 data)
 
-Of 227,980 programs, **60,202 (26%) have sufficient data** for a determination; the rest
-have earnings suppressed by ED for privacy (small cohorts). Among the decided programs,
-**9% fail the earnings-premium test**, their graduates typically earn less than a
-typical high-school graduate even four years after finishing. 94.8% of programs matched
+Counting each undergraduate program once (per OPEID6 x 4-digit CIP x credential, because ED
+repeats field-of-study figures on every campus sharing an OPEID), **41,198 of 149,340 (28%)
+have sufficient data** for a determination; the rest have earnings suppressed by ED for privacy
+(small cohorts) or lack a state benchmark. Among the decided programs, **10.5% fall short of the
+earnings-premium test**: their graduates typically earn less than a typical high-school
+graduate, measured up to four years after finishing (see `pipeline/program_unit.py`). 94.8% of programs matched
 an institution-level threshold.
 
 ## Validation

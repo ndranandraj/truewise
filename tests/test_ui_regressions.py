@@ -1282,10 +1282,10 @@ def test_a_profile_description_states_the_size_that_separates_two_same_named_cam
         "the description must carry the program count that separates same-named campuses"
     )
     assert "recent graduate" in src, "and the graduate count, which differs where programs tie"
-    # All three description branches must carry it, or the branch that omits it reintroduces the
-    # collision. The no-verdict branch matters most: six of the ten collisions were in it.
-    assert src.count("{size}") == 3, (
-        f"all three description branches need the size clause, found {src.count('{size}')}"
+    # All four description branches must carry it, or the branch that omits it reintroduces the
+    # collision. The no-verdict branches matter most: six of the ten collisions were in them.
+    assert src.count("{size}") == 4, (
+        f"all four description branches need the size clause, found {src.count('{size}')}"
     )
     # Not a fabricated distinguisher. A UNITID in a description identifies a row, not an institution.
     desc_block = src.split("# Honest headline", 1)[1].split("# Title carries", 1)[0]

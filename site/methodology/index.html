@@ -97,42 +97,56 @@
     </ul>
 
     <h2>The headline number, in full</h2>
-    <p>Our headline is that <b>1 in 11 college programs with reported earnings</b> leave graduates earning less
-      than a typical high-school graduate. Here is exactly what is behind it, including the parts most coverage
-      leaves out:</p>
+    <p>Our headline is that <b>1 in 10 undergraduate programs with reported earnings</b> have graduates who
+      earn less than a typical high-school graduate. Here is exactly what is behind it, including the parts most
+      coverage leaves out:</p>
     <ul>
-      <li><b>Denominator.</b> Of 227,980 programs, <b>62,902</b> have reported earnings. Of those, <b>60,202
-        (about 26%)</b> also have the state high-school-graduate benchmark needed for the earnings-premium
-        comparison, and the 1-in-11 rate is computed on that judgeable set: 5,396 fall short (8.96%, or 1 in 11.2).
-        The other 2,700 report earnings but cannot be judged because that state benchmark is unavailable, so they
-        count as "insufficient data"; the remaining rows are mainly privacy-suppressed by ED for small cohorts.
-        (The 227,980 total includes 7,020 rows with no institution ID, all of them insufficient-data; the
-        downloadable dataset drops these, leaving 220,960, of which the same 60,202 judgeable programs are
-        about 27%. The 8.96% failure rate is identical either way, since every dropped row is insufficient.)</li>
+      <li><b>Which programs.</b> Undergraduate certificates, associate's and bachelor's degrees: the credentials
+        the federal earnings-premium test compares with high-school graduates. Graduate programs are held to a
+        bachelor's-holder line under the 2026 rule, so they are not in the headline; see
+        <a href="/findings/stats-grad-exposure/">the graduate finding</a>.</li>
+      <li><b>Each program counted once.</b> ED reports field-of-study earnings for each federal institution ID
+        (OPEID) and repeats the same figures on every campus that shares it. We count a program once per ID,
+        field and credential. Where campuses in different states would get different verdicts (48 programs), the
+        main campus's state decides, as the federal rule compares an institution with the state where it is
+        located.</li>
+      <li><b>Denominator.</b> Of 149,340 undergraduate programs, <b>42,653</b> have reported earnings. Of those,
+        <b>41,198 (about 28%)</b> also have the state high-school-graduate benchmark needed for the comparison,
+        and the rate is computed on that set: 4,308 fall short (10.5%, or 1 in 9.6). The other 1,455 report
+        earnings but cannot be judged because that state benchmark is unavailable, mostly closed schools and
+        territories absent from ED's current institution file; the remaining programs are mainly
+        privacy-suppressed by ED for small cohorts.</li>
       <li><b>Horizon.</b> Earnings are measured up to four years after completing. Where the four-year figure is
-        suppressed we fall back to the one-year figure, and about 27% of the failing programs use that fallback.
-        On strictly four-year rows the rate is 7.0% (3,914 of 55,539), roughly <b>1 in 14</b>. We report the
-        broader 1-in-11 figure and tag one-year rows with a visible "1-yr" marker so you can weigh them.</li>
-      <li><b>Cosmetology.</b> Among cosmetology programs (CIP 12.04) specifically, <b>96%</b> fall short
-        (1,078 of 1,120 with data).</li>
+        suppressed we fall back to the one-year figure, and 31% of the programs that fall short use that
+        fallback. On four-year earnings alone the rate is 7.8% (2,982 of 38,287), about <b>1 in 13</b>.
+        One-year rows carry a visible "1-yr" marker so you can weigh them.</li>
+      <li><b>Cosmetology.</b> Among undergraduate cosmetology programs (CIP 12.04), <b>96%</b> fall short
+        (885 of 923 with data).</li>
+      <li><b>Correction, September 2026.</b> This page previously said 1 in 11 (5,396 of 60,202). That count
+        treated every campus row as a separate program, so programs shared across campuses were counted
+        several times, and it included graduate programs judged against the high-school line. Counted once
+        and across all credentials, the rate is 8.1% (4,438 of 54,701); undergraduate-only, as above, it is
+        10.5%. See <a href="/updates/">Updates</a>.</li>
     </ul>
 
     <h3>How sensitive is that number?</h3>
-    <p>The fair criticism of any rate built on the reported 26% is that suppression might not be random,
-      so the visible programs could be a flattering sample. Suppression is indeed <em>not</em> random:
-      undergraduate certificates are about 82% suppressed and fail at 38.6% where reported, while
-      bachelor's degrees are about 59% suppressed and fail at 4.5%. Reported programs have a median of 33
-      graduates; suppressed ones have 4. So we tested whether that changes the answer.</p>
-    <p>Assuming every suppressed program fails at the rate observed in its own credential-and-sector group,
-      and re-estimating across all 220,960 programs, the rate becomes <b>9.03%</b>, against the
-      <b>8.96%</b> we publish. The composition of the hidden programs moves the headline by seven
-      hundredths of a percentage point, so the figure is robust to the most likely objection to it.</p>
+    <p>The fair criticism of any rate built on the reported 28% is that suppression might not be random,
+      so the visible programs could be an unrepresentative sample. Suppression is indeed <em>not</em> random:
+      undergraduate certificates are about 84% suppressed and fall short at 34.6% where reported, while
+      bachelor's degrees are about 60% suppressed and fall short at 4.7%. Reported programs have a median of 36
+      graduates; suppressed ones have 4.</p>
+    <p>Assuming every suppressed program falls short at the rate observed in its own credential-and-sector group,
+      and re-estimating across all programs, the rate becomes <b>12.1%</b>, against the <b>10.5%</b> we
+      publish. So the reported programs likely understate the true share, because the programs ED suppresses
+      are disproportionately certificates, which fall short most often. This adjustment only accounts for
+      credential and sector mix; it cannot tell whether suppressed programs differ from reported ones within
+      the same group, so read it as a sign that the true share is probably somewhat higher than 10.5%, not as a
+      precise figure.</p>
     <p>One distinction worth stating plainly, because it is easy to conflate. Our headline counts
-      <em>programs</em>. Weighted by the number of graduates instead, the rate is <b>7.37%</b>. So: about
-      <b>1 in 11 programs</b>, but about <b>1 in 14 graduates</b>. Failing programs are somewhat smaller
-      than average. Both numbers are in
-      <code>site/data/value_check_summary.json</code> and are recomputed by
-      <code>analysis/summary.py</code> on every data refresh, so they cannot drift away from the data.</p>
+      <em>programs</em>. Weighted by the number of graduates instead, the rate is <b>9.3%</b>, about
+      <b>1 in 11 graduates</b>: programs that fall short are somewhat smaller than average. Both numbers are in
+      <code>site/data/value_check_summary.json</code> and are recomputed by <code>analysis/summary.py</code> on
+      every data refresh; a test checks that this page matches it.</p>
     <p class="repro">Reproduce these numbers: the dataset lives in <code>published/value_check.parquet</code> and
       the exact script is <code>analysis/summary.py</code> in the
       <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>
@@ -152,14 +166,14 @@
       <p style="margin:0">When we checked Value Check against ED's live College Scorecard site, we found we had
         originally used <b>one-year</b> earnings while ED publishes the <b>four-year</b> figure. We fixed it to
         prefer four-year earnings (falling back to one-year only when suppressed), which changed the headline fail
-        rate from 33% to 9% and now matches ED to the dollar (for example UCLA Economics $95,440, Psychology
+        rate from 33% to 9% and matches ED's four-year figures to the dollar (for example UCLA Economics $95,440, Psychology
         $61,050, Sociology $64,692). We publish this because finding and fixing your own error is the honest thing
         to do. Full write-up: <a href="https://github.com/ndranandraj/truewise/blob/main/docs/AUDIT.md">AUDIT.md</a>.</p>
     </div>
 
     <h2>Why do other studies say 1 in 4?</h2>
     <p>Some coverage (for example a widely cited HEA Group study) reports that attendees of about 1 in 4 higher-ed
-      programs earn less than high-school graduates. The difference from our 1 in 11 is not a contradiction, it is
+      programs earn less than high-school graduates. The difference from our 1 in 10 is not a contradiction, it is
       three definitional choices:</p>
     <ul>
       <li><b>Who counts.</b> Studies that count <i>attendees</i> (including non-completers) show higher failure
@@ -167,7 +181,7 @@
       <li><b>The benchmark.</b> A national high-school-earnings line, a state line, or an age-adjusted line each
         move the bar. We use ED's own state threshold.</li>
       <li><b>The denominator.</b> Including or excluding privacy-suppressed programs changes the base. We are
-        explicit that ours is the 26% of programs with reported earnings.</li>
+        explicit that ours is the 28% of undergraduate programs with reported earnings.</li>
     </ul>
     <p>All three are defensible; we state ours plainly so the number is reproducible.</p>
 
@@ -186,29 +200,17 @@
     <h2>The other modules, in brief</h2>
     <p><b>Affordability</b> shows net price by family-income bracket (College Scorecard <span class="mono">NPT41</span>
       to <span class="mono">NPT45</span>), coalesced across a school's sector; suppressed brackets show as "not
-      reported". <b>ROI</b> divides a program's median federal debt by its yearly earnings premium over a
-      high-school graduate (years to recoup what was borrowed); it is null when there is no premium or no debt.
-      <b>Mobility</b> puts Pell share, completion, and the earnings-premium pass rate side by side against the
-      national median, with a transparent "hidden gem" rule (beats all three medians); it is an access-and-outcomes
-      view, not the Chetty income-mobility rate. <b>Careers</b> pools program earnings to the field level and joins
+      reported". <b>Debt as years of gain</b> divides a program's median federal debt by its yearly earnings
+      premium over a high-school graduate. It is a ratio, not a repayment time: it ignores interest, taxes and
+      living costs. Where a program has no premium, the page says so rather than showing a number.
+      <b>Compare</b> also shows Pell share and completion beside the earnings-premium pass rate, with a transparent
+      "hidden gem" rule (beats all three national medians); it is an access-and-outcomes view, not the Chetty
+      income-mobility rate. <b>Careers</b> pools program earnings to the field level and joins
       BLS occupation pay and outlook through the NCES CIP-to-SOC crosswalk. <b>High schools</b> report, from the
       CRDC, which advanced courses a school offers, participation, and staffing (counselors, security).</p>
     <p>Full detail for every module is in
       <a href="https://github.com/ndranandraj/truewise/blob/main/docs/METHODOLOGY.md">METHODOLOGY.md</a> and the
       <a href="https://github.com/ndranandraj/truewise/blob/main/docs/DATA_DICTIONARY.md">data dictionary</a>.</p>
-
-    <h2>Loan repayment, and why some figures say "or less"</h2>
-    <p>School pages report whether borrowers actually pay their debt down, using the College
-      Scorecard's borrower-based repayment status for students who <b>completed</b>, measured two
-      years after entering repayment (share in default, share already paid in full), plus the share
-      of all borrowers whose balance is declining three years in.</p>
-    <p>These columns behave differently from earnings. Besides ordinary suppression, the Department
-      of Education <b>censors</b> small rates, publishing them as "at most" a value rather than an
-      exact number. We neither discard those nor present them as exact: a censored figure is shown
-      as <b>"2% or less"</b>, which is precisely what ED published. Censored values are never used
-      in averages or rankings. Of 6,273 institutions, about 3,600 have a usable default figure
-      (roughly a third exact, the rest censored bounds) and about 4,700 have the three-year
-      repayment rate.</p>
 
     <h2>Known limitations</h2>
     <ul>

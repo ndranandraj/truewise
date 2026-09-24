@@ -34,6 +34,7 @@ from pipeline.build_college_pages import (
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
+from pipeline.program_unit import programs_sql
 
 SITE = ROOT / "site"
 MIN_PROGRAMS = 10  # a major needs this many reported programs to be ranked
@@ -47,6 +48,12 @@ def _views(con) -> None:
         raise SystemExit("No value_check.parquet, run the pipeline first.")
     con.execute(
         f"""CREATE OR REPLACE VIEW p AS SELECT * FROM read_parquet('{vc}')
+            WHERE regexp_matches(unitid, '^[0-9]+$')"""
+    )
+    # Field-level lists count each program once (pipeline/program_unit.py); school-level lists
+    # (the view below) stay per campus, because a campus page is what they link to.
+    con.execute(
+        f"""CREATE OR REPLACE VIEW pu AS SELECT * FROM {programs_sql(vc)}
             WHERE regexp_matches(unitid, '^[0-9]+$')"""
     )
     con.execute(
@@ -172,7 +179,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     # 1. Highest-paying majors (bachelor's).
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(earnings)) AS med, count(*) AS n
-        FROM p WHERE credential_level='3' AND value_flag != 'insufficient_data'
+        FROM pu WHERE credential_level='3' AND value_flag != 'insufficient_data'
         GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY med DESC LIMIT {TOP_N}""")
     out.append(
         (
@@ -199,7 +206,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     # 2. Lowest-paying majors (bachelor's).
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(earnings)) AS med, count(*) AS n
-        FROM p WHERE credential_level='3' AND value_flag != 'insufficient_data'
+        FROM pu WHERE credential_level='3' AND value_flag != 'insufficient_data'
         GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY med ASC LIMIT {TOP_N}""")
     out.append(
         (
@@ -227,25 +234,26 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     # 3. Fastest debt payback (bachelor's).
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(debt_payback_years),1) AS pb, count(*) AS n
-        FROM p WHERE credential_level='3' AND debt_payback_years IS NOT NULL
-        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY pb ASC LIMIT {TOP_N}""")
+        FROM pu WHERE credential_level='3' AND debt_payback_years IS NOT NULL
+        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY pb ASC, field LIMIT {TOP_N}""")
     out.append(
         (
             "fastest-debt-payback-majors",
-            "Majors that pay off their debt fastest",
+            "Bachelor's majors with the lowest debt relative to earnings gain",
             _page(
-                "College majors that pay off student debt fastest",
-                "Ranked by how many years of the earnings premium over a high-school graduate it "
-                "takes to cover typical borrowing. Federal data.",
+                "Bachelor's majors with the lowest debt relative to graduates' earnings gain",
+                "Bachelor's majors ranked by median federal debt divided by how much more graduates "
+                "earn per year than a typical high-school graduate. Federal data.",
                 f"{BASE}/lists/fastest-debt-payback-majors/",
-                "Majors that pay off their debt fastest",
-                "How long the earnings premium over a typical high-school graduate takes to recoup "
-                "what graduates typically borrowed, lowest first.",
-                ["Major", "Years to pay back", "Programs"],
+                "Bachelor's majors with the lowest debt relative to earnings gain",
+                "Median federal debt divided by the yearly earnings gain over a typical high-school "
+                "graduate, lowest first. Bachelor's degrees only.",
+                ["Major", "Debt as years of gain", "Programs"],
                 [(_major_link(f, cip_slugs), f"{pb:g} yrs", f"{n:,}") for f, pb, n in r],
-                "Payback is median federal debt divided by the yearly earnings premium over a "
-                "typical high-school graduate. It is a plain ratio, not the amortized federal "
-                "debt-to-earnings rate, and it ignores interest and time to degree.",
+                "Debt as years of gain is median federal debt divided by the yearly earnings gain "
+                "over a typical high-school graduate. It is a plain ratio, not how long repayment "
+                "takes: it ignores interest, taxes, living costs and time to degree, and it is not "
+                "the federal debt-to-earnings rate. Each program is counted once.",
                 "fastest-debt-payback-majors",
             ),
         )
@@ -255,18 +263,18 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, count(*) AS n,
                round(median(debt_median)) AS debt, round(median(earnings)) AS earn
-        FROM p WHERE value_flag='fails_earnings_premium' AND debt_median IS NOT NULL
+        FROM pu WHERE value_flag='fails_earnings_premium' AND debt_median IS NOT NULL
         GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY n DESC LIMIT {TOP_N}""")
     out.append(
         (
             "programs-where-debt-does-not-pay-back",
-            "Fields with the most programs where debt does not pay back",
+            "Fields with the most programs below the high-school line that report debt",
             _page(
-                "Where student debt does not pay back, by field of study",
-                "Fields with the most programs whose graduates earn less than a typical "
-                "high-school graduate while still carrying debt. Federal data.",
+                "Programs below the high-school earnings line that report debt, by field",
+                "Fields with the most programs whose graduates' median earnings fall below a typical "
+                "high-school graduate's, among programs that report median federal debt. Federal data.",
                 f"{BASE}/lists/programs-where-debt-does-not-pay-back/",
-                "Where debt does not pay back",
+                "Programs below the high-school line that report debt, by field",
                 "Fields with the most programs whose graduates both fall short of a typical "
                 "high-school graduate's earnings and carry federal debt.",
                 ["Field of study", "Programs", "Median debt", "Median earnings"],
@@ -342,7 +350,7 @@ def render_index(entries) -> str:
     p = [
         head(
             "Rankings and lists from federal education data",
-            "Highest and lowest paying majors, fastest debt payback, and the colleges in each "
+            "Highest and lowest paying majors, debt compared with earnings gain, and the colleges in each "
             "state whose graduates most often out-earn a high-school graduate. Each list ranks on "
             "one stated metric from public federal data.",
             canonical,

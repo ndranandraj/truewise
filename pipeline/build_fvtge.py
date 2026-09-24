@@ -32,6 +32,7 @@ import duckdb
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
+from pipeline.program_unit import programs_sql
 from pipeline.tokens_gen import BAD as OG_BAD
 
 SITE = ROOT / "site"
@@ -78,7 +79,8 @@ def _con(ed_path=None, vc_path=None):
     vc = vc_path or PUBLISHED / "value_check.parquet"
     con.execute(f"CREATE VIEW ed AS SELECT * FROM read_parquet('{ed}')")
     con.execute(
-        f"CREATE VIEW vc AS SELECT * FROM read_parquet('{vc}') WHERE regexp_matches(unitid, '^[0-9]+$')"
+        # Each program counted once (pipeline/program_unit.py); the join to ED's list is by OPEID6.
+        f"CREATE VIEW vc AS SELECT * FROM {programs_sql(vc)} WHERE regexp_matches(unitid, '^[0-9]+$')"
     )
     return con
 
