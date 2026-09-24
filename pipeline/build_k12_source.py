@@ -113,7 +113,7 @@ def _detect_vintage(con: duckdb.DuckDBPyConnection) -> str:
 # 2023-24 publishes a high school's AP and IB "No" as -9. The School Form asks every school with
 # grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), and the data
 # dictionary lists both as Yes/No; nothing documents a recoding. Read as "No", the national rates
-# match 2021-22 (AP 53.5% against 54.1%, IB 3.8% in both), so -9 at a regular high school is read
+# match 2021-22 (AP 53.5% against 54.1%, IB 3.8% against 3.9%), so -9 at a regular high school is read
 # as "No". It stays unknown at justice facilities, where a genuine skip is plausible, and for AP
 # wherever the course count is not also -9 (63 schools report courses under a -9 indicator).
 # Disclosed on Methodology. Only this release gets the rule; any other release without a "No" is

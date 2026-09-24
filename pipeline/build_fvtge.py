@@ -85,17 +85,21 @@ def _con(ed_path=None, vc_path=None):
 
 def compute(con) -> dict:
     q = lambda sql: con.execute(sql).fetchall()  # noqa: E731
-    total, missing, all7 = q(
-        "SELECT count(*), count(*) FILTER (WHERE num_miss > 0), count(*) FILTER (WHERE num_miss = 7) FROM ed"
+    # "Submitted no file" counts colleges with no component marked Submitted: every required one
+    # was Not Submitted and the rest Not Required. "All seven" (num_miss = 7) is a subset of it.
+    none_filed_sql = "count(*) FILTER (WHERE num_miss > 0 AND NOT (total2223 = 'Submitted' OR program2324 = 'Submitted' OR annual2324 = 'Submitted' OR total2324 = 'Submitted' OR program2425 = 'Submitted' OR annual2425 = 'Submitted' OR total2425 = 'Submitted'))"
+    total, missing, all7, none_filed = q(
+        "SELECT count(*), count(*) FILTER (WHERE num_miss > 0), count(*) FILTER (WHERE num_miss = 7), "
+        f"{none_filed_sql} FROM ed"
     )[0]
     compiled = q("SELECT any_value(compiled) FROM ed")[0][0]
 
     sectors = []
-    for control, n, m, a in q(
+    for control, n, m, a, nf in q(
         "SELECT control, count(*), count(*) FILTER (WHERE num_miss > 0), "
-        "count(*) FILTER (WHERE num_miss = 7) FROM ed GROUP BY 1"
+        f"count(*) FILTER (WHERE num_miss = 7), {none_filed_sql} FROM ed GROUP BY 1"
     ):
-        sectors.append({"sector": control, "n": n, "missing": m, "all7": a})
+        sectors.append({"sector": control, "n": n, "missing": m, "all7": a, "none_filed": nf})
     sectors.sort(
         key=lambda s: SECTOR_ORDER.index(s["sector"]) if s["sector"] in SECTOR_ORDER else 99
     )
@@ -109,10 +113,10 @@ def compute(con) -> dict:
         components.append({"key": key, "label": label, "not_submitted": ns, "not_required": nr})
 
     states = [
-        {"state": s, "n": n, "missing": m, "all7": a}
-        for s, n, m, a in q(
+        {"state": s, "n": n, "missing": m, "all7": a, "none_filed": nf}
+        for s, n, m, a, nf in q(
             "SELECT stabbr, count(*), count(*) FILTER (WHERE num_miss > 0), "
-            "count(*) FILTER (WHERE num_miss = 7) FROM ed GROUP BY 1 ORDER BY 3 DESC, 1"
+            f"count(*) FILTER (WHERE num_miss = 7), {none_filed_sql} FROM ed GROUP BY 1 ORDER BY 3 DESC, 1"
         )
     ]
 
@@ -170,6 +174,7 @@ def compute(con) -> dict:
         "total": total,
         "missing": missing,
         "all7": all7,
+        "none_filed": none_filed,
         "sectors": sectors,
         "components": components,
         "states": states,
@@ -255,7 +260,7 @@ def render_page(s) -> str:
     title = "Which colleges had not filed their federal earnings-transparency data?"
     desc = (
         f"As of {when}, the Department of Education listed {s['missing']:,} of {s['total']:,} colleges as "
-        f"not having submitted at least one required FVT/GE file; {s['all7']:,} had submitted none. "
+        f"not having submitted at least one required FVT/GE file; {s['none_filed']:,} had submitted no file at all. "
         "Searchable by college, with what the Scorecard shows about them."
     )
     ld = f"""  <script type="application/ld+json">
@@ -271,7 +276,7 @@ def render_page(s) -> str:
         "Colleges that had not filed their FVT/GE data",
         big=f"{s['missing']:,} of {s['total']:,}",
         big_color=OG_BAD,
-        sub=f"{s['all7']:,} had filed none of the seven required components.",
+        sub=f"{s['none_filed']:,} had submitted no file at all.",
     )
     p = [head(title, desc, canonical, ld, og_image=f"/og/findings/{SLUG}.png")]
     p.append('  <main class="wrap pg">\n')
@@ -283,9 +288,11 @@ def render_page(s) -> str:
         f'    <div class="verdict">As of <b>{when}</b>, the U.S. Department of Education listed '
         f"<b>{s['missing']:,}</b> of <b>{s['total']:,}</b> colleges ({_pct(s['missing'], s['total'])}%) as "
         "not having submitted at least one of the seven FVT/GE file components required for the 2024 "
-        f"and 2025 reporting cycles. <b>{s['all7']:,}</b> had submitted none of them. These files are the "
-        "program-level data the Department intends to use to publish earnings and debt for every "
-        "program, starting in 2027.</div>\n"
+        f"and 2025 reporting cycles. <b>{s['none_filed']:,}</b> had submitted no file at all, including "
+        f"<b>{s['all7']:,}</b> with all seven components marked not submitted (the others had some "
+        "components marked not required). The Department intends to publish program-level data and "
+        "statistics derived from these files in 2027. A new rule replaces the FVT/GE rule on 1 July "
+        "2027.</div>\n"
     )
     p.append(
         '    <p class="src"><b>What the list does and does not say.</b> In the Department’s words: '
@@ -300,14 +307,14 @@ def render_page(s) -> str:
     p.append(
         '    <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by sector">'
         '<table class="t"><thead><tr><th>Sector</th><th class="num">Colleges listed</th>'
-        '<th class="num">At least one not submitted</th><th class="num">None submitted</th></tr></thead><tbody>\n'
+        '<th class="num">At least one not submitted</th><th class="num">Submitted no file</th></tr></thead><tbody>\n'
     )
     for x in s["sectors"]:
         p.append(
             f"      <tr><td>{esc(SECTOR_LABEL.get(x['sector'], x['sector']))}</td>"
             f"<td class='num'>{x['n']:,}</td>"
             f"<td class='num'>{x['missing']:,} ({_pct(x['missing'], x['n'])}%)</td>"
-            f"<td class='num'>{x['all7']:,}</td></tr>\n"
+            f"<td class='num'>{x['none_filed']:,}</td></tr>\n"
         )
     p.append("    </tbody></table></div>\n")
 
@@ -371,14 +378,14 @@ def render_page(s) -> str:
     p.append(
         '    <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by state">'
         '<table class="t"><thead><tr><th>State</th><th class="num">Colleges listed</th>'
-        '<th class="num">At least one not submitted</th><th class="num">None submitted</th></tr></thead><tbody>\n'
+        '<th class="num">At least one not submitted</th><th class="num">Submitted no file</th></tr></thead><tbody>\n'
     )
     for x in s["states"]:
         label = "Foreign institutions" if x["state"] == "FC" else x["state"]
         p.append(
             f"      <tr><td>{esc(label)}</td><td class='num'>{x['n']:,}</td>"
             f"<td class='num'>{x['missing']:,} ({_pct(x['missing'], x['n'])}%)</td>"
-            f"<td class='num'>{x['all7']:,}</td></tr>\n"
+            f"<td class='num'>{x['none_filed']:,}</td></tr>\n"
         )
     p.append("    </tbody></table></div>\n")
 
@@ -408,8 +415,8 @@ def render_page(s) -> str:
         "    <ul>\n"
         f"      <li><b>The list.</b> The Department’s “List of Institutions That Previously "
         f"Submitted FVT/GE Data”, attached to electronic announcement GENERAL-26-49 (11 August 2026) "
-        f"and compiled on {when}. It covers open colleges with at least one program of 30 or more "
-        "students; statuses are restated here exactly as the Department published them.</li>\n"
+        f"and compiled on {when}. It covers open colleges with at least one program, at the four-digit CIP "
+        "level, that meets the Department’s minimum of 30 completers; statuses are restated here exactly as the Department published them.</li>\n"
         f"      <li><b>The join.</b> By six-digit OPEID. {s['matched']:,} of the {s['total']:,} colleges on "
         "the list have programs in the College Scorecard data Truewise publishes.</li>\n"
         "      <li><b>The fail rate.</b> The earnings-premium test Truewise applies to every program: "

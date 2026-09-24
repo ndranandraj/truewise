@@ -38,6 +38,16 @@ def test_counts_restate_eds_list_exactly(built):
     assert round(100 * s["missing"] / s["total"], 2) == 41.68
     assert round(100 * s["all7"] / s["total"], 2) == 12.47
     assert s["compiled"] == "2026-08-06"
+    # 578 have all seven Not Submitted; 722 have no component Submitted at all (the other 144 have some
+    # components Not Required). The page once called the 578 "submitted none", which undercounted.
+    assert s["none_filed"] == 722 and s["all7"] == 578
+
+
+def test_the_page_names_both_counts_correctly(built):
+    s, _, out = built
+    text = re.sub(r"\s+", " ", (out / "index.html").read_text())
+    assert f"{s['none_filed']:,}</b> had submitted no file at all" in text
+    assert "had submitted none" not in text and "None submitted" not in text
 
 
 def test_the_page_carries_eds_caveats_and_the_date(built):

@@ -151,8 +151,8 @@ def render_svg(
         f'<title id="distTitle{ids}">How far college programs out-earn a high-school '
         "graduate</title>",
         f'<desc id="distDesc{ids}">Of {total:,} judged programs, {counts[0]:,} (about {pct[0]}%) '
-        f"leave graduates earning less than a typical high-school graduate; the rest earn more, "
-        f"a median of {median}% more. Bars, left to right: "
+        f"leave graduates earning less than a typical high-school graduate; the median program "
+        f"earns {median}% more. Bars, left to right: "
         + "; ".join(f"{LABELS[i]} {counts[i]:,}" for i in range(len(counts)))
         + ".</desc>",
     ]
