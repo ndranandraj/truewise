@@ -184,6 +184,7 @@
 </head>
 <body>
   <header class="site-header">
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="wrap">
       <div class="brand-group">
         <a class="brand" href="/">true<span>wise</span></a>
@@ -208,7 +209,9 @@
         </details>
       </nav>
     </div>
+  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});</script>
   </header>
+  <span id="main" tabindex="-1"></span>
 
   <!-- Same reservation as /compare/, and here it applies ALWAYS rather than conditionally, because
        #app is replaced wholesale on every route this page has: there is no state in which the boot
@@ -285,6 +288,23 @@
       if (r.ok) (await r.json()).fields.forEach(f => { NATL[f.cip + "|" + f.credential] = f; });
     } catch (e) { /* Careers section simply won't render */ }
     return NATL;
+  }
+
+  // A chosen school opens its canonical profile, /college/<slug>/. That page stacks on phones, has
+  // sortable headers and the current labels; the in-page view below overflowed at every width and
+  // used older wording (September 2026 audit, V1, V2, V4, V5). The in-page view stays only as the
+  // fallback for an id missing from the slug map.
+  let SLUGS = null;
+  async function openSchool(unitid) {
+    try {
+      if (!SLUGS) {
+        const r = await fetch("/college/slug-map.json");
+        if (r.ok) SLUGS = await r.json();
+      }
+      const slug = SLUGS && SLUGS[unitid];
+      if (slug) { location.assign("/college/" + slug + "/"); return; }
+    } catch (e) { /* fall through to the in-page view */ }
+    go({ school: unitid });
   }
 
   function go(params, push = true) {
@@ -380,7 +400,7 @@
         + lists.map(([href, t, d]) => `<a class="list-link" href="${href}"><b>${t}</b><span>${d}</span></a>`).join("")
         + `</div>`;
       landing.querySelectorAll("a.chip").forEach(a =>
-        a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.u }); }));
+        a.addEventListener("click", e => { e.preventDefault(); openSchool(a.dataset.u); }));
       landing.dataset.built = "1";
     };
     let active = -1;      // keyboard-highlighted option
@@ -432,7 +452,7 @@
             </div>
           </a></li>`).join("");
       results.querySelectorAll("a.school-card").forEach(a =>
-        a.addEventListener("click", e => { e.preventDefault(); go({ school: a.dataset.u }); }));
+        a.addEventListener("click", e => { e.preventDefault(); openSchool(a.dataset.u); }));
     };
 
     const setActive = i => {
@@ -452,7 +472,7 @@
       else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
       else if (e.key === "Enter") {
         const pick = active >= 0 ? current[active] : current[0];
-        if (pick) { e.preventDefault(); go({ school: pick.unitid }); }
+        if (pick) { e.preventDefault(); openSchool(pick.unitid); }
       } else if (e.key === "Escape") { q.value = ""; run(); }
     });
 

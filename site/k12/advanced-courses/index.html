@@ -81,6 +81,7 @@
 </head>
 <body>
   <header class="site-header">
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="wrap">
       <div class="brand-group">
         <a class="brand" href="/">true<span>wise</span></a>
@@ -105,7 +106,9 @@
         </details>
       </nav>
     </div>
+  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});</script>
   </header>
+  <span id="main" tabindex="-1"></span>
   <nav class="subnav" aria-label="High-school views">
     <div class="wrap">
       <a href="/k12/">Overview</a>
@@ -145,10 +148,19 @@
     stateCache[st] = r.ok ? await r.json() : {};
     return stateCache[st];
   }
-  function go(params, push = true) {
+  // After an in-page view change, say so: retitle the document and move focus to the new heading,
+  // so keyboard and screen-reader users land on what changed rather than on <body> (audit V4).
+  const BASE_TITLE = "Advanced courses at your high school | Truewise";
+  function announce(isDetail) {
+    const h = app.querySelector("h1");
+    document.title = isDetail && h ? h.textContent.trim() + " | Truewise" : BASE_TITLE;
+    if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+  }
+  async function go(params, push = true) {
     const qs = new URLSearchParams(params).toString();
     if (push) history.pushState(params, "", qs ? "?" + qs : location.pathname);
-    route(params);
+    await route(params);
+    announce(Object.keys(params).some(k => k === "field" || k === "school"));
   }
 
   // ---- Search ----
@@ -330,11 +342,20 @@
   }
 
   function route(params) {
-    if (params.school) renderSchool(params.school);
-    else renderSearch(params.q || "");
+    if (params.school) return renderSchool(params.school);
+    return renderSearch(params.q || "");
   }
-  window.addEventListener("popstate", e => route(e.state || Object.fromEntries(new URLSearchParams(location.search))));
-  route(Object.fromEntries(new URLSearchParams(location.search)));
+  window.addEventListener("popstate", async e => {
+    const params = e.state || Object.fromEntries(new URLSearchParams(location.search));
+    await route(params);
+    announce(Boolean(params.field || params.school));
+  });
+  (async () => {
+    const params = Object.fromEntries(new URLSearchParams(location.search));
+    await route(params);
+    const h = app.querySelector("h1");
+    if ((params.field || params.school) && h) document.title = h.textContent.trim() + " | Truewise";
+  })();
 
   addEventListener("scroll", () => document.querySelector(".site-header").classList.toggle("scrolled", scrollY > 8), { passive: true });
   // No blank pages: if a data file fails to load, show a clear, retryable message.

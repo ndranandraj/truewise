@@ -58,8 +58,14 @@ def test_major_page_bakes_degree_ladder(tmp_path, monkeypatch):
     assert "Median earnings by degree level" in h
     assert "Bachelor" in h and "Associate" in h  # both credentials in the ladder
     # The earnings-range chart renders: a labelled figure with a median dot and a p25-p75 band.
-    assert 'class="ladder-chart"' in h
-    assert '<title id="ladderT">' in h
+    assert 'class="ladder-chart ladder--wide"' in h and 'class="ladder-chart ladder--narrow"' in h
+    assert '<title id="ladderT">' in h and '<title id="ladderTM">' in h
+    # No chart text under 12 user units: the narrow variant is drawn at phone width, so 12 renders
+    # at about 12px (the single 640-wide chart put 10 and 11 at 5.5 to 6px on a phone).
+    import re
+
+    sizes = [int(x) for x in re.findall(r'<text[^>]*font-size="(\d+)"', h)]
+    assert sizes and min(sizes) >= 12, sizes
     assert "<circle" in h and 'fill="#e6eee7"' in h  # median dot + middle-half band
     assert '<link rel="canonical" href="https://truewise.dev/majors/registered-nursing/"' in h
     assert "BreadcrumbList" in h

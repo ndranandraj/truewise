@@ -63,7 +63,18 @@ const ROUTES = [
       if (!st.results) findings.push({ kind: "vc-no-results", blocking: true, detail: 'Typing "baylor" produced no results.' });
       if (!/^Search [\d,]+ colleges/.test(st.label)) findings.push({ kind: "vc-label", blocking: true,
         detail: `After a successful search the label reads "${st.label}".` });
-      return { findings, steps: [{ step: "search-baylor", ...st }] };
+      // Choosing a school must open its canonical profile, not the old in-page view that
+      // overflowed at every width (September 2026 audit, V1 and V2).
+      await page.press("#q", "Enter");
+      let landed = "";
+      try {
+        await page.waitForURL(/\/college\/[a-z0-9-]+\/$/, { timeout: 8000 });
+        landed = new URL(page.url()).pathname;
+      } catch (e) {
+        findings.push({ kind: "vc-open-profile", blocking: true,
+          detail: `Enter on a result stayed at ${page.url()} instead of opening /college/<slug>/.` });
+      }
+      return { findings, steps: [{ step: "search-baylor", ...st }, { step: "enter-opens-profile", landed }] };
     } },
   /* Value Check, failed: the college list is blocked. The page must say so and offer a way on. */
   { label: "value-check-failed", path: "/value-check/", kind: "flow",
@@ -139,6 +150,28 @@ const ROUTES = [
       return { findings, steps: [{ step: "search-palomar", ...st }] };
     } },
   { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },
+  /* Opening a major on Careers in place must retitle the page and move focus to its heading, so
+   * keyboard and screen-reader users land on what changed (September 2026 audit, V4). */
+  { label: "careers-open-field", path: "/careers/", kind: "flow",
+    check: async (page) => {
+      await page.waitForSelector("a[data-cip]", { timeout: 10000 });
+      await page.click("a[data-cip]");
+      await page.waitForSelector(".fld-head h1", { timeout: 10000 });
+      await page.waitForTimeout(200);
+      const st = await page.evaluate(() => ({
+        title: document.title,
+        heading: (document.querySelector(".fld-head h1") || {}).textContent || "",
+        focus: document.activeElement ? document.activeElement.tagName : "",
+      }));
+      const findings = [];
+      if (!st.heading || !st.title.startsWith(st.heading.trim()))
+        findings.push({ kind: "view-title", blocking: true,
+          detail: `After opening "${st.heading}" the title is still "${st.title}".` });
+      if (st.focus !== "H1")
+        findings.push({ kind: "view-focus", blocking: true,
+          detail: `After opening a major, focus is on <${st.focus}>, not the new heading.` });
+      return { findings, steps: [{ step: "open-field", ...st }] };
+    } },
 ];
 
 /* ------------------------------------------------------------------------------------------- */

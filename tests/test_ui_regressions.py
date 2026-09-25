@@ -2114,3 +2114,21 @@ def test_committed_pages_carry_no_stylesheet_stamp():
         if re.search(r'\.css\?v=[0-9a-f]+"', staged):
             stamped.append(rel)
     assert not stamped, "stylesheet stamps staged for commit: " + ", ".join(stamped)
+
+
+def test_every_page_has_a_skip_link_and_an_escapable_menu(tmp_path, monkeypatch):
+    """September 2026 audit V7 and V8: no skip link anywhere, and the mobile menu ignored Escape.
+    The shared header carries both, so every page does; this pins them in head()."""
+    from pipeline import build_college_pages as bcp
+
+    monkeypatch.setattr(bcp, "SITE", tmp_path)
+    monkeypatch.setattr(bcp, "_PG_CSS_WRITTEN", False)
+    h = bcp.head("t", "d", "/x/")
+    header = h[h.index('<header class="site-header">') :]
+    assert header.index('class="skip-link" href="#main"') < header.index('class="brand"'), (
+        "the skip link must be the first focusable element"
+    )
+    assert '<span id="main" tabindex="-1"></span>' in h
+    assert 'e.key!=="Escape"' in h and ".nav-toggle[open]" in h
+    css = (SITE / "styles.css").read_text()
+    assert ".skip-link:focus" in css and "#to-top:not(.show) { visibility: hidden; }" in css

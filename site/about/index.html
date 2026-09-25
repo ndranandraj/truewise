@@ -63,6 +63,7 @@
 </head>
 <body>
   <header class="site-header">
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="wrap">
       <div class="brand-group">
         <a class="brand" href="/">true<span>wise</span></a>
@@ -87,7 +88,9 @@
         </details>
       </nav>
     </div>
+  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});</script>
   </header>
+  <span id="main" tabindex="-1"></span>
 
   <main class="wrap doc">
     <h1>About Truewise</h1>

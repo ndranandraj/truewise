@@ -227,7 +227,7 @@ a:hover { color: var(--brand-deep); }
   margin: 0 0 var(--s3); border: 1px solid var(--ink); border-radius: var(--r-md);
   padding: var(--s2) var(--s2) var(--s2) var(--s4); background: var(--surface);
 }
-.hero-search:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); }
+.hero-search:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .hero-search input { border: 0; outline: 0; flex: 1; font: inherit; font-size: 16px; padding: var(--s3) 0; background: transparent; color: var(--ink); min-width: 0; }
 .hero-search input::placeholder { color: var(--ink-faint); }
 .hero-search button { border: 0; background: var(--brand-deep); color: var(--text-on-brand); font: inherit; font-weight: 600; font-size: var(--t-ui); padding: var(--s3) var(--s5); border-radius: var(--r-sm); cursor: pointer; white-space: nowrap; }
@@ -252,7 +252,16 @@ a:hover { color: var(--brand-deep); }
 .searchbox:hover { border-color: var(--control-border-hover); }
 /* Search icons draw in currentColor; this is their one colour, instead of four slate hexes. */
 .searchbox svg, .hero-search svg { color: var(--ink-faint); flex: none; }
-.searchbox:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); }
+.searchbox:focus-within { border-color: var(--focus-ring); box-shadow: 0 0 0 3px var(--brand-50); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+/* Skip link: off-screen until focused, then the first thing a keyboard user sees (audit V7). */
+.skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 100; padding: var(--s2) var(--s4); background: var(--surface); color: var(--ink); border: 1px solid var(--focus-ring); border-radius: var(--r-sm); font-size: var(--t-ui); }
+.skip-link:focus { top: var(--s2); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+#main { display: block; scroll-margin-top: 80px; }
+#main:focus { outline: none; }
+/* A hidden back-to-top button must not stay in the tab order (audit V9). */
+#to-top:not(.show) { visibility: hidden; }
+/* Careers sets its button's hidden state inline, so the shown state must win over it. */
+#to-top.show { opacity: 1 !important; pointer-events: auto !important; }
 .searchbox input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; padding: 10px 0; color: var(--ink); }
 .searchbox input::placeholder, .control::placeholder { color: var(--ink-faint); }
 .control {

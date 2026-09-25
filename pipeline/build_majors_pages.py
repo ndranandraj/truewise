@@ -85,8 +85,23 @@ def _ladder_chart(creds) -> str:
     pad = (hi - lo) * 0.06
     lo, hi = lo - pad, hi + pad
 
-    W = 640
-    x0, x1 = 132, 556  # plot bounds; labels sit left of x0, median value right of x1
+    # Two geometries, swapped by CSS in pg.css. SVG text is in user units and scales with the
+    # viewBox, so one 640-wide chart squeezed into a 350px phone column set its labels at 5.5 to
+    # 6px (September 2026 audit, V3). The narrow variant is drawn at phone width, so its 12px
+    # labels render at about 12px; the wide one uses 12 to 13px so it stays legible down to 560px.
+    wide = _ladder_svg(rows, lo, hi, pad, W=640, x0=132, x1=548, fs=12, fs_big=13, ids="")
+    narrow = _ladder_svg(rows, lo, hi, pad, W=340, x0=104, x1=262, fs=12, fs_big=12, ids="M")
+    return (
+        '    <figure class="ladder-chart ladder--wide" style="margin:8px 0 4px">'
+        + wide
+        + "</figure>\n"
+        '    <figure class="ladder-chart ladder--narrow" style="margin:8px 0 4px">'
+        + narrow
+        + "</figure>\n"
+    )
+
+
+def _ladder_svg(rows, lo, hi, pad, *, W, x0, x1, fs, fs_big, ids) -> str:
     top, row_h = 20, 30
     plot_b = top + len(rows) * row_h
     H = plot_b + 34
@@ -105,9 +120,9 @@ def _ladder_chart(creds) -> str:
     )
     p = [
         f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '
-        'aria-labelledby="ladderT ladderD" style="max-width:640px;height:auto;margin:4px 0 2px">',
-        '<title id="ladderT">Earnings range across schools, by degree level</title>',
-        '<desc id="ladderD">Each row is a degree level: the bar is the middle half of schools\' '
+        f'aria-labelledby="ladderT{ids} ladderD{ids}" style="max-width:{W}px;height:auto;margin:4px 0 2px">',
+        f'<title id="ladderT{ids}">Earnings range across schools, by degree level</title>',
+        f'<desc id="ladderD{ids}">Each row is a degree level: the bar is the middle half of schools\' '
         "program medians (25th to 75th percentile) and the dot is the overall median. "
         + "; ".join(
             f"{_cred_short(c['credential'])} median {money(c['med'])}, "
@@ -123,7 +138,7 @@ def _ladder_chart(creds) -> str:
             f'<line x1="{x}" y1="{top - 6}" x2="{x}" y2="{plot_b}" stroke="{LINE}" stroke-width="1"/>'
         )
         p.append(
-            f'<text x="{x}" y="{plot_b + 16}" text-anchor="middle" font-size="10" fill="{FAINT}">{_k(v)}</text>'
+            f'<text x="{x}" y="{plot_b + 16}" text-anchor="middle" font-size="{fs}" fill="{FAINT}">{_k(v)}</text>'
         )
     # Rows.
     for i, c in enumerate(rows):
@@ -140,15 +155,15 @@ def _ladder_chart(creds) -> str:
             f'<circle cx="{sx(c["med"])}" cy="{cy:.1f}" r="4.5" fill="{DOT}" stroke="#fff" stroke-width="1.5"/>'
         )
         p.append(
-            f'<text x="{x0 - 10}" y="{cy + 3.5:.1f}" text-anchor="end" font-size="11" fill="{SOFT}">'
+            f'<text x="{x0 - 8}" y="{cy + 4:.1f}" text-anchor="end" font-size="{fs}" fill="{SOFT}">'
             f"{esc(_cred_short(c['credential']))}</text>"
         )
         p.append(
-            f'<text x="{x1 + 10}" y="{cy + 3.5:.1f}" font-size="11" font-weight="600" '
+            f'<text x="{x1 + 8}" y="{cy + 4:.1f}" font-size="{fs_big}" font-weight="600" '
             f'fill="{INK}" style="font-variant-numeric:tabular-nums">{money(c["med"])}</text>'
         )
     p.append("</svg>")
-    return f'    <figure class="ladder-chart" style="margin:8px 0 4px">{"".join(p)}</figure>\n'
+    return "".join(p)
 
 
 def _json(s) -> str:

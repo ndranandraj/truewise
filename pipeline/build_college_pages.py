@@ -225,6 +225,9 @@ ul.schoollist { list-style: none; padding: 0; margin: 12px 0; }
 ul.schoollist li { padding: 10px 0; border-bottom: 1px solid var(--line); }
 ul.schoollist a { color: var(--brand); text-decoration: none; font-weight: 600; }
 ul.schoollist .meta { color: var(--ink-soft); font-size: var(--t-ui); }
+/* Majors range chart: a phone-width drawing below 560px so its text is not scaled to 6px. */
+.ladder--narrow { display: none; }
+@media (max-width: 560px) { .ladder--wide { display: none; } .ladder--narrow { display: block; } }
 """
 
 _PG_CSS_WRITTEN = False
@@ -269,6 +272,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
 </head>
 <body>
   <header class="site-header">
+    <a class="skip-link" href="#main">Skip to content</a>
     <div class="wrap">
       <div class="brand-group">
         <a class="brand" href="/">true<span>wise</span></a>
@@ -293,7 +297,9 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
         </details>
       </nav>
     </div>
+    <script>document.addEventListener("keydown",function(e){{if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){{d.open=false;d.querySelector("summary").focus();}}}});document.addEventListener("click",function(e){{var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;}});</script>
   </header>
+  <span id="main" tabindex="-1"></span>
 """
 
 
