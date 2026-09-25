@@ -99,3 +99,20 @@ def test_the_js_table_mirrors_the_static_labels():
     for text in ("no state benchmark", "HS line", "no earnings gain", "Debt as years of gain"):
         assert text in js, f"table.js must render {text!r} like the static row"
     assert "Years to repay" not in js
+
+
+def test_a_school_with_only_unbenchmarked_earnings_claims_no_verdict():
+    """Live on 24 Sep: Birmingham-Southern's two no-benchmark programs were counted as assessed,
+    so its page said "All 2 assessed programs have graduates out-earning" with no comparison made."""
+    from pipeline.build_canonical_profiles import canonical_page
+
+    rows = [
+        _row(value_flag="insufficient_data", earnings_threshold_state=None, cip_code=c)
+        for c in ("5201", "4201")
+    ] + [_row(value_flag="insufficient_data", earnings=None, earnings_threshold_state=None)]
+    meta = {"unitid": "1", "name": "Test College", "state": "ZZ", "control": None}
+    html, _ = canonical_page(meta, rows, "test-college", None, 150)
+    assert "out-earning" not in html and "assessed programs" not in html
+    assert "reports graduate earnings for <b>2</b>" in html
+    assert "<b>0 of 3</b> programs could be assessed" in html
+    assert "no benchmark" in html and "(a typical high-school graduate/yr)" not in html

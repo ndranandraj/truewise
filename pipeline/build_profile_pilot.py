@@ -287,6 +287,8 @@ def payback_text(r: dict) -> str | None:
     """
     if r["payback"] is not None:
         return f"{r['payback']:.1f} yrs"
+    if r["verdict"] == "nobench":
+        return '<span class="tw-td__insuf">no benchmark</span>'
     if r["verdict"] == "fail" and r.get("debt") is not None:
         return '<span class="tw-td__insuf">no earnings gain</span>'
     return None
@@ -316,7 +318,7 @@ def _static_row(r: dict) -> str:
         return f'<td class="{cls}" data-label="{label}">{inner}</td>'
 
     verdict = verdict_chip(r)
-    prem = None
+    prem = '<span class="tw-td__insuf">no benchmark</span>' if r["verdict"] == "nobench" else None
     if r["premium"] is not None:
         sign = "+" if r["premium"] >= 0 else "-"
         prem = f"{sign}{_money(abs(r['premium']))}"
@@ -365,7 +367,7 @@ HEAD = (
 
 def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, str | None]:
     """Return (static HTML, tail JSON or None). Static core carries up to `threshold` program rows."""
-    decided = sum(1 for r in rows if r["verdict"] != "insufficient")
+    decided = sum(1 for r in rows if r["verdict"] in ("pass", "fail"))
     total = len(rows)
     static_rows = rows[:threshold]
     tail = rows[threshold:]

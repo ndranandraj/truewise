@@ -331,6 +331,7 @@
     _paybackCell(r) {
       // Mirrors payback_text in pipeline/build_profile_pilot.py.
       if (r.payback != null) return this._num(r.payback, (v) => v.toFixed(1) + " yrs");
+      if (r.verdict === "nobench") return '<span class="tw-td__insuf">no benchmark</span>';
       if (r.verdict === "fail" && r.debt != null) return '<span class="tw-td__insuf">no earnings gain</span>';
       return this._num(null);
     }
@@ -348,6 +349,7 @@
     }
 
     _premiumCell(r) {
+      if (r.premium == null && r.verdict === "nobench") return '<span class="tw-td__insuf">no benchmark</span>';
       if (r.premium == null) return INSUF;
       const sign = r.premium >= 0 ? "+" : "-";
       const mag = money(Math.abs(r.premium));

@@ -90,7 +90,7 @@ def canonical_page(
     st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     total = len(rows)
-    decided = sum(1 for r in rows if r["verdict"] != "insufficient")
+    decided = sum(1 for r in rows if r["verdict"] in ("pass", "fail"))
     passed = sum(1 for r in rows if r["verdict"] == "pass")
     fail = sum(1 for r in rows if r["verdict"] == "fail")
     # A 1-year figure is only ever DISPLAYED for an assessed row (horizon is None on insufficient
