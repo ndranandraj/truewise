@@ -457,6 +457,13 @@
      setting the Median earnings column for the whole table on any profile with a single 1-year row. */
 }
 
+/* Inside the explanatory sentence the tag is a word, not a block: as a block it split the
+   sentence over three lines and orphaned the full stop (audit V16). */
+.tw-window-note .tw-oneyr {
+  display: inline;
+  margin: 0;
+}
+
 /* B14 suppressed value */
 .tw-insuf {
   color: var(--text-muted);

@@ -70,8 +70,8 @@
   --display: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --t-label: 12px;
-  --t-fine: 13px;
+  --t-label: 13px;
+  --t-fine: 14px;
   --t-ui: 15px;
   --t-sub: 18px;
   --t-lede: 20px;

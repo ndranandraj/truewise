@@ -225,6 +225,18 @@ ul.schoollist { list-style: none; padding: 0; margin: 12px 0; }
 ul.schoollist li { padding: 10px 0; border-bottom: 1px solid var(--line); }
 ul.schoollist a { color: var(--brand); text-decoration: none; font-weight: 600; }
 ul.schoollist .meta { color: var(--ink-soft); font-size: var(--t-ui); }
+/* Simple data tables stack into labelled rows on phones (audit V13). The header script copies each
+   column heading onto its cells as data-label and adds .stack, so without JS the table keeps its
+   horizontal scroll. The first cell is the row's name and reads as a heading. */
+@media (max-width: 520px) {
+  table.t.stack thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  table.t.stack, table.t.stack tbody, table.t.stack tr { display: block; width: 100%; }
+  table.t.stack tr { border-bottom: 1px solid var(--line); padding: 8px 0; }
+  table.t.stack td, table.t.stack th { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 3px 0; text-align: right; }
+  table.t.stack td::before, table.t.stack th::before { content: attr(data-label); color: var(--ink-soft); font-weight: 600; text-align: left; }
+  table.t.stack tr > :first-child { display: block; text-align: left; font-weight: 600; color: var(--ink); }
+  table.t.stack tr > :first-child::before { content: none; }
+}
 /* Majors range chart: a phone-width drawing below 560px so its text is not scaled to 6px. */
 .ladder--narrow { display: none; }
 @media (max-width: 560px) { .ladder--wide { display: none; } .ladder--narrow { display: block; } }
@@ -297,7 +309,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
         </details>
       </nav>
     </div>
-    <script>document.addEventListener("keydown",function(e){{if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){{d.open=false;d.querySelector("summary").focus();}}}});document.addEventListener("click",function(e){{var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;}});</script>
+    <script>document.addEventListener("keydown",function(e){{if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){{d.open=false;d.querySelector("summary").focus();}}}});document.addEventListener("click",function(e){{var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;}});document.addEventListener("DOMContentLoaded",function(){{document.querySelectorAll("table.t").forEach(function(t){{var h=[].map.call(t.querySelectorAll("thead th"),function(x){{return x.textContent.trim();}});if(!h.length)return;t.querySelectorAll("tbody tr").forEach(function(r){{[].forEach.call(r.children,function(c,i){{if(h[i])c.setAttribute("data-label",h[i]);}});}});t.classList.add("stack");}});}});</script>
   </header>
   <span id="main" tabindex="-1"></span>
 """
@@ -389,7 +401,7 @@ def _median(vals):
     return v[m] if len(v) % 2 else (v[m - 1] + v[m]) / 2
 
 
-def _calculator(s, np_, brackets, labels, programs) -> str:
+def _calculator(s, np_, brackets, labels, programs, years: int = 4) -> str:
     """An income + years calculator built only from this school's real federal figures.
 
     Every input is published data (net price by income bracket; the school's median debt
@@ -419,10 +431,11 @@ def _calculator(s, np_, brackets, labels, programs) -> str:
         f'        <select id="calc-income">{opts}<option value="-1">Not sure, show the average</option></select>\n'
         '        <label for="calc-years">and I expect to take</label>\n'
         '        <select id="calc-years">'
-        '<option value="2">2 years</option>'
-        '<option value="4" selected>4 years</option>'
-        '<option value="5">5 years</option>'
-        '<option value="6">6 years</option></select>\n'
+        + "".join(
+            f'<option value="{y}"{" selected" if y == years else ""}>{y} year{"" if y == 1 else "s"}</option>'
+            for y in (1, 2, 4, 5, 6)
+        )
+        + "</select>\n"
         "      </div>\n"
         '      <div class="calc-out" id="calc-out"></div>\n'
         "    </div>\n"

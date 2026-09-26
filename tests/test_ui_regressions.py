@@ -157,13 +157,15 @@ def test_type_is_a_generated_token_layer():
     ad-hoc rem sizes and a 115ch measure became the only option available.
 
     Type is now generated like colour. The five original steps must keep their exact values, or
-    every page that already uses them shifts.
+    every page that already uses them shifts. The two smallest were raised deliberately in September
+    2026 (audit V15): nearly half the text on a profile, including the caveats the site's honesty
+    rests on, rendered at 12 to 13px.
     """
     tokens = json.loads((ROOT / "design" / "tokens.json").read_text())
     assert "type" in tokens, "tokens.json needs a type block, or type cannot be guaranteed"
     for name, value in {
-        "t-label": "12px",
-        "t-fine": "13px",
+        "t-label": "13px",
+        "t-fine": "14px",
         "t-ui": "15px",
         "t-sub": "18px",
         "t-lede": "20px",

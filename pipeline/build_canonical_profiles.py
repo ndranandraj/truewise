@@ -271,7 +271,12 @@ def canonical_page(
             for r in rows
         ]
         parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
-        parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs))
+        # Default the years to the school's usual credential: a certificate school shown "over 4
+        # years" overstated the cost fourfold (audit V19).
+        ug = [r["credential"] for r in rows if not r.get("grad")]
+        common = max(set(ug), key=ug.count) if ug else None
+        years = {"Undergraduate Certificate or Diploma": 1, "Associate's Degree": 2}.get(common, 4)
+        parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs, years=years))
         parts.append(
             '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th>'
             '<th class="num">Net price per year</th></tr></thead><tbody>\n'

@@ -463,8 +463,9 @@ SEARCH_SCRIPT = """  <script>
       rows.innerHTML = shown.map(function (d) {
         var name = d[5] ? '<a href="/college/' + esc(d[5]) + '/">' + esc(d[0]) + "</a>" : esc(d[0]);
         var assess = d[3] ? d[4] + " of " + d[3] : "none in Scorecard data";
-        return "<tr><td>" + name + "</td><td>" + esc(d[1]) + "</td><td class=\\"num\\">" +
-          d[2] + " of 7</td><td class=\\"num\\">" + assess + "</td></tr>";
+        return "<tr><td>" + name + "</td><td data-label=\\"State\\">" + esc(d[1]) +
+          "</td><td class=\\"num\\" data-label=\\"Components not submitted\\">" + d[2] +
+          " of 7</td><td class=\\"num\\" data-label=\\"Programs Truewise can assess\\">" + assess + "</td></tr>";
       }).join("");
       status.textContent = hits.length ? (hits.length > 50 ? "Showing 50 of " + hits.length + " matches." : hits.length + (hits.length === 1 ? " match." : " matches.")) : "No college on the list matches that name.";
     }

@@ -70,7 +70,7 @@
         </details>
       </nav>
     </div>
-  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});</script>
+  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("table.t").forEach(function(t){var h=[].map.call(t.querySelectorAll("thead th"),function(x){return x.textContent.trim();});if(!h.length)return;t.querySelectorAll("tbody tr").forEach(function(r){[].forEach.call(r.children,function(c,i){if(h[i])c.setAttribute("data-label",h[i]);});});t.classList.add("stack");});});</script>
   </header>
   <span id="main" tabindex="-1"></span>
 

@@ -62,7 +62,7 @@
     .emb-results button:hover { border-color: var(--control-border-hover); }
     .emb-results .meta { color: var(--ink-soft); font-size: var(--t-fine); }
     .snippet { display: block; white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg-alt); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; font-family: var(--mono); font-size: var(--t-fine); color: var(--ink); margin: 8px 0; }
-    .emb-preview { border: 0; width: 100%; max-width: 480px; height: 330px; }
+    .emb-preview { border: 0; width: 100%; max-width: 480px; height: 430px; }
   </style>
 </head>
 <body>
@@ -92,7 +92,7 @@
         </details>
       </nav>
     </div>
-  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});</script>
+  <script>document.addEventListener("keydown",function(e){if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){d.open=false;d.querySelector("summary").focus();}});document.addEventListener("click",function(e){var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;});document.addEventListener("DOMContentLoaded",function(){document.querySelectorAll("table.t").forEach(function(t){var h=[].map.call(t.querySelectorAll("thead th"),function(x){return x.textContent.trim();});if(!h.length)return;t.querySelectorAll("tbody tr").forEach(function(r){[].forEach.call(r.children,function(c,i){if(h[i])c.setAttribute("data-label",h[i]);});});t.classList.add("stack");});});</script>
   </header>
   <span id="main" tabindex="-1"></span>
 
@@ -112,7 +112,7 @@
     <ul class="emb-results" id="emb-results"></ul>
 
     <h2>2. Copy this line into your page</h2>
-    <code class="snippet" id="emb-snippet">&lt;iframe src="https://truewise.dev/embed/?school=223232" width="480" height="330" style="border:0" loading="lazy" title="Truewise value check: Baylor University"&gt;&lt;/iframe&gt;</code>
+    <code class="snippet" id="emb-snippet">&lt;iframe src="https://truewise.dev/embed/?school=223232" style="border:0;width:100%;max-width:480px;height:430px" loading="lazy" title="Truewise value check: Baylor University"&gt;&lt;/iframe&gt;</code>
     <button type="button" class="btn btn--secondary" id="emb-copy">Copy</button>
 
     <h2>3. What it looks like</h2>
@@ -137,7 +137,7 @@
     const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
     let schools = null;
     const line = (s) => '<iframe src="https://truewise.dev/embed/?school=' + s.unitid
-      + '" width="480" height="330" style="border:0" loading="lazy" title="Truewise value check: '
+      + '" style="border:0;width:100%;max-width:480px;height:430px" loading="lazy" title="Truewise value check: '
       + esc(s.name) + '"></iframe>';
     const pick = (s) => {
       snippet.textContent = line(s);

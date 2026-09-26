@@ -34,8 +34,8 @@ LADDER_BAND = "#e6eee7"
 SERIES_NEG_ON_DARK = "#ab695a"
 
 # Type steps and measures, for renderers that size text outside CSS (OG cards).
-T_LABEL = "12px"
-T_FINE = "13px"
+T_LABEL = "13px"
+T_FINE = "14px"
 T_UI = "15px"
 T_SUB = "18px"
 T_LEDE = "20px"
