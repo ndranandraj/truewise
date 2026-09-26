@@ -77,6 +77,42 @@ def _net_price(con, unitid: str) -> dict | None:
     return {"avg": avg, "brackets": brackets}
 
 
+REPORT_URL = (
+    "https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction"
+    "&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A"
+)
+
+
+def loc_text(meta: dict, st_name: str) -> str:
+    return f"{meta['city']}, {st_name}" if meta.get("city") else st_name
+
+
+def _rail(meta, name, where, decided, total, grads, net_price) -> str:
+    """The right-hand 'At a glance' rail, shown above 1200px (September 2026 review). Every value
+    repeats one already on the page, so hiding the rail on narrower screens loses nothing."""
+    facts = [("Location", where)]
+    if meta.get("control"):
+        facts.append(("Type", meta["control"]))
+    facts.append(("Programs with a verdict", f"{decided} of {total}"))
+    if grads:
+        facts.append(("Recent graduates", f"{int(grads):,}"))
+    if net_price and net_price.get("avg") is not None:
+        facts.append(("Average net price", f"{money(net_price['avg'])} a year"))
+    facts.append(("Data", f"College Scorecard, {SCORECARD_RELEASE}"))
+    dl = "".join(f"<dt>{esc(k)}</dt><dd>{esc(str(v))}</dd>" for k, v in facts)
+    links = []
+    if net_price and (net_price.get("avg") is not None or any(net_price.get("brackets") or [])):
+        links.append('<li><a href="#cost">What it would cost</a></li>')
+    links.append('<li><a href="#programs">Program earnings</a></li>')
+    links.append('<li><a href="/compare/">Compare with another college</a></li>')
+    links.append(f'<li><a href="{REPORT_URL}">Report an error</a></li>')
+    return (
+        f'    <aside class="rail" aria-label="{esc(name)} at a glance"><div class="rail__inner">'
+        f"<h2>At a glance</h2><dl>{dl}</dl>"
+        f'<ul class="rail__links">{"".join(links)}</ul></div></aside>\n'
+    )
+
+
 def canonical_page(
     meta: dict,
     rows: list[dict],
@@ -246,7 +282,8 @@ def canonical_page(
     cov_pct = round(100 * decided / total) if total else 0
 
     parts = [head(title, desc, canonical, ld, og_image=f"/og/college/{slug}.png")]
-    parts.append('  <main class="wrap pg">\n')
+    parts.append('  <main class="wrap pg has-rail">\n')
+    parts.append(_rail(meta, name, loc_text(meta, st_name), decided, total, grads, net_price))
     parts.append(
         f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; '
         f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n'
@@ -255,7 +292,8 @@ def canonical_page(
     loc = f"{esc(meta['city'])}, {esc(st_name)}" if meta.get("city") else esc(st_name)
     ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
     parts.append(f'    <p class="idline">{loc}{ctrl}</p>\n')
-    parts.append(f'    <div class="verdict">{verdict}</div>\n')
+    # The box runs to the page's shared edge; the sentence inside keeps a reading measure.
+    parts.append(f'    <div class="verdict"><p class="verdict__text">{verdict}</p></div>\n')
 
     # B10 affordability: net price by income + the "what would this cost you" calculator, reusing the
     # live summary's calculator (income x years arithmetic on published net price). The static table
@@ -270,7 +308,7 @@ def canonical_page(
             }
             for r in rows
         ]
-        parts.append('    <h2 class="sec">What would this cost you?</h2>\n')
+        parts.append('    <h2 class="sec" id="cost">What would this cost you?</h2>\n')
         # Default the years to the school's usual credential: a certificate school shown "over 4
         # years" overstated the cost fourfold (audit V19).
         ug = [r["credential"] for r in rows if not r.get("grad")]
@@ -307,7 +345,9 @@ def canonical_page(
             "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
         )
 
-    parts.append('    <h2 class="sec">Program earnings vs a high-school graduate</h2>\n')
+    parts.append(
+        '    <h2 class="sec" id="programs">Program earnings vs a high-school graduate</h2>\n'
+    )
     # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
     # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
     # This MUST sit OUTSIDE the .tw-profile-static mount: progressive enhancement replaces that mount's

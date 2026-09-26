@@ -170,9 +170,11 @@ PG_CSS = """/* One page shell for the whole site. The main element keeps the sha
 .idline { color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure-tight); margin: 0 0 18px; }
 .offname { color: var(--ink-faint); }
 .progsub { color: var(--ink-faint); font-size: var(--t-fine); display: block; margin-top: 2px; }
-/* The verdict is the argument of the page, so it is set in the editorial serif and capped at a
-   reading measure rather than inheriting the 860px the program table needs. */
-.verdict { border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; padding: 16px 20px; margin: 16px 0; font-family: var(--display); font-size: var(--t-lede); line-height: 1.5; max-width: var(--measure); }
+/* The verdict is the argument of the page, set in the editorial serif. Like every block on the page
+   it runs to the shared 860px edge: capped narrower, it and the calculator each ended at their own
+   width and the page's right edge stepped in and out (September 2026 review). */
+.verdict { border-left: 4px solid var(--brand); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; padding: 16px 20px; margin: 16px 0; font-family: var(--display); font-size: var(--t-lede); line-height: 1.5; }
+.verdict__text { max-width: var(--measure); margin: 0; }
 .verdict b { color: var(--ink); }
 /* Caution tokens, 4.67 on their own background; the pill also states its meaning in words. */
 .gem { display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 2px 10px; font-size: var(--t-label); font-weight: 600; margin-left: 6px; }
@@ -203,7 +205,7 @@ table.t a:hover { color: var(--brand); text-decoration: underline; }
 @media (prefers-reduced-motion: no-preference) { .pbar i { transition: width .3s ease; } }
 .np td.num { font-variant-numeric: tabular-nums; }
 .src { color: var(--ink-faint); font-size: var(--t-fine); max-width: var(--measure); margin: 22px 0 0; line-height: 1.5; }
-.calc { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); max-width: 720px; }
+.calc { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; margin: 12px 0 18px; background: var(--bg-alt); }
 .calc-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--t-ui); }
 .calc-controls select { border: 1px solid var(--line); border-radius: var(--r-md); padding: 7px 10px; font-size: var(--t-ui); background: #fff; color: var(--ink); }
 /* The payback sentence is prose about a number, not a control label, so it takes the serif. */
@@ -453,11 +455,12 @@ def _calculator(s, np_, brackets, labels, programs, years: int = 4) -> str:
         "\"<p class='calc-note'>Net price is not reported for that income band at this school.</p>\"; return; }\n"
         "        var total = per * y;\n"
         "        var h = '<p class=\"calc-big\">About <b>' + money(per) + '</b> per year, "
-        "or <b>' + money(total) + '</b> over ' + y + ' years.</p>';\n"
+        "or <b>' + money(total) + '</b> over ' + y + (y == 1 ? ' year' : ' years') + '.</p>';\n"
         "        if (D.payback != null) {\n"
-        '          h += \'<p class="calc-note">Graduates of this school\\u2019s programs that clear the '
-        "earnings bar typically recoup what they borrowed in about <b>' + D.payback + ' year' + "
-        "(D.payback == 1 ? '' : 's') + '</b> of their earnings premium over a typical high-school graduate.</p>';\n"
+        '          h += \'<p class="calc-note">For this school\\u2019s programs that clear the '
+        "earnings bar, typical federal debt equals about <b>' + D.payback + ' year' + "
+        "(D.payback == 1 ? '' : 's') + '</b> of their yearly earnings gain over a typical high-school "
+        "graduate. That is a ratio, not how long repayment takes.</p>';\n"
         "        }\n"
         '        h += \'<p class="calc-note">This is arithmetic on published figures, not a quote or a '
         "prediction: it multiplies the reported net price for that income band by the number of years you "

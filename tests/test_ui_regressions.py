@@ -723,12 +723,19 @@ def test_the_profile_argument_is_set_in_the_editorial_serif():
     sans. They also inherited the 860px width the program table needs, which put prose at roughly
     115 characters a line. Serif plus a measure, on the two elements that carry the reasoning."""
     src = (PIPELINE / "build_college_pages.py").read_text()
-    for cls in (".verdict", ".calc-big"):
-        rule = re.search(rf"\n\s*{re.escape(cls)} \{{\{{?(.+?)\}}\}}?", src)
-        assert rule, f"{cls} rule not found in head()"
-        body = rule.group(1)
-        assert "var(--display)" in body, f"{cls} should carry the editorial serif"
-        assert "var(--measure)" in body, f"{cls} should be capped at a reading measure, not 860px"
+
+    def rule(cls):
+        m = re.search(rf"\n\s*{re.escape(cls)} \{{\{{?(.+?)\}}\}}?", src)
+        assert m, f"{cls} rule not found in head()"
+        return m.group(1)
+
+    # The verdict box runs to the page's shared 860px edge (September 2026 review: boxes of
+    # different widths made the right edge step in and out); its sentence keeps the measure.
+    assert "var(--display)" in rule(".verdict"), ".verdict should carry the editorial serif"
+    assert "var(--measure)" in rule(".verdict__text"), (
+        "the verdict sentence needs a reading measure"
+    )
+    assert "var(--display)" in rule(".calc-big") and "var(--measure)" in rule(".calc-big")
 
 
 def test_display_type_is_reserved_for_the_figure_not_the_sentence():
@@ -2141,3 +2148,16 @@ def test_every_page_has_a_skip_link_and_an_escapable_menu(tmp_path, monkeypatch)
     assert 'e.key!=="Escape"' in h and ".nav-toggle[open]" in h
     css = (SITE / "styles.css").read_text()
     assert ".skip-link:focus" in css and "#to-top:not(.show) { visibility: hidden; }" in css
+
+
+def test_on_this_page_rails_point_at_real_headings():
+    """September 2026 review: long documents get an 'On this page' rail in the empty right-hand
+    space. Every link must land on a heading that exists, and every section must be listed."""
+    for page in ("methodology/index.html", "about/index.html"):
+        html = (SITE / page).read_text()
+        rail = re.search(r'<aside class="rail" aria-label="On this page">(.*?)</aside>', html, re.S)
+        assert rail, f"{page} lost its rail"
+        links = re.findall(r'href="#([^"]+)"', rail.group(1))
+        body = html[rail.end() :]
+        ids = re.findall(r'<h2[^>]* id="([^"]+)"', body)
+        assert links == ids, f"{page}: rail {links} does not match its sections {ids}"

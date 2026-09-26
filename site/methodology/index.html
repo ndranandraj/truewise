@@ -74,12 +74,13 @@
   </header>
   <span id="main" tabindex="-1"></span>
 
-  <main class="wrap doc">
+  <main class="wrap doc has-rail">
+    <aside class="rail" aria-label="On this page"><div class="rail__inner"><h2>On this page</h2><ul><li><a href="#sources">Sources</a></li><li><a href="#the-earnings-premium-test-value-check">The earnings-premium test (Value Check)</a></li><li><a href="#the-headline-number-in-full">The headline number, in full</a></li><li><a href="#principles">Principles</a></li><li><a href="#why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</a></li><li><a href="#cite-this">Cite this</a></li><li><a href="#the-other-modules-in-brief">The other modules, in brief</a></li><li><a href="#known-limitations">Known limitations</a></li></ul></div></aside>
     <h1>Methodology</h1>
     <p class="updated">How every number on Truewise is computed. Last updated 2026-09-23. Data vintages: College
       Scorecard release 2026-06-10; BLS OEWS May 2025 + Employment Projections 2025-35; CRDC 2023-24.</p>
 
-    <h2>Sources</h2>
+    <h2 id="sources">Sources</h2>
     <p>Everything comes from public U.S. federal data. College outcomes use two College Scorecard bulk files
       (most recent release, 2026-06-10), joined on the IPEDS <span class="mono">UNITID</span>: the
       <b>Field-of-Study file</b> (per program: median earnings after completion, median debt) and the
@@ -87,7 +88,7 @@
       adds the <b>NCES CIP-to-SOC crosswalk</b>, <b>BLS OEWS</b> wages, and <b>BLS Employment Projections</b>.
       High-school data comes from the <b>Civil Rights Data Collection (CRDC)</b>.</p>
 
-    <h2>The earnings-premium test (Value Check)</h2>
+    <h2 id="the-earnings-premium-test-value-check">The earnings-premium test (Value Check)</h2>
     <p>For each program (school × 4-digit CIP × credential) we take median earnings <b>four years after
       completion</b>, the same figure the Department of Education displays on the public College Scorecard site,
       falling back to the one-year figure only where the four-year value is suppressed, and compare it to the
@@ -99,7 +100,7 @@
         shown as "not enough data", never guessed.</li>
     </ul>
 
-    <h2>The headline number, in full</h2>
+    <h2 id="the-headline-number-in-full">The headline number, in full</h2>
     <p>Our headline is that <b>1 in 10 undergraduate programs with reported earnings</b> have graduates who
       earn less than a typical high-school graduate. Here is exactly what is behind it, including the parts most
       coverage leaves out:</p>
@@ -155,7 +156,7 @@
       the exact script is <code>analysis/summary.py</code> in the
       <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>
 
-    <h2>Principles</h2>
+    <h2 id="principles">Principles</h2>
     <ul>
       <li><b>Never impute.</b> Suppressed values (<span class="mono">PS</span>, <span class="mono">NA</span>)
         become null and render as "insufficient data", never guessed. This rule is enforced by a data-quality
@@ -175,7 +176,7 @@
         to do. Full write-up: <a href="https://github.com/ndranandraj/truewise/blob/main/docs/AUDIT.md">AUDIT.md</a>.</p>
     </div>
 
-    <h2>Why do other studies say 1 in 4?</h2>
+    <h2 id="why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</h2>
     <p>Some coverage (for example a widely cited HEA Group study) reports that attendees of about 1 in 4 higher-ed
       programs earn less than high-school graduates. The difference from our 1 in 10 is not a contradiction, it is
       three definitional choices:</p>
@@ -189,7 +190,7 @@
     </ul>
     <p>All three are defensible; we state ours plainly so the number is reproducible.</p>
 
-    <h2>Cite this</h2>
+    <h2 id="cite-this">Cite this</h2>
     <div class="callout">
       <p style="margin:0 0 8px">If you use the Truewise dataset or code, please cite it:</p>
       <p class="mono citation">Anandraj. (2026). Truewise: open US college program value data from the College Scorecard (Version 0.1.0) [Data set and software]. Zenodo. https://doi.org/10.5281/zenodo.21781702</p>
@@ -201,7 +202,7 @@
         "Cite this repository" button reads from it.</p>
     </div>
 
-    <h2>The other modules, in brief</h2>
+    <h2 id="the-other-modules-in-brief">The other modules, in brief</h2>
     <p><b>Affordability</b> shows net price by family-income bracket (College Scorecard <span class="mono">NPT41</span>
       to <span class="mono">NPT45</span>), coalesced across a school's sector; suppressed brackets show as "not
       reported". <b>Debt as years of gain</b> divides a program's median federal debt by its yearly earnings
@@ -216,7 +217,7 @@
       <a href="https://github.com/ndranandraj/truewise/blob/main/docs/METHODOLOGY.md">METHODOLOGY.md</a> and the
       <a href="https://github.com/ndranandraj/truewise/blob/main/docs/DATA_DICTIONARY.md">data dictionary</a>.</p>
 
-    <h2>Known limitations</h2>
+    <h2 id="known-limitations">Known limitations</h2>
     <ul>
       <li>Earnings cohorts predate the current year; figures describe past graduates.</li>
       <li>The debt-to-earnings ratio shown is a plain ratio, not the amortized federal D/E rate.</li>
