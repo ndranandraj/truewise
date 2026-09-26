@@ -131,3 +131,7 @@ pilot/
 
 # Staged canonical profiles (Stage 4.3b; built and reviewed before the Stage 5 cutover, never deployed)
 staging/
+
+# Design prototypes: local only, never committed or deployed (design plan, Sept 2026)
+/site/_proto/
+/design/prototypes/
