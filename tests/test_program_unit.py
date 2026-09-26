@@ -116,3 +116,35 @@ def test_a_school_with_only_unbenchmarked_earnings_claims_no_verdict():
     assert "reports graduate earnings for <b>2</b>" in html
     assert "<b>0 of 3</b> programs could be assessed" in html
     assert "no benchmark" in html and "(a typical high-school graduate/yr)" not in html
+
+
+def test_plain_names_do_not_rename_a_field_into_another():
+    """Audit D10: CIP 40.04 (Atmospheric Sciences and Meteorology) was shown as "Physics", so UCLA
+    listed two different Physics rows; four more names narrowed a broad field to one specialty."""
+    from pipeline.cip_names import plain_name
+
+    assert plain_name("4004", "Atmospheric Sciences and Meteorology.") != plain_name(
+        "4008", "Physics."
+    )
+    assert "Meteorology" in plain_name("4004", "Atmospheric Sciences and Meteorology.")
+    assert plain_name("4902", "Ground Transportation.") == "Ground Transportation"
+
+
+def test_a_one_year_verdict_is_marked_as_one():
+    """Audit D7: a verdict on one-year earnings looked identical to one on four-year earnings."""
+    r = _row(value_flag="fails_earnings_premium", earnings_horizon="1yr_after_completion")
+    assert "falls short (1-yr)" in verdict_chip(r)
+    assert "(1-yr)" not in verdict_chip(_row())
+
+
+def test_graduate_counts_are_the_ones_ed_displays():
+    """Audit D8: "Recent completers" used IPEDSCOUNT1, a different award year from the count ED's
+    site shows, so UCLA's MBA read 3 graduates beside $223,358 while ED showed 46."""
+    from pipeline.config import FOS_FIELD_CANDIDATES, ROOT
+
+    assert FOS_FIELD_CANDIDATES["completers_count"][0] == "IPEDSCOUNT2"
+    got = duckdb.sql(
+        f"SELECT completers_count FROM '{ROOT / 'published' / 'value_check.parquet'}' "
+        "WHERE unitid = '110662' AND cip_code = '5202' AND credential_level = '5'"
+    ).fetchone()
+    assert got and got[0] == 46

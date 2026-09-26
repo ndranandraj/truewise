@@ -47,7 +47,10 @@ FOS_FIELD_CANDIDATES: dict[str, list[str]] = {
     "cip_desc": ["CIPDESC"],
     "credential_level": ["CREDLEV"],
     "credential_desc": ["CREDDESC"],
-    "completers_count": ["IPEDSCOUNT1", "IPEDSCOUNT2"],
+    # IPEDSCOUNT2 is the graduate count ED's College Scorecard site displays ("Number of
+    # Graduates"); IPEDSCOUNT1 is a different award year and disagreed with it (UCLA's MBA showed 3
+    # against ED's 46). Audit D8, September 2026.
+    "completers_count": ["IPEDSCOUNT2", "IPEDSCOUNT1"],
     # Median earnings after completion.
     "earnings_median_1yr": ["EARN_MDN_1YR", "EARN_MDN_HI_1YR"],
     "earnings_median_4yr": ["EARN_MDN_4YR", "EARN_MDN_HI_4YR"],

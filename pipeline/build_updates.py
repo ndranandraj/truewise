@@ -96,6 +96,18 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "September 2026",
+        "title": "Graduate counts now match the College Scorecard site",
+        "body": (
+            'The "Recent completers" column used a graduate count from a different award year than '
+            "the one the Department of Education's College Scorecard site displays, so some programs "
+            "showed very different numbers (UCLA's MBA read 3 against ED's 46). Every count now uses "
+            "the figure ED displays. Earnings, debt and verdicts are unchanged; the rate weighted by "
+            "graduates moved from 9.3% to 9.7%."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "September 2026",
         "title": "The headline now counts each undergraduate program once",
         "body": (
             "We said 1 in 11 college programs with reported earnings (5,396 of 60,202) have "

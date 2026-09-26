@@ -300,13 +300,15 @@ def verdict_chip(r: dict) -> str:
         return '<span class="tw-verdict tw-verdict--insuf">insufficient data</span>'
     if r["verdict"] == "nobench":
         return '<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>'
+    # A verdict on one-year earnings is an early-career reading: one-year figures fall short about
+    # five times as often as four-year ones for the same programs (audit D7), so it says so.
+    early = " (1-yr)" if r.get("horizon") == "1yr_after_completion" else ""
+    mod = "pass" if r["verdict"] == "pass" else "fail"
     if r.get("grad"):
         word = "above" if r["verdict"] == "pass" else "below"
-        mod = "pass" if r["verdict"] == "pass" else "fail"
-        return f'<span class="tw-verdict tw-verdict--{mod}">{word} HS line</span>'
-    if r["verdict"] == "pass":
-        return '<span class="tw-verdict tw-verdict--pass">clears the bar</span>'
-    return '<span class="tw-verdict tw-verdict--fail">falls short</span>'
+        return f'<span class="tw-verdict tw-verdict--{mod}">{word} HS line{early}</span>'
+    word = "clears the bar" if r["verdict"] == "pass" else "falls short"
+    return f'<span class="tw-verdict tw-verdict--{mod}">{word}{early}</span>'
 
 
 def _static_row(r: dict) -> str:

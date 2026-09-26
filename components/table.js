@@ -340,12 +340,12 @@
       // Mirrors verdict_chip in pipeline/build_profile_pilot.py.
       if (r.verdict === "insufficient") return `<span class="tw-verdict tw-verdict--insuf">insufficient data</span>`;
       if (r.verdict === "nobench") return `<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>`;
+      const early = r.horizon === "1yr_after_completion" ? " (1-yr)" : "";
+      const pass = r.verdict === "pass";
       if (r.grad) {
-        const pass = r.verdict === "pass";
-        return `<span class="tw-verdict tw-verdict--${pass ? "pass" : "fail"}">${pass ? "above" : "below"} HS line</span>`;
+        return `<span class="tw-verdict tw-verdict--${pass ? "pass" : "fail"}">${pass ? "above" : "below"} HS line${early}</span>`;
       }
-      if (r.verdict === "pass") return `<span class="tw-verdict tw-verdict--pass">clears the bar</span>`;
-      return `<span class="tw-verdict tw-verdict--fail">falls short</span>`;
+      return `<span class="tw-verdict tw-verdict--${pass ? "pass" : "fail"}">${pass ? "clears the bar" : "falls short"}${early}</span>`;
     }
 
     _premiumCell(r) {

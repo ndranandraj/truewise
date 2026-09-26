@@ -257,7 +257,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     # The figure and the year are what earn the click in a search result.
     # Keep this near 60 characters so search results do not truncate it. The credential lives in
     # the description and on the page; the figure and the year are what earn the click.
-    title = f"{short_label(cip, name)} degree salary: {lead_earn} median (2026 federal data)"
+    title = f"{short_label(cip, name)}: what graduates earn, {lead_earn} median (College Scorecard)"
     desc = (
         f"{plain} graduates typically earn about {lead_earn} ({lead_cred}). See median earnings by "
         f"degree level, the range across schools, and the job outlook. From federal data."

@@ -32,7 +32,7 @@ PLAIN: dict[str, str] = {
     "5108": "Medical Assisting",
     "5109": "Allied Health Diagnostics and Treatment",
     "5100": "Health Sciences",
-    "5102": "Speech-Language Pathology and Audiology",
+    "5102": "Communication Disorders",
     "5106": "Dental Assisting and Hygiene",
     "5115": "Mental Health and Counseling Services",
     "5112": "Medicine",
@@ -65,7 +65,7 @@ PLAIN: dict[str, str] = {
     "1405": "Biomedical Engineering",
     # Social sciences and humanities
     "4201": "Psychology",
-    "4228": "Counseling Psychology",
+    "4228": "Clinical and Counseling Psychology",
     "4227": "Research Psychology",
     "4301": "Criminal Justice",
     "4510": "Political Science",
@@ -92,7 +92,7 @@ PLAIN: dict[str, str] = {
     "0301": "Natural Resources and Conservation",
     "2615": "Neuroscience",
     "2602": "Biochemistry and Molecular Biology",
-    "4004": "Physics",
+    "4004": "Atmospheric Sciences and Meteorology",
     "4008": "Physics",
     "4006": "Geology and Earth Science",
     # Education
@@ -102,7 +102,7 @@ PLAIN: dict[str, str] = {
     "1310": "Special Education",
     "1301": "Education",
     "1303": "Curriculum and Instruction",
-    "1311": "School Counseling",
+    "1311": "Student Counseling and Personnel Services",
     # Arts, media and communication
     "0901": "Communications and Media",
     "0909": "Public Relations and Advertising",
@@ -120,7 +120,7 @@ PLAIN: dict[str, str] = {
     "4702": "HVAC Technology",
     "4805": "Precision Metalworking",
     "4603": "Electrician Training",
-    "4902": "Commercial Driving",
+    "4902": "Ground Transportation",
     "3105": "Kinesiology and Physical Education",
 }
 
