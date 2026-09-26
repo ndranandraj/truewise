@@ -1379,6 +1379,13 @@ def test_no_two_college_pages_share_a_description():
         if m:
             by_desc.setdefault(m.group(1), []).append(p.parent.name)
     dupes = {k: v for k, v in by_desc.items() if len(v) > 1}
+    # One named exception. These two Royal Learning Institute records (UNITIDs 495165 and 495396)
+    # are identical in every field ED publishes: the same OPEID 042849, name, single program, no
+    # location and no graduate count. Their descriptions differed only while graduate counts came
+    # from IPEDSCOUNT1; with the count ED displays (September 2026) nothing true separates them
+    # but the record number. The pair is already an approved title collision.
+    identical = {frozenset({"royal-learning-institute", "royal-learning-institute-zz"})}
+    dupes = {k: v for k, v in dupes.items() if frozenset(v) not in identical}
     assert not dupes, f"{len(dupes)} duplicate description groups: {list(dupes.values())[:5]}"
 
 
