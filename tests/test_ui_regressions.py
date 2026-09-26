@@ -1737,6 +1737,18 @@ def test_hand_written_pages_carry_no_old_blue():
             assert value.replace(" ", "") not in text, f"{rel} still uses the old blue {value}"
 
 
+def test_the_favicon_is_in_the_current_brand():
+    """The pages lost the old blue, but the browser-tab icon kept it: a #1f6feb square with an Arial
+    't', the one piece of the old design every visitor still saw (Anand, 26 September). The test
+    above only read pages. The icon now uses brand-deep and paper from the tokens."""
+    from pipeline import tokens_gen as tk
+
+    svg = (SITE / "favicon.svg").read_text().lower()
+    assert "#1f6feb" not in svg, "the favicon is still the old blue"
+    assert tk.BRAND_DEEP.lower() in svg, "the favicon should use the brand-deep token"
+    assert "serif" in svg, "the favicon 't' should be the serif, like the wordmark"
+
+
 def test_page_titles_and_ledes_use_the_type_tokens():
     """Page titles came in five sizes (41.6 to 48px) and ledes in three, one per hand-written page.
 
