@@ -148,3 +148,36 @@ def test_graduate_counts_are_the_ones_ed_displays():
         "WHERE unitid = '110662' AND cip_code = '5202' AND credential_level = '5'"
     ).fetchone()
     assert got and got[0] == 46
+
+
+def test_a_school_in_eds_file_is_not_told_it_has_no_record():
+    """Live on 27 Sep: 31 profiles (Guam Community College, the territory colleges, new campuses)
+    said ED's institution file had no record for the school, though it does. They lack a state
+    benchmark for another reason."""
+    from pipeline.build_canonical_profiles import canonical_page
+
+    rows = [_row(value_flag="insufficient_data", earnings_threshold_state=None)]
+    base = {"unitid": "1", "name": "Test College", "state": "GU", "control": None}
+    in_file, _ = canonical_page({**base, "in_institution_file": True}, rows, "t", None, 150)
+    missing, _ = canonical_page({**base, "in_institution_file": False}, rows, "t", None, 150)
+    assert (
+        "has no record" not in in_file
+        and "gives no state high-school earnings benchmark" in in_file
+    )
+    assert "has no record for this school" in missing
+
+
+def test_the_production_profile_carries_the_shared_campus_note():
+    """Phase 1 wrote the shared-OPEID note, but the production meta dropped the keys it needs, so
+    it appeared on no page. The builder's meta must pass them through."""
+    from pipeline.build_canonical_profiles import canonical_page
+    from pipeline.build_college_pages import profile_meta
+
+    s = {"name": "Test College", "state": "PA", "control": "Public", "city": "Altoona"}
+    meta = profile_meta(s, {"shared": 3, "opeid6": "003329"}, True)
+    assert meta["shared"] == 3 and meta["opeid6"] == "003329" and meta["in_institution_file"]
+    html, _ = canonical_page(meta, [_row()], "t", 35000.0, 150)
+    assert "all campuses under one federal ID (OPEID 003329)" in html
+    # A missing OPEID from pandas arrives as NaN and must never print as "nan".
+    assert profile_meta(s, {"opeid6": float("nan")}, True)["opeid6"] is None
+    assert profile_meta(s, {}, False)["shared"] == 0

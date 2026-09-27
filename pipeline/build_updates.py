@@ -96,6 +96,20 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "September 2026",
+        "title": "Two statements on college pages corrected",
+        "body": (
+            "The entry below said college pages now say when a program's figures are shared with "
+            "other campuses. That note was written but did not reach the pages until 27 September; "
+            "it now appears on every campus page where it applies. Separately, 31 pages without a "
+            "state benchmark (among them the Guam, Northern Marianas, American Samoa and Virgin "
+            "Islands colleges) said the Department of Education's institution file had no record "
+            "of the school. It does; those schools lack a benchmark for another reason, and the "
+            "pages now say only that ED's data gives none. No figures changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "September 2026",
         "title": "Graduate counts now match the College Scorecard site",
         "body": (
             'The "Recent completers" column used a graduate count from a different award year than '

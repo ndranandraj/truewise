@@ -195,11 +195,20 @@ def canonical_page(
             f"program{'' if nobench == 1 else 's'}, with no state benchmark to compare them with. "
             f"{size} From federal data."
         )
+        # Why there is no benchmark depends on the school. Most are missing from ED's current
+        # institution file (often closed or merged). But 31 are in it, among them the territory
+        # colleges and newly opened campuses, and their pages used to say the file had no record.
+        why = (
+            "The Department of Education's data gives no state high-school earnings benchmark for "
+            "this school"
+            if meta.get("in_institution_file")
+            else "Its current institution file has no record for this school (often a closed or "
+            "merged school), so there is no state high-school benchmark"
+        )
         verdict = (
             f"The Department of Education reports graduate earnings for <b>{nobench}</b> of "
-            f"{esc(name)}'s <b>{total}</b> programs, shown below. Its current institution file has "
-            "no record for this school (often a closed or merged school), so there is no state "
-            "high-school benchmark to compare them with, and no verdict is given."
+            f"{esc(name)}'s <b>{total}</b> programs, shown below. {why} to compare them with, "
+            "and no verdict is given."
         )
     else:
         desc = (

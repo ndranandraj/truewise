@@ -114,6 +114,24 @@ BEACON = (
 UNKNOWN_STATE_LABEL = "Location not reported"
 
 
+def profile_meta(s: dict, pmeta: dict, in_institution_file: bool) -> dict:
+    """What canonical_page needs to know about a school, from the model and the program pass.
+
+    The shared-OPEID note and the no-benchmark reason both depend on the last three keys. The note
+    was written in Phase 1 but an earlier version of this dict dropped them, so it appeared on no
+    page (found 27 September 2026)."""
+    opeid = pmeta.get("opeid6")
+    return {
+        "name": s["name"],
+        "state": s["state"],
+        "control": s.get("control"),
+        "city": s.get("city"),
+        "shared": int(pmeta.get("shared") or 0),
+        "opeid6": opeid if isinstance(opeid, str) and opeid else None,
+        "in_institution_file": in_institution_file,
+    }
+
+
 def known_state(st) -> bool:
     return st in STATE_NAMES
 
@@ -904,19 +922,20 @@ def main() -> None:
     qualified = qualifying_schools(schools)
     slugs = build_slugs(qualified)
     profiles = all_profiles(con)  # one-pass {unitid: (meta, rows)} from the parquet
+    inst_path = ROOT / "published" / "institutions.parquet"
+    in_file = (
+        {r[0] for r in con.sql(f"SELECT unitid FROM '{inst_path}'").fetchall()}
+        if inst_path.exists()
+        else set()
+    )
 
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
     states_present: dict[str, list] = defaultdict(list)
     for u, s in qualified.items():
         slug = slugs[u]
-        _, rows = profiles.get(u, ({}, []))
-        meta = {
-            "name": s["name"],
-            "state": s["state"],
-            "control": s.get("control"),
-            "city": s.get("city"),
-        }
+        pmeta, rows = profiles.get(u, ({}, []))
+        meta = profile_meta(s, pmeta, u in in_file)
         html, tail_json = canonical_page(
             meta, rows, slug, s.get("threshold"), DEFAULT_THRESHOLD, s.get("net_price")
         )
