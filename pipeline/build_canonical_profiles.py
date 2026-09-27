@@ -272,6 +272,15 @@ def canonical_page(
         '  <script type="application/ld+json">\n  ' + _island_json(breadcrumb) + "\n  </script>\n"
     )
 
+    # Without a benchmark nothing is compared, so the heading and caption must not say "versus a
+    # typical <state> high-school graduate" (Prototype B review, 27 September: Guam's page said so
+    # beside "there is no state high-school benchmark").
+    if bench_txt:
+        caption = f"Programs by earnings versus a typical {of_state}high-school graduate."
+        prog_h2 = "Program earnings vs a high-school graduate"
+    else:
+        caption = "Programs and their published earnings. No benchmark, so no verdicts."
+        prog_h2 = "Program earnings"
     static_rows = rows[:threshold]
     tail = rows[threshold:]
     body_rows = "".join(_static_row(r) for r in static_rows)
@@ -280,7 +289,7 @@ def canonical_page(
         {
             "rows": static_rows,
             "coverage": {"measured": decided, "total": total},
-            "caption": f"Programs by earnings versus a typical {of_state}high-school graduate.",
+            "caption": caption,
         }
     )
     profile_attrs = (
@@ -354,9 +363,7 @@ def canonical_page(
             "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
         )
 
-    parts.append(
-        '    <h2 class="sec" id="programs">Program earnings vs a high-school graduate</h2>\n'
-    )
+    parts.append(f'    <h2 class="sec" id="programs">{prog_h2}</h2>\n')
     # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
     # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
     # This MUST sit OUTSIDE the .tw-profile-static mount: progressive enhancement replaces that mount's
@@ -401,10 +408,7 @@ def canonical_page(
     parts.append(
         '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
     )
-    parts.append(
-        f'<caption class="tw-table__caption">Programs by earnings versus a typical {esc(of_state)}'
-        "high-school graduate.</caption>"
-    )
+    parts.append(f'<caption class="tw-table__caption">{esc(caption)}</caption>')
     parts.append(f"<thead><tr>{HEAD}</tr></thead><tbody>{body_rows}</tbody></table></div>\n")
     parts.append("      </div>\n    </div>\n")
 

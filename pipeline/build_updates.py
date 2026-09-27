@@ -104,7 +104,9 @@ CORRECTIONS = [
             "state benchmark (among them the Guam, Northern Marianas, American Samoa and Virgin "
             "Islands colleges) said the Department of Education's institution file had no record "
             "of the school. It does; those schools lack a benchmark for another reason, and the "
-            "pages now say only that ED's data gives none. No figures changed."
+            "pages now say only that ED's data gives none. On every page without a benchmark, the "
+            "program table's heading and caption no longer describe a comparison with a "
+            "high-school graduate that could not be made. No figures changed."
         ),
         "link": "/methodology/",
     },

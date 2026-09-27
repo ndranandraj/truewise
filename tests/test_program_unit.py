@@ -165,6 +165,10 @@ def test_a_school_in_eds_file_is_not_told_it_has_no_record():
         and "gives no state high-school earnings benchmark" in in_file
     )
     assert "has no record for this school" in missing
+    # With no benchmark nothing is compared, so the table must not say it compares anything.
+    for page in (in_file, missing):
+        assert "versus a typical" not in page and "vs a high-school graduate" not in page
+        assert "No benchmark, so no verdicts." in page
 
 
 def test_the_production_profile_carries_the_shared_campus_note():
