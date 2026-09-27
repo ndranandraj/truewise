@@ -136,18 +136,29 @@ const ROUTES = [
   { label: "embed-docs", path: "/about/embed/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },
   { label: "finding", path: "/findings/stats-grad-exposure/", kind: "static" },
-  /* The FVT/GE finding's college search, driven: a name must produce rows with the status. */
+  /* The FVT/GE finding's college lookup, driven: a name must produce rows with the status, and a
+   * name with no match must be announced in the status region, not left silent. */
   { label: "finding-fvtge", path: "/findings/fvtge-reporting/", kind: "flow",
     check: async (page) => {
-      await page.fill("#fv-q", "palomar");
-      await page.waitForTimeout(800);
+      await page.fill("#lk-q", "palomar");
+      await page.waitForSelector("#lk-rows li", { timeout: 10000 }).catch(() => {});
       const st = await page.evaluate(() => ({
-        rows: document.querySelectorAll("#fv-rows tr").length,
-        status: (document.getElementById("fv-status") || {}).textContent || "",
+        rows: document.querySelectorAll("#lk-rows li").length,
+        first: ((document.querySelector("#lk-rows li") || {}).textContent || "").replace(/\s+/g, " "),
+        status: (document.getElementById("lk-status") || {}).textContent || "",
       }));
-      const findings = st.rows ? [] : [{ kind: "fvtge-search", blocking: true,
-        detail: `Searching "palomar" returned no rows (status: "${st.status}").` }];
-      return { findings, steps: [{ step: "search-palomar", ...st }] };
+      await page.fill("#lk-q", "zzqx");
+      await page.waitForTimeout(200);
+      const none = await page.evaluate(() => ({
+        rows: document.querySelectorAll("#lk-rows li").length,
+        status: (document.getElementById("lk-status") || {}).textContent || "",
+      }));
+      const findings = [];
+      if (!st.rows || !/of 7/.test(st.first)) findings.push({ kind: "fvtge-search", blocking: true,
+        detail: `Searching "palomar" returned no rows (status: "${st.status}").` });
+      if (none.rows || !/No college on ED/.test(none.status)) findings.push({ kind: "fvtge-no-result", blocking: true,
+        detail: `Searching "zzqx" did not announce a no-result message (status: "${none.status}").` });
+      return { findings, steps: [{ step: "search-palomar", ...st }, { step: "search-no-match", ...none }] };
     } },
   { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },
   /* Opening a major on Careers in place must retitle the page and move focus to its heading, so

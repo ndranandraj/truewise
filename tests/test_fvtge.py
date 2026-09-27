@@ -214,3 +214,18 @@ def test_only_finding_pages_load_the_article_sheet(built):
 
     assert "article.css" in version_assets.SHEETS
     assert "/article.css\n  Cache-Control" in (bf.ROOT / "site" / "_headers").read_text()
+
+
+def test_the_browser_check_drives_the_lookup_that_exists(built):
+    """The deploy's layout check once waited 30s for #fv-q after the lookup was renamed #lk-q, and
+    blocked the release. Every id the check uses on this page must be on the page."""
+    _, _, out = built
+    html = (out / "index.html").read_text()
+    probe = (bf.ROOT / "tests" / "layout_probe.js").read_text()
+    block = probe[probe.index('label: "finding-fvtge"') : probe.index('label: "list"')]
+    ids = set(re.findall(r"#([a-z][\w-]*)", block)) | set(
+        re.findall(r'getElementById\("([\w-]+)"\)', block)
+    )
+    assert ids, "the check should name the elements it drives"
+    for i in ids:
+        assert f'id="{i}"' in html, f"layout_probe.js uses #{i}, which the page does not have"
