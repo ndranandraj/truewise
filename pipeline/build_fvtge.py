@@ -39,9 +39,11 @@ SITE = ROOT / "site"
 PUBLISHED = ROOT / "published"
 SLUG = "fvtge-reporting"
 OUT_DIR = SITE / "findings" / SLUG
-# The dateline. Update UPDATED_ON when the finding's content changes, not for a restyle.
+# The dateline. UPDATED_ON is an editorial date: advance it when the finding's wording, figures or
+# presentation change, never automatically on a cosmetic or unrelated deploy. The data's own date
+# ("as of 6 August 2026") comes from ED's compile date and is separate.
 PUBLISHED_ON = "23 Sep 2026"
-UPDATED_ON = "24 Sep"
+UPDATED_ON = "27 Sep 2026"
 
 COMPONENT_LABELS = [
     ("total2223", "Student file, total amounts, 2022-23"),

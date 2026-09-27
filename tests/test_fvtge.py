@@ -229,3 +229,9 @@ def test_the_browser_check_drives_the_lookup_that_exists(built):
     assert ids, "the check should name the elements it drives"
     for i in ids:
         assert f'id="{i}"' in html, f"layout_probe.js uses #{i}, which the page does not have"
+
+
+def test_the_dateline_carries_both_editorial_dates_in_full(built):
+    _, _, out = built
+    html = (out / "index.html").read_text()
+    assert "<span>Published 23 Sep 2026</span><span>updated 27 Sep 2026</span>" in html
