@@ -1,0 +1,112 @@
+/* Finding pages: the article template (design plan, Stage 2; Prototype A approved 27 September 2026).
+   Loaded only by finding pages, after styles.css and pg.css. Uses existing tokens; the spacing roles
+   below are additions scoped to the article, not changes to any shared token or selector. */
+
+.art {
+  --sp-control: 8px;    /* inside a control group */
+  --sp-related: 12px;   /* between related items */
+  --sp-group: 24px;     /* between groups in a section */
+  --sp-section: 56px;   /* between sections */
+  padding-top: 8px;
+  padding-bottom: 72px;
+}
+.art > * { max-width: 760px; }
+.art h1 { font-family: var(--display); font-size: var(--t-title); line-height: 1.1; letter-spacing: -0.03em; margin: 6px 0 10px; }
+.dateline { font-family: var(--mono); font-size: var(--t-label); color: var(--ink-faint); margin: 0 0 var(--sp-related); line-height: 1.5; }
+.dateline span + span::before { content: ", "; }
+
+/* Key finding: the one answer, with its qualifier inside the same component (R1). */
+.kf { background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--brand); border-radius: var(--r-md); padding: 20px 22px 18px; margin: 0 0 var(--sp-group); }
+@media (max-width: 520px) { .kf { padding: 16px 16px 14px; } }
+.kf__label { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
+/* A large mono number with its denominator in ordinary text beside it. The two wrap as whole units,
+   never mid-phrase. Its own line height, because .art p (1.6) would otherwise override it. */
+.kf__figure { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; margin: 0; }
+.kf__num { font-family: var(--mono); font-weight: 500; font-size: clamp(40px, 11vw, 64px); line-height: 1; letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.kf__of { font-family: var(--font); font-size: var(--t-sub); line-height: 1.3; color: var(--ink-soft); white-space: nowrap; }
+.art .kf__text { font-size: var(--t-sub); line-height: 1.45; color: var(--ink); margin: var(--sp-control) 0 0; max-width: 56ch; }
+.art .kf__qual { font-size: var(--t-ui); line-height: 1.5; color: var(--ink-soft); margin: var(--sp-related) 0 0; padding-top: var(--sp-related); border-top: 1px solid var(--line-soft); max-width: 62ch; }
+@media (max-width: 520px) { .art .kf__text { font-size: var(--t-ui); line-height: 1.5; } }
+.kf__qual b { color: var(--ink); }
+.kf__more { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: var(--sp-related) 0 0; font-size: var(--t-ui); color: var(--ink-soft); }
+.kf__more b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+
+/* Section nav. A labelled row of chips; on phones it sticks under the 65px header and scrolls
+   sideways, with a fade and a visible scrollbar so the later sections are discoverable. From 1200px
+   the side rail carries the same links, so the row is hidden there. */
+.sectnav { margin: 0 0 var(--sp-section); }
+.sectnav__label { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
+.sectnav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.sectnav a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-fine); color: var(--ink-soft); text-decoration: none; background: var(--surface); }
+.sectnav a:hover { border-color: var(--brand); color: var(--brand); }
+@media (max-width: 767px) {
+  .sectnav { position: sticky; top: 65px; z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
+  .sectnav__label { display: none; }
+  .sectnav__scroll { position: relative; }
+  .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
+  .sectnav ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .sectnav li:last-child { padding-right: 36px; }
+  .sectnav a { white-space: nowrap; }
+}
+@media (min-width: 1200px) { .sectnav { display: none; } }
+.art section { scroll-margin-top: 130px; margin: 0 0 var(--sp-section); }
+@media (min-width: 768px) { .art section { scroll-margin-top: 90px; } }
+.art .crumbs { margin-top: 12px; }
+.art h2 { font-family: var(--display); font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--sp-related); }
+.art p { line-height: 1.6; max-width: 66ch; }
+.why p { font-size: var(--t-sub); color: var(--ink-soft); }
+
+/* Bar chart built in HTML so its text scales with the reader's settings (R5). Length = share. */
+.bars { margin: var(--sp-group) 0 var(--sp-related); padding: 0; list-style: none; }
+.bars li { display: grid; grid-template-columns: minmax(7rem, 11rem) 1fr; gap: 4px 16px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.bars__name { font-weight: 600; font-size: var(--t-ui); }
+.bars__track { position: relative; height: 14px; background: var(--line-soft); border-radius: 2px; }
+.bars__fill { position: absolute; inset: 0 auto 0 0; background: var(--brand); border-radius: 2px; }
+.bars__val { grid-column: 2; font-size: var(--t-fine); color: var(--ink-soft); }
+.bars__val b { font-family: var(--mono); color: var(--ink); font-size: var(--t-ui); margin-right: 6px; }
+.chart-title { font-size: var(--t-ui); font-weight: 600; color: var(--ink); margin: var(--sp-group) 0 0; max-width: 62ch; }
+.chart-src { font-size: var(--t-fine); color: var(--ink-faint); margin: var(--sp-control) 0 0; }
+@media (max-width: 520px) { .bars li { grid-template-columns: 1fr; } .bars__val { grid-column: 1; } }
+
+/* Three rates on one scale. The estimate is quieter than the two observations. */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-related); margin: var(--sp-group) 0; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 16px 14px; }
+.stat__kind { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 6px; }
+.stat--est { background: transparent; border-style: dashed; }
+.stat--est .stat__fig { color: var(--ink-soft); }
+.stat--em { border-color: var(--brand); box-shadow: inset 0 3px 0 var(--brand); }
+.stat__fig { font-family: var(--mono); font-weight: 500; font-size: 34px; line-height: 1; letter-spacing: -0.03em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.stat__lab { font-size: var(--t-fine); color: var(--ink-soft); margin: 8px 0 0; line-height: 1.4; }
+@media (max-width: 520px) { .stats { grid-template-columns: 1fr; } .stat { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: baseline; } .stat__kind { grid-column: 1 / -1; } .stat__lab { margin: 0; } }
+.caveat { font-weight: 600; color: var(--ink); background: var(--bg-alt); border-left: 3px solid var(--caution); padding: 10px 14px; border-radius: 0 var(--r-sm) var(--r-sm) 0; max-width: 66ch; }
+
+.art table.t { font-size: var(--t-ui); }
+.art .tscroll { max-width: 760px; }
+
+/* Expandable method detail: only extended method text, never an interpretation-changing caveat (R2). */
+details.more { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px 0; margin: var(--sp-related) 0; }
+details.more summary { cursor: pointer; font-weight: 600; font-size: var(--t-ui); color: var(--brand); list-style-position: outside; }
+details.more summary:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+details.more[open] summary { margin-bottom: var(--sp-related); }
+details.more ul { padding-left: 20px; }
+details.more li { line-height: 1.6; margin: 0 0 8px; max-width: 66ch; }
+
+/* College lookup: an interactive area, so white. Label and field are one visible unit (R4). */
+.lookup { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px; }
+.lookup label { display: block; font-weight: 600; font-size: var(--t-ui); margin: 0 0 var(--sp-control); }
+.lookup .searchbox { max-width: none; }
+.lookup__status { font-size: var(--t-fine); color: var(--ink-soft); margin: var(--sp-related) 0 0; min-height: 1.4em; }
+.lookup__status--error { color: var(--bad); font-weight: 600; }
+.lookup__rows { list-style: none; margin: var(--sp-related) 0 0; padding: 0; }
+.lookup__rows li { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.lookup__name { font-weight: 600; overflow-wrap: anywhere; }
+.lookup__name a { color: var(--ink); }
+.lookup__meta { grid-column: 1; font-size: var(--t-fine); color: var(--ink-soft); }
+.lookup__count { grid-row: 1 / span 2; grid-column: 2; align-self: center; text-align: right; font-size: var(--t-fine); color: var(--ink-soft); }
+.lookup__count b { display: block; font-family: var(--mono); font-size: var(--t-sub); color: var(--ink); }
+.lookup__count--none b { color: var(--good); }
+.lookup .btn { margin-top: var(--sp-related); }
+
+.srcs { font-size: var(--t-fine); color: var(--ink-soft); padding-left: 20px; }
+.srcs code, .art code { overflow-wrap: anywhere; word-break: break-word; }
+.srcs li { margin: 0 0 6px; }

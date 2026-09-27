@@ -29,7 +29,7 @@ import json
 
 import duckdb
 
-from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head
+from pipeline.build_college_pages import BASE, BEACON, FOOTER, STATE_NAMES, esc, head, state_label
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -39,6 +39,9 @@ SITE = ROOT / "site"
 PUBLISHED = ROOT / "published"
 SLUG = "fvtge-reporting"
 OUT_DIR = SITE / "findings" / SLUG
+# The dateline. Update UPDATED_ON when the finding's content changes, not for a restyle.
+PUBLISHED_ON = "23 Sep 2026"
+UPDATED_ON = "24 Sep"
 
 COMPONENT_LABELS = [
     ("total2223", "Student file, total amounts, 2022-23"),
@@ -252,16 +255,44 @@ def _date(iso: str) -> str:
     return f"{int(d)} {months[int(m) - 1]} {y}"
 
 
+def _pct1(a, b) -> str:
+    return f"{100 * a / b:.1f}" if b else "0.0"
+
+
+def _place_row(x) -> str:
+    label = "Foreign institutions" if x["state"] == "FC" else state_label(x["state"])
+    return (
+        f"<tr><td>{esc(label)}</td><td class='num'>{x['n']:,}</td>"
+        f"<td class='num'>{x['missing']:,} ({_pct(x['missing'], x['n'])}%)</td></tr>"
+    )
+
+
+NAV_ITEMS = [
+    ("why", "Why it matters"),
+    ("sector", "By sector"),
+    ("files", "Which files"),
+    ("places", "By state"),
+    ("earnings", "Earnings link"),
+    ("lookup", "Look up a college"),
+    ("method", "Method"),
+]
+
+
 def render_page(s) -> str:
+    """The finding in the article template approved as Prototype A (design plan, 27 September 2026).
+
+    Styles come from /article.css, loaded by finding pages only, so no other page changes."""
     canonical = f"{BASE}/findings/{SLUG}/"
     when = _date(s["compiled"])
+    short_when = when.rsplit(" ", 1)[0]
+    total, missing = s["total"], s["missing"]
     a = s["assoc"]
     r_miss = 100 * a["fail_missing"] / a["n_missing"]
     r_comp = 100 * a["fail_complete"] / a["n_complete"]
     r_exp = 100 * a["expected_missing"]
     title = "Which colleges had not filed their federal earnings-transparency data?"
     desc = (
-        f"As of {when}, the Department of Education listed {s['missing']:,} of {s['total']:,} colleges as "
+        f"As of {when}, the Department of Education listed {missing:,} of {total:,} colleges as "
         f"not having submitted at least one required FVT/GE file; {s['none_filed']:,} had submitted no file at all. "
         "Searchable by college, with what the Scorecard shows about them."
     )
@@ -276,208 +307,242 @@ def render_page(s) -> str:
         SITE / "og" / "findings" / f"{SLUG}.png",
         f"Finding · federal reporting status, as of {when}",
         "Colleges that had not filed their FVT/GE data",
-        big=f"{s['missing']:,} of {s['total']:,}",
+        big=f"{missing:,} of {total:,}",
         big_color=OG_BAD,
         sub=f"{s['none_filed']:,} had submitted no file at all.",
     )
-    p = [head(title, desc, canonical, ld, og_image=f"/og/findings/{SLUG}.png")]
-    p.append('  <main class="wrap pg">\n')
-    p.append(
-        '    <nav class="crumbs"><a href="/findings/">Findings</a> &rsaquo; FVT/GE reporting status</nav>\n'
-    )
-    p.append(f"    <h1>{esc(title)}</h1>\n")
-    p.append(
-        f'    <div class="verdict">As of <b>{when}</b>, the U.S. Department of Education listed '
-        f"<b>{s['missing']:,}</b> of <b>{s['total']:,}</b> colleges ({_pct(s['missing'], s['total'])}%) as "
-        "not having submitted at least one of the seven FVT/GE file components required for the 2024 "
-        f"and 2025 reporting cycles. <b>{s['none_filed']:,}</b> had submitted no file at all, including "
-        f"<b>{s['all7']:,}</b> with all seven components marked not submitted (the others had some "
-        "components marked not required). The Department intends to publish program-level data and "
-        "statistics derived from these files in 2027. A new rule replaces the FVT/GE rule on 1 July "
-        "2027.</div>\n"
-    )
-    p.append(
-        '    <p class="src"><b>What the list does and does not say.</b> In the Department’s words: '
-        f"“{esc(ED_COMPLETENESS)}” And: {esc(ED_NOT_SUBMITTED)} Files the Department rejected "
-        "with errors count as not submitted. Colleges have until <b>15 January 2027</b> to submit anything "
-        "missing from the 2024 and 2025 cycles; the 2026 cycle is due <b>1 October 2026</b>. Filings made "
-        f"after {when} are not reflected here.</p>\n"
+    page_head = head(title, desc, canonical, ld, og_image=f"/og/findings/{SLUG}.png").replace(
+        "</head>", '  <link rel="stylesheet" href="/article.css" />\n</head>', 1
     )
 
-    # By sector.
-    p.append('    <h2 class="sec">By sector</h2>\n')
-    p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by sector">'
-        '<table class="t"><thead><tr><th>Sector</th><th class="num">Colleges listed</th>'
-        '<th class="num">At least one not submitted</th><th class="num">Submitted no file</th></tr></thead><tbody>\n'
+    # Sectors. Foreign institutions are a location group in ED's list, not a sector, so they are
+    # stated beside the chart rather than drawn as a fourth bar (review, 27 September).
+    real = [x for x in s["sectors"] if x["sector"] != "Foreign"]
+    foreign_sector = next((x for x in s["sectors"] if x["sector"] == "Foreign"), None)
+    bars = "".join(
+        f'<li><span class="bars__name">{esc(SECTOR_LABEL.get(x["sector"], x["sector"]))}</span>'
+        f'<span class="bars__track" aria-hidden="true"><span class="bars__fill" '
+        f'style="width:{_pct1(x["missing"], x["n"])}%"></span></span>'
+        f'<span class="bars__val"><b>{_pct(x["missing"], x["n"])}%</b>{x["missing"]:,} of '
+        f"{x['n']:,} colleges</span></li>"
+        for x in real
     )
-    for x in s["sectors"]:
-        p.append(
-            f"      <tr><td>{esc(SECTOR_LABEL.get(x['sector'], x['sector']))}</td>"
-            f"<td class='num'>{x['n']:,}</td>"
-            f"<td class='num'>{x['missing']:,} ({_pct(x['missing'], x['n'])}%)</td>"
-            f"<td class='num'>{x['none_filed']:,}</td></tr>\n"
-        )
-    p.append("    </tbody></table></div>\n")
-
-    # By component.
-    p.append('    <h2 class="sec">Which files are missing</h2>\n')
-    p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by file">'
-        '<table class="t"><thead><tr><th>Required component</th><th class="num">Not submitted</th>'
-        '<th class="num">Not required</th></tr></thead><tbody>\n'
+    foreign_note = (
+        f"<p>ED lists foreign institutions separately from the three sectors: "
+        f"{foreign_sector['missing']:,} of {foreign_sector['n']:,} "
+        f"({_pct(foreign_sector['missing'], foreign_sector['n'])}%) had at least one file not "
+        "submitted.</p>"
+        if foreign_sector
+        else ""
     )
-    for c in s["components"]:
-        p.append(
-            f"      <tr><td>{esc(c['label'])}</td><td class='num'>{c['not_submitted']:,}</td>"
-            f"<td class='num'>{c['not_required']:,}</td></tr>\n"
-        )
-    p.append("    </tbody></table></div>\n")
-    p.append(
-        '    <p class="src">“Not required” is the Department’s own status: for example, a '
-        "college that was not operating that year, or had no program large enough to report.</p>\n"
+    comps = "".join(
+        f"<tr><td>{esc(c['label'])}</td><td class='num'>{c['not_submitted']:,}</td>"
+        f"<td class='num'>{c['not_required']:,}</td></tr>"
+        for c in s["components"]
     )
 
-    # Association.
-    p.append('    <h2 class="sec">What the Scorecard shows about these colleges</h2>\n')
-    p.append(
-        f"    <p>Using the College Scorecard earnings Truewise already publishes (not the FVT/GE files "
-        f"themselves), programs at colleges with at least one file not submitted fail the earnings "
-        f"test more often: <b>{r_miss:.1f}%</b> of their programs with an earnings verdict, against "
-        f"<b>{r_comp:.1f}%</b> at colleges that had submitted everything required.</p>\n"
+    # Locations. Every code must have a name; ED's list includes territories and the freely
+    # associated states (Marshall Islands, Micronesia, Palau) as well as the 50 states and DC.
+    unnamed = [
+        x["state"] for x in s["states"] if x["state"] not in STATE_NAMES and x["state"] != "FC"
+    ]
+    if unnamed:
+        raise ValueError(f"location codes with no name: {unnamed}")
+    places = [x for x in s["states"] if x["state"] in STATE_NAMES]
+    foreign = next((x for x in s["states"] if x["state"] == "FC"), None)
+    top = sorted(
+        [x for x in places if x["n"] >= 30], key=lambda x: (-x["missing"] / x["n"], x["state"])
+    )[:8]
+    every = sorted(places, key=lambda x: state_label(x["state"])) + ([foreign] if foreign else [])
+    top_rows = "".join(_place_row(x) for x in top)
+    all_rows = "".join(_place_row(x) for x in every)
+    foreign_line = (
+        f"<p>Foreign institutions are listed separately by ED: {foreign['missing']:,} of "
+        f"{foreign['n']:,} ({_pct(foreign['missing'], foreign['n'])}%) had at least one file not "
+        "submitted.</p>"
+        if foreign
+        else ""
     )
-    p.append(
-        f"    <p>Part of that gap is who these colleges are. They are more often for-profit and offer "
-        f"more certificates, where fail rates are higher everywhere. Holding sector and credential "
-        f"fixed, the complete filers’ rates would predict <b>{r_exp:.1f}%</b> for the colleges "
-        f"with files not submitted. The actual figure is <b>{r_miss:.1f}%</b>, so about "
-        f"{r_miss - r_exp:.0f} points of the gap remain after that adjustment.</p>\n"
+    cells = "".join(
+        f"<tr><td>{esc(c['sector'])}, {esc(CRED_LABEL[c['cred']].lower())}</td>"
+        f"<td class='num'>{_pct1(c['fail_missing'], c['n_missing'])}% of {c['n_missing']:,}</td>"
+        f"<td class='num'>{_pct1(c['fail_complete'], c['n_complete'])}% of {c['n_complete']:,}</td></tr>"
+        for c in s["cells"]
     )
-    p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Fail rate by sector and credential">'
-        '<table class="t"><thead><tr><th>Sector and credential</th>'
-        '<th class="num">Fail rate, a file not submitted</th><th class="num">Fail rate, all submitted</th>'
-        "</tr></thead><tbody>\n"
-    )
-    for c in s["cells"]:
-        rm = 100 * c["fail_missing"] / c["n_missing"]
-        rc = 100 * c["fail_complete"] / c["n_complete"]
-        p.append(
-            f"      <tr><td>{esc(c['sector'])}, {esc(CRED_LABEL[c['cred']].lower())}</td>"
-            f"<td class='num'>{rm:.1f}% <span class='meta'>of {c['n_missing']:,}</span></td>"
-            f"<td class='num'>{rc:.1f}% <span class='meta'>of {c['n_complete']:,}</span></td></tr>\n"
-        )
-    p.append("    </tbody></table></div>\n")
-    p.append(
-        '    <p class="src"><b>This is an association, not an explanation.</b> It does not show that a '
-        "missing file hides worse results, or that any college’s data is incomplete. It says that, in "
-        "public Scorecard data, the programs at these colleges have tended to leave graduates earning "
-        "less relative to a high-school graduate.</p>\n"
-    )
-
-    # By state.
-    p.append('    <h2 class="sec">By state</h2>\n')
-    p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by state">'
-        '<table class="t"><thead><tr><th>State</th><th class="num">Colleges listed</th>'
-        '<th class="num">At least one not submitted</th><th class="num">Submitted no file</th></tr></thead><tbody>\n'
-    )
-    for x in s["states"]:
-        label = "Foreign institutions" if x["state"] == "FC" else x["state"]
-        p.append(
-            f"      <tr><td>{esc(label)}</td><td class='num'>{x['n']:,}</td>"
-            f"<td class='num'>{x['missing']:,} ({_pct(x['missing'], x['n'])}%)</td>"
-            f"<td class='num'>{x['none_filed']:,}</td></tr>\n"
-        )
-    p.append("    </tbody></table></div>\n")
-
-    # Institution search.
-    p.append('    <h2 class="sec" id="search">Look up a college</h2>\n')
-    p.append(
-        '    <label class="field-label" for="fv-q">Search the Department’s list by name</label>\n'
-        '    <div class="searchbox"><input id="fv-q" type="search" autocomplete="off" '
-        'placeholder="e.g. Palomar" aria-describedby="fv-status" /></div>\n'
-        '    <p class="idline" id="fv-status" role="status" aria-live="polite">Type two or more letters.</p>\n'
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Colleges on the Department’s list">'
-        '<table class="t"><thead><tr><th>College</th><th>State</th>'
-        '<th class="num">Components not submitted</th><th class="num">Programs Truewise can assess</th>'
-        '</tr></thead><tbody id="fv-rows"></tbody></table></div>\n'
-        '    <noscript><p class="src">Searching needs JavaScript. Every college on the list is in the '
-        "CSV below.</p></noscript>\n"
-    )
+    chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in NAV_ITEMS)
     csv_name = f"fvtge-reporting-{s['compiled']}.csv"
-    p.append(
-        f'    <div class="cta-row"><a class="btn" href="/findings/{SLUG}/{csv_name}" download>'
-        "Download every college on the list (CSV) &darr;</a></div>\n"
+    thead = (
+        '<thead><tr><th>{}</th><th class="num">Colleges listed</th>'
+        '<th class="num">At least one not submitted</th></tr></thead>'
     )
 
-    # Method.
-    p.append('    <h2 class="sec">Method and sources</h2>\n')
-    p.append(
-        "    <ul>\n"
-        f"      <li><b>The list.</b> The Department’s “List of Institutions That Previously "
-        f"Submitted FVT/GE Data”, attached to electronic announcement GENERAL-26-49 (11 August 2026) "
-        f"and compiled on {when}. It covers open colleges with at least one program, at the four-digit CIP "
-        "level, that meets the Department’s minimum of 30 completers; statuses are restated here exactly as the Department published them.</li>\n"
-        f"      <li><b>The join.</b> By six-digit OPEID. {s['matched']:,} of the {s['total']:,} colleges on "
-        "the list have programs in the College Scorecard data Truewise publishes.</li>\n"
-        "      <li><b>The fail rate.</b> The earnings-premium test Truewise applies to every program: "
-        "graduates’ median earnings against a typical high-school graduate in the state. Programs "
-        "without enough data for a verdict are excluded from both rates.</li>\n"
-        "      <li><b>The adjustment.</b> For each sector and credential, the complete filers’ fail "
-        "rate is applied to the number of programs at colleges with files not submitted, and summed.</li>\n"
-        "    </ul>\n"
+    body = f"""  <main class="wrap art has-rail">
+    <aside class="rail" aria-label="On this page"><div class="rail__inner"><h2>On this page</h2><ul>{chips}</ul></div></aside>
+    <nav class="crumbs"><a href="/findings/">Findings</a> &rsaquo; FVT/GE reporting status</nav>
+    <h1>{esc(title)}</h1>
+    <p class="dateline"><span>Published {PUBLISHED_ON}</span><span>updated {UPDATED_ON}</span></p>
+
+    <div class="kf" role="group" aria-labelledby="kf-label">
+      <p class="kf__label" id="kf-label">Key finding</p>
+      <div class="kf__figure"><span class="kf__num">{missing:,}</span><span class="kf__of">of {total:,} colleges</span></div>
+      <p class="kf__text">({_pct(missing, total)}%) had not submitted at least one of the seven required FVT/GE files for the
+        2024 and 2025 reporting cycles, as recorded in ED&rsquo;s list compiled on {when}.</p>
+      <p class="kf__qual"><b>&ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</b> Files
+        rejected with errors count as not submitted. Filings after {short_when} are not reflected.</p>
+      <p class="kf__more"><span><b>{s["none_filed"]:,}</b> submitted no file at all</span>
+        <span><b>{s["all7"]:,}</b> of those had all seven marked not submitted</span></p>
+    </div>
+
+    <nav class="sectnav" aria-label="Sections">
+      <p class="sectnav__label" id="sn-l">{len(NAV_ITEMS)} sections</p>
+      <div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div>
+    </nav>
+
+    <section id="why" class="why" aria-labelledby="why-h">
+      <h2 id="why-h">Why it matters</h2>
+      <p>These files are what the Department intends to use for the program-level data and statistics
+        it plans to publish in 2027. Colleges have until 15 January 2027 to submit anything missing
+        from the 2024 and 2025 cycles, and the 2026 cycle is due 1 October 2026.</p>
+      <p>The list records whether a file arrived, not why one did not. It is a status report, not a
+        finding about any college&rsquo;s programs.</p>
+    </section>
+
+    <section id="sector" aria-labelledby="sector-h">
+      <h2 id="sector-h">By sector</h2>
+      <p class="chart-title">Colleges with at least one required file not submitted, by sector, as
+        recorded by ED on {when}</p>
+      <ul class="bars" aria-label="Share of listed colleges with at least one required file not submitted, by sector">{bars}</ul>
+      <p class="chart-src">Bar length is the share of that sector&rsquo;s listed colleges. Source: ED,
+        FVTGEDataReportingFinal.xlsx.</p>
+      {foreign_note}
+    </section>
+
+    <section id="files" aria-labelledby="files-h">
+      <h2 id="files-h">Which files were missing</h2>
+      <p>Counts of colleges for each required component. &ldquo;Not required&rdquo; is ED&rsquo;s own
+        status, for example a college that was not operating that year.</p>
+      <div class="tscroll" tabindex="0" role="region" aria-label="Reporting status by file"><table class="t"><thead><tr><th>Required component</th><th class="num">Not submitted</th><th class="num">Not required</th></tr></thead><tbody>{comps}</tbody></table></div>
+    </section>
+
+    <section id="places" aria-labelledby="places-h">
+      <h2 id="places-h">By state and territory</h2>
+      <p>The eight states and territories with the highest share, among those with at least 30 listed colleges.</p>
+      <div class="tscroll" tabindex="0" role="region" aria-label="Highest shares by state or territory"><table class="t">{thead.format("State or territory")}<tbody>{top_rows}</tbody></table></div>
+      {foreign_line}
+      <details class="more"><summary>All {len(every)} locations in ED&rsquo;s list</summary>
+        <div class="tscroll" tabindex="0" role="region" aria-label="Every location in ED&rsquo;s list"><table class="t">{thead.format("Location")}<tbody>{all_rows}</tbody></table></div>
+      </details>
+    </section>
+
+    <section id="earnings" aria-labelledby="earnings-h">
+      <h2 id="earnings-h">What the College Scorecard shows about these colleges</h2>
+      <p>Using the Scorecard earnings Truewise already publishes, not the FVT/GE files: the share of
+        programs whose graduates earn less than a typical high-school graduate in their state.</p>
+      <div class="stats">
+        <div class="stat"><p class="stat__kind">Observed</p><div class="stat__fig">{r_comp:.1f}%</div><p class="stat__lab">all required files submitted</p></div>
+        <div class="stat stat--est"><p class="stat__kind">Expected</p><div class="stat__fig">{r_exp:.1f}%</div><p class="stat__lab">for the other colleges, after allowing for sector and credential</p></div>
+        <div class="stat stat--em"><p class="stat__kind">Observed</p><div class="stat__fig">{r_miss:.1f}%</div><p class="stat__lab">at least one file not submitted</p></div>
+      </div>
+      <p class="caveat">This is an association, not an explanation. About {r_miss - r_exp:.1f} points of
+        the gap remain after allowing for sector and credential, and nothing here shows that a missing
+        file hides worse results.</p>
+      <details class="more"><summary>The nine sector and credential groups</summary>
+        <div class="tscroll" tabindex="0" role="region" aria-label="Fail rate by sector and credential"><table class="t"><thead><tr><th>Group</th><th class="num">A file not submitted</th><th class="num">All submitted</th></tr></thead><tbody>{cells}</tbody></table></div>
+      </details>
+    </section>
+
+    <section id="lookup" aria-labelledby="lookup-h">
+      <h2 id="lookup-h">Look up a college</h2>
+      <div class="lookup">
+        <label for="lk-q">College name</label>
+        <div class="searchbox"><input id="lk-q" type="search" autocomplete="off" placeholder="e.g. Palomar" aria-describedby="lk-status" /></div>
+        <p class="lookup__status" id="lk-status" role="status" aria-live="polite">Type two or more letters of a college&rsquo;s name.</p>
+        <ul class="lookup__rows" id="lk-rows"></ul>
+        <noscript><p>Searching needs JavaScript. Every college on the list is in the CSV below.</p></noscript>
+        <a class="btn btn--secondary" href="/findings/{SLUG}/{csv_name}" download>Download all {total:,} (CSV)</a>
+      </div>
+    </section>
+
+    <section id="method" aria-labelledby="method-h">
+      <h2 id="method-h">Method and sources</h2>
+      <p>Statuses are restated exactly as ED published them. Earnings figures count each program once
+        and use Truewise&rsquo;s undergraduate earnings-premium test.</p>
+      <details class="more"><summary>How the figures were built</summary><ul>
+        <li><b>The list.</b> ED&rsquo;s &ldquo;List of Institutions That Previously Submitted FVT/GE Data&rdquo;, attached to electronic announcement GENERAL-26-49 (11 August 2026), compiled {when}. It covers open colleges with at least one program, at the four-digit CIP level, meeting ED&rsquo;s minimum of 30 completers.</li>
+        <li><b>In ED&rsquo;s words.</b> &ldquo;{esc(ED_COMPLETENESS)}&rdquo; And: {esc(ED_NOT_SUBMITTED)}</li>
+        <li><b>The join.</b> By six-digit OPEID. {s["matched"]:,} of the {total:,} colleges have programs in the Scorecard data Truewise publishes.</li>
+        <li><b>The fail rate.</b> Graduates&rsquo; median earnings against a typical high-school graduate in the state. Programs without enough data for a verdict are left out of all three rates.</li>
+        <li><b>The adjustment.</b> For each sector and credential, the complete filers&rsquo; rate is applied to the other colleges&rsquo; programs and summed.</li>
+      </ul></details>
+      <ul class="srcs"><li>ED, <a href="https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-08-11/guidance-fvt/ge-data-reporting-stats-early-implementation-and-next-steps-publication">GENERAL-26-49</a> and <a href="https://fsapartners.ed.gov/sites/default/files/2026-08/FVTGEDataReportingFinal.xlsx">the spreadsheet</a></li>
+        <li>College Scorecard, release 2026-06-10</li>
+        <li>Reproduce: <code>published/fvtge_reporting.parquet</code>, <code>pipeline/build_fvtge.py</code></li></ul>
+    </section>
+  </main>
+"""
+    return (
+        page_head
+        + body
+        + LOOKUP_SCRIPT.replace("__CSV__", csv_name)
+        + FOOTER
+        + BEACON
+        + "</body>\n</html>\n"
     )
-    p.append(
-        '    <p class="repro">Reproduce this: <code>published/fvtge_reporting.parquet</code> (built from '
-        "the Department’s spreadsheet by <code>pipeline/build_fvtge_source.py</code>) joined to "
-        "<code>value_check.parquet</code> by <code>pipeline/build_fvtge.py</code>. Sources: "
-        '<a href="https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-08-11/'
-        'guidance-fvt/ge-data-reporting-stats-early-implementation-and-next-steps-publication">'
-        "GENERAL-26-49</a>; "
-        '<a href="https://fsapartners.ed.gov/sites/default/files/2026-08/FVTGEDataReportingFinal.xlsx">'
-        "the Department’s spreadsheet</a>; College Scorecard (release 2026-06-10).</p>\n"
-    )
-    p.append("  </main>\n")
-    p.append(SEARCH_SCRIPT)
-    p.append(FOOTER)
-    p.append(BEACON)
-    p.append("</body>\n</html>\n")
-    return "".join(p)
 
 
-# Plain script, no template literals: nothing in it can be broken by a comment containing a
-# backtick. Reads institutions.json from the same directory.
-SEARCH_SCRIPT = """  <script>
+# Plain script, no template literals. institutions.json (about 90 KB compressed) is fetched on the
+# first focus or keystroke, not on page load. Rows are [name, state, not_submitted, programs,
+# judged, slug or 0]. No-result and error messages go to the live status region; a keyboard retry
+# returns focus to the search field (Prototype A review, 27 September).
+LOOKUP_SCRIPT = r"""  <script>
   (function () {
-    var q = document.getElementById("fv-q"), rows = document.getElementById("fv-rows"),
-        status = document.getElementById("fv-status"), data = null, t;
+    var q = document.getElementById("lk-q"), list = document.getElementById("lk-rows"),
+        status = document.getElementById("lk-status"), rows = null, loading = false, refocus = false;
     var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
-    var norm = function (s) { return String(s || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9 ]/g, " ").replace(/ +/g, " ").trim(); };
-    function draw() {
-      var term = norm(q.value);
-      if (term.length < 2) { rows.innerHTML = ""; status.textContent = "Type two or more letters."; return; }
-      var hits = data.filter(function (d) { return norm(d[0]).indexOf(term) !== -1; });
-      var shown = hits.slice(0, 50);
-      rows.innerHTML = shown.map(function (d) {
-        var name = d[5] ? '<a href="/college/' + esc(d[5]) + '/">' + esc(d[0]) + "</a>" : esc(d[0]);
-        var assess = d[3] ? d[4] + " of " + d[3] : "none in Scorecard data";
-        return "<tr><td>" + name + "</td><td data-label=\\"State\\">" + esc(d[1]) +
-          "</td><td class=\\"num\\" data-label=\\"Components not submitted\\">" + d[2] +
-          " of 7</td><td class=\\"num\\" data-label=\\"Programs Truewise can assess\\">" + assess + "</td></tr>";
-      }).join("");
-      status.textContent = hits.length ? (hits.length > 50 ? "Showing 50 of " + hits.length + " matches." : hits.length + (hits.length === 1 ? " match." : " matches.")) : "No college on the list matches that name.";
+    var norm = function (s) { return String(s || "").toLowerCase().normalize("NFKD")
+      .replace(/[^a-z0-9 ]/g, " ").replace(/ +/g, " ").trim(); };
+    function row(d) {
+      var name = d[5] ? '<a href="/college/' + esc(d[5]) + '/">' + esc(d[0]) + "</a>" : esc(d[0]);
+      return '<li><span class="lookup__name">' + name + '</span>' +
+        '<span class="lookup__meta">' + esc(d[1]) + " · Truewise earnings verdicts: " + d[4] +
+        " program" + (d[4] === 1 ? "" : "s") + "</span>" +
+        '<span class="lookup__count' + (d[2] === 0 ? " lookup__count--none" : "") + '"><b>' + d[2] +
+        ' of 7</b>not submitted</span></li>';
     }
-    q.addEventListener("input", function () {
-      clearTimeout(t);
-      t = setTimeout(function () {
-        if (data) return draw();
-        fetch("institutions.json").then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-          .then(function (j) { data = j; draw(); },
-                function () { status.textContent = "The list did not load. Every college is in the CSV below."; });
-      }, 150);
-    });
+    function load() {
+      if (loading || rows) return;
+      loading = true;
+      status.className = "lookup__status"; status.textContent = "Loading the list of colleges…";
+      fetch("/findings/fvtge-reporting/institutions.json").then(function (r) {
+        if (!r.ok) throw new Error(r.status); return r.json();
+      }).then(function (d) {
+        rows = d; loading = false; run();
+        if (refocus) { refocus = false; q.focus(); }
+      }).catch(function () {
+        loading = false; status.className = "lookup__status lookup__status--error";
+        status.innerHTML = "The college list did not load. " +
+          '<button type="button" class="btn btn--secondary" id="lk-retry">Try again</button> ' +
+          'or <a href="/findings/fvtge-reporting/__CSV__">download the CSV</a>.';
+        document.getElementById("lk-retry").addEventListener("click", function () { refocus = true; load(); });
+      });
+    }
+    function run() {
+      if (!rows) { load(); return; }
+      status.className = "lookup__status";
+      var t = norm(q.value);
+      if (t.length < 2) { list.innerHTML = "";
+        status.textContent = "Type two or more letters of a college’s name."; return; }
+      var hits = rows.filter(function (d) { return norm(d[0]).indexOf(t) !== -1; });
+      if (!hits.length) { list.innerHTML = "";
+        status.textContent = "No college on ED’s list matches “" + q.value +
+          "”. Try a shorter part of the name, or check the spelling."; return; }
+      list.innerHTML = hits.slice(0, 25).map(row).join("");
+      status.textContent = hits.length > 25 ? "Showing 25 of " + hits.length + " matches. Keep typing to narrow it."
+        : hits.length + " match" + (hits.length === 1 ? "" : "es") + ".";
+    }
+    q.addEventListener("focus", load);
+    q.addEventListener("input", run);
   })();
   </script>
 """

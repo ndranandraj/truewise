@@ -44,6 +44,8 @@
   Cache-Control: public, max-age=3600
 /pg.css
   Cache-Control: public, max-age=3600
+/article.css
+  Cache-Control: public, max-age=3600
 
 # Self-hosted fonts: immutable for a year. Safe because each filename pins the family, weight and
 # subset, so a different face is always a different URL. Replace the file name, never the bytes.

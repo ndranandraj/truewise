@@ -46,7 +46,8 @@ def test_counts_restate_eds_list_exactly(built):
 def test_the_page_names_both_counts_correctly(built):
     s, _, out = built
     text = re.sub(r"\s+", " ", (out / "index.html").read_text())
-    assert f"{s['none_filed']:,}</b> had submitted no file at all" in text
+    assert f"{s['none_filed']:,}</b> submitted no file at all" in text
+    assert f"{s['all7']:,}</b> of those had all seven marked not submitted" in text
     assert "had submitted none" not in text and "None submitted" not in text
 
 
@@ -93,44 +94,123 @@ def test_downloads_cover_every_college_on_the_list(built):
     assert csv_lines[0].endswith("status_as_of")
 
 
-@pytest.mark.skipif(shutil.which("node") is None, reason="node not installed")
-def test_the_search_finds_a_college_and_links_its_profile(built, tmp_path):
-    _, _, out = built
+def _jsdom(out, tmp_path, steps, fail_first=False):
+    """Run the lookup script in jsdom with institutions.json served by a stubbed fetch."""
     root = bf.ROOT
-    if not (root / "node_modules" / "jsdom").exists():
-        pytest.skip("jsdom not installed")
-    script = tmp_path / "search.js"
+    if shutil.which("node") is None or not (root / "node_modules" / "jsdom").exists():
+        pytest.skip("node or jsdom not installed")
+    script = tmp_path / "lookup.js"
     script.write_text(
         """
 const fs = require("fs");
 const { JSDOM } = require(process.argv[2] + "/node_modules/jsdom");
 const html = fs.readFileSync(process.argv[3], "utf8");
 const data = JSON.parse(fs.readFileSync(process.argv[4], "utf8"));
+let calls = 0; const failFirst = process.argv[5] === "1";
 const dom = new JSDOM(html.replace(/<script[^>]*src=[^>]*><\\/script>/g, ""),
   { runScripts: "dangerously", url: "https://truewise.dev/findings/fvtge-reporting/",
-    beforeParse(w) { w.fetch = async () => ({ ok: true, json: async () => data }); } });
-const d = dom.window.document;
-setTimeout(() => {
-  const q = d.getElementById("fv-q");
-  q.value = "palomar";
-  q.dispatchEvent(new dom.window.Event("input"));
-  setTimeout(() => {
-    const row = d.querySelector("#fv-rows tr");
-    console.log(JSON.stringify({ rows: d.querySelectorAll("#fv-rows tr").length,
-      text: row ? row.textContent : "", link: row && row.querySelector("a") ? row.querySelector("a").getAttribute("href") : null,
-      status: d.getElementById("fv-status").textContent }));
-  }, 400);
-}, 50);
+    beforeParse(w) { w.fetch = async () => { calls++;
+      if (failFirst && calls === 1) return { ok: false, status: 503, json: async () => null };
+      return { ok: true, json: async () => data }; }; } });
+const w = dom.window, d = w.document, q = d.getElementById("lk-q");
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const snap = () => ({ status: d.getElementById("lk-status").textContent,
+  rows: d.querySelectorAll("#lk-rows li").length,
+  first: d.querySelector("#lk-rows li") ? d.querySelector("#lk-rows li").textContent : "",
+  link: d.querySelector("#lk-rows li a") ? d.querySelector("#lk-rows li a").getAttribute("href") : null,
+  focus: d.activeElement ? d.activeElement.id : null, calls });
+const type = (v) => { q.value = v; q.dispatchEvent(new w.Event("input")); };
+(async () => {
+  const out = { before: snap() };
+  q.focus(); q.dispatchEvent(new w.Event("focus")); await wait(50);
+  out.afterFocus = snap();
+  if (failFirst) { d.getElementById("lk-retry").focus(); d.getElementById("lk-retry").click(); await wait(50);
+    out.afterRetry = snap(); }
+  type("palomar"); await wait(20); out.palomar = snap();
+  type("zzqx"); await wait(20); out.none = snap();
+  console.log(JSON.stringify(out));
+})();
 """
     )
     res = subprocess.run(
-        ["node", str(script), str(root), str(out / "index.html"), str(out / "institutions.json")],
+        [
+            "node",
+            str(script),
+            str(root),
+            str(out / "index.html"),
+            str(out / "institutions.json"),
+            "1" if fail_first else "0",
+        ],
         capture_output=True,
         text=True,
         timeout=60,
     )
     assert res.returncode == 0, res.stderr
-    got = json.loads(res.stdout.strip().splitlines()[-1])
-    assert got["rows"] >= 1, got
-    assert "Palomar" in got["text"] and "of 7" in got["text"], got
-    assert got["link"] and got["link"].startswith("/college/"), got
+    return json.loads(res.stdout.strip().splitlines()[-1])
+
+
+def test_the_lookup_finds_a_college_and_says_what_truewise_assesses(built, tmp_path):
+    _, _, out = built
+    got = _jsdom(out, tmp_path, None)
+    assert got["before"]["calls"] == 0, "the list loads on first use, not with the page"
+    assert got["palomar"]["rows"] >= 1 and "Palomar" in got["palomar"]["first"], got
+    assert "of 7" in got["palomar"]["first"], got
+    assert "Truewise earnings verdicts:" in got["palomar"]["first"], got
+    assert got["palomar"]["link"] and got["palomar"]["link"].startswith("/college/"), got
+
+
+def test_no_result_is_announced_in_the_status_region(built, tmp_path):
+    _, _, out = built
+    got = _jsdom(out, tmp_path, None)
+    assert got["none"]["rows"] == 0
+    assert "No college on ED" in got["none"]["status"] and "zzqx" in got["none"]["status"], got
+
+
+def test_a_failed_load_offers_retry_and_returns_focus_to_the_search(built, tmp_path):
+    _, _, out = built
+    got = _jsdom(out, tmp_path, None, fail_first=True)
+    assert "did not load" in got["afterFocus"]["status"], got
+    assert got["afterRetry"]["focus"] == "lk-q", got
+    assert got["palomar"]["rows"] >= 1, got
+
+
+def test_the_key_finding_keeps_its_qualifier_beside_the_figure(built):
+    """R1: the qualifier that changes the figure's meaning is inside the key-finding box."""
+    s, _, out = built
+    html = (out / "index.html").read_text()
+    box = html[html.index('<div class="kf"') : html.index('<nav class="sectnav"')]
+    text = re.sub(r"\s+", " ", box)
+    assert f'<span class="kf__num">{s["missing"]:,}</span>' in text
+    assert f"of {s['total']:,} colleges" in text and "6 August 2026" in text
+    assert "does not mean &ldquo;complete&rdquo;" in text
+    assert "Files rejected with errors count as not submitted." in text
+    assert "Filings after 6 August are not reflected." in text
+    # Read as "received files count as not submitted" in review; this wording must not come back.
+    assert "counts any file received" not in text
+
+
+def test_locations_are_named_and_foreign_is_not_a_sector(built):
+    s, _, out = built
+    html = (out / "index.html").read_text()
+    sector = html[html.index('id="sector"') : html.index('id="files"')]
+    assert "Foreign" not in sector[: sector.index("</ul>")], (
+        "the chart shows the three sectors only"
+    )
+    assert "ED lists foreign institutions separately" in sector
+    places = html[html.index('id="places"') : html.index('id="earnings"')]
+    assert "eight states and territories" in places
+    assert f"All {len(s['states'])} locations in ED&rsquo;s list" in places
+    for code in ("PR", "MH", "FM", "PW", "FC"):
+        assert f"<td>{code}</td>" not in places, f"{code} must be shown by name"
+    assert "Marshall Islands" in places and "Puerto Rico" in places
+
+
+def test_only_finding_pages_load_the_article_sheet(built):
+    _, _, out = built
+    assert 'href="/article.css"' in (out / "index.html").read_text()
+    for page in ("index.html", "methodology/index.html", "value-check/index.html"):
+        assert "article.css" not in (bf.ROOT / "site" / page).read_text(), page
+    from pipeline import version_assets
+
+    assert "article.css" in version_assets.SHEETS
+    assert "/article.css\n  Cache-Control" in (bf.ROOT / "site" / "_headers").read_text()
