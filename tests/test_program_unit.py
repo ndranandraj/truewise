@@ -112,8 +112,9 @@ def test_a_school_with_only_unbenchmarked_earnings_claims_no_verdict():
     ] + [_row(value_flag="insufficient_data", earnings=None, earnings_threshold_state=None)]
     meta = {"unitid": "1", "name": "Test College", "state": "ZZ", "control": None}
     html, _ = canonical_page(meta, rows, "test-college", None, 150)
-    assert "out-earning" not in html and "assessed programs" not in html
-    assert "reports graduate earnings for <b>2</b>" in html
+    assert "earning more than" not in html and "assessed programs" not in html
+    assert "No earnings verdict" in html
+    assert "ED publishes graduate earnings for 2 of Test College" in html
     assert "<b>0 of 3</b> programs could be assessed" in html
     assert "no benchmark" in html and "(a typical high-school graduate/yr)" not in html
 
@@ -161,10 +162,9 @@ def test_a_school_in_eds_file_is_not_told_it_has_no_record():
     in_file, _ = canonical_page({**base, "in_institution_file": True}, rows, "t", None, 150)
     missing, _ = canonical_page({**base, "in_institution_file": False}, rows, "t", None, 150)
     assert (
-        "has no record" not in in_file
-        and "gives no state high-school earnings benchmark" in in_file
+        "has no record" not in in_file and "ED&rsquo;s data gives none for this school" in in_file
     )
-    assert "has no record for this school" in missing
+    assert "institution file has no record of the school" in missing
     # With no benchmark nothing is compared, so the table must not say it compares anything.
     for page in (in_file, missing):
         assert "versus a typical" not in page and "vs a high-school graduate" not in page
@@ -181,7 +181,7 @@ def test_the_production_profile_carries_the_shared_campus_note():
     meta = profile_meta(s, {"shared": 3, "opeid6": "003329"}, True)
     assert meta["shared"] == 3 and meta["opeid6"] == "003329" and meta["in_institution_file"]
     html, _ = canonical_page(meta, [_row()], "t", 35000.0, 150)
-    assert "all campuses under one federal ID (OPEID 003329)" in html
+    assert "every campus under one federal ID (OPEID 003329)" in html
     # A missing OPEID from pandas arrives as NaN and must never print as "nan".
     assert profile_meta(s, {"opeid6": float("nan")}, True)["opeid6"] is None
     assert profile_meta(s, {}, False)["shared"] == 0

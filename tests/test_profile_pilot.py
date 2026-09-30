@@ -83,7 +83,7 @@ def test_coverage_and_suppression_are_honest():
     rows = _rows(1, 106)  # 107 total, 106 insufficient (Irvine Valley shape)
     html, _ = build_profile(meta, rows, DEFAULT_THRESHOLD)
     assert "<b>1 of 107</b> programs could be assessed" in html
-    assert "insufficient data" in html
+    assert "earnings not published" in html and "insufficient data" not in html
     # A suppressed row must never render a bare 0 or an empty cell.
     assert ">0<" not in html and "$0<" not in html
 

@@ -1,12 +1,12 @@
 /* Accessible program / comparison table (Stage 3, component B5).
  *
  * Renders a school's programs (or a side-by-side comparison) with coverage stated first, sortable
- * columns, suppressed rows kept visible as "insufficient data", and a mobile layout that keeps every
+ * columns, rows without a verdict kept visible and labelled by why ("earnings not published", "nothing reported", "no state benchmark"), and a mobile layout that keeps every
  * value's column label. Pure rendering + sort; data mapping (parquet -> row shape) happens at
  * adoption in Stage 4/5.
  *
  * Row shape (all figures already computed; nulls mean "not measured"):
- *   { program, credential, earnings, premium, verdict: "pass"|"fail"|"insufficient",
+ *   { program, credential, earnings, premium, verdict: "pass"|"fail"|"nobench"|"insufficient"|"none",
  *     horizon: "4yr_after_completion"|"1yr_after_completion"|null, debt, payback, completers }
  * horizon is null unless a real assessed earnings value is displayed; a "1-year earnings" marker
  * renders beside the earnings figure when horizon is the 1-year window, identically to the static row.
@@ -18,7 +18,7 @@
  *
  * Accessibility: real <table> with <caption>, <th scope>, sortable columns are <button>s inside the
  * header cell with aria-sort on the active column; the premium bar is decorative (aria-hidden) and
- * the number is the real content; suppressed cells read "insufficient data", never 0 or blank.
+ * the number is the real content; a missing value reads "not published", "not assessed" or "not reported", never 0 or blank.
  */
 (function (global) {
   const esc = (s) =>
@@ -31,7 +31,9 @@
   // published cost, so the figure is real and stays, correctly written.
   const money = (n) =>
     n == null ? null : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
-  const INSUF = '<span class="tw-td__insuf">insufficient data</span>';
+  const INSUF = '<span class="tw-td__insuf">not published</span>';
+  const NONE = '<span class="tw-td__insuf">not reported</span>';
+  const UNASSESSED = '<span class="tw-td__insuf">not assessed</span>';
 
   // Columns: key, label, kind (num sorts numeric, text sorts alpha), and how to render a cell.
   const COLUMNS = [
@@ -195,7 +197,7 @@
     _matching() {
       const q = this.query.trim().toLowerCase();
       return this.rows.filter((r) => {
-        if (this.verdict && r.verdict !== this.verdict && !(this.verdict === "insufficient" && r.verdict === "nobench")) return false;
+        if (this.verdict && r.verdict !== this.verdict) return false;
         if (this.credential && (r.credential || "") !== this.credential) return false;
         if (!q) return true;
         return (
@@ -231,7 +233,9 @@
         opt("", "All programs", this.verdict) +
         opt("pass", "Clears the bar", this.verdict) +
         opt("fail", "Falls short", this.verdict) +
-        opt("insufficient", "Insufficient data", this.verdict) +
+        opt("insufficient", "Earnings not published", this.verdict) +
+        (this.rows.some((r) => r.verdict === "nobench") ? opt("nobench", "No state benchmark", this.verdict) : "") +
+        (this.rows.some((r) => r.verdict === "none") ? opt("none", "Nothing reported", this.verdict) : "") +
         `</select></div>` +
         (cred.length > 1
           ? `<div class="tw-field">` +
@@ -333,12 +337,13 @@
       if (r.payback != null) return this._num(r.payback, (v) => v.toFixed(1) + " yrs");
       if (r.verdict === "nobench") return '<span class="tw-td__insuf">no benchmark</span>';
       if (r.verdict === "fail" && r.debt != null) return '<span class="tw-td__insuf">no earnings gain</span>';
-      return this._num(null);
+      return r.verdict === "none" ? NONE : UNASSESSED;
     }
 
     _verdictCell(r) {
       // Mirrors verdict_chip in pipeline/build_profile_pilot.py.
-      if (r.verdict === "insufficient") return `<span class="tw-verdict tw-verdict--insuf">insufficient data</span>`;
+      if (r.verdict === "insufficient") return `<span class="tw-verdict tw-verdict--insuf">earnings not published</span>`;
+      if (r.verdict === "none") return `<span class="tw-verdict tw-verdict--none">nothing reported</span>`;
       if (r.verdict === "nobench") return `<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>`;
       const early = r.horizon === "1yr_after_completion" ? " (1-yr)" : "";
       const pass = r.verdict === "pass";
@@ -350,7 +355,7 @@
 
     _premiumCell(r) {
       if (r.premium == null && r.verdict === "nobench") return '<span class="tw-td__insuf">no benchmark</span>';
-      if (r.premium == null) return INSUF;
+      if (r.premium == null) return r.verdict === "none" ? NONE : UNASSESSED;
       const sign = r.premium >= 0 ? "+" : "-";
       const mag = money(Math.abs(r.premium));
       // Decorative bar; the signed number is the accessible content.
@@ -360,7 +365,7 @@
     }
 
     _num(v, fmt) {
-      if (v == null) return INSUF;
+      if (v == null) return this._none ? NONE : INSUF;
       return esc(fmt ? fmt(v) : String(v));
     }
 
@@ -411,7 +416,8 @@
       const body = this._sorted(matched)
         .slice(0, this.shown)
         .map((r) => {
-          const suppressed = r.verdict === "insufficient";
+          const suppressed = r.verdict === "insufficient" || r.verdict === "none";
+          this._none = r.verdict === "none";
           const cells = [
             `<th scope="row" class="tw-td tw-td--program" data-label="Program">` +
               // Same rule and same markup as the static row, so enhancement never moves a link.

@@ -49,10 +49,11 @@ check(earningsTh.getAttribute("aria-sort") === "none", "sortable col should star
 const degreeTh = $$(".tw-th").find((th) => th.textContent.trim() === "Degree");
 check(!degreeTh.hasAttribute("aria-sort"), "non-sortable col should not have aria-sort");
 
-// 4. Suppressed row is visible and shows insufficient data, not 0/blank.
+// 4. Suppressed row is visible and says why each value is missing, not 0/blank.
 const insufRow = $(".tw-tr--insuf");
 check(insufRow !== null, "insufficient row not rendered");
-check(/insufficient data/.test(insufRow.textContent), "suppressed cells should say insufficient data");
+check(/earnings not published/.test(insufRow.textContent) && /not published/.test(insufRow.textContent),
+  "a suppressed row should say earnings not published, and its missing cells not published");
 // No cell in a suppressed row may be empty or render a bare 0 (the "unknown shown as 0" bug).
 const emptyOrZero = [...insufRow.children].some((cell) => {
   const txt = cell.textContent.trim();

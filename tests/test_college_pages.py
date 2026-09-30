@@ -120,10 +120,14 @@ def test_college_page_bakes_the_facts(tmp_path, monkeypatch, register_fixture_sl
     assert "Test State University" in h
     assert "Austin, Texas" in h  # city + state identity line
     # Verdict block carries the real counts and the dollar benchmark.
-    assert "Of <b>2</b> assessed programs" in h  # 1 pass + 1 fail decided
-    assert "<b>1</b> fall short" in h
-    assert "about $35,000/yr" in h  # the state high-school-grad benchmark, stated in dollars
-    assert "Another <b>1</b> could not be assessed" in h  # the suppressed program is disclosed
+    # The summary box: 1 pass + 1 fail decided, both undergraduate (the headline's population).
+    assert (
+        '<span class="kf__num">1</span><span class="kf__of">of 2 assessed undergraduate programs'
+        in h
+    )
+    assert "1 falls short." in h
+    assert "(about $35,000 a year)" in h  # the state high-school-grad benchmark, stated in dollars
+    assert "The other one has" in h  # the program without a verdict is disclosed, with its reason
     # Coverage label on the program table (honest denominator, not "% have earnings data").
     assert "<b>2 of 3</b> programs could be assessed" in h
     # Net price by income baked in.

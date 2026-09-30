@@ -96,6 +96,20 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "September 2026",
+        "title": "College pages: new layout, and the summary counts undergraduate programs",
+        "body": (
+            "The summary at the top of each college page now counts undergraduate programs, as "
+            "the site's headline does, because the federal earnings test compares those with "
+            "high-school graduates. Graduate programs stay in the table, compared with the same "
+            "line and labelled as such. So Baylor's summary reads 49 of 51 assessed undergraduate "
+            "programs, where it read 62 of 64 across all programs. The table also says why a "
+            "program has no verdict: earnings not published, nothing reported, or no state "
+            "benchmark, where it said insufficient data for all three. No figures changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "September 2026",
         "title": "Two statements on college pages corrected",
         "body": (
             "The entry below said college pages now say when a program's figures are shared with "

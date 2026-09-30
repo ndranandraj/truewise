@@ -66,32 +66,31 @@ def test_coverage_and_benchmark_are_honest():
     html, _ = canonical_page(META, _rows(3, 2, fail=1), "x", 36498, DEFAULT_THRESHOLD)
     assert "<b>3 of 5</b> programs could be assessed" in html
     assert "have earnings data" not in html
-    assert "$36,498/yr" in html  # the benchmark dollar value is stated (was missing in the pilot)
+    assert (
+        "($36,498 a year)" in html
+    )  # the benchmark dollar value is stated (was missing in the pilot)
     assert "release 2026-06-10" in html  # dated source line
 
 
 def test_no_verdict_school_is_truthful_not_blank():
     html, tail = canonical_page(META, _rows(0, 4), "x", 36498, DEFAULT_THRESHOLD)
-    assert (
-        "no programs have enough data" in html.lower()
-        or "enough data for an earnings verdict" in html
-    )
-    assert "insufficient data" in html
-    # Suppressed earnings/premium/debt never render as 0; they say insufficient data.
+    assert "No earnings verdict" in html
+    assert "earnings not published" in html and "insufficient data" not in html
+    # Suppressed earnings/premium/debt never render as 0; they say why the value is missing.
     for cell in ("Median earnings", "vs a high-school grad", "Median debt"):
         assert f'data-label="{cell}">0<' not in html
 
 
 def test_zero_completers_is_a_real_count_but_suppressed_earnings_are_not():
     """The data distinguishes completers_count = 0 (a genuine zero) from NULL (missing). A real 0
-    renders as 0; a suppressed earnings value renders as insufficient data. This is the unknown != 0
+    renders as 0; a suppressed earnings value renders as "not published". This is the unknown != 0
     rule applied per field."""
     rows = _rows(0, 1)
     rows[0]["completers"] = 0  # nobody completed recently: a real zero
     rows[0]["earnings"] = None  # earnings suppressed
     html, _ = canonical_page(META, rows, "x", 36498, DEFAULT_THRESHOLD)
     assert 'data-label="Recent completers">0<' in html  # real zero shown as 0
-    assert 'data-label="Median earnings"><span class="tw-td__insuf">insufficient data' in html
+    assert 'data-label="Median earnings"><span class="tw-td__insuf">not published' in html
 
 
 def test_names_and_island_are_safe():
@@ -106,20 +105,23 @@ def test_names_and_island_are_safe():
 
 
 def test_affordability_calculator_renders_from_net_price():
-    """B10: given net price, the profile shows the income x years calculator and a no-JS fallback
-    table with the average row."""
+    """B10: given net price, the profile shows the income x years calculator, its result labelled
+    with the band, and a no-JS table of every band with the average row."""
     np = {"avg": 15000, "brackets": [8000, 9000, 12000, 18000, 22000]}
     html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=np)
-    assert "What would this cost you?" in html
-    assert 'id="calc-data"' in html and "calc-income" in html
+    assert "What it would cost" in html
+    assert 'id="c-data"' in html and 'id="c-inc"' in html and 'id="c-yrs"' in html
+    assert '<p class="cost__band" id="c-band">Average for all families</p>' in html
     assert "Net price per year" in html  # no-JS fallback table
     assert "All families (average)" in html and "$15,000" in html
+    # The summary's figure is labelled for all families, and the calculator never changes it.
+    assert "Average net price, all families" in html
 
 
 def test_no_net_price_omits_the_calculator():
     """A school with no reported net price shows no calculator, not an empty or broken one."""
     html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=None)
-    assert "What would this cost you?" not in html
+    assert 'id="c-data"' not in html and "ED reports no net price for this school" in html
 
 
 def test_one_year_label_and_notice_on_mixed_window():
@@ -130,7 +132,7 @@ def test_one_year_label_and_notice_on_mixed_window():
     assert html.count('<span class="tw-oneyr">1-year earnings</span>') == 3
     assert "should not be compared as if measured at the same time" in html
     assert "several years out" not in html
-    assert "measured four years after completion where available" in html
+    assert "measured four years after graduating where ED publishes them" in html
 
 
 def test_window_notice_sits_outside_the_enhanced_mount():
@@ -138,8 +140,8 @@ def test_window_notice_sits_outside_the_enhanced_mount():
     notice must be emitted OUTSIDE that mount or it disappears once JavaScript runs (the release-2
     preview bug). Assert the notice is positioned before the mount opens."""
     html, _ = canonical_page(META, _rows(4, 1, one_year=2), "x", 36498, DEFAULT_THRESHOLD)
-    assert "tw-window-note" in html
-    assert html.index("tw-window-note") < html.index('class="tw-profile-static"'), (
+    assert "should not be compared" in html
+    assert html.index("should not be compared") < html.index('class="tw-profile-static"'), (
         "the notice must sit outside .tw-profile-static so it survives JS enhancement"
     )
 
@@ -154,7 +156,6 @@ def test_four_year_only_profile_has_no_window_label_or_notice():
     html, _ = canonical_page(META, _rows(4, 1, one_year=0), "x", 36498, DEFAULT_THRESHOLD)
     assert "tw-oneyr" not in html
     assert "should not be compared" not in html
-    assert "Earnings are medians measured four years after completion," in html
 
 
 def test_insufficient_row_never_triggers_a_window_label():

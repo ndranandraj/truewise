@@ -24,10 +24,10 @@ from pipeline.config import ROOT
 
 SITE = ROOT / "site"
 # Every deployed stylesheet is fingerprinted: styles.css (the whole site), components.css (the
-# canonical profile's component styles), pg.css (the generated pages) and article.css (finding
-# pages only). A change to one must bust only its own cache, so each sheet carries an independent
-# ?v=<hash> of its own content.
-SHEETS = ("styles.css", "components.css", "pg.css", "article.css")
+# canonical profile's component styles), pg.css (the generated pages), article.css (finding and
+# profile pages) and profile.css (profile pages). A change to one must bust only its own cache, so
+# each sheet carries an independent ?v=<hash> of its own content.
+SHEETS = ("styles.css", "components.css", "pg.css", "article.css", "profile.css")
 
 
 def _link_re(name: str) -> re.Pattern:

@@ -89,16 +89,16 @@ def test_calculator_uses_real_figures_and_states_assumptions(
         register_fixture_slugs,
         "('100','Austin','http://x',5000,18000,12000,14000,20000,24000,28000,0.4,0.3,0.75)",
     )
-    data = json.loads(re.search(r'id="calc-data">(.*?)</script>', html).group(1))
+    data = json.loads(re.search(r'id="c-data">(.*?)</script>', html).group(1))
     # Inputs are the published figures, not derived guesses.
     assert data["brackets"] == [12000, 14000, 20000, 24000, 28000]
     assert data["avg"] == 18000
-    # Median payback across this school's passing programs (2.0 and 4.0 -> 3.0).
-    assert data["payback"] == 3.0
+    # The result always names its band; the default is the average for all families.
+    assert '<p class="cost__band" id="c-band">Average for all families</p>' in html
     # The honesty guardrails must ship with every calculator.
     assert "not a quote or a prediction" in html
-    assert "does not include interest" in html
-    assert "assumes aid and price stay flat" in html
+    assert "leaves out interest" in html
+    assert "if price and aid stay the same" in html
 
 
 def test_suppressed_income_band_is_disabled_never_guessed(
@@ -111,8 +111,8 @@ def test_suppressed_income_band_is_disabled_never_guessed(
         register_fixture_slugs,
         "('100','Austin','http://x',5000,18000,12000,14000,NULL,24000,28000,0.4,0.3,0.75)",
     )
-    data = json.loads(re.search(r'id="calc-data">(.*?)</script>', html).group(1))
+    data = json.loads(re.search(r'id="c-data">(.*?)</script>', html).group(1))
     assert data["brackets"][2] is None, "suppressed bracket must stay null, never imputed"
-    options = re.search(r'id="calc-income">(.*?)</select>', html).group(1)
+    options = re.search(r'id="c-inc">(.*?)</select>', html).group(1)
     assert options.count("disabled") == 1
     assert "(not reported)" in options

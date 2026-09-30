@@ -24,11 +24,9 @@ import duckdb
 from pipeline.build_college_pages import (
     BASE,
     FOOTER,
-    _calculator,
     esc,
     head,
     known_state,
-    money,
     slugify,
     state_label,
 )
@@ -97,32 +95,6 @@ def loc_text(meta: dict, st_name: str) -> str:
     return f"{meta['city']}, {st_name}" if meta.get("city") else st_name
 
 
-def _rail(meta, name, where, decided, total, grads, net_price) -> str:
-    """The right-hand 'At a glance' rail, shown above 1200px (September 2026 review). Every value
-    repeats one already on the page, so hiding the rail on narrower screens loses nothing."""
-    facts = [("Location", where)]
-    if meta.get("control"):
-        facts.append(("Type", meta["control"]))
-    facts.append(("Programs with a verdict", f"{decided} of {total}"))
-    if grads:
-        facts.append(("Recent graduates", f"{int(grads):,}"))
-    if net_price and net_price.get("avg") is not None:
-        facts.append(("Average net price", f"{money(net_price['avg'])} a year"))
-    facts.append(("Data", f"College Scorecard, {SCORECARD_RELEASE}"))
-    dl = "".join(f"<dt>{esc(k)}</dt><dd>{esc(str(v))}</dd>" for k, v in facts)
-    links = []
-    if net_price and (net_price.get("avg") is not None or any(net_price.get("brackets") or [])):
-        links.append('<li><a href="#cost">What it would cost</a></li>')
-    links.append('<li><a href="#programs">Program earnings</a></li>')
-    links.append('<li><a href="/compare/">Compare with another college</a></li>')
-    links.append(f'<li><a href="{REPORT_URL}">Report an error</a></li>')
-    return (
-        f'    <aside class="rail" aria-label="{esc(name)} at a glance"><div class="rail__inner">'
-        f"<h2>At a glance</h2><dl>{dl}</dl>"
-        f'<ul class="rail__links">{"".join(links)}</ul></div></aside>\n'
-    )
-
-
 def canonical_page(
     meta: dict,
     rows: list[dict],
@@ -131,121 +103,72 @@ def canonical_page(
     threshold: int,
     net_price: dict | None = None,
 ) -> tuple[str, str | None]:
+    """The college profile (profile release, 30 September 2026: design plan Prototype B).
+
+    Summary, cost, programs and sources, with the section links sticky on phones and the side rail
+    from 1200px. Every figure in the summary counts undergraduate programs, as the site's headline
+    does; graduate comparisons stay in the table, labelled."""
+    from pipeline import profile_layout as pl
+
     name = meta["name"]
     st = meta["state"]
     st_name = state_label(st)
     canonical = f"{BASE}/college/{slug}/"
     total = len(rows)
-    decided = sum(1 for r in rows if r["verdict"] in ("pass", "fail"))
-    passed = sum(1 for r in rows if r["verdict"] == "pass")
-    fail = sum(1 for r in rows if r["verdict"] == "fail")
-    # A 1-year figure is only ever DISPLAYED for an assessed row (horizon is None on insufficient
-    # rows), so this is exactly "does the page show at least one 1-year earnings value".
-    has_1yr = any(r.get("horizon") == "1yr_after_completion" for r in rows)
-    bench_txt = money(benchmark) if benchmark is not None else None
-    # "(about $34,809/yr)" only when there is a benchmark. Without one this used to print
-    # "(a typical high-school graduate/yr)" on 530 pages.
-    bench_clause = f" (about {esc(bench_txt)}/yr)" if bench_txt else ""
-    nobench = sum(1 for r in rows if r["verdict"] == "nobench")
-    grad_assessed = sum(1 for r in rows if r.get("grad") and r["verdict"] in ("pass", "fail"))
-    # "in <somewhere>" only when there is a somewhere. For the 461 schools with no city and a
-    # non-state code, the place is dropped from the title and the sentence rather than guessed at.
+    c = pl.counts(rows)
+    decided = c["decided"]
     located = known_state(st)
     where = ", ".join(p for p in (meta.get("city"), st) if p) if located else ""
     at_where = f"{name} in {where}" if where else name
     of_state = f"{st_name} " if located else ""
 
-    # The size clause, which is what finally separates the last colliding descriptions.
-    #
-    # After the place went into titles, 13 title values were still shared by 26 pages and 10
-    # description values by 20. Every one of those is two real institutions reporting under the same
-    # name: seven are separate campuses in the SAME city, so the place cannot tell them apart, and
-    # six are in the 461 that file program data but have no institution record at all, so there is no
-    # city or state to use.
-    #
-    # Checked before writing any of this: all 13 pairs differ in programs reported, distinct CIP
-    # codes, or recent completers. Not one is the same record twice. So a true, source-derived fact
-    # does separate them, and it is one a reader of two same-named campuses actually wants: which is
-    # the bigger operation. That is worth saying on its own merits and it happens to resolve all ten
-    # description collisions.
-    #
-    # Deliberately NOT a fabricated suffix, a letter, or a UNITID. Those distinguish strings rather
-    # than institutions, and a reader learns nothing from "(2)".
+    # The size clause separates the last colliding descriptions: same-named campuses differ in
+    # programs reported or recent graduates, never a fabricated suffix (see git history).
     grads = sum(r.get("completers") or 0 for r in rows)
     size = f"Reports {total} program{'' if total == 1 else 's'}"
     if grads:
         size += f" and {int(grads):,} recent graduate{'' if grads == 1 else 's'}"
     size += "."
 
-    # Honest headline + meta description carrying real numbers.
-    if decided and fail:
+    # The description says what the summary box says: undergraduate programs where any have a
+    # verdict, otherwise all programs, otherwise why there is no verdict.
+    ug_c = pl.counts([r for r in rows if not r.get("grad")])
+    hc, kind = (ug_c, "undergraduate programs") if ug_c["decided"] else (c, "programs")
+    if hc["decided"] and hc["fail"]:
         desc = (
-            f"At {at_where}, {fail} of {decided} assessed programs have graduates who earn "
-            f"less than a typical {of_state}high-school graduate. {size} Program-by-program "
+            f"At {at_where}, {hc['fail']} of {hc['decided']} assessed {kind} have graduates who "
+            f"earn less than a typical {of_state}high-school graduate. {size} Program-by-program "
             "earnings, from federal data."
         )
-        verdict = (
-            f"Of <b>{decided}</b> assessed programs, <b>{passed}</b> have graduates out-earning a "
-            f"typical {esc(of_state)}high-school graduate{bench_clause} and "
-            f"<b>{fail}</b> fall short. Another <b>{total - decided}</b> could not be assessed."
-        )
-    elif decided:
+    elif hc["decided"]:
         desc = (
-            f"At {at_where}, all {decided} assessed programs have graduates out-earning a "
+            f"At {at_where}, all {hc['decided']} assessed {kind} have graduates out-earning a "
             f"typical {of_state}high-school graduate. {size} Program earnings, from federal data."
         )
-        verdict = (
-            f"All <b>{decided}</b> assessed programs have graduates out-earning a typical "
-            f"{esc(of_state)}high-school graduate{bench_clause}. "
-            f"Another <b>{total - decided}</b> could not be assessed."
-        )
-    elif nobench:
+    elif c["nobench"]:
         desc = (
-            f"At {at_where}, the Department of Education reports earnings for {nobench} "
-            f"program{'' if nobench == 1 else 's'}, with no state benchmark to compare them with. "
-            f"{size} From federal data."
+            f"At {at_where}, the Department of Education reports earnings for {c['nobench']} "
+            f"program{'' if c['nobench'] == 1 else 's'}, with no state benchmark to compare them "
+            f"with. {size} From federal data."
         )
-        # Why there is no benchmark depends on the school. Most are missing from ED's current
-        # institution file (often closed or merged). But 31 are in it, among them the territory
-        # colleges and newly opened campuses, and their pages used to say the file had no record.
-        why = (
-            "The Department of Education's data gives no state high-school earnings benchmark for "
-            "this school"
-            if meta.get("in_institution_file")
-            else "Its current institution file has no record for this school (often a closed or "
-            "merged school), so there is no state high-school benchmark"
-        )
-        verdict = (
-            f"The Department of Education reports graduate earnings for <b>{nobench}</b> of "
-            f"{esc(name)}'s <b>{total}</b> programs, shown below. {why} to compare them with, "
-            "and no verdict is given."
+    elif c["none"] < total:
+        desc = (
+            f"At {at_where}, the Department of Education publishes no graduate earnings for any "
+            f"program, so none can be assessed. {size} From federal data."
         )
     else:
         desc = (
-            f"At {at_where}, no programs have enough data for an earnings verdict yet. "
-            f"{size} From federal data."
-        )
-        verdict = (
-            f"None of {esc(name)}'s <b>{total}</b> programs have enough data for an earnings verdict "
-            "yet. Truewise shows what the federal data supports and nothing more."
+            f"The Department of Education lists programs at {at_where} but reports no figures "
+            f"for them. {size}"
         )
 
-    # Title carries the place, always, not only when the name collides.
-    #
-    # 86 title values were shared by 202 pages, Cortiva Institute six times, so those pages competed
-    # with each other for the same result. The place also answers the query shape the September
-    # baseline is full of: "miller motte in fayetteville nc" sat at position 54.9 and "southern
-    # careers waco" at 78.2, both name-plus-city, against titles carrying no city at all.
-    #
-    # The suffix shortens from 41 characters to 26 in the same change, so a median title grows by
-    # about five characters rather than twenty while saying considerably more.
+    # Title carries the place, always (86 title values were once shared by 202 pages).
     title = (
         f"{name}, {where}: cost and graduate earnings"
         if where
         else (f"{name}: cost and graduate earnings")
     )
-    # The breadcrumb is serialized through _island_json (escapes '<' as <) so a school name
-    # containing '<' or '</script>' cannot break out of the ld+json <script> element.
+    # Serialized through _island_json (escapes '<') so a name cannot break out of the script.
     breadcrumb = {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
@@ -260,9 +183,6 @@ def canonical_page(
             {"@type": "ListItem", "position": 3, "name": name, "item": canonical},
         ],
     }
-    # CollegeOrUniversity structured data (carried over from the retired summary page): it is the
-    # entity search engines attach the profile to, so dropping it at the cutover would be a silent SEO
-    # regression. Serialized through _island_json for the same '<'-escaping safety as the breadcrumb.
     college = {
         "@context": "https://schema.org",
         "@type": "CollegeOrUniversity",
@@ -281,16 +201,16 @@ def canonical_page(
         '  <script type="application/ld+json">\n  ' + _island_json(college) + "\n  </script>\n"
         '  <script type="application/ld+json">\n  ' + _island_json(breadcrumb) + "\n  </script>\n"
     )
+    page_head = head(title, desc, canonical, ld, og_image=f"/og/college/{slug}.png").replace(
+        "</head>",
+        '  <link rel="stylesheet" href="/article.css" />\n'
+        '  <link rel="stylesheet" href="/profile.css" />\n</head>',
+        1,
+    )
 
-    # Without a benchmark nothing is compared, so the heading and caption must not say "versus a
-    # typical <state> high-school graduate" (Prototype B review, 27 September: Guam's page said so
-    # beside "there is no state high-school benchmark").
-    if bench_txt:
-        caption = f"Programs by earnings versus a typical {of_state}high-school graduate."
-        prog_h2 = "Program earnings vs a high-school graduate"
-    else:
-        caption = "Programs and their published earnings. No benchmark, so no verdicts."
-        prog_h2 = "Program earnings"
+    # The program table: static rows, a JSON island of the same rows, and a tail only if a school
+    # ever outgrows the threshold (live profiles send every row since 30 September).
+    intro, caption = pl.program_intro(benchmark, of_state)
     static_rows = rows[:threshold]
     tail = rows[threshold:]
     body_rows = "".join(_static_row(r) for r in static_rows)
@@ -308,166 +228,66 @@ def canonical_page(
         else "data-tw-profile"
     )
     cov_pct = round(100 * decided / total) if total else 0
-
-    parts = [head(title, desc, canonical, ld, og_image=f"/og/college/{slug}.png")]
-    parts.append('  <main class="wrap pg has-rail">\n')
-    parts.append(_rail(meta, name, loc_text(meta, st_name), decided, total, grads, net_price))
-    parts.append(
-        f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; '
-        f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n'
+    table = [f"      <div {profile_attrs}>\n"]
+    table.append(
+        f'        <script type="application/json" class="tw-profile-data">{island}</script>\n'
     )
-    parts.append(f"    <h1>{esc(name)}</h1>\n")
-    loc = f"{esc(meta['city'])}, {esc(st_name)}" if meta.get("city") else esc(st_name)
-    ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
-    parts.append(f'    <p class="idline">{loc}{ctrl}</p>\n')
-    # The box runs to the page's shared edge; the sentence inside keeps a reading measure.
-    parts.append(f'    <div class="verdict"><p class="verdict__text">{verdict}</p></div>\n')
-
-    # B10 affordability: net price by income + the "what would this cost you" calculator, reusing the
-    # live summary's calculator (income x years arithmetic on published net price). The static table
-    # is the no-JS fallback.
-    if net_price and (net_price.get("avg") is not None or any(net_price.get("brackets") or [])):
-        brackets = list(net_price.get("brackets") or [None] * 5)
-        # _calculator wants a programs list with payback + a flag; adapt from our verdict rows.
-        calc_programs = [
-            {
-                "payback": r["payback"],
-                "flag": "passes_earnings_premium" if r["verdict"] == "pass" else r["verdict"],
-            }
-            for r in rows
-        ]
-        parts.append('    <h2 class="sec" id="cost">What would this cost you?</h2>\n')
-        # Default the years to the school's usual credential: a certificate school shown "over 4
-        # years" overstated the cost fourfold (audit V19).
-        ug = [r["credential"] for r in rows if not r.get("grad")]
-        common = max(set(ug), key=ug.count) if ug else None
-        years = {"Undergraduate Certificate or Diploma": 1, "Associate's Degree": 2}.get(common, 4)
-        parts.append(_calculator(meta, net_price, brackets, NP_LABELS, calc_programs, years=years))
-        parts.append(
-            '    <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t np"><thead><tr><th>Family income</th>'
-            '<th class="num">Net price per year</th></tr></thead><tbody>\n'
-        )
-        for lab, b in zip(NP_LABELS, brackets, strict=False):
-            if b is not None:
-                parts.append(f'      <tr><td>{lab}</td><td class="num">{money(b)}</td></tr>\n')
-        if net_price.get("avg") is not None:
-            parts.append(
-                f"      <tr><td><b>All families (average)</b></td>"
-                f'<td class="num"><b>{money(net_price["avg"])}</b></td></tr>\n'
-            )
-        parts.append("    </tbody></table></div>\n")
-        # A negative net price is not an error and not zero: grant aid exceeded the published
-        # cost, so the school pays the student more than the student pays the school. Without
-        # saying so, "-$2,533" reads as a formatting bug and a reader discounts the whole table.
-        shown = [b for b in brackets if b is not None] + (
-            [net_price["avg"]] if net_price.get("avg") is not None else []
-        )
-        if any(v < 0 for v in shown):
-            parts.append(
-                '    <p class="src">A negative net price means grant aid exceeded the published '
-                "cost of attendance for that income band, so a typical student received more than "
-                "they paid. It is what the federal data reports, not an error.</p>\n"
-            )
-        parts.append(
-            '    <p class="tw-source">Net price is the yearly cost after grants and scholarships, by '
-            "family income (College Scorecard). It reflects students who received federal aid.</p>\n"
-        )
-
-    parts.append(f'    <h2 class="sec" id="programs">{prog_h2}</h2>\n')
-    # Mixed-window disclosure: when the page shows any 1-year earnings figure, state plainly that
-    # 1-year and 4-year figures are not the same measurement and must not be compared as if they were.
-    # This MUST sit OUTSIDE the .tw-profile-static mount: progressive enhancement replaces that mount's
-    # innerHTML wholesale, so a notice placed inside it vanishes after JS runs. As a sibling above the
-    # data-tw-profile container it survives enhancement, sorting, and "Show all".
-    if has_1yr:
-        parts.append(
-            '    <p class="tw-source tw-window-note">Earnings are measured four years after '
-            "completion when available. Where four-year earnings are suppressed, one-year earnings are "
-            'shown and marked <span class="tw-oneyr">1-year earnings</span>. One-year and four-year '
-            "figures reflect different career stages and should not be compared as if measured at the "
-            "same time.</p>\n"
-        )
-    # Graduate rows: the comparison is shown, but it is not the federal graduate test.
-    if grad_assessed:
-        parts.append(
-            '    <p class="tw-source">Graduate programs are compared with a high-school graduate here '
-            "too, marked <b>above</b> or <b>below HS line</b>. That is not how the federal rule "
-            "judges them: from 2026, graduate programs are compared with bachelor's-degree holders. "
-            'See <a href="/findings/stats-grad-exposure/">the graduate finding</a>.</p>\n'
-        )
-    # Programs whose figures ED reports once for every campus under the same federal ID.
-    if meta.get("shared"):
-        k = meta["shared"]
-        parts.append(
-            f'    <p class="tw-source">{k} of these program{"" if k == 1 else "s"} '
-            f"{'is' if k == 1 else 'are'} reported by the Department of Education for all campuses "
-            f"under one federal ID (OPEID {esc(str(meta.get('opeid6') or ''))}), so the same earnings "
-            "and debt appear on each of those campuses' pages. Truewise's totals count such a "
-            "program once.</p>\n"
-        )
-    # The canonical program table: static core + island + progressive tail, honest coverage label.
-    parts.append(f"    <div {profile_attrs}>\n")
-    parts.append(
-        f'      <script type="application/json" class="tw-profile-data">{island}</script>\n'
-    )
-    parts.append('      <div class="tw-profile-static">\n')
-    parts.append(
-        f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
+    table.append('        <div class="tw-profile-static">\n')
+    table.append(
+        f'          <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
-    # A partial table must say it is partial, above the table where it is read, and in the initial
-    # HTML: a <noscript> note would miss a script that is enabled but fails to load or run. It sits
-    # inside the mount, so it is replaced only when ProgramTable renders the accurate interactive
-    # count (Anand, 29 September; option A in truewise-review-noscript-programs-2026-09-27.md).
+    # A partial table must say so above the rows, in the initial HTML, inside the mount so it is
+    # replaced only when ProgramTable renders the live count (option A, 29 September).
     if tail:
-        parts.append(
-            f'        <p class="tw-partial" data-tw-partial>Summary figures cover all {total:,} '
+        table.append(
+            f'          <p class="tw-partial" data-tw-partial>Summary figures cover all {total:,} '
             f"programs. This table shows the first {len(static_rows):,}. "
             f'<a href="{PROGRAMS_CSV}" download>Download all {total:,} programs (CSV)</a>.</p>\n'
         )
-    parts.append(
-        '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
+    table.append(
+        '          <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
+        f'<caption class="tw-table__caption">{esc(caption)}</caption>'
+        f"<thead><tr>{HEAD}</tr></thead><tbody>{body_rows}</tbody></table></div>\n"
     )
-    parts.append(f'<caption class="tw-table__caption">{esc(caption)}</caption>')
-    parts.append(f"<thead><tr>{HEAD}</tr></thead><tbody>{body_rows}</tbody></table></div>\n")
-    parts.append("      </div>\n    </div>\n")
-
-    window_txt = (
-        "measured four years after completion where available (programs shown with a 1-year figure are "
-        "marked)"
-        if has_1yr
-        else "measured four years after completion"
-    )
-    parts.append(
-        '    <p class="tw-source"><b>Debt as years of gain</b> is median federal debt divided by how '
-        "much more graduates earn per year than a typical high-school graduate. It is not how long "
-        "repayment takes: it ignores interest, taxes and living costs.</p>\n"
-    )
-    parts.append(
-        '    <p class="tw-source">Source: U.S. Department of Education College Scorecard, release '
-        f"{SCORECARD_RELEASE}. Earnings are medians {window_txt}"
-        + (
-            f", compared with the state high-school-graduate benchmark ({esc(bench_txt)}/yr). "
-            if bench_txt
-            else ". No state high-school benchmark is available for this school. "
-        )
-        + "Debt is federal loans only. "
-        "Suppressed values are shown as insufficient data, never imputed. Figures describe past "
-        "graduates and are never a promise.</p>\n"
-    )
+    table.append("        </div>\n      </div>\n")
     if tail or total > CSV_MIN_PROGRAMS:
         # Outside the mount, so the complete list stays one click away after the table enhances.
-        parts.append(
-            f'    <p class="tw-source">Every program, including those without a verdict: '
+        table.append(
+            f'      <p class="tw-source">Every program, including those without a verdict: '
             f'<a href="{PROGRAMS_CSV}" download>download all {total:,} (CSV)</a>.</p>\n'
         )
-    parts.append("  </main>\n")
-    parts.append(FOOTER)
-    # defer: these are progressive enhancement only (the static table is the baseline), so they must
-    # never block first paint. The LCP element is the h1, so keeping JS off the critical path matters.
-    parts.append('  <script defer src="/components/table.js"></script>\n')
-    parts.append('  <script defer src="/components/profile.js"></script>\n')
-    parts.append("</body>\n</html>\n")
+
+    chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in pl.NAV)
+    loc = ", ".join(p for p in (meta.get("city"), st_name) if p)
+    ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
+    parts = [
+        page_head,
+        '  <main class="wrap art prof has-rail">\n',
+        pl.rail(meta, c, net_price),
+        f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; '
+        f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n',
+        f"    <h1>{esc(name)}</h1>\n",
+        f'    <p class="idline">{esc(loc)}{ctrl}</p>\n',
+        pl.summary(meta, rows, benchmark, net_price),
+        f'    <nav class="sectnav" aria-label="Sections"><p class="sectnav__label" id="sn-l">'
+        f"{len(pl.NAV)} sections</p>"
+        f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
+        pl.cost_section(meta, rows, net_price),
+        '    <section id="programs" aria-labelledby="programs-h" class="progs">\n',
+        '      <h2 id="programs-h">Program earnings</h2>\n',
+        f"      <p>{intro}</p>\n",
+        pl.program_notes(meta, c),
+        *table,
+        "    </section>\n",
+        pl.sources_section(meta, benchmark),
+        "  </main>\n",
+        FOOTER,
+        # defer: progressive enhancement only; the static table is the baseline.
+        '  <script defer src="/components/table.js"></script>\n',
+        '  <script defer src="/components/profile.js"></script>\n',
+        "</body>\n</html>\n",
+    ]
     return "".join(parts), tail_json
 
 

@@ -1,0 +1,44 @@
+/* College profiles (profile release, 30 September 2026; design plan Prototype B, approved
+   27 September). Loaded by profile pages only, after styles.css, pg.css, components.css and
+   article.css, whose key-finding box, section nav and expandable sections it reuses. */
+
+/* The profile keeps the site's 860px edge for the program table; prose keeps its measure. */
+.prof > * { max-width: 760px; }
+/* The table stops at the site's shared 860px edge, as production profiles do, so the side rail
+   (shown from 1200px, 240px wide at the right) never sits over it. Uncapped, it ran under the rail. */
+.prof > .progs { max-width: 860px; }
+.prof > .rail { max-width: none; }
+.prof .idline { color: var(--ink-soft); margin: 0 0 var(--sp-group); }
+
+/* Summary: the earnings verdict with its coverage in the same box (R1), then the one cost figure
+   that never changes with the calculator. */
+.kf__none { font-family: var(--display); font-size: clamp(26px, 6vw, 34px); line-height: 1.1; color: var(--ink); margin: 0; letter-spacing: -0.02em; }
+.sum__cost { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 var(--sp-group); font-size: var(--t-ui); color: var(--ink-soft); }
+.sum__costlab { font-weight: 600; color: var(--ink); }
+.sum__costfig { font-family: var(--mono); font-weight: 500; font-size: var(--t-sub); color: var(--ink); }
+.sum__na { font-style: italic; }
+
+/* Cost: inputs as one group, the band-labelled result beside them, assumptions after. */
+.cost { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-related); margin: var(--sp-group) 0 var(--sp-related); }
+@media (max-width: 640px) { .cost { grid-template-columns: 1fr; } }
+.cost__inputs { margin: 0; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
+.cost__inputs legend { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); padding: 0 4px; }
+.cost__field { display: flex; flex-direction: column; gap: 4px; margin: 0 0 var(--sp-related); }
+.cost__field:last-child { margin-bottom: 0; }
+.cost__field label { font-weight: 600; font-size: var(--t-ui); }
+.cost__field select { font: inherit; font-size: var(--t-ui); padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); max-width: 100%; }
+.cost__out { padding: 14px 16px 16px; border: 1px solid var(--brand); border-top-width: 4px; border-radius: var(--r-md); background: var(--surface); }
+.cost__band { font-size: var(--t-ui); font-weight: 600; color: var(--ink); margin: 0 0 6px; }
+.cost__fig { margin: 0; font-size: var(--t-ui); color: var(--ink-soft); }
+.cost__num { font-family: var(--mono); font-weight: 500; font-size: clamp(30px, 8vw, 40px); line-height: 1.1; letter-spacing: -0.03em; color: var(--ink); margin-right: 4px; }
+.cost__total { margin: 8px 0 0; font-size: var(--t-fine); color: var(--ink-soft); }
+.art .cost__assume, .art .cost__empty { font-size: var(--t-fine); color: var(--ink-soft); }
+
+/* Notes that change how the table reads stay visible (R2). */
+.art .note { font-size: var(--t-fine); color: var(--ink-soft); border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin: 0 0 var(--sp-control); }
+.progs .tw-verdict--none { color: var(--ink-faint); font-weight: 400; }
+
+aside.rail .rail__h2 { margin-top: var(--sp-group); }
+.src-links { font-size: var(--t-fine); }
+
+.sum .kf__of { white-space: normal; }

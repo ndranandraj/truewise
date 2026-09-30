@@ -407,7 +407,8 @@ def test_money_signs_negatives_outside_the_symbol():
         for m in re.finditer(r"const money = [^;]+;", src, re.S):
             assert '"-$"' in m.group(0), f"{path.name} formats a negative as $-n"
 
-    profiles = (PIPELINE / "build_canonical_profiles.py").read_text()
+    # The profile's cost section lives in profile_layout.py since the profile release.
+    profiles = (PIPELINE / "profile_layout.py").read_text()
     assert "A negative net price means grant aid exceeded" in profiles, (
         "a negative net price needs explaining where it appears, or it reads as an error"
     )
@@ -1291,13 +1292,14 @@ def test_a_profile_description_states_the_size_that_separates_two_same_named_cam
         "the description must carry the program count that separates same-named campuses"
     )
     assert "recent graduate" in src, "and the graduate count, which differs where programs tie"
-    # All four description branches must carry it, or the branch that omits it reintroduces the
-    # collision. The no-verdict branches matter most: six of the ten collisions were in them.
-    assert src.count("{size}") == 4, (
-        f"all four description branches need the size clause, found {src.count('{size}')}"
+    # Every description branch must carry it, or the branch that omits it reintroduces the
+    # collision. The no-verdict branches matter most: six of the ten collisions were in them. Five
+    # since the profile release split "no verdict" into published-but-no-earnings and nothing.
+    assert src.count("{size}") == 5, (
+        f"all five description branches need the size clause, found {src.count('{size}')}"
     )
     # Not a fabricated distinguisher. A UNITID in a description identifies a row, not an institution.
-    desc_block = src.split("# Honest headline", 1)[1].split("# Title carries", 1)[0]
+    desc_block = src.split("# The description says", 1)[1].split("# Title carries", 1)[0]
     assert "unitid" not in desc_block.lower(), (
         "a UNITID in the description distinguishes strings rather than institutions"
     )

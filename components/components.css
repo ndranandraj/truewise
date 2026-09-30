@@ -272,6 +272,11 @@
   font-weight: 400;
   font-style: italic;
 }
+/* ED lists the program with no figures at all: quieter than "earnings not published". */
+.tw-verdict--none {
+  color: var(--text-muted);
+  font-weight: 400;
+}
 .tw-prem {
   display: inline-flex;
   align-items: center;

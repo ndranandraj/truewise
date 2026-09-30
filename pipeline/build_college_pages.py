@@ -494,13 +494,24 @@ def _calculator(s, np_, brackets, labels, programs, years: int = 4) -> str:
     )
 
 
-def render_og_card(s, slug) -> None:
+def render_og_card(s, slug, rows=None) -> None:
     """Write this school's Open Graph share card. Extracted from college_page so the canonical
-    profile (which references the card but does not render it) still gets one per school."""
+    profile (which references the card but does not render it) still gets one per school.
+
+    Given the profile's rows, the card counts what the profile's headline counts: undergraduate
+    programs with a verdict (profile release, 30 September 2026), so a shared card never states a
+    figure the page does not."""
     name = s["name"]
     st_name = state_label(s["state"])
-    decided = s["n_pass"] + s["n_fail"]
     passed, fail = s["n_pass"], s["n_fail"]
+    kind = "Programs"
+    if rows is not None:
+        ug = [r for r in rows if not r.get("grad")]
+        if any(r["verdict"] in ("pass", "fail") for r in ug):
+            rows, kind = ug, "Undergraduate programs"
+        passed = sum(1 for r in rows if r["verdict"] == "pass")
+        fail = sum(1 for r in rows if r["verdict"] == "fail")
+    decided = passed + fail
     if decided and fail:
         card_big, card_color = f"{passed} of {decided} clear the bar", BRAND_DEEP
     elif decided:
@@ -513,7 +524,7 @@ def render_og_card(s, slug) -> None:
         name,
         big=card_big,
         big_color=card_color,
-        sub=f"Programs whose graduates out-earn a typical {st_name} high-school graduate.",
+        sub=f"{kind} whose graduates out-earn a typical {st_name} high-school graduate.",
     )
 
 
@@ -947,7 +958,7 @@ def main() -> None:
             (d / "programs-tail.json").write_text(tail_json)
         if tail_json or len(rows) > CSV_MIN_PROGRAMS:
             partial[u] = d
-        render_og_card(s, slug)
+        render_og_card(s, slug, rows)
         states_present[s["state"]].append((slug, s, u))
 
     # The complete program list as CSV for every profile with more than 150 programs (245 schools).

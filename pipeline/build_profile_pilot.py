@@ -149,6 +149,15 @@ def _row_from(r) -> dict:
         and _num(r.get("earnings_threshold_state")) is None
     )
     shown = decided or nobench
+    # Three reasons a program has no verdict, kept apart (profile release, 30 September 2026):
+    # "nobench" (earnings, no line to compare), "insufficient" (ED reports the program, graduates or
+    # debt, but no earnings) and "none" (ED lists the program with no figures at all).
+    nothing = (
+        not shown
+        and _num(r.get("completers_count")) is None
+        and _num(r.get("debt_median")) is None
+        and _num(r.get("earnings")) is None
+    )
     return {
         "program": plain_name(str(r["cip_code"]), r["cip_desc"]) or tidy_official(r["cip_desc"]),
         "credential": r["credential_desc"],
@@ -160,6 +169,8 @@ def _row_from(r) -> dict:
         if r["value_flag"] == "fails_earnings_premium"
         else "nobench"
         if nobench
+        else "none"
+        if nothing
         else "insufficient",
         # Graduate credentials are compared with the high-school line here, which is not the federal
         # graduate test (the 2026 rule uses a bachelor's-holder line), so their verdict is worded
@@ -279,11 +290,12 @@ def _program_cell(r: dict) -> str:
 GRAD_LEVELS = ("4", "5", "6", "7", "8")
 
 
-def payback_text(r: dict) -> str | None:
-    """Median debt over the yearly earnings gain. Mirrored by _paybackCell in site/components/table.js.
+def payback_text(r: dict) -> str:
+    """Median debt over the yearly earnings gain. Mirrored by _paybackCell in components/table.js.
 
     A program whose graduates earn no more than a high-school graduate has no gain to set against
-    its debt. That is a known answer, not missing data, so it says so instead of "insufficient data".
+    its debt. That is a known answer, not missing data, so it says so. Where no comparison could be
+    made the ratio is "not assessed": it is Truewise's figure, so "not published" would misstate it.
     """
     if r["payback"] is not None:
         return f"{r['payback']:.1f} yrs"
@@ -291,13 +303,15 @@ def payback_text(r: dict) -> str | None:
         return '<span class="tw-td__insuf">no benchmark</span>'
     if r["verdict"] == "fail" and r.get("debt") is not None:
         return '<span class="tw-td__insuf">no earnings gain</span>'
-    return None
+    return f'<span class="tw-td__insuf">{"not reported" if r["verdict"] == "none" else "not assessed"}</span>'
 
 
 def verdict_chip(r: dict) -> str:
-    """The verdict cell. Mirrored exactly by _verdictCell in site/components/table.js."""
+    """The verdict cell. Mirrored exactly by _verdictCell in components/table.js."""
     if r["verdict"] == "insufficient":
-        return '<span class="tw-verdict tw-verdict--insuf">insufficient data</span>'
+        return '<span class="tw-verdict tw-verdict--insuf">earnings not published</span>'
+    if r["verdict"] == "none":
+        return '<span class="tw-verdict tw-verdict--none">nothing reported</span>'
     if r["verdict"] == "nobench":
         return '<span class="tw-verdict tw-verdict--insuf">no state benchmark</span>'
     # A verdict on one-year earnings is an early-career reading: one-year figures fall short about
@@ -312,20 +326,28 @@ def verdict_chip(r: dict) -> str:
 
 
 def _static_row(r: dict) -> str:
-    """One <tr> of static, crawlable HTML using the final component classes."""
+    """One <tr> of static, crawlable HTML, mirroring ProgramTable's row in components/table.js.
+
+    A value ED did not publish reads "not published"; a comparison Truewise could not make reads
+    "not assessed"; every cell of a program ED lists with no figures reads "not reported"."""
+    none = r["verdict"] == "none"
+    na = '<span class="tw-td__insuf">{}</span>'
+    missing = na.format("not reported" if none else "not published")
+    unassessed = na.format("not reported" if none else "not assessed")
 
     def cell(label, val, num=False):
         cls = "tw-td tw-td--num" if num else "tw-td"
-        inner = val if val is not None else '<span class="tw-td__insuf">insufficient data</span>'
-        return f'<td class="{cls}" data-label="{label}">{inner}</td>'
+        return f'<td class="{cls}" data-label="{label}">{missing if val is None else val}</td>'
 
-    verdict = verdict_chip(r)
-    prem = '<span class="tw-td__insuf">no benchmark</span>' if r["verdict"] == "nobench" else None
     if r["premium"] is not None:
         sign = "+" if r["premium"] >= 0 else "-"
         prem = f"{sign}{_money(abs(r['premium']))}"
-    # 1-year earnings marker: only beside a DISPLAYED assessed value whose horizon is 1-year. Horizon is
-    # None for insufficient rows (earnings hidden), so this never labels a figure the page does not show.
+    elif r["verdict"] == "nobench":
+        prem = na.format("no benchmark")
+    else:
+        prem = unassessed
+    # 1-year earnings marker: only beside a DISPLAYED value whose horizon is 1-year. Horizon is None
+    # for rows whose earnings are not shown, so this never labels a figure the page does not show.
     earn = _money(r["earnings"])
     if earn is not None:
         marker = (
@@ -337,16 +359,17 @@ def _static_row(r: dict) -> str:
         # as a third flex item the nowrap marker could not shrink, and pushed the document
         # 34px past a 320px viewport on a school with any 1-year figure.
         earn = f'<span class="tw-val">{earn}{marker}</span>'
+    suppressed = r["verdict"] in ("insufficient", "none")
     return (
-        f'<tr class="tw-tr{" tw-tr--insuf" if r["verdict"] == "insufficient" else ""}">'
+        f'<tr class="tw-tr{" tw-tr--insuf" if suppressed else ""}">'
         f'<th scope="row" class="tw-td tw-td--program" data-label="Program">'
         f"{_program_cell(r)}</th>"
         f'<td class="tw-td" data-label="Degree">{_esc(r["credential"] or "")}</td>'
         + cell("Median earnings", earn, True)
-        + cell("vs a high-school grad", prem, True)
-        + f'<td class="tw-td" data-label="Verdict">{verdict}</td>'
+        + f'<td class="tw-td tw-td--num" data-label="vs a high-school grad">{prem}</td>'
+        + f'<td class="tw-td" data-label="Verdict">{verdict_chip(r)}</td>'
         + cell("Median debt", _money(r["debt"]), True)
-        + cell("Debt as years of gain", payback_text(r), True)
+        + f'<td class="tw-td tw-td--num" data-label="Debt as years of gain">{payback_text(r)}</td>'
         + cell(
             "Recent completers",
             None if r["completers"] is None else format(r["completers"], ","),
@@ -408,8 +431,8 @@ def build_profile(meta: dict, rows: list[dict], threshold: int) -> tuple[str, st
 <caption class="tw-table__caption">Programs by earnings versus a state high-school graduate.</caption>
 <thead><tr>{HEAD}</tr></thead><tbody>{body}</tbody></table></div>
 </div></div>
-<p class="tw-source">Source: U.S. Department of Education College Scorecard. Suppressed values are shown
-as insufficient data, never imputed. Figures describe past graduates and are never a promise.</p>
+<p class="tw-source">Source: U.S. Department of Education College Scorecard. A value ED does not publish
+is marked as such, never imputed. Figures describe past graduates and are never a promise.</p>
 <script src="/components/table.js"></script><script src="/components/profile.js"></script>
 </main></body></html>"""
     return html, tail_json

@@ -37,7 +37,7 @@ const WIDTHS = [
 
 /** The six agreed routes. Penn State is the 489-program giant: since 30 September every row is in its HTML and the
  *  table reveals 20 at a time, which the reveal step exercises;
- *  Agape is the all-insufficient profile where every row must read "insufficient data".
+ *  Agape is the all-insufficient profile where every row must say why it has no verdict.
  *
  *  Compare CARRIES SCHOOLS ON PURPOSE. The first real run measured `/compare/` bare, which is a
  *  search box and nothing else, and reported it clean at all four widths. The reason Compare is in
@@ -472,7 +472,7 @@ function probe(opts) {
     const rect = el.getBoundingClientRect();
     if (!visible(el, rect)) continue;
     add("sentinel-rendered", true,
-      `${describe(el)} renders "${txt}" as its whole value. Unknown must read "insufficient data", ` +
+      `${describe(el)} renders "${txt}" as its whole value. Unknown must say why it is missing ("not published", "not reported"), ` +
       `never a sentinel and never 0.`,
       { selector: describe(el) });
   }

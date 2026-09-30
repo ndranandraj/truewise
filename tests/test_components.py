@@ -179,14 +179,18 @@ def test_profile_enhancement_is_progressive_and_no_js_safe():
 
 def test_program_table_keeps_its_accessibility_contract():
     """Guard the B5 table semantics: real table headers, sortable aria-sort, per-cell mobile labels,
-    and suppressed cells that say insufficient data rather than 0."""
+    and missing cells that say why rather than 0: not published, not assessed, not reported."""
     js = (COMPONENTS / "table.js").read_text()
     for needed in (
         'scope="col"',
         'scope="row"',
         "aria-sort",
         "data-label",
-        "insufficient data",
+        "not published",
+        "not assessed",
+        "not reported",
+        "earnings not published",
+        "nothing reported",
         'aria-hidden="true"',  # the premium bar is decorative
     ):
         assert needed in js, f"program table missing {needed}"
