@@ -122,7 +122,7 @@ def test_baylor_example_card_matches_data():
     )
     assert bay, "Baylor Psychology BA not found in data"
     earn = f"${int(round(bay[0])):,}"  # $65,090
-    prem_pct = f"+{round(100 * bay[1] / bay[2])}%"  # +87%
+    prem_pct = f"{round(100 * bay[1] / bay[2])}% above"  # 87% above
     home = HOME.read_text()
     assert earn in home, f"homepage example card missing Baylor earnings {earn}"
     assert prem_pct in home, f"homepage example card missing Baylor premium {prem_pct}"

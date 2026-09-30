@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Truewise: the honest number behind US education</title>
-  <meta name="description" content="Truewise turns scattered US federal education data into clear, honest guidance for students and families. Open data, reproducible pipeline, free forever." />
+  <meta name="description" content="Truewise turns scattered US federal education data into clear, honest guidance for students and families. Open data, a reproducible pipeline, no ads." />
 
   <!-- Open Graph / social share -->
   <meta property="og:type" content="website" />
@@ -24,6 +24,7 @@
   <link rel="preload" href="/fonts/source-serif-4-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/ibm-plex-mono-latin-500-normal.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="home.css" />
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -110,173 +111,107 @@
   </header>
   <span id="main" tabindex="-1"></span>
 
-  <main>
-    <section class="hero">
+  <main class="home">
+    <section class="h-hero" aria-labelledby="h-title">
       <div class="wrap">
-        <div>
-          <p class="eyebrow">Public data · Free forever · No ads</p>
-          <h1>The honest number behind US&nbsp;education.</h1>
-          <p class="lede">
-            Look up any US college and see, program by program, whether its graduates out-earn a
-            high-school graduate, and what families actually pay.
-          </p>
-          <form class="hero-search" action="/value-check/" method="get" role="search">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input name="q" type="search" placeholder="Search colleges…" aria-label="Search a college" autocomplete="off" />
+        <p class="eyebrow">Public federal data &middot; No ads</p>
+        <h1 id="h-title">The honest number behind US&nbsp;education.</h1>
+        <p class="h-lede">See, program by program, whether a college&rsquo;s graduates out-earn a
+          high-school graduate, and what families actually pay.</p>
+        <form class="h-search" action="/value-check/" method="get" role="search">
+          <label for="h-q">Find a college</label>
+          <div class="h-search__row">
+            <input id="h-q" name="q" type="search" placeholder="e.g. Baylor" autocomplete="off" />
             <button type="submit">Search</button>
-          </form>
-          <p class="hero-hint">Try <b>Baylor</b>, <b>UCLA</b>, or your local community college.</p>
-          <p class="hero-latest"><span>New finding</span> As of 6 August 2026, 1,932 of 4,635 colleges had not submitted at least one required federal earnings-transparency file (files rejected with errors count as not submitted). <a href="/findings/fvtge-reporting/">Search the list &rarr;</a></p>
-        </div>
-
-        <!-- Every row is a real program in published/value_check.parquet, linked to its college's profile,
-             checked by test_homepage_examples_are_real_programs. The percentage is the premium over that
-             state's high-school benchmark. Never an illustrative figure: two rows once were. -->
-        <aside class="example-card" aria-label="Example results">
-          <header>
-            <h2>What a result looks like</h2>
-            <small>vs. a typical high-school graduate</small>
-          </header>
-          <div class="example-row">
-            <div>
-              <p class="program"><a href="/college/baylor-university/">Psychology, BA, Baylor University</a></p>
-              <p class="earned">Graduates 4 yrs out earned roughly <b>$65,090</b></p>
-            </div>
-            <span class="verdict-pill up">&#9650; +87%</span>
           </div>
-          <div class="example-row">
-            <div>
-              <p class="program"><a href="/college/ivy-tech-community-college/">Nursing, ADN, Ivy Tech Community College</a></p>
-              <p class="earned">Graduates 4 yrs out earned roughly <b>$76,217</b></p>
-            </div>
-            <span class="verdict-pill up">&#9650; +109%</span>
-          </div>
-          <div class="example-row">
-            <div>
-              <p class="program"><a href="/college/douglas-j-aveda-institute/">Cosmetology, Cert., Douglas J Aveda Institute</a></p>
-              <p class="earned">Graduates 4 yrs out earned roughly <b>$29,047</b></p>
-            </div>
-            <span class="verdict-pill down">&#9660; &minus;17%</span>
-          </div>
-          <footer>Source: US Dept. of Education, 2026 · data vintage shown on every page</footer>
+          <p class="h-hint">Or browse <a href="/colleges/">colleges by state</a>.</p>
+        </form>
+        <aside class="h-latest" aria-label="Latest finding">
+          <p class="h-latest__tag">New finding</p>
+          <p class="hero-latest"><a href="/findings/fvtge-reporting/">1,932 of 4,635 colleges had not
+            submitted at least one required FVT/GE file</a>, as recorded in ED&rsquo;s list compiled on
+            6 August 2026. &ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</p>
         </aside>
       </div>
     </section>
 
-    <section class="finding-band">
+    <section class="h-examples" aria-labelledby="ex-h">
       <div class="wrap">
-        <div>
+        <h2 id="ex-h">What a result looks like</h2>
+        <figure class="ex" aria-labelledby="ex-title"><p class="ex__title" id="ex-title">Median earnings four years after graduating. The line on each bar is that state&rsquo;s typical high-school graduate.</p><ul class="ex__rows"><li class="ex__row"><p class="ex__name"><a href="/college/baylor-university/">Psychology, bachelor&#x27;s</a><span class="ex__school">Baylor University, Texas</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:81.4%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$65,090</b>, <span class="ex__gap">87% above</span> the Texas high-school line of $34,809.</p></li><li class="ex__row"><p class="ex__name"><a href="/college/ivy-tech-community-college/">Nursing, associate&#x27;s</a><span class="ex__school">Ivy Tech Community College, Indiana</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:95.3%"></span><span class="ex__mark" style="left:45.6%"></span></div><p class="ex__val"><b>$76,217</b>, <span class="ex__gap">109% above</span> the Indiana high-school line of $36,492.</p></li><li class="ex__row ex__row--below"><p class="ex__name"><a href="/college/douglas-j-aveda-institute/">Cosmetology, certificate</a><span class="ex__school">Douglas J Aveda Institute, Michigan</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:36.3%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$29,047</b>, <span class="ex__gap">17% below</span> the Michigan high-school line of $34,809.</p></li></ul><p class="ex__axis" aria-hidden="true"><span>$0</span><span>$80,000</span></p><p class="chart-src">College Scorecard, release 2026-06-10. Each bar starts at $0 on the same scale; states set different lines.</p></figure>
+      </div>
+    </section>
+
+    <section class="h-band" aria-labelledby="band-h">
+      <div class="wrap h-band__grid">
+        <h2 id="band-h" class="h-band__stat"><b>1 in 10</b> undergraduate programs with published
+          earnings have graduates who earn less than a typical high-school graduate.</h2>
+        <p class="h-band__body">4,308 of 41,198 certificate, associate&rsquo;s and
+          bachelor&rsquo;s programs, each counted once. Only about 28% of
+          programs can be judged; ED publishes no earnings for most of the rest. Where only one-year
+          earnings are published, those are used; on four-year figures alone it is 1 in 13.
+          Cosmetology: 96% fall short.</p>
+        <div class="h-band__chart">
           <!-- HOME_CHART_START -->
           <p class="dots-label">What graduates earn vs a high-school grad</p>
           <figure class="home-dist home-dist--wide"><svg viewBox="0 0 480 276" width="100%" role="img" aria-labelledby="distTitle distDesc" style="max-width:480px;height:auto"><title id="distTitle">How far college programs out-earn a high-school graduate</title><desc id="distDesc">Of 41,198 judged undergraduate programs, 4,308 (about 10%) have graduates who earn less than a typical high-school graduate; the median program earns 52% more. Bars, left to right: earn less 4,308; 0-25% more 6,433; 25-50% more 9,211; 50-75% more 7,431; 75-100% more 4,843; 100-150% more 5,695; 150%+ more 3,277.</desc><rect x="51" y="120" width="42" height="70" rx="2" fill="#ab695a" data-count="4308"/><text x="72" y="112" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">10%</text><rect x="107" y="85" width="42" height="105" rx="2" fill="#a8c4b2" data-count="6433"/><text x="128" y="77" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">16%</text><rect x="163" y="40" width="42" height="150" rx="2" fill="#a8c4b2" data-count="9211"/><text x="184" y="32" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">22%</text><rect x="219" y="69" width="42" height="121" rx="2" fill="#a8c4b2" data-count="7431"/><text x="240" y="61" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">18%</text><rect x="275" y="111" width="42" height="79" rx="2" fill="#a8c4b2" data-count="4843"/><text x="296" y="103" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">12%</text><rect x="331" y="97" width="42" height="93" rx="2" fill="#a8c4b2" data-count="5695"/><text x="352" y="89" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">14%</text><rect x="387" y="137" width="42" height="53" rx="2" fill="#a8c4b2" data-count="3277"/><text x="408" y="129" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">8%</text><line x1="51" y1="190" x2="429" y2="190" stroke="rgba(255,255,255,.28)" stroke-width="1"/><line x1="100" y1="30" x2="100" y2="190" stroke="#ab695a" stroke-width="1" stroke-dasharray="3 3"/><text x="94" y="44" text-anchor="end" font-size="13" fill="#d8cdb4" font-weight="600">HS line</text><line x1="100" y1="190" x2="100" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="100" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">0%</text><line x1="156" y1="190" x2="156" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="156" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">25%</text><line x1="212" y1="190" x2="212" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="212" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">50%</text><line x1="268" y1="190" x2="268" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="268" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">75%</text><line x1="324" y1="190" x2="324" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="324" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">100%</text><line x1="380" y1="190" x2="380" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="380" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">150%</text><text x="72" y="230" text-anchor="middle" font-size="13" fill="#d8cdb4" font-weight="600">earn less</text><text x="429" y="230" text-anchor="end" font-size="13" fill="#a8c4b2">earn more than the HS line &#8594;</text><text x="51" y="264" font-size="13" fill="#a8c4b2">n = 41,198 judged undergrad programs</text></svg></figure>
           <figure class="home-dist home-dist--narrow"><svg viewBox="0 0 300 276" width="100%" role="img" aria-labelledby="distTitleM distDescM" style="max-width:300px;height:auto"><title id="distTitleM">How far college programs out-earn a high-school graduate</title><desc id="distDescM">Of 41,198 judged undergraduate programs, 4,308 (about 10%) have graduates who earn less than a typical high-school graduate; the median program earns 52% more. Bars, left to right: earn less 4,308; 0-25% more 6,433; 25-50% more 9,211; 50-75% more 7,431; 75-100% more 4,843; 100-150% more 5,695; 150%+ more 3,277.</desc><rect x="12" y="120" width="30" height="70" rx="2" fill="#ab695a" data-count="4308"/><text x="27" y="112" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">10%</text><rect x="53" y="85" width="30" height="105" rx="2" fill="#a8c4b2" data-count="6433"/><text x="68" y="77" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">16%</text><rect x="94" y="40" width="30" height="150" rx="2" fill="#a8c4b2" data-count="9211"/><text x="109" y="32" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">22%</text><rect x="135" y="69" width="30" height="121" rx="2" fill="#a8c4b2" data-count="7431"/><text x="150" y="61" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">18%</text><rect x="176" y="111" width="30" height="79" rx="2" fill="#a8c4b2" data-count="4843"/><text x="191" y="103" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">12%</text><rect x="217" y="97" width="30" height="93" rx="2" fill="#a8c4b2" data-count="5695"/><text x="232" y="89" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">14%</text><rect x="258" y="137" width="30" height="53" rx="2" fill="#a8c4b2" data-count="3277"/><text x="273" y="129" text-anchor="middle" font-size="13" font-weight="600" fill="#d8cdb4">8%</text><line x1="12" y1="190" x2="288" y2="190" stroke="rgba(255,255,255,.28)" stroke-width="1"/><line x1="47" y1="30" x2="47" y2="190" stroke="#ab695a" stroke-width="1" stroke-dasharray="3 3"/><text x="2" y="44" text-anchor="start" font-size="13" fill="#d8cdb4" font-weight="600">HS line</text><line x1="48" y1="190" x2="48" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="48" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">0%</text><line x1="89" y1="190" x2="89" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="89" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">25%</text><line x1="130" y1="190" x2="130" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="130" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">50%</text><line x1="171" y1="190" x2="171" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="171" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">75%</text><line x1="212" y1="190" x2="212" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="212" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">100%</text><line x1="253" y1="190" x2="253" y2="195" stroke="rgba(255,255,255,.28)" stroke-width="1"/><text x="253" y="209" text-anchor="middle" font-size="13" fill="#a8c4b2">150%</text><text x="2" y="230" text-anchor="start" font-size="13" fill="#d8cdb4" font-weight="600">earn less</text><text x="288" y="230" text-anchor="end" font-size="13" fill="#a8c4b2">earn more &#8594;</text><text x="12" y="264" font-size="13" fill="#a8c4b2">n = 41,198 judged undergrad programs</text></svg></figure>
           <!-- HOME_CHART_END -->
         </div>
-        <div>
-          <p class="finding-stat"><b>1 in 10</b> undergraduate programs with reported earnings have graduates who earn less than a typical high-school graduate.</p>
-          <p class="finding-body">
-            Certificates, associate's and bachelor's degrees, each program counted once, with earnings
-            measured up to four years after finishing, from the Department of Education's College Scorecard.
-            Only about 28% of programs can be judged this way; most of the rest are privacy-suppressed by ED.
-            Where the four-year figure is suppressed we fall back to the one-year figure; on four-year
-            data alone the rate is <b>1 in 13</b>. Among cosmetology programs, <b>96%</b> fall short.
-            <a href="/methodology/">How we count</a>.
-          </p>
-        </div>
-        <a class="cta" href="/value-check/">Look one up &rarr;</a>
+        <p class="h-band__cta"><a class="cta" href="/value-check/">Look up a college</a>
+          <a class="h-band__how" href="/methodology/">How we count</a></p>
       </div>
     </section>
 
-    <section id="modules" class="panel">
-      <div class="wrap">
-        <div class="panel-head">
-          <h2>What Truewise shows</h2>
-          <small>All live today · built on federal data</small>
-        </div>
-        <div class="live-modules">
-          <a class="live-card flagship" href="/value-check/">
-            <h3>Value Check <span class="tag">Start here</span></h3>
-            <p>
-              Do a program's graduates out-earn a high-school graduate, and how does their debt
-              compare to their earnings? Modeled on the earnings-premium test in the federal Financial Value Transparency rules, with the differences explained in the methodology.
-            </p>
-            <span class="live-cta">Open Value Check &rarr;</span>
-          </a>
-          <a class="live-card" href="/careers/">
-            <h3>Careers</h3>
-            <p>
-              What a major actually pays: median graduate earnings by field and degree, the range
-              across schools, and the occupations it leads to with BLS pay and growth outlook.
-            </p>
-            <span class="live-cta">Explore majors &rarr;</span>
-          </a>
-          <a class="live-card" href="/k12/">
-            <h3>High schools</h3>
-            <p>
-              Which US public high schools offer AP, calculus, and physics (about 1 in 4 reported none of the three in 2023-24, counting alternative and special-education schools),
-              plus counselors, staffing, and how states compare. Federal data, 2023-24.
-            </p>
-            <span class="live-cta">Open the high-school hub &rarr;</span>
-          </a>
-        </div>
-        <div class="profile-strip">
-          <p class="strip-label">On every<br />school profile</p>
-          <div>
-            <h3>Affordability</h3>
-            <p>What families at your income actually paid, not sticker price</p>
-          </div>
-          <div>
-            <h3>ROI</h3>
-            <p>Debt compared with the yearly earnings gain over a high-school graduate</p>
-          </div>
-          <div>
-            <h3>Earnings</h3>
-            <p>What each program's graduates earned, next to a typical high-school graduate</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="data" class="panel alt">
-      <div class="wrap">
-        <div>
-          <h2>Open data, not another comparison site</h2>
-          <p class="prose">
-            Truewise is open data infrastructure researchers and journalists can build on, the
-            website is the demo layer. Everything comes from public federal sources (College
-            Scorecard, IPEDS, Federal Student Aid), cleaned into one documented dataset with a
-            reproducible pipeline, published under an open license.
-          </p>
-          <div class="data-actions">
-            <span class="pip">pip install truewise-data · open CC-BY dataset</span>
-            <div class="data-grid">
-              <a class="data-card" href="/colleges/"><b>Browse colleges by state</b><span>Every school, pre-rendered</span></a>
-              <a class="data-card" href="/compare/"><b>Compare side by side</b><span>Up to four schools at your income</span></a>
-              <a class="data-card" href="/majors/"><b>Browse majors by pay</b><span>Median earnings by field</span></a>
-              <a class="data-card" href="/lists/"><b>Rankings and lists</b><span>Highest-paying, debt vs earnings</span></a>
-              <a class="data-card" href="/data/value_check.parquet" download><b>Download the dataset</b><span>Parquet, CC BY 4.0</span></a>
-              <a class="data-card" href="/about/embed/"><b>Embed a value check</b><span>Drop a school's card on your site</span></a>
-              <a class="data-card" href="https://github.com/ndranandraj/truewise"><b>Source &amp; data on GitHub</b><span>Reproducible pipeline</span></a>
-            </div>
-          </div>
-        </div>
-        <div class="honesty" id="methodology">
-          <h3>How we stay honest</h3>
+    <section class="h-paths" aria-label="Two ways in">
+      <div class="wrap h-paths__grid">
+        <div class="h-path">
+          <h2>Explore education</h2>
+          <p>For students and families choosing a college or a field.</p>
           <ul>
-            <li>Every number carries its <b>source and data vintage</b></li>
-            <li>We never impute, thin data says <b>&ldquo;insufficient data&rdquo;</b></li>
-            <li>Figures are framed as <b>&ldquo;students like you earned roughly&rdquo;</b>, never a promise</li>
+            <li><a href="/value-check/"><b>Find a college</b><span>Program earnings and what families pay</span></a></li>
+            <li><a href="/compare/"><b>Compare colleges</b><span>Up to four, side by side</span></a></li>
+            <li><a href="/careers/"><b>Careers and majors</b><span>What a field pays, and where it leads</span></a></li>
+            <li><a href="/k12/"><b>High schools</b><span>AP, calculus, physics and counselors</span></a></li>
           </ul>
         </div>
+        <div class="h-path" id="data">
+          <h2>Use the research</h2>
+          <p>For journalists, researchers and developers.</p>
+          <ul>
+            <li><a href="/findings/"><b>Findings</b><span>What the data shows, with its limits</span></a></li>
+            <li><a href="/methodology/"><b>Methodology</b><span>Every rule and source</span></a></li>
+            <li><a href="/data/value_check.parquet"><b>Download the dataset</b><span>Parquet, CC BY 4.0</span></a></li>
+            <li><a href="https://github.com/ndranandraj/truewise"><b>Python package and source</b><span><code>pip install truewise-data</code></span></a></li>
+            <li><a href="/about/embed/"><b>Embed a college card</b><span>For your own site</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="h-honest" aria-labelledby="honest-h">
+      <div class="wrap">
+        <h2 id="honest-h">How we stay honest</h2>
+        <ul>
+          <li>Every figure carries its source and date.</li>
+          <li>Nothing is estimated to fill a gap. When ED publishes no figure, the page says so.</li>
+          <li>Earnings describe past graduates. They are not a promise.</li>
+        </ul>
+        <p><a href="/updates/">Updates and corrections</a></p>
       </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">
-      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/compare/">Compare</a> &middot; <a href="/majors/">All majors</a> &middot; <a href="/lists/">Lists</a> &middot; <a href="/findings/">Findings</a> &middot; <a href="/updates/">Updates</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
-      <p class="muted">A portfolio &amp; social-impact project &middot; Not affiliated with the US Department of Education.</p>
-      <p class="muted"><span id="data-vintage">College Scorecard 2026-06-10 · CRDC 2023-24 · <a href="/updates/">last verified 2026-09-11</a></span></p>
+    <div class="wrap foot">
+      <div class="foot__who">
+        <p><a class="brand" href="/">true<span>wise</span></a></p>
+        <p>Built and maintained by <a href="/about/">Anandraj</a>. Independent, open education data. Not affiliated with the U.S. Department of Education.</p>
+        <p class="muted"><span id="data-vintage">College Scorecard 2026-06-10 · CRDC 2023-24 · <a href="/updates/">last verified 2026-09-11</a></span></p>
+        <p><a href="/methodology/">Methodology</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+      </div>
+      <nav class="foot__group" aria-label="Explore"><h2>Explore</h2><ul><li><a href="/value-check/">Find a college</a></li><li><a href="/colleges/">Colleges by state</a></li><li><a href="/compare/">Compare</a></li><li><a href="/careers/">Careers</a></li><li><a href="/majors/">Majors</a></li><li><a href="/k12/">High schools</a></li></ul></nav>
+      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
     </div>
   </footer>
   <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->

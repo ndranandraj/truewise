@@ -1,0 +1,85 @@
+/* The homepage (homepage release, 30 September 2026; design plan Prototype C, approved 30
+   September). Loaded by the homepage only, after styles.css. */
+
+
+.home section { padding: var(--s10) 0; }
+@media (max-width: 600px) { .home section { padding: var(--s8) 0; } }
+#data { scroll-margin-top: 90px; }
+.home h2 { font-family: var(--display); font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--s4); }
+
+/* Hero: search is the focal point (R3); the latest finding ranks visibly below it. */
+.h-hero { padding-top: var(--s8) !important; padding-bottom: var(--s8) !important; }
+.h-hero .wrap > * { max-width: 680px; }
+.h-hero h1 { font-family: var(--display); font-size: var(--t-display); line-height: 1.05; letter-spacing: -0.03em; margin: var(--s2) 0 var(--s4); }
+.h-lede { font-size: var(--t-lede); line-height: 1.5; color: var(--ink-soft); margin: 0 0 var(--s6); }
+.h-search { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; box-shadow: 0 1px 0 var(--line); }
+.h-search label { display: block; font-weight: 600; font-size: var(--t-ui); margin: 0 0 var(--s2); }
+.h-search__row { display: flex; gap: var(--s2); }
+.h-search input { flex: 1 1 auto; min-width: 0; font: inherit; font-size: var(--t-sub); padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); }
+.h-search button { font: inherit; font-weight: 600; font-size: var(--t-ui); padding: 0 20px; border: 0; border-radius: var(--r-sm); background: var(--brand); color: var(--paper); cursor: pointer; }
+.h-search input:focus-visible, .h-search button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.h-hint { margin: var(--s2) 0 0; font-size: var(--t-fine); color: var(--ink-soft); }
+.h-latest { margin-top: var(--s6); padding: 10px 14px; border-left: 3px solid var(--brand); background: var(--bg-alt); font-size: var(--t-fine); color: var(--ink-soft); }
+.h-latest p { margin: 0; line-height: 1.5; }
+.h-latest__tag { font-size: var(--t-label) !important; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 2px !important; }
+.h-latest a { color: var(--ink); font-weight: 600; }
+
+/* Example graphic: absolute earnings from $0 on one scale, each with its own state line (spec 4.1). */
+.h-examples { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.h-examples .wrap > * { max-width: 760px; }
+.ex { margin: 0; }
+.ex__title { font-size: var(--t-ui); color: var(--ink-soft); margin: 0 0 var(--s4); max-width: 62ch; }
+.ex__rows { list-style: none; margin: 0; padding: 0; }
+.ex__row { padding: var(--s4) 0; border-bottom: 1px solid var(--line-soft); }
+.ex__name { margin: 0 0 var(--s2); display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; }
+.ex__name a { font-weight: 600; color: var(--ink); }
+.ex__school { font-size: var(--t-fine); color: var(--ink-soft); }
+.ex__track { position: relative; height: 16px; background: var(--line-soft); border-radius: 2px; }
+.ex__bar { position: absolute; inset: 0 auto 0 0; background: var(--brand); border-radius: 2px; }
+.ex__row--below .ex__bar { background: var(--bad); }
+.ex__mark { position: absolute; top: -5px; bottom: -5px; width: 2px; margin-left: -1px; background: var(--ink); }
+.ex__val { margin: var(--s2) 0 0; font-size: var(--t-fine); color: var(--ink-soft); }
+.ex__val b { font-family: var(--mono); font-weight: 500; font-size: var(--t-ui); color: var(--ink); }
+.ex__gap { font-weight: 600; color: var(--good); }
+.ex__row--below .ex__gap { color: var(--bad); }
+.ex__axis { display: flex; justify-content: space-between; margin: var(--s2) 0 0; font-family: var(--mono); font-size: var(--t-label); color: var(--ink-faint); }
+.ex .chart-src { font-size: var(--t-fine); color: var(--ink-faint); margin: var(--s3) 0 0; }
+
+/* Dark band, read in order: statistic, then the chart, then the action. From 1024px the statistic
+   and its qualifiers sit left of the chart, so the chart no longer floats in an empty band; on a
+   phone the spacing tightens (it was about 900px tall at 390). The 28% coverage and the one-year
+   qualifier stay visible in both. The switch is at 1024px, not 900: at 900 the text column was
+   292px and the headline ran to eight lines (review, 30 September); at 1024 it is about 416px. */
+.h-band { background: var(--brand-deep); color: var(--text-on-dark); }
+.home .h-band { padding: var(--s8) 0; }
+.h-band :focus-visible { outline-color: var(--paper); }
+.h-band__grid { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: var(--s5); }
+.h-band__grid > * { min-width: 0; margin: 0; }
+.home .h-band__stat { font-family: var(--display); font-size: clamp(23px, 3.2vw, 34px); font-weight: 400; line-height: 1.25; color: var(--paper); margin: 0; }
+.h-band__stat b { font-family: var(--mono); font-weight: 500; }
+.h-band__body { font-size: var(--t-fine); line-height: 1.55; color: var(--text-on-dark); opacity: 0.92; max-width: 60ch; }
+.h-band__chart .dots-label { margin-bottom: var(--s2); }
+.h-band__cta { display: flex; flex-wrap: wrap; gap: var(--s4); align-items: center; }
+.h-band .cta { display: inline-block; background: var(--paper); color: var(--brand-deep); font-weight: 600; padding: 12px 20px; border-radius: var(--r-sm); text-decoration: none; }
+.h-band__how { color: var(--paper); }
+@media (min-width: 1024px) {
+  .home .h-band { padding: var(--s10) 0; }
+  .h-band__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 480px); column-gap: var(--s9); row-gap: var(--s4); align-items: start; }
+  .h-band__stat, .h-band__body, .h-band__cta { grid-column: 1; }
+  .h-band__chart { grid-column: 2; grid-row: 1 / span 3; align-self: center; }
+  .h-band__body { font-size: var(--t-ui); }
+}
+
+/* Two paths. */
+.h-paths__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s8); }
+@media (max-width: 760px) { .h-paths__grid { grid-template-columns: 1fr; gap: var(--s7); } }
+.h-path > p { color: var(--ink-soft); margin: 0 0 var(--s4); }
+.h-path ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.h-path li a { display: block; padding: 12px 0; border-bottom: 1px solid var(--line); text-decoration: none; color: var(--ink); }
+.h-path li a:hover b { color: var(--brand); text-decoration: underline; }
+.h-path b { display: block; font-weight: 600; }
+.h-path span { display: block; font-size: var(--t-fine); color: var(--ink-soft); overflow-wrap: anywhere; }
+
+.h-honest { background: var(--bg-alt); }
+.h-honest ul { margin: 0 0 var(--s4); padding-left: 20px; max-width: 66ch; }
+.h-honest li { margin: 0 0 var(--s2); }

@@ -338,12 +338,18 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
 # The one footer. Every generated page uses this constant and every hand-written page carries the
 # same markup, checked by test_every_page_uses_the_one_shared_footer. There were eight variants, and
 # the 6,500+ generated pages carried the shortest: no All majors, Lists, Findings or Updates, and
-# no "Not affiliated with the US Department of Education", which a site built entirely on the
-# Department's data most needs to say.
+# no "Not affiliated with the U.S. Department of Education", which a site built entirely on the
+# Department's data most needs to say. Grouped, with the approved wording, since the homepage
+# release (design plan, 30 September 2026); the portfolio context lives on About.
 FOOTER = """  <footer class="site-footer">
-    <div class="wrap">
-      <p><a class="brand" href="/">true<span>wise</span></a> &nbsp; Built on public data &middot; <a href="/colleges/">All colleges</a> &middot; <a href="/compare/">Compare</a> &middot; <a href="/majors/">All majors</a> &middot; <a href="/lists/">Lists</a> &middot; <a href="/findings/">Findings</a> &middot; <a href="/updates/">Updates</a> &middot; <a href="/methodology/">Methodology</a> &middot; <a href="/about/">About</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
-      <p class="muted">A portfolio &amp; social-impact project &middot; Not affiliated with the US Department of Education.</p>
+    <div class="wrap foot">
+      <div class="foot__who">
+        <p><a class="brand" href="/">true<span>wise</span></a></p>
+        <p>Built and maintained by <a href="/about/">Anandraj</a>. Independent, open education data. Not affiliated with the U.S. Department of Education.</p>
+        <p><a href="/methodology/">Methodology</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
+      </div>
+      <nav class="foot__group" aria-label="Explore"><h2>Explore</h2><ul><li><a href="/value-check/">Find a college</a></li><li><a href="/colleges/">Colleges by state</a></li><li><a href="/compare/">Compare</a></li><li><a href="/careers/">Careers</a></li><li><a href="/majors/">Majors</a></li><li><a href="/k12/">High schools</a></li></ul></nav>
+      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
     </div>
   </footer>
 """

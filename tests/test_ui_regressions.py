@@ -34,11 +34,10 @@ def test_styles_has_no_bare_verdict_rule():
     off-screen on every college/major/findings/updates page. The pill must stay renamed."""
     css = (SITE / "styles.css").read_text()
     assert ".verdict {" not in css, "styles.css .verdict collides with the generated page class"
-    assert ".verdict-pill {" in css, "the example-card pill should be .verdict-pill"
-    # The homepage is the only user of the pill; it must use the renamed class.
+    # The homepage no longer uses a pill (its examples became bars in the homepage release); it
+    # must still never use the bare class.
     home = (SITE / "index.html").read_text()
     assert 'class="verdict up"' not in home and 'class="verdict down"' not in home
-    assert "verdict-pill" in home
 
 
 def test_inner_pages_keep_a_mobile_gutter():
@@ -1037,7 +1036,7 @@ def test_every_page_preloads_exactly_the_faces_it_renders():
     keep them off the critical path. Preloading a face a page never renders wastes the download
     and logs a "preloaded but not used" console warning, so the set must match what the page uses:
     the 600 display and 500 mono render everywhere (brand and footer), while the 400 display is
-    only reached through .lede and .prose."""
+    only reached through .lede, .prose and the homepage finding band's statistic."""
     always = ["source-serif-4-latin-600-normal.woff2", "ibm-plex-mono-latin-500-normal.woff2"]
     only_if_used = "source-serif-4-latin-400-normal.woff2"
     pages = [(rel, (SITE / rel).read_text()) for rel in SOURCE_PAGES]
@@ -1051,7 +1050,7 @@ def test_every_page_preloads_exactly_the_faces_it_renders():
         assert 'as="font" type="font/woff2" crossorigin' in text, (
             f"{name} font preload is missing crossorigin, so it would be fetched twice"
         )
-        uses_400 = 'class="lede"' in text or 'class="prose"' in text
+        uses_400 = any(f'class="{c}"' in text for c in ("lede", "prose", "h-band__stat"))
         preloads_400 = f'rel="preload" href="/fonts/{only_if_used}"' in text
         assert preloads_400 == uses_400, (
             f"{name} preloads the 400 display face={preloads_400} but renders it={uses_400}"
@@ -1958,10 +1957,15 @@ def test_homepage_examples_are_real_programs():
     import duckdb
 
     html = (SITE / "index.html").read_text()
+    # Since the homepage release each example is a bar: program and school, earnings, and the gap to
+    # that state's high-school line, which is also stated in dollars.
     rows = re.findall(
-        r'<p class="program"><a href="/college/([\w-]+)/">([^<]+)</a></p>\s*<p class="earned">[^<]*<b>\$([\d,]+)</b></p>\s*</div>\s*'
-        r'<span class="verdict-pill (up|down)">[^;]*;\s*(?:&minus;)?\+?(\d+)%</span>',
+        r'<li class="ex__row(?: ex__row--below)?"><p class="ex__name"><a href="/college/([\w-]+)/">([^<]+)</a>'
+        r'<span class="ex__school">([^<]+), ([^<]+)</span></p>.*?'
+        r'<p class="ex__val"><b>\$([\d,]+)</b>, <span class="ex__gap">(\d+)% (above|below)</span> '
+        r"the ([^<]+) high-school line of \$([\d,]+)\.</p></li>",
         html,
+        re.S,
     )
     assert len(rows) == 3, f"expected three example rows, found {len(rows)}"
     fields = {
@@ -1971,25 +1975,24 @@ def test_homepage_examples_are_real_programs():
     }
     con = duckdb.connect()
     registry = json.loads((ROOT / "published" / "slug_registry.json").read_text())
-    for slug, program, earned, direction, pct in rows:
-        field, _cred, inst = (x.strip() for x in program.split(",", 2))
-        cip, cred = fields[field]
+    for slug, label, inst, state, earned, pct, direction, line_state, line in rows:
+        assert state == line_state, f"{label}: the line named is not the school's state"
+        cip, cred = fields[label.split(",", 1)[0].strip()]
         hit = con.execute(
-            "SELECT earnings, earnings_premium_state / earnings_threshold_state, unitid "
-            "FROM read_parquet(?) WHERE inst_name = ? AND cip_code LIKE ? "
+            "SELECT earnings, earnings_premium_state / earnings_threshold_state, unitid, "
+            "earnings_threshold_state FROM read_parquet(?) WHERE inst_name = ? AND cip_code LIKE ? "
             "AND credential_desc LIKE ? AND earnings_horizon = '4yr_after_completion'",
             [str(ROOT / "published" / "value_check.parquet"), inst, cip, cred],
         ).fetchall()
-        assert len(hit) == 1, f"{program!r} is not exactly one real program in the data"
-        earnings, ratio, unitid = hit[0]
+        assert len(hit) == 1, f"{label} at {inst} is not exactly one real program in the data"
+        earnings, ratio, unitid, threshold = hit[0]
         assert registry.get(unitid) == slug, (
-            f"{program}: links to /college/{slug}/ but its institution's page is {registry.get(unitid)}"
+            f"{label}: links to /college/{slug}/ but its institution's page is {registry.get(unitid)}"
         )
-        assert int(earnings) == int(earned.replace(",", "")), (
-            f"{program}: earnings differ from data"
-        )
-        assert round(abs(ratio) * 100) == int(pct), f"{program}: premium {ratio:.3f} vs {pct}%"
-        assert (ratio > 0) == (direction == "up"), f"{program}: arrow points the wrong way"
+        assert int(earnings) == int(earned.replace(",", "")), f"{label}: earnings differ from data"
+        assert int(threshold) == int(line.replace(",", "")), f"{label}: the line differs from data"
+        assert round(abs(ratio) * 100) == int(pct), f"{label}: premium {ratio:.3f} vs {pct}%"
+        assert (ratio > 0) == (direction == "above"), f"{label}: says {direction}, data disagrees"
 
 
 def test_site_review_fixes_hold():
@@ -2040,11 +2043,13 @@ def test_every_page_uses_the_one_shared_footer():
         return re.sub(r"\s+", " ", text).strip()
 
     reference = norm(FOOTER)
-    assert "Not affiliated with the US Department of Education" in reference
+    assert "Not affiliated with the U.S. Department of Education" in reference
+    assert 'Built and maintained by <a href="/about/">Anandraj</a>' in reference
     for href in ("/majors/", "/lists/", "/findings/", "/updates/"):
         assert f'href="{href}"' in reference, f"the shared footer lost {href}"
     generated = re.compile(
-        r"^(college|colleges|majors|lists|og|embed|findings|updates|components)/"
+        # _proto/ and _measure/ are local, gitignored and never deployed.
+        r"^(college|colleges|majors|lists|og|embed|findings|updates|components|_proto|_measure)/"
     )
     odd = []
     for page in sorted(SITE.rglob("*.html")):
