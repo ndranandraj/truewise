@@ -2180,3 +2180,17 @@ def test_on_this_page_rails_point_at_real_headings():
         body = html[rail.end() :]
         ids = re.findall(r'<h2[^>]* id="([^"]+)"', body)
         assert links == ids, f"{page}: rail {links} does not match its sections {ids}"
+
+
+def test_the_latest_finding_link_can_wrap():
+    """The homepage release shipped the new finding card with the old homepage's
+    `.hero-latest a { white-space: nowrap }` still in styles.css. The old link was "Search the list";
+    the new one is the whole sentence, so it ran 535px wide and pushed the page 256px sideways at
+    320px (layout check, 30 September). Nothing may stop that link wrapping."""
+    for name in ("styles.css", "home.css"):
+        css = re.sub(r"/\*.*?\*/", "", (SITE / name).read_text(), flags=re.S)
+        for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+            if ("hero-latest" in sel or "h-latest" in sel) and "nowrap" in body:
+                raise AssertionError(
+                    f"{name}: {sel.strip()} stops the latest-finding link wrapping"
+                )
