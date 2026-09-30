@@ -484,6 +484,17 @@
   color: var(--bad);
 }
 
+/* Partial table without JavaScript: said above the rows, in the initial HTML, and replaced by the
+   live count once the table starts (29 September 2026). */
+.tw-partial {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--caution);
+  background: var(--caution-bg);
+  color: var(--text);
+  font-size: var(--t-fine);
+}
+
 /* B7 source note */
 .tw-source {
   margin: 12px 0 0;

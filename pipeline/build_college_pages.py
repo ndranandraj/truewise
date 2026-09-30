@@ -931,6 +931,7 @@ def main() -> None:
 
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
+    partial: dict = {}
     states_present: dict[str, list] = defaultdict(list)
     for u, s in qualified.items():
         slug = slugs[u]
@@ -944,8 +945,18 @@ def main() -> None:
         (d / "index.html").write_text(html)
         if tail_json:
             (d / "programs-tail.json").write_text(tail_json)
+            partial[u] = d
         render_og_card(s, slug)
         states_present[s["state"]].append((slug, s, u))
+
+    # The complete program list for every profile whose table is partial without JavaScript. Only
+    # those 245: the static-asset host caps a deploy's file count, and 6,127 more files would bring
+    # the site close to it. Every other profile already shows every program in its HTML.
+    from pipeline import build_site as _bs
+    from pipeline.build_canonical_profiles import PROGRAMS_CSV, programs_csv
+
+    for u, text in programs_csv(con, _bs.PARQUET_DIR / "value_check.parquet", partial).items():
+        (partial[u] / PROGRAMS_CSV).write_text(text)
 
     colleges_dir = SITE / "colleges"
     colleges_dir.mkdir(parents=True, exist_ok=True)

@@ -49,6 +49,8 @@ SCORECARD_RELEASE = "2026-06-10"
 
 
 INSTITUTIONS = ROOT / "published" / "institutions.parquet"
+# Written beside index.html for every profile whose table is partial without JavaScript.
+PROGRAMS_CSV = "programs.csv"
 NP_LABELS = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$110k and up"]
 
 
@@ -405,6 +407,16 @@ def canonical_page(
         f'        <p class="tw-coverage"><b>{decided} of {total}</b> programs could be assessed '
         f'<span class="tw-coverage__note">{cov_pct}% have an earnings verdict</span></p>\n'
     )
+    # A partial table must say it is partial, above the table where it is read, and in the initial
+    # HTML: a <noscript> note would miss a script that is enabled but fails to load or run. It sits
+    # inside the mount, so it is replaced only when ProgramTable renders the accurate interactive
+    # count (Anand, 29 September; option A in truewise-review-noscript-programs-2026-09-27.md).
+    if tail:
+        parts.append(
+            f'        <p class="tw-partial" data-tw-partial>Summary figures cover all {total:,} '
+            f"programs. This table shows the first {len(static_rows):,}. "
+            f'<a href="{PROGRAMS_CSV}" download>Download all {total:,} programs (CSV)</a>.</p>\n'
+        )
     parts.append(
         '        <div class="tw-table__scroll" tabindex="0" role="region" aria-label="Programs and earnings"><table class="tw-table">'
     )
@@ -435,6 +447,12 @@ def canonical_page(
         "Suppressed values are shown as insufficient data, never imputed. Figures describe past "
         "graduates and are never a promise.</p>\n"
     )
+    if tail:
+        # Outside the mount, so the complete list stays one click away after the table enhances.
+        parts.append(
+            f'    <p class="tw-source">Every program, including those without a verdict: '
+            f'<a href="{PROGRAMS_CSV}" download>download all {total:,} (CSV)</a>.</p>\n'
+        )
     parts.append("  </main>\n")
     parts.append(FOOTER)
     # defer: these are progressive enhancement only (the static table is the baseline), so they must
@@ -443,6 +461,117 @@ def canonical_page(
     parts.append('  <script defer src="/components/profile.js"></script>\n')
     parts.append("</body>\n</html>\n")
     return "".join(parts), tail_json
+
+
+# The status of each program in the CSV. Kept apart deliberately: a program ED reports without
+# earnings, one it lists with no figures at all, and one with earnings but no benchmark are three
+# different facts, and none of them is a judgement of the program.
+CSV_STATUS = {
+    "pass": "above the state high-school line",
+    "fail": "below the state high-school line",
+    "no_benchmark": "earnings published, no state high-school benchmark to compare with",
+    "earnings_not_published": "program reported, earnings not published",
+    "nothing_reported": "program listed, no figures reported",
+}
+CSV_COLUMNS = [
+    "unitid",
+    "opeid6",
+    "institution",
+    "cip_code",
+    "cip_title",
+    "program",
+    "credential_level",
+    "credential",
+    "graduate_program",
+    "status",
+    "status_meaning",
+    "earnings_median",
+    "earnings_window",
+    "state_hs_line",
+    "gap_vs_hs_line",
+    "debt_median",
+    "debt_as_years_of_gain",
+    "graduates",
+    "campuses_sharing_these_figures",
+    "source",
+]
+
+
+def _csv_status(r) -> str:
+    flag = r["value_flag"]
+    if flag == "passes_earnings_premium":
+        return "pass"
+    if flag == "fails_earnings_premium":
+        return "fail"
+    if r["earnings"] is not None:
+        return "no_benchmark"
+    if r["completers_count"] is None and r["debt_median"] is None:
+        return "nothing_reported"
+    return "earnings_not_published"
+
+
+def programs_csv(con, parquet, unitids) -> dict[str, str]:
+    """{unitid: CSV text} of every program ED lists for each school, from the complete dataset.
+
+    One row per UNITID x CIP x credential level (unique for every profiled school), including
+    programs without a verdict. The earnings window is stated whenever an earnings figure is."""
+    import csv
+    import io
+
+    from pipeline.build_profile_pilot import GRAD_LEVELS, _row_from
+
+    ids = ", ".join(f"'{u}'" for u in unitids)
+    have = {r[0] for r in con.sql(f"DESCRIBE SELECT * FROM '{parquet}'").fetchall()}
+    grp = "coalesce(opeid6, unitid)" if "opeid6" in have else "unitid"
+    rows = con.sql(
+        f"""SELECT *, count(*) OVER (PARTITION BY {grp}, cip_code, credential_level) AS n_campuses
+            FROM '{parquet}' WHERE TRY_CAST(unitid AS BIGINT) IS NOT NULL"""
+    ).df()
+    rows = rows[rows["unitid"].isin(list(unitids))] if ids else rows.iloc[0:0]
+    rows = rows.astype(object).where(rows.notna(), None)
+    rows = rows.sort_values(["unitid", "cip_code", "credential_level"])
+    out: dict[str, io.StringIO] = {}
+    for rec in rows.to_dict("records"):
+        buf = out.get(rec["unitid"])
+        if buf is None:
+            buf = out[rec["unitid"]] = io.StringIO()
+            csv.writer(buf, lineterminator="\n").writerow(CSV_COLUMNS)
+        status = _csv_status(rec)
+        shown = status in ("pass", "fail", "no_benchmark")
+        page_row = _row_from(rec)
+        horizon = {
+            "4yr_after_completion": "4 years after completion",
+            "1yr_after_completion": "1 year after completion",
+        }.get(rec.get("earnings_horizon") or "", "")
+
+        def num(v):
+            return "" if v is None else (int(v) if float(v).is_integer() else round(float(v), 1))
+
+        csv.writer(buf, lineterminator="\n").writerow(
+            [
+                rec["unitid"],
+                rec.get("opeid6") or "",
+                rec["inst_name"],
+                rec["cip_code"],
+                (rec["cip_desc"] or "").rstrip("."),
+                page_row["program"],
+                rec["credential_level"],
+                rec["credential_desc"],
+                "yes" if str(rec["credential_level"]) in GRAD_LEVELS else "no",
+                status,
+                CSV_STATUS[status],
+                num(rec["earnings"]) if shown else "",
+                horizon if shown else "",
+                num(rec.get("earnings_threshold_state")),
+                num(rec["earnings_premium_state"]) if status in ("pass", "fail") else "",
+                num(rec["debt_median"]),
+                num(rec["debt_payback_years"]) if status in ("pass", "fail") else "",
+                num(rec["completers_count"]),
+                int(rec["n_campuses"]),
+                f"U.S. Department of Education, College Scorecard, release {SCORECARD_RELEASE}",
+            ]
+        )
+    return {u: b.getvalue() for u, b in out.items()}
 
 
 def _cutover_diff(con, threshold: int) -> None:
