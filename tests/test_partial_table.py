@@ -140,3 +140,24 @@ Promise.all([run(false), run(true)]).then(([failed, ok]) => console.log(JSON.str
     assert not got["ok"]["notice"], "table running: the notice gives way to the live count"
     assert got["ok"]["count"].startswith(f"Showing 20 of {len(rows)} programs"), got
     assert got["ok"]["csv"] == 1, "the complete list is still linked after enhancement"
+
+
+def _page_live(rows, threshold):
+    meta = {"unitid": "1", "name": "Big State University", "state": "PA", "control": "Public"}
+    return canonical_page(meta, rows, "big-state", 36498.0, threshold)
+
+
+def test_live_profiles_send_every_program_and_link_the_csv(profiles):
+    """Option B (30 September 2026): measured acceptable on the largest profile, so every program
+    is in the HTML. The 245 largest keep a complete CSV, linked below the table."""
+    from pipeline.build_canonical_profiles import CSV_MIN_PROGRAMS, LIVE_STATIC_ROWS
+
+    biggest = max(len(rows) for _, rows in profiles.values())
+    assert LIVE_STATIC_ROWS >= biggest
+    _, rows = profiles["214777"]
+    html, tail = _page_live(rows, LIVE_STATIC_ROWS)
+    assert tail is None and html.count('<tr class="tw-tr') == len(rows) == 489
+    assert "data-tw-partial" not in html, "nothing is partial, so nothing says it is"
+    assert html.count(f'href="{PROGRAMS_CSV}" download') == 1 and len(rows) > CSV_MIN_PROGRAMS
+    small, _ = _page_live(profiles["461111"][1], LIVE_STATIC_ROWS)
+    assert PROGRAMS_CSV not in small

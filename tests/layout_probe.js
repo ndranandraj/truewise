@@ -35,7 +35,8 @@ const WIDTHS = [
   { label: "desktop", width: 1280, height: 900, mobile: false },
 ];
 
-/** The six agreed routes. Penn State is the 489-program giant that exercises the progressive tail;
+/** The six agreed routes. Penn State is the 489-program giant: since 30 September every row is in its HTML and the
+ *  table reveals 20 at a time, which the reveal step exercises;
  *  Agape is the all-insufficient profile where every row must read "insufficient data".
  *
  *  Compare CARRIES SCHOOLS ON PURPOSE. The first real run measured `/compare/` bare, which is a

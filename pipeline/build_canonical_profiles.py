@@ -49,8 +49,16 @@ SCORECARD_RELEASE = "2026-06-10"
 
 
 INSTITUTIONS = ROOT / "published" / "institutions.parquet"
-# Written beside index.html for every profile whose table is partial without JavaScript.
+# Written beside index.html for every profile with more than CSV_MIN_PROGRAMS programs.
 PROGRAMS_CSV = "programs.csv"
+CSV_MIN_PROGRAMS = 150
+# Live profiles send every program in the HTML (option B, 30 September 2026). Measured on Penn
+# State, the largest (489 programs), under the site's phone conditions against the 150-row page:
+# LCP 1,024 ms against 1,040, TBT 17 ms (150-row range 3 to 73), CLS 0; search, filter and sort
+# 21, 10 and 18 ms; no long tasks scrolling all 489 rows with scripts blocked; 32 KB compressed.
+# See truewise-review-noscript-programs-2026-09-27.md. The progressive tail stays in the code for
+# a school that ever outgrows this, and the partial-table notice with it.
+LIVE_STATIC_ROWS = 100_000
 NP_LABELS = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$110k and up"]
 
 
@@ -447,7 +455,7 @@ def canonical_page(
         "Suppressed values are shown as insufficient data, never imputed. Figures describe past "
         "graduates and are never a promise.</p>\n"
     )
-    if tail:
+    if tail or total > CSV_MIN_PROGRAMS:
         # Outside the mount, so the complete list stays one click away after the table enhances.
         parts.append(
             f'    <p class="tw-source">Every program, including those without a verdict: '

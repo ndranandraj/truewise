@@ -913,8 +913,8 @@ def main() -> None:
     # + JSON island + progressive tail), rendered by canonical_page. The old summary college_page is
     # retired (kept in this module one release for an easy revert). Lazy import breaks the cycle with
     # build_canonical_profiles, which imports chrome helpers from here.
-    from pipeline.build_canonical_profiles import canonical_page
-    from pipeline.build_profile_pilot import DEFAULT_THRESHOLD, all_profiles
+    from pipeline.build_canonical_profiles import CSV_MIN_PROGRAMS, LIVE_STATIC_ROWS, canonical_page
+    from pipeline.build_profile_pilot import all_profiles
 
     con = duckdb.connect()
     schools, by_state, _ = build_model(con)
@@ -931,27 +931,28 @@ def main() -> None:
 
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
-    partial: dict = {}
+    partial: dict = {}  # profiles that get programs.csv
     states_present: dict[str, list] = defaultdict(list)
     for u, s in qualified.items():
         slug = slugs[u]
         pmeta, rows = profiles.get(u, ({}, []))
         meta = profile_meta(s, pmeta, u in in_file)
         html, tail_json = canonical_page(
-            meta, rows, slug, s.get("threshold"), DEFAULT_THRESHOLD, s.get("net_price")
+            meta, rows, slug, s.get("threshold"), LIVE_STATIC_ROWS, s.get("net_price")
         )
         d = col_dir / slug
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(html)
         if tail_json:
             (d / "programs-tail.json").write_text(tail_json)
+        if tail_json or len(rows) > CSV_MIN_PROGRAMS:
             partial[u] = d
         render_og_card(s, slug)
         states_present[s["state"]].append((slug, s, u))
 
-    # The complete program list for every profile whose table is partial without JavaScript. Only
-    # those 245: the static-asset host caps a deploy's file count, and 6,127 more files would bring
-    # the site close to it. Every other profile already shows every program in its HTML.
+    # The complete program list as CSV for every profile with more than 150 programs (245 schools).
+    # Not all 6,127: the static-asset host caps a deploy's file count, and one file per school would
+    # bring the site close to it. Smaller schools' tables are short enough to read or copy whole.
     from pipeline import build_site as _bs
     from pipeline.build_canonical_profiles import PROGRAMS_CSV, programs_csv
 

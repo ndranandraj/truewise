@@ -70,6 +70,9 @@ async function throttledPage(browser, opts = {}) {
         .observe({ type: "event", durationThreshold: 16, buffered: true }); } catch (_) {}
     });
   }
+  // Scripts blocked but JavaScript on: the page a reader gets when table.js fails to load, and the
+  // closest measurable stand-in for JavaScript off (the observers need JavaScript to report).
+  if (opts.blockScripts) await page.route("**/components/*.js", (r) => r.abort());
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Network.enable");
   await cdp.send("Network.emulateNetworkConditions", perf.CONDITIONS.network);
@@ -106,7 +109,30 @@ async function jsOff(browser, url) {
 }
 
 /* Time from a change to the count line showing its result, plus one frame, in the page's own clock. */
-function timeUntilCount(sel, value, kind) {
+/* Time from choosing "Median earnings" in the sort control to the reordered first row being painted.
+ * At phone width the header buttons are hidden and the visible control is the sort select. */
+function timeSort() {
+  return (async () => {
+    const first = () => ((document.querySelector(".tw-table tbody tr") || {}).textContent || "");
+    const before = first();
+    const sel = document.querySelector('[data-tw-focus="sortsel"]');
+    const btn = document.querySelector('[data-tw-focus="sort-earnings"]');
+    const t0 = performance.now();
+    if (sel && sel.offsetParent !== null) { sel.value = "earnings"; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+    else if (btn) btn.click();
+    else return null;
+    await new Promise((done) => {
+      const stop = t0 + 30000;
+      const tick = () => (first() !== before || performance.now() > stop ? done() : requestAnimationFrame(tick));
+      tick();
+    });
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    return first() === before ? null : performance.now() - t0;
+  })();
+}
+
+/* Playwright passes one argument to a page function, so the three values travel as one object. */
+function timeUntilCount({ sel, value, kind }) {
   return (async () => {
     const count = () => (document.querySelector(".tw-table__count") || {}).textContent || "";
     const before = count();
@@ -125,6 +151,27 @@ function timeUntilCount(sel, value, kind) {
   })();
 }
 
+/* The static page on its own: every row the HTML carries, rendered and scrolled with no enhancement. */
+async function staticRun(browser, url) {
+  const runs = [];
+  for (let i = 0; i < 3; i++) {
+    const { ctx, page } = await throttledPage(browser, { blockScripts: true });
+    await page.goto(url, { waitUntil: "load", timeout: 90000 });
+    await page.waitForTimeout(2500);
+    const p = await page.evaluate(perf.readPerf);
+    const rows = await page.evaluate(() => document.querySelectorAll(".tw-table tbody tr").length);
+    const elements = await page.evaluate(() => document.getElementsByTagName("*").length);
+    await page.evaluate(() => { window.__long = 0; });
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    for (let y = 0; y < height; y += 700) { await page.mouse.wheel(0, 700); await page.waitForTimeout(60); }
+    await page.waitForTimeout(500);
+    runs.push({ lcp: p.lcp, tbt: p.tbt, cls: p.cls, rows, elements, height, scroll: await page.evaluate(() => window.__long) });
+    await ctx.close();
+  }
+  const m = (k) => median(runs.map((r) => r[k]));
+  return { lcp: m("lcp"), tbt: m("tbt"), cls: m("cls"), rows: m("rows"), elements: m("elements"), height: m("height"), scroll: m("scroll") };
+}
+
 async function interactions(browser, url) {
   const out = { search: [], filter: [], sort: [], scrollLong: [] };
   for (let i = 0; i < 3; i++) {
@@ -133,21 +180,13 @@ async function interactions(browser, url) {
     await page.waitForTimeout(1500);
     const hasTable = await page.evaluate(() => !!document.querySelector('[data-tw-focus="q"]'));
     if (hasTable) {
-      out.search.push(await page.evaluate(timeUntilCount, '[data-tw-focus="q"]', "engineering", "input"));
-      out.filter.push(await page.evaluate(timeUntilCount, '[data-tw-focus="verdict"]', "fail", "change"));
-      await page.evaluate(() => { window.__events = []; });
-      const sortBtn = await page.$('[data-tw-focus="sort-earnings"]');
-      if (sortBtn && await sortBtn.isVisible()) {
-        await sortBtn.click();
-      } else {
-        const sel = await page.$("select[data-tw-focus^='sort']");
-        if (sel) await sel.selectOption({ index: 1 });
-      }
-      await page.waitForTimeout(800);
-      out.sort.push(await page.evaluate(() => (window.__events.length ? Math.max(...window.__events) : null)));
-      // Back to the whole list before scrolling, so every variant scrolls its full table.
-      await page.evaluate(timeUntilCount, '[data-tw-focus="verdict"]', "", "change");
-      await page.evaluate(timeUntilCount, '[data-tw-focus="q"]', "", "input");
+      out.search.push(await page.evaluate(timeUntilCount, { sel: '[data-tw-focus="q"]', value: "engineering", kind: "input" }));
+      out.filter.push(await page.evaluate(timeUntilCount, { sel: '[data-tw-focus="verdict"]', value: "fail", kind: "change" }));
+      // Back to the whole list, then sort it: sorting the one-row "fail" view would change nothing
+      // and measure nothing (the first run reported n/a for every variant for that reason).
+      await page.evaluate(timeUntilCount, { sel: '[data-tw-focus="verdict"]', value: "", kind: "change" });
+      await page.evaluate(timeUntilCount, { sel: '[data-tw-focus="q"]', value: "", kind: "input" });
+      out.sort.push(await page.evaluate(timeSort));
     }
     await page.evaluate(() => { window.__long = 0; });
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
@@ -171,7 +210,12 @@ async function interactions(browser, url) {
       console.log(`${v}: load`); const l = await load(browser, url);
       console.log(`${v}: JavaScript off`); const off = await jsOff(browser, url);
       console.log(`${v}: interactions`); const ix = await interactions(browser, url);
-      results[v] = { ...l, off, ...ix };
+      console.log(`${v}: scripts blocked`); const st = await staticRun(browser, url);
+      const zlib = require("zlib");
+      const dir = path.join(SITE, "_measure", v);
+      const gz = (f) => (fs.existsSync(f) ? Math.round(zlib.gzipSync(fs.readFileSync(f), { level: 9 }).length / 1024) : 0);
+      // The local server does not compress; production does. Transfer above is uncompressed.
+      results[v] = { ...l, off, ...ix, st, gz: gz(path.join(dir, "index.html")), tailGz: gz(path.join(dir, "programs-tail.json")) };
     }
   } finally {
     await browser.close(); server.close();
@@ -184,14 +228,23 @@ async function interactions(browser, url) {
   row("LCP ms (range)", (x) => `${r(x.lcp)} (${x.lcpRange})`);
   row("CLS", (x) => (x.cls == null ? "n/a" : x.cls.toFixed(3)));
   row("TBT ms (range)", (x) => `${r(x.tbt)} (${x.tbtRange})`);
-  row("Transfer KB", (x) => r(x.kb));
-  row("Elements", (x) => r(x.elements));
+  row("Transfer KB (uncompressed, local)", (x) => r(x.kb));
+  row("Elements after load (JS on)", (x) => r(x.elements));
   row("Rows reachable, JS off", (x) => `${x.off.rows}${x.off.notice ? " (notice shown)" : ""}`);
   row("Search to count, ms", (x) => r(x.search));
   row("Filter to count, ms", (x) => r(x.filter));
-  row("Sort, longest event ms", (x) => r(x.sort));
+  row("Sort to reordered rows, ms", (x) => r(x.sort));
+  row("HTML gzip KB (tail on use)", (x) => `${x.gz}${x.tailGz ? " (+" + x.tailGz + ")" : ""}`);
   row("Long tasks while scrolling, ms", (x) => r(x.scrollLong));
   row("Page height px", (x) => r(x.height));
+  L.push("| **Scripts blocked (static HTML only)** | | | | |");
+  row("Rows rendered", (x) => r(x.st.rows));
+  row("Elements", (x) => r(x.st.elements));
+  row("LCP ms", (x) => r(x.st.lcp));
+  row("TBT ms", (x) => r(x.st.tbt));
+  row("CLS", (x) => (x.st.cls == null ? "n/a" : x.st.cls.toFixed(3)));
+  row("Long tasks while scrolling, ms", (x) => r(x.st.scroll));
+  row("Page height px", (x) => r(x.st.height));
   L.push("", `CLS targets: ${perf.CLS_GOOD} good, ${perf.CLS_POOR} poor. "n/a" for interactions on the list page means it has no search, filter or sort.`);
   const out = path.join(ROOT, `table-variants-${Date.now()}.md`);
   fs.writeFileSync(out, L.join("\n") + "\n");
