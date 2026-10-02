@@ -97,6 +97,13 @@ def build_model(con) -> tuple[dict, dict, dict]:
                 "n_insufficient": 0,
                 "n_insuff_ug": 0,  # insufficient-data programs, split by level
                 "n_insuff_grad": 0,
+                # Undergraduate counts, for the search card: the profile's summary leads with
+                # undergraduate programs, so the card one click earlier must count the same ones
+                # (Value Check review, 2 October 2026). "Undergraduate" is every program that is
+                # not CREDLEV 4-8, the same rule the profile's rows use.
+                "n_ug_programs": 0,
+                "n_ug_pass": 0,
+                "n_ug_fail": 0,
             },
         )
         if s["threshold"] is None and thr is not None:
@@ -104,6 +111,10 @@ def build_model(con) -> tuple[dict, dict, dict]:
         s["n_programs"] += 1
         s["n_fail"] += flag == "fails_earnings_premium"
         s["n_pass"] += flag == "passes_earnings_premium"
+        if (credlev or "") not in {"4", "5", "6", "7", "8"}:
+            s["n_ug_programs"] += 1
+            s["n_ug_fail"] += flag == "fails_earnings_premium"
+            s["n_ug_pass"] += flag == "passes_earnings_premium"
         if flag == "insufficient_data":
             s["n_insufficient"] += 1
             # CREDLEV: 1-3 undergraduate; 4-8 graduate/professional.

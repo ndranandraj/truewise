@@ -38,7 +38,8 @@
     /* The match reason. Italic rather than a colour or a badge: it is an aside about why this row is
        here, not a status, and a colour alone would carry the meaning only for people who can see it. */
     .school-card .meta .why { font-style: italic; }
-    .mini { display: inline-flex; gap: 12px; margin-top: 8px; font-size: .88rem; }
+    .mini { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: .88rem; }
+    .mini .k { color: var(--ink-soft); font-weight: 600; }
     .mini .f { color: var(--bad); font-weight: 700; }
     .mini .p { color: var(--good); font-weight: 700; }
     /* .i is the insufficient-data count, beside .f (fall short) and .p (pass). It was var(--ink-faint):
@@ -58,6 +59,11 @@
     .chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .chip { display: inline-block; border: 1px solid var(--line); border-radius: var(--r-pill); padding: 7px 14px; font-size: .9rem; color: var(--ink); text-decoration: none; background: var(--surface); transition: border-color .15s, color .15s; }
     .chip:hover { border-color: var(--brand); color: var(--brand); }
+    .state-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+    .state-pick label { font-weight: 600; font-size: var(--t-ui); width: 100%; }
+    .state-pick select { max-width: 100%; }
+    .state-pick a { font-size: var(--t-fine); }
+    .examples-note { font-size: var(--t-fine); color: var(--ink-soft); margin: -4px 0 10px; }
     .state-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 4px 16px; }
     .state-grid a { color: var(--ink-soft); text-decoration: none; font-size: .92rem; padding: 4px 0; }
     .state-grid a:hover { color: var(--brand); }
@@ -225,16 +231,15 @@
          arrives, and the browse link works whether or not the script ever runs. -->
     <div id="boot-fallback">
       <section class="vc-search">
-        <h1>Look up any US college</h1>
-        <p class="lede">Search a school for its Truewise profile: whether each program's graduates
-          typically out-earn a high-school graduate (Value Check), what families pay by income, how
-          debt compares with graduates' earnings gain, and who the school serves, from the Department of Education's own data.</p>
+        <h1>Look up a college</h1>
+        <p class="lede">See, program by program, whether a college&rsquo;s graduates out-earn a
+          typical high-school graduate, and what families pay, from the Department of Education&rsquo;s data.</p>
         <label class="field-label" for="q-boot">Search colleges by name</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="q-boot" class="boot-input" type="search" placeholder="e.g. Baylor" disabled aria-describedby="boot-status" />
         </div>
-        <p class="hint" id="boot-status">Loading the college list. You can also <a href="/colleges/">browse every college by state</a>.</p>
+        <p class="hint" id="boot-status">Loading the college list. You can also <a href="/colleges/">browse every college by location</a>.</p>
         <noscript><p class="hint">Search needs JavaScript. Every college is listed by state on
           <a href="/colleges/">All colleges</a>, and every number is explained on the
           <a href="/methodology/">methodology page</a>.</p></noscript>
@@ -332,6 +337,37 @@
   }
 
   // A dead end is a wasted visitor. Route "no match" into the state index and lists we already have.
+  // A result card counts what the profile's summary counts: undergraduate programs, every one that
+  // is not CREDLEV 4 to 8 (Value Check review, 2 October 2026). Baylor's card read 62 pass and 2
+  // fall short across all 183 programs, one click before a profile leading with 49 of 51
+  // undergraduate programs. A school with undergraduate programs but no undergraduate verdict says
+  // so rather than showing graduate results; a graduate-only school is labelled as one. Parts are
+  // joined with spaces so a screen reader does not run "49 clear the bar2 fall short" together.
+  function cardCounts(s) {
+    const span = (cls, t) => '<span class="' + cls + '">' + t + "</span>";
+    const n = (k, one, many) => k + " " + (k === 1 ? one : many);
+    const parts = [];
+    if (s.n_ug_programs) {
+      const dec = s.n_ug_pass + s.n_ug_fail, rest = s.n_ug_programs - dec;
+      parts.push(span("k", "Undergraduate programs:"));
+      if (!dec) {
+        parts.push(span("i", s.n_ug_programs === 1
+          ? "its one program has no verdict" : "none of the " + s.n_ug_programs + " has a verdict"));
+      } else {
+        if (s.n_ug_pass) parts.push(span("p", n(s.n_ug_pass, "clears the bar", "clear the bar")));
+        if (s.n_ug_fail) parts.push(span("f", n(s.n_ug_fail, "falls short", "fall short")));
+        if (rest) parts.push(span("i", rest + " no verdict"));
+      }
+    } else {
+      const dec = s.n_pass + s.n_fail, rest = s.n_programs - dec;
+      parts.push(span("k", "Graduate programs only:"));
+      if (s.n_pass) parts.push(span("p", s.n_pass + " above the high-school line"));
+      if (s.n_fail) parts.push(span("f", s.n_fail + " below it"));
+      if (rest) parts.push(span("i", rest + " no verdict"));
+    }
+    return parts.join(" ");
+  }
+
   function emptyStateHTML(raw) {
     const ab = detectState(raw);
     let onward;
@@ -340,21 +376,19 @@
       onward = ` or <a href="/colleges/${ab.toLowerCase()}/">browse ${esc(nm)} colleges</a>,`
         + ` or see the <a href="/lists/best-value-colleges-${ab.toLowerCase()}/">best-value colleges in ${esc(nm)}</a>`;
     } else {
-      onward = ` or <a href="/colleges/">browse every college by state</a>,`
+      onward = ` or <a href="/colleges/">browse colleges by location</a>,`
         + ` or explore the <a href="/lists/">rankings and lists</a>`;
     }
-    return `<div class="empty-help">No colleges match &ldquo;${esc(raw)}&rdquo;.`
-      + ` Try a shorter name or just the city${onward}.</div>`;
+    return `<div class="empty-help">Try a shorter name or just the city${onward}.</div>`;
   }
 
   // ---- Search view ----
   function renderSearch(preset = "") {
     app.innerHTML = `
       <section class="vc-search">
-        <h1>Look up any US college</h1>
-        <p class="lede">Search a school for its Truewise profile: whether each program's graduates
-          typically out-earn a high-school graduate (Value Check), what families pay by income, how
-          debt compares with graduates' earnings gain, and who the school serves, from the Department of Education's own data.</p>
+        <h1>Look up a college</h1>
+        <p class="lede">See, program by program, whether a college&rsquo;s graduates out-earn a
+          typical high-school graduate, and what families pay, from the Department of Education&rsquo;s data.</p>
         <label class="field-label" for="q">${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name" : "Loading colleges"}</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -366,6 +400,7 @@
         <p class="hint" id="hint">Try &ldquo;Baylor&rdquo;, &ldquo;Long Beach&rdquo;, or your local community college.</p>
         <p class="rescount" id="rescount" aria-live="polite" style="display:none"></p>
         <ul class="results" id="results" role="listbox" aria-label="Search results"></ul>
+        <div id="noresults"></div>
         <div class="landing" id="landing"></div>
       </section>`;
     const q = document.getElementById("q");
@@ -373,6 +408,7 @@
     const hint = document.getElementById("hint");
     const rescount = document.getElementById("rescount");
     const landing = document.getElementById("landing");
+    const noresults = document.getElementById("noresults");
     const LIMIT = 40;
 
     // A landing worth arriving on: the largest schools, a state grid, and a few lists, so the
@@ -380,25 +416,42 @@
     // query. "Largest" (by enrollment) is honest about what the sort produces, unlike "popular".
     const buildLanding = () => {
       if (!SCHOOLS || landing.dataset.built) return;
-      const popular = SCHOOLS.filter(s => (s.n_pass + s.n_fail) > 0)
-        .sort((a, b) => (b.enrollment || 0) - (a.enrollment || 0)).slice(0, 12);
+      // Chosen to show the range the tool covers: private, public, community college, online,
+      // an HBCU and Puerto Rico. Every one has programs with a verdict.
+      const EXAMPLES = ["223232", "110662", "150987", "433387", "131520", "243197"];
+      const popular = EXAMPLES.map(u => SCHOOLS.find(s => s.unitid === u))
+        .filter(s => s && (s.n_pass + s.n_fail) > 0);
+      // The territories have state pages too, as do the schools with no location on ED's file
+      // (/colleges/zz/); the old grid listed only the 50 states and DC.
+      const PLACES = Object.assign({}, ABBR_TO_STATE, { PR: "Puerto Rico", GU: "Guam",
+        VI: "U.S. Virgin Islands", AS: "American Samoa", MP: "Northern Mariana Islands",
+        FM: "Micronesia", MH: "Marshall Islands", PW: "Palau", ZZ: "Location not reported" });
       const states = [...new Set(SCHOOLS.map(s => s.state))]
-        .filter(ab => ABBR_TO_STATE[ab]).sort((a, b) => ABBR_TO_STATE[a].localeCompare(ABBR_TO_STATE[b]));
+        .filter(ab => PLACES[ab]).sort((a, b) => (a === "ZZ") - (b === "ZZ") || PLACES[a].localeCompare(PLACES[b]));
       const lists = [
         ["/lists/highest-paying-majors/", "Highest-paying majors", "Ranked by median graduate earnings"],
         ["/lists/fastest-debt-payback-majors/", "Debt vs earnings gain", "Bachelor's majors with the least debt per year of earnings gain"],
         ["/lists/programs-where-debt-does-not-pay-back/", "Below the line, with debt", "Fields with the most programs below the high-school line that report debt"],
       ];
       landing.innerHTML =
-        `<h2>Largest colleges</h2><div class="chips">`
+        `<h2>Try an example college</h2><p class="examples-note">Examples, not recommendations.</p><div class="chips">`
         + popular.map(s => `<a class="chip" href="?school=${s.unitid}" data-u="${s.unitid}">${esc(s.name)}</a>`).join("")
         + `</div>`
-        + `<h2>Browse by state</h2><div class="state-grid">`
-        + states.map(ab => `<a href="/colleges/${ab.toLowerCase()}/">${esc(ABBR_TO_STATE[ab])}</a>`).join("")
-        + `</div>`
+        + `<h2>Browse by location</h2><form class="state-pick" id="state-pick">`
+        + `<label for="state-sel">Location</label>`
+        + `<select id="state-sel" class="control" required><option value="" selected disabled>Choose a location</option>`
+        + states.map(ab => `<option value="${ab.toLowerCase()}">${esc(PLACES[ab])}</option>`).join("") + `</select>`
+        + `<button type="submit" class="btn btn--secondary">Show colleges</button>`
+        + `<a href="/colleges/">All locations</a></form>`
         + `<h2>Or start from a list</h2><div class="list-links">`
         + lists.map(([href, t, d]) => `<a class="list-link" href="${href}"><b>${t}</b><span>${d}</span></a>`).join("")
         + `</div>`;
+      document.getElementById("state-pick").addEventListener("submit", e => {
+        e.preventDefault();
+        const sel = document.getElementById("state-sel");
+        if (!sel.value) { sel.focus(); return; }  // no location chosen: go nowhere
+        location.href = "/colleges/" + sel.value + "/";
+      });
       landing.querySelectorAll("a.chip").forEach(a =>
         a.addEventListener("click", e => { e.preventDefault(); openSchool(a.dataset.u); }));
       landing.dataset.built = "1";
@@ -415,18 +468,22 @@
         hint.style.display = "none"; rescount.style.display = ""; rescount.textContent = "Loading colleges…"; return;
       }
       if (normalize(raw).length < 2) {
-        current = []; results.innerHTML = ""; rescount.style.display = "none";
+        current = []; results.innerHTML = ""; noresults.innerHTML = ""; rescount.style.display = "none";
         hint.style.display = ""; q.setAttribute("aria-expanded", "false");
         buildLanding(); landing.style.display = "";
         return;
       }
       hint.style.display = "none";
       landing.style.display = "none";
+      noresults.innerHTML = "";
       const hits = searchSchools(raw);
       current = hits.slice(0, LIMIT);
       if (!hits.length) {
-        results.innerHTML = `<li class="empty" role="presentation">${emptyStateHTML(raw)}</li>`;
-        rescount.style.display = "none"; q.setAttribute("aria-expanded", "false");
+        results.innerHTML = "";
+        noresults.innerHTML = emptyStateHTML(raw);
+        rescount.style.display = "";
+        rescount.textContent = `No colleges match \u201c${raw}\u201d.`;
+        q.setAttribute("aria-expanded", "false");
         return;
       }
       rescount.style.display = "";
@@ -445,11 +502,7 @@
                  it in place rather than needing a separate visual affordance. */
               s.why ? ` · <span class="why">${esc(s.why)}</span>` : ""
             }</div>
-            <div class="mini">
-              ${s.n_fail ? `<span class="f">${s.n_fail} fall short</span>` : ""}
-              ${s.n_pass ? `<span class="p">${s.n_pass} pass</span>` : ""}
-              ${s.n_insufficient ? `<span class="i">${s.n_insufficient} not enough data</span>` : ""}
-            </div>
+            <div class="mini">${cardCounts(s)}</div>
           </a></li>`).join("");
       results.querySelectorAll("a.school-card").forEach(a =>
         a.addEventListener("click", e => { e.preventDefault(); openSchool(a.dataset.u); }));
@@ -491,7 +544,6 @@
       const ready = () => {
         schoolsState = "ready";
         const n = SCHOOLS.length.toLocaleString();
-        q.placeholder = "Search " + n + " colleges by name…";
         if (label) label.textContent = "Search " + n + " colleges by name";
         run();
       };
@@ -503,7 +555,7 @@
         rescount.style.display = "";
         rescount.innerHTML = 'The college list did not load, so search cannot run right now. '
           + 'Anything you typed is kept. <button type="button" class="btn btn--secondary" id="vc-retry">Retry</button> '
-          + 'or <a href="/colleges/">browse every college by state</a>.';
+          + 'or <a href="/colleges/">browse every college by location</a>.';
         document.getElementById("vc-retry").addEventListener("click", () => {
           schoolsState = "loading";
           if (label) label.textContent = "Loading colleges";
