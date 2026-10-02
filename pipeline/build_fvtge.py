@@ -43,7 +43,7 @@ OUT_DIR = SITE / "findings" / SLUG
 # presentation change, never automatically on a cosmetic or unrelated deploy. The data's own date
 # ("as of 6 August 2026") comes from ED's compile date and is separate.
 PUBLISHED_ON = "23 Sep 2026"
-UPDATED_ON = "27 Sep 2026"
+UPDATED_ON = "2 Oct 2026"
 
 COMPONENT_LABELS = [
     ("total2223", "Student file, total amounts, 2022-23"),
@@ -404,7 +404,7 @@ def render_page(s) -> str:
       <h2 id="why-h">Why it matters</h2>
       <p>These files are what the Department intends to use for the program-level data and statistics
         it plans to publish in 2027. Colleges have until 15 January 2027 to submit anything missing
-        from the 2024 and 2025 cycles, and the 2026 cycle is due 1 October 2026.</p>
+        from the 2024 and 2025 cycles, and the 2026 cycle was due 1 October 2026, after ED compiled this list.</p>
       <p>The list records whether a file arrived, not why one did not. It is a status report, not a
         finding about any college&rsquo;s programs.</p>
     </section>

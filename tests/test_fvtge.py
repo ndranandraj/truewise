@@ -234,4 +234,11 @@ def test_the_browser_check_drives_the_lookup_that_exists(built):
 def test_the_dateline_carries_both_editorial_dates_in_full(built):
     _, _, out = built
     html = (out / "index.html").read_text()
-    assert "<span>Published 23 Sep 2026</span><span>updated 27 Sep 2026</span>" in html
+    assert "<span>Published 23 Sep 2026</span><span>updated 2 Oct 2026</span>" in html
+
+
+def test_a_passed_deadline_is_not_described_as_upcoming(built):
+    """The page said "the 2026 cycle is due 1 October 2026" until after that date passed."""
+    _, _, out = built
+    text = re.sub(r"\s+", " ", (out / "index.html").read_text())
+    assert "is due 1 October 2026" not in text and "was due 1 October 2026" in text
