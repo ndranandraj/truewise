@@ -201,3 +201,59 @@ def test_threshold_splits_static_and_tail():
     assert html.count('<tr class="tw-tr') == DEFAULT_THRESHOLD
     assert f'data-remaining="{489 - DEFAULT_THRESHOLD}"' in html
     assert len(json.loads(tail)["programs"]) == 489 - DEFAULT_THRESHOLD
+
+
+def test_rail_ends_before_programs_so_the_table_can_use_the_full_column():
+    """Profile layout, October 2026. The rail was positioned over the whole page, which capped the
+    program table at 860px: tables that needed a little more scrolled and cut off their last column
+    while the space beside them stayed empty. The rail and everything above Programs now share
+    .prof__top, closed before Programs, and the rail is still first in source order."""
+    import re
+
+    html, _ = canonical_page(META, _rows(3, 1, one_year=1), "x", 36498, DEFAULT_THRESHOLD)
+    main = html.split('<main class="wrap art prof">', 1)[1].split("</main>", 1)[0]
+    top_start = main.index('<div class="prof__top">')
+    rail = main.index('<aside class="rail"')
+    inner = main.index('<div class="prof__main">')
+    progs = main.index('<section id="programs"')
+    assert top_start < rail < inner < progs, "the rail must lead the upper block, ahead of the page"
+    upper = main[top_start:progs]
+    # Everything the reader meets before Programs sits in the upper block; Programs does not.
+    for part in (
+        '<nav class="crumbs"',
+        "<h1>",
+        'class="kf sum"',
+        '<nav class="sectnav"',
+        'id="cost"',
+    ):
+        assert part in upper, f"{part} left the upper block"
+    assert upper.count("<div") - upper.count("</div") == 0, (
+        "the upper block is not closed before Programs"
+    )
+    assert "has-rail" not in html, "the rail is no longer positioned over the whole page"
+    assert len(re.findall(r'<aside class="rail"', html)) == 1
+
+
+def test_profile_css_gives_programs_the_full_column_and_keeps_prose_measures():
+    import re
+    from pathlib import Path
+
+    css = (Path(__file__).resolve().parents[1] / "site" / "profile.css").read_text()
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    assert re.search(r"\.prof > \.prof__top,\s*\.prof > \.progs \{ max-width: none; \}", css), (
+        "Programs must not be capped at the old 860px edge"
+    )
+    assert ".progs { max-width: 860px" not in css
+    # Prose keeps its measure, at zero specificity so a child's own narrower measure still wins.
+    for sel in (":where(.prof__main) > *", ":where(.progs) > h2", ":where(.progs) > p"):
+        assert sel in css, f"{sel} lost its 760px measure"
+    narrow = css.split("@media (max-width: 1199px)", 1)[1].split("}", 2)
+    assert "display: contents" in narrow[0] + narrow[1], (
+        "below 1200px the wrappers must not box the page, or the phone section nav stops sticking"
+    )
+    wide = css.split("@media (min-width: 1200px)", 1)[1]
+    assert "grid-template-columns: minmax(0, 860px) 240px" in wide
+    assert re.search(r"\.prof__top > \.rail \{[^}]*position: static", wide)
+    # The column floors exist only where there is room for them.
+    assert ".tw-td--program { min-width: 14em; }" in wide
+    assert ".tw-td--program { min-width" not in css.split("@media (min-width: 1200px)", 1)[0]
