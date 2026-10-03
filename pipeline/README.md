@@ -43,7 +43,7 @@ Per program (school × 4-digit CIP × credential):
 - `debt_to_earnings_ratio`: plain median-debt / median-annual-earnings. **Not** the
   federal amortized D/E rate (that needs an amortization schedule, a follow-up).
 
-Principles: never impute suppressed values (render "insufficient data"); every figure
+Principles: never impute suppressed values (render "not published", or "not assessed" where no comparison can be made); every figure
 carries its source; a flag describes the data, it never says "don't attend".
 
 ## Field names

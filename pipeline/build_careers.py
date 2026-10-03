@@ -183,7 +183,7 @@ def _esc(s) -> str:
 
 def _money(n) -> str:
     if n is None:
-        return "n/a"
+        return "not published"
     v = int(round(n))
     return f"-${abs(v):,}" if v < 0 else f"${v:,}"
 
@@ -216,14 +216,15 @@ def static_core(fields: list[dict]) -> str:
         slug = slugs.get(f["cip"])
         name = _esc(f["name"])
         link = f'<a href="/majors/{slug}/">{name}</a>' if slug else name
-        # Unknown reads "insufficient data", never "n/a": the same rule as every other page, and the
-        # phrase the methodology defines. "n/a" says "does not apply", which is a different claim.
-        pass_txt = "insufficient data" if f["pass_pct"] is None else f"{f['pass_pct']}%"
+        # Unknown says why, never "n/a" ("does not apply" is a different claim): a share or range
+        # Truewise could not compute is "not assessed", the term the methodology defines.
+        pass_txt = "not assessed" if f["pass_pct"] is None else f"{f['pass_pct']}%"
         band = (
             f"{_money(f['p25'])} to {_money(f['p75'])}"
             if f["p25"] is not None and f["p75"] is not None
-            else "insufficient data"
+            else "not assessed"
         )
+        schools = "not reported" if f["schools"] is None else f"{f['schools']:,}"
         out.append(
             f'          <tr data-cip="{_esc(f["cip"])}" data-cred="{_esc(f["cred"])}">'
             f'<td class="mname">{link}<div class="fam">{_esc(f["family"])}</div></td>'
@@ -231,7 +232,7 @@ def static_core(fields: list[dict]) -> str:
             f'<td class="num" data-label="Median earnings">{_money(f["med"])}</td>'
             f'<td data-label="Typical range">{band}</td>'
             f'<td class="num" data-label="Clear the bar">{pass_txt}</td>'
-            f'<td class="num" data-label="Schools">{(f["schools"] or 0):,}</td></tr>'
+            f'<td class="num" data-label="Schools">{schools}</td></tr>'
         )
     body = "\n".join(out)
     return (

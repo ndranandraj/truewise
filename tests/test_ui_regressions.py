@@ -1673,7 +1673,7 @@ def test_careers_stacks_on_phones_and_never_shows_unknown_as_a_value():
     assert 'class="btn btn--secondary" id="cr-more"' in code, (
         "the Show more button lost its style; it should be the shared secondary button"
     )
-    assert '"n/a"' not in code and ">n/a<" not in src, "unknown must read 'insufficient data'"
+    assert '"n/a"' not in code and ">n/a<" not in src, "unknown must say why, never 'n/a'"
     assert 'f.pass_pct == null ? "unk"' in code, (
         "an unknown pass rate must not borrow the failing colour"
     )

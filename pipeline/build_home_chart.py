@@ -150,11 +150,11 @@ def render_svg(
     parts = [
         f'<svg viewBox="0 0 {W} {H}" width="100%" role="img" '
         f'aria-labelledby="distTitle{ids} distDesc{ids}" style="max-width:{W}px;height:auto">',
-        f'<title id="distTitle{ids}">How far college programs out-earn a high-school '
-        "graduate</title>",
+        f'<title id="distTitle{ids}">How far graduates of college programs earn above or below a '
+        "typical high-school graduate</title>",
         f'<desc id="distDesc{ids}">Of {total:,} judged undergraduate programs, {counts[0]:,} (about {pct[0]}%) '
-        f"have graduates who earn less than a typical high-school graduate; the median program "
-        f"earns {median}% more. Bars, left to right: "
+        f"have graduates who earn less than a typical high-school graduate; at the median program, "
+        f"graduates earn {median}% more. Bars, left to right: "
         + "; ".join(f"{LABELS[i]} {counts[i]:,}" for i in range(len(counts)))
         + ".</desc>",
     ]

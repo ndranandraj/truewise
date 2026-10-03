@@ -209,7 +209,7 @@
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
-  const money = n => n == null ? "insufficient data" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
+  const money = n => n == null ? "not published" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
   async function load() {
@@ -241,7 +241,7 @@
       <section class="cr-head">
         <h1>What a major pays</h1>
         <p class="lede">Median earnings of graduates by field of study and degree, from the Department
-          of Education's own data. Pick a major to see how much its programs pay, how widely that varies,
+          of Education's own data. Pick a major to see what its graduates earned, how widely that varies,
           and how often graduates out-earn a high-school graduate.</p>
         <div class="cr-controls">
           <div class="cr-field cr-field--grow">
@@ -309,7 +309,7 @@
           /* Unknown is its own state, never a colour or a shape borrowed from a known one.
              Before: a null pass rate took the "lo" class and was drawn red like a failing major, and
              a major with no earnings range still drew a 2%-wide stub bar, while the static version of
-             the same row correctly said "insufficient data". Both now say so in words.
+             the same row correctly said so in words. Both now say "not assessed".
              data-label gives each cell its column name when the row stacks into a card on a phone.
              No backticks or dollar-brace in this comment: the row below is a template literal. */
           const cls = f.pass_pct == null ? "unk" : f.pass_pct >= 50 ? "hi" : "lo";
@@ -317,14 +317,14 @@
           const bandCell = hasBand
             ? '<div class="rangecell"><span class="rangetxt">' + money(f.p25) + ' to ' + money(f.p75) + '</span>'
               + '<div class="rangebar" aria-hidden="true"><i style="left:' + left + '%;width:' + width + '%"></i><b style="left:' + medPos + '%"></b></div></div>'
-            : '<span class="unk-txt">insufficient data</span>';
+            : '<span class="unk-txt">not assessed</span>';
           return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
             <td class="mname"><a href="?field=${f.cip}&cred=${f.cred}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
             <td data-label="Degree">${esc(f.cred_short)}</td>
             <td class="num" data-label="Median earnings">${money(f.med)}</td>
             <td data-label="Typical range">${bandCell}</td>
-            <td class="num" data-label="Clear the bar"><span class="clearbar ${cls}">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</span></td>
-            <td class="num" data-label="Schools">${(f.schools || 0).toLocaleString()}</td></tr>`;
+            <td class="num" data-label="Clear the bar"><span class="clearbar ${cls}">${f.pass_pct == null ? "not assessed" : f.pass_pct + "%"}</span></td>
+            <td class="num" data-label="Schools">${f.schools == null ? "not reported" : f.schools.toLocaleString()}</td></tr>`;
         }).join("")}</tbody></table></div>
         ${rows.length > shown ? `<button type="button" class="btn btn--secondary" id="cr-more">Show ${Math.min(PAGE, rows.length - shown)} more</button>` : ""}`;
       const moreBtn = document.getElementById("cr-more");
@@ -384,7 +384,7 @@
     const creds = all.slice().sort((a, b) => (a.cred || "").localeCompare(b.cred || ""));
     const d = f.demand;
     // A range needs both ends. With either missing it is one unknown, not two joined by a dash.
-    const rangeTxt = r => r.p25 == null || r.p75 == null ? "insufficient data" : money(r.p25) + " to " + money(r.p75);
+    const rangeTxt = r => r.p25 == null || r.p75 == null ? "not assessed" : money(r.p25) + " to " + money(r.p75);
     // The BLS release travels with the data (build_careers_demand writes it into every field), so
     // this label cannot fall behind the numbers it describes. Before, it was typed into the page.
     const blsLabel = d && d.vintage
@@ -409,7 +409,7 @@
       <div class="headline">
         <div><div class="big">${money(f.med)}</div><div class="lbl">median earnings, ${esc(f.cred_short)}</div></div>
         <div><div class="big">${rangeTxt(f)}</div><div class="lbl">typical range across schools</div></div>
-        <div><div class="big">${f.pass_pct == null ? "insufficient data" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
+        <div><div class="big">${f.pass_pct == null ? "not assessed" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
       </div>
       <p class="cr-count">Based on ${f.programs.toLocaleString()} programs at ${f.schools.toLocaleString()} schools reporting this degree.</p>
       ${creds.length > 1 ? `
@@ -419,7 +419,7 @@
             <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background: var(--brand-50)"' : ""}>
               <td class="rhead"><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
               <td class="num" data-label="Median earnings">${money(c.med)}</td><td data-label="Typical range">${rangeTxt(c)}</td>
-              <td class="num" data-label="Clear the bar">${c.pass_pct == null ? "insufficient data" : c.pass_pct + "%"}</td><td class="num" data-label="Schools">${(c.schools || 0).toLocaleString()}</td></tr>`).join("")}</tbody></table>
+              <td class="num" data-label="Clear the bar">${c.pass_pct == null ? "not assessed" : c.pass_pct + "%"}</td><td class="num" data-label="Schools">${c.schools == null ? "not reported" : c.schools.toLocaleString()}</td></tr>`).join("")}</tbody></table>
         </section>` : ""}
       <section class="module">
         <h2>Outlook</h2>

@@ -596,6 +596,23 @@ async function main() {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const outDir = path.join(ROOT, `layout-check-${stamp}`);
   fs.mkdirSync(path.join(outDir, "screenshots"), { recursive: true });
+  /* A screenshot is evidence for the reader of the report, not a measurement. A full-page capture of
+   * a tall page can time out on its own, and an unguarded one threw out of the loop and ended the run.
+   * One retry, as for page loads; a second failure is an advisory finding, never a crash. */
+  async function shot(page, file, findings) {
+    const opts = { path: path.join(outDir, "screenshots", file), fullPage: true };
+    try {
+      await page.screenshot(opts);
+    } catch (first) {
+      console.log(`  retrying screenshot ${file} after: ${String(first).split("\n")[0]}`);
+      try {
+        await page.screenshot(opts);
+      } catch (e) {
+        findings.push({ kind: "screenshot-failed", blocking: false,
+          detail: `No screenshot ${file}: ${String(e).split("\n")[0]}` });
+      }
+    }
+  }
 
   /* Load the recorded baseline BEFORE the run, so a regression is measured against something that
    * was written down rather than against whatever this run happens to produce. */
@@ -703,10 +720,7 @@ async function main() {
           await ctx.close();
           continue;
         }
-        await page.screenshot({
-          path: path.join(outDir, "screenshots", `${route.label}-${w.label}.png`),
-          fullPage: true,
-        });
+        await shot(page, `${route.label}-${w.label}.png`, r.findings);
         entry.widths[w.label] = r;
         result.states++;
         result.blocking += r.findings.filter((f) => f.blocking).length;
@@ -719,10 +733,9 @@ async function main() {
           const got = await interactions(page, route, w);
           entry.interactions[w.label] = got;
           result.blocking += (got.findings || []).length;
-          await page.screenshot({
-            path: path.join(outDir, "screenshots", `${route.label}-${w.label}-after-interaction.png`),
-            fullPage: true,
-          });
+          const before = r.findings.length;
+          await shot(page, `${route.label}-${w.label}-after-interaction.png`, r.findings);
+          result.advisory += r.findings.length - before;
         }
         await ctx.close();
       }
