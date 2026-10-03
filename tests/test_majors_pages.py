@@ -102,3 +102,42 @@ def test_sitemap_includes_majors(tmp_path, monkeypatch):
     assert everywhere.count("<loc>https://truewise.dev/majors/</loc>") == 1, (
         "a URL in two sitemaps makes the per-family counts disagree with reality"
     )
+
+
+def test_major_page_unknown_counts_say_why_and_a_real_zero_stays_zero(tmp_path, monkeypatch):
+    """A missing school count reads "not reported", a range or share Truewise could not compute
+    reads "not assessed", and a real count of 0 prints as 0 rather than being mislabelled unknown.
+    No row in today's data is missing any of these; the test pins what a reader would see."""
+    import re
+
+    def cred(credential, short, **kw):
+        row = {
+            "credential": credential,
+            "cred_short": short,
+            "med": 50000,
+            "p25": 40000,
+            "p75": 60000,
+            "programs": 6,
+            "schools": 6,
+            "pass_pct": 83,
+        }
+        row.update(kw)
+        return row
+
+    creds = [
+        cred("Bachelor's Degree", "Bachelor's", schools=None),
+        cred("Associate's Degree", "Associate's", schools=0),
+        cred("Undergraduate Certificate or Diploma", "Certificate", p25=None, pass_pct=None),
+    ]
+    monkeypatch.setattr(bmp, "SITE", tmp_path / "site")  # major_page writes a social card
+    h = bmp.major_page("5138", "Registered Nursing.", "Health", creds, "registered-nursing")
+    cells = {
+        m[0]: re.findall(r"<td class='num'>([^<]*)</td>", m[1])
+        for m in re.findall(r"<tr><td>([^<]+)</td>(.*?)</tr>", h)
+    }
+    # Each row: median, range, schools, clear the bar.
+    assert cells[bmp.esc("Bachelor's Degree")][2] == "not reported"
+    assert cells[bmp.esc("Associate's Degree")][2] == "0"
+    cert = cells["Undergraduate Certificate or Diploma"]
+    assert cert[1] == "not assessed" and cert[3] == "not assessed"
+    assert "insufficient data" not in h and "n/a" not in h

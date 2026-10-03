@@ -46,6 +46,8 @@ jobs:
           node tests/profile_smoke.js
           node tests/value_check_states.js
           node tests/k12_compare_states.js
+          node tests/careers_states.js
+          node tests/layout_shot_smoke.js
 
   package:
     name: Build + test truewise-data package

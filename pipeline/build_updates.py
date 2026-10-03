@@ -95,6 +95,23 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 # what the page said before and what it says now, so a reader who quoted the old figure can see why.
 CORRECTIONS = [
     {
+        "date": "October 2026",
+        "title": "Wording clarifications: the ED spot check, and why a comparison is missing",
+        "body": (
+            "The methodology said our four-year earnings match the Department of Education's "
+            'figures "to the dollar". That rested on a 20-program spot check against the College '
+            "Scorecard site, and the page now says so: the figures matched in the programs checked. "
+            "Separately, the embeddable college card said earnings were privacy-suppressed for every "
+            "school it could not compare. At 530 of those 1,178 schools the reason is that there is "
+            "no state benchmark; the card now gives the reason that applies. Missing values on the "
+            "careers, majors, compare and methodology pages now use the same terms as college pages "
+            "(not published, not assessed, no state benchmark), and wording that said programs "
+            '"leave graduates" earning more or less now describes what graduates earned. No '
+            "figures changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
         "date": "September 2026",
         "title": "College pages: new layout, and the summary counts undergraduate programs",
         "body": (

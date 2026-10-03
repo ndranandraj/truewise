@@ -313,9 +313,11 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
             else "not assessed"
         )
         passp = "not assessed" if c.get("pass_pct") is None else f"{c['pass_pct']}%"
+        # None is unknown; a real 0 is a count and prints as 0.
+        nsch = "not reported" if c.get("schools") is None else c["schools"]
         parts.append(
             f"      <tr><td>{esc(c['credential'])}</td><td class='num'>{money(c['med'])}</td>"
-            f"<td class='num'>{rng}</td><td class='num'>{c.get('schools') or 'not reported'}</td>"
+            f"<td class='num'>{rng}</td><td class='num'>{nsch}</td>"
             f"<td class='num'>{passp}</td></tr>\n"
         )
     parts.append("    </tbody></table></div>\n")

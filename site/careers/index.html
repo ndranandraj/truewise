@@ -376,6 +376,18 @@
     const c = g >= 0 ? "grow-pos" : "grow-neg";
     return `<span class="${c}">${g >= 0 ? "+" : ""}${g}%</span>`;
   }
+  // A missing count says so in words; it never renders as 0 or throws on .toLocaleString().
+  function basedOn(f) {
+    const n = x => Number(x).toLocaleString();
+    if (f.programs != null && f.schools != null)
+      return `Based on ${n(f.programs)} programs at ${n(f.schools)} schools reporting this degree.`;
+    if (f.programs != null)
+      return `Based on ${n(f.programs)} programs reporting this degree; the number of schools is not reported.`;
+    if (f.schools != null)
+      return `Based on programs at ${n(f.schools)} schools reporting this degree; the number of programs is not reported.`;
+    return "The number of programs and schools behind these figures is not reported.";
+  }
+
   async function renderField(cip, cred) {
     await load();
     const all = FIELDS.filter(f => f.cip === cip);
@@ -411,7 +423,7 @@
         <div><div class="big">${rangeTxt(f)}</div><div class="lbl">typical range across schools</div></div>
         <div><div class="big">${f.pass_pct == null ? "not assessed" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
       </div>
-      <p class="cr-count">Based on ${f.programs.toLocaleString()} programs at ${f.schools.toLocaleString()} schools reporting this degree.</p>
+      <p class="cr-count">${basedOn(f)}</p>
       ${creds.length > 1 ? `
         <section class="module">
           <h2>By degree level</h2>
