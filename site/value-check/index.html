@@ -265,7 +265,7 @@
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
-  const money = n => n == null ? "insufficient data" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
+  const money = n => n == null ? "not published" : (n < 0 ? "-$" : "$") + Math.abs(Number(n)).toLocaleString();
   const esc = s => (s || "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const horizonLabel = h => h === "1yr_after_completion" ? "1 year after completing"
                         : h === "4yr_after_completion" ? "4 years after completing" : "after completing";
@@ -723,14 +723,14 @@
   function programRow(p, threshold, maxEarn, highlight) {
     const fail = p.flag === "fails_earnings_premium";
     const premium = (p.earnings != null && threshold != null) ? p.earnings - threshold : null;
-    const premTxt = premium == null ? "n/a" : (premium < 0 ? "−" : "+") + money(Math.abs(premium));
+    const premTxt = premium == null ? (threshold == null ? "no state benchmark" : "not published") : (premium < 0 ? "−" : "+") + money(Math.abs(premium));
     const w = (p.earnings != null && maxEarn) ? Math.max(2, Math.round(p.earnings / maxEarn * 100)) : 0;
     const bw = (threshold != null && maxEarn) ? Math.round(threshold / maxEarn * 100) : 0;
     const tag = p.horizon === "1yr_after_completion"
       ? ` <span class="tag1yr" title="Earnings measured 1 year after completing, not 4">1-yr</span>` : "";
     const paybackCell = p.payback != null
       ? `<span title="Years of the earnings premium over a HS grad needed to recoup the debt">${p.payback} yrs</span>`
-      : (fail ? `<span title="No earnings premium over a HS grad, so the debt does not pay back on this measure">none</span>` : "n/a");
+      : (fail ? `<span title="No earnings premium over a HS grad, so the debt does not pay back on this measure">none</span>` : "not assessed");
     return `<tr id="${anchorFor(p)}" class="${highlight ? "hl " : ""}${fail ? "row-fail" : "row-pass"}">
       <td class="pname">${esc(p.program)}${tag}</td>
       <td class="deg">${esc(credShort(p.credential))}</td>
@@ -740,9 +740,9 @@
         <span class="minibar"><i class="fill ${fail ? "nf" : "pf"}" style="width:${w}%"></i><i class="base" style="left:${bw}%"></i></span>
       </td>
       <td class="num">${money(p.debt)}</td>
-      <td class="num">${p.debt_to_earnings != null ? p.debt_to_earnings.toFixed(2) + "×" : "n/a"}</td>
+      <td class="num">${p.debt_to_earnings != null ? p.debt_to_earnings.toFixed(2) + "×" : "not assessed"}</td>
       <td class="num">${paybackCell}</td>
-      <td class="num">${p.completers != null ? Number(p.completers).toLocaleString() : "n/a"}</td>
+      <td class="num">${p.completers != null ? Number(p.completers).toLocaleString() : "not published"}</td>
     </tr>`;
   }
 
@@ -861,9 +861,9 @@
       <section id="value-check" class="module">
         <h2>Value Check: do graduates out-earn a high-school graduate?</h2>
         <div class="summary">
-          Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to judge,
-          <b style="color:var(--bad)">${s.n_fail}</b> leave graduates earning less than a typical high-school graduate
-          and <b style="color:var(--good)">${s.n_pass}</b> out-earn one.
+          Of <b>${decided}</b> program${decided!==1?"s":""} with enough data to compare, graduates of
+          <b style="color:var(--bad)">${s.n_fail}</b> earned less than a typical high-school graduate
+          and graduates of <b style="color:var(--good)">${s.n_pass}</b> earned more.
         </div>
         <p class="baseline">Baseline: a typical high-school graduate in ${esc(s.state)} earns about
           <b>${money(s.threshold)}</b> per year (median). Each bar compares a program's graduate

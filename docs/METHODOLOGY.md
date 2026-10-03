@@ -36,7 +36,7 @@ planned addition).
 ## Principles
 
 - **Never impute.** Suppressed values (`PS`, `NA`) become NULL and render as
-  "insufficient data", never guessed.
+  "not published" (or "not assessed" where no comparison can be made), never guessed.
 - **Every figure carries its source and cohort.** Earnings reflect the recent past;
   we frame them as "graduates typically earned," never a promise.
 - **A flag describes the data.** It never tells anyone whether to attend a program.
@@ -55,8 +55,8 @@ an institution-level threshold.
 
 - **By construction**, the flag uses ED's own published median earnings and thresholds,
   so it reproduces the federal earnings-premium comparison directly.
-- **Matches ED's public site exactly.** A 20-program audit against the live College
-  Scorecard site confirmed our earnings equal ED's displayed figures to the dollar (e.g.
+- **Matches ED's public site in the programs checked.** In a 20-program audit against the live
+  College Scorecard site, our earnings matched ED's displayed figures in every program checked (e.g.
   UCLA Economics $95,440, Psychology $61,050, Sociology $64,692). The audit is what led us
   to use the 4-year earnings measure ED publishes rather than the 1-year figure, see
   [AUDIT.md](AUDIT.md).

@@ -77,7 +77,7 @@
   <main class="wrap doc has-rail">
     <aside class="rail" aria-label="On this page"><div class="rail__inner"><h2>On this page</h2><ul><li><a href="#sources">Sources</a></li><li><a href="#the-earnings-premium-test-value-check">The earnings-premium test (Value Check)</a></li><li><a href="#the-headline-number-in-full">The headline number, in full</a></li><li><a href="#principles">Principles</a></li><li><a href="#why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</a></li><li><a href="#cite-this">Cite this</a></li><li><a href="#the-other-modules-in-brief">The other modules, in brief</a></li><li><a href="#known-limitations">Known limitations</a></li></ul></div></aside>
     <h1>Methodology</h1>
-    <p class="updated">How every number on Truewise is computed. Last updated 2026-09-23. Data vintages: College
+    <p class="updated">How every number on Truewise is computed. Last updated 2026-10-03. Data vintages: College
       Scorecard release 2026-06-10; BLS OEWS May 2025 + Employment Projections 2025-35; CRDC 2023-24.</p>
 
     <h2 id="sources">Sources</h2>
@@ -96,8 +96,9 @@
     <ul>
       <li><b>Passes</b>: median earnings are at or above the state threshold.</li>
       <li><b>Falls short</b>: median earnings are below it.</li>
-      <li><b>Insufficient data</b>: earnings are suppressed (small cohort) or no threshold is available. These are
-        shown as "not enough data", never guessed.</li>
+      <li><b>Not assessed</b>: no comparison is made. Either ED did not publish the program's earnings (usually a
+        small cohort), shown as "earnings not published", or there is no state benchmark to compare with, shown as
+        "no state benchmark". Nothing is guessed.</li>
     </ul>
 
     <h2 id="the-headline-number-in-full">The headline number, in full</h2>
@@ -159,7 +160,7 @@
     <h2 id="principles">Principles</h2>
     <ul>
       <li><b>Never impute.</b> Suppressed values (<span class="mono">PS</span>, <span class="mono">NA</span>)
-        become null and render as "insufficient data", never guessed. This rule is enforced by a data-quality
+        become null and are shown as "not published", never guessed. This rule is enforced by a data-quality
         gate (<code>analysis/validate.py</code>) with unit tests.</li>
       <li><b>Every figure carries its source and data vintage.</b> Earnings reflect the recent past; we frame them
         as "graduates typically earned", never as a promise.</li>
@@ -171,9 +172,9 @@
       <p style="margin:0">When we checked Value Check against ED's live College Scorecard site, we found we had
         originally used <b>one-year</b> earnings while ED publishes the <b>four-year</b> figure. We fixed it to
         prefer four-year earnings (falling back to one-year only when suppressed), which changed the headline fail
-        rate from 33% to 9% and matches ED's four-year figures to the dollar (for example UCLA Economics $95,440, Psychology
-        $61,050, Sociology $64,692). We publish this because finding and fixing your own error is the honest thing
-        to do. Full write-up: <a href="https://github.com/ndranandraj/truewise/blob/main/docs/AUDIT.md">AUDIT.md</a>.</p>
+        rate from 33% to 9%. After the fix our four-year figures matched ED's published figures in the programs we
+        spot-checked (for example UCLA Economics $95,440, Psychology $61,050, Sociology $64,692). We publish this
+        so readers can see what changed and why. Full write-up: <a href="https://github.com/ndranandraj/truewise/blob/main/docs/AUDIT.md">AUDIT.md</a>.</p>
     </div>
 
     <h2 id="why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</h2>

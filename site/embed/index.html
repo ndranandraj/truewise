@@ -102,11 +102,14 @@
     const profile = slug ? `${BASE}/college/${slug}/` : `${BASE}/value-check/?school=${encodeURIComponent(s.unitid)}`;
     let verdict;
     if (!decided) {
-      verdict = `Earnings are privacy-suppressed for this school's programs, so it cannot be judged yet.`;
+      // Say which reason applies: with no state benchmark, published earnings still cannot be compared.
+      verdict = s.threshold == null
+        ? `There is no state benchmark for this school's location, so its programs are not assessed.`
+        : `ED has not published earnings for this school's programs, so they are not assessed.`;
     } else if (s.n_fail) {
-      verdict = `<b class="pass">${s.n_pass}</b> of <b>${decided}</b> programs with reported earnings leave graduates out-earning a typical ${esc(stateName)} high-school graduate; <b class="fail">${s.n_fail}</b> fall short.`;
+      verdict = `At <b class="pass">${s.n_pass}</b> of <b>${decided}</b> programs with reported earnings, graduates earned more than a typical ${esc(stateName)} high-school graduate; at <b class="fail">${s.n_fail}</b>, they earned less.`;
     } else {
-      verdict = `All <b class="pass">${decided}</b> programs with reported earnings leave graduates out-earning a typical ${esc(stateName)} high-school graduate.`;
+      verdict = `At all <b class="pass">${decided}</b> programs with reported earnings, graduates earned more than a typical ${esc(stateName)} high-school graduate.`;
     }
     const bar = rate == null ? "" : `<div class="bar"><i style="width:${rate}%"></i></div>`;
     const chips = [];

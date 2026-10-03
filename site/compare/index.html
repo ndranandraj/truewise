@@ -350,7 +350,7 @@
     // Was "Truewise flag" / "no": jargon, and a bare "no" read like a verdict against the school.
     // hidden_gem is three-state: null means an input was missing, so the rule could not be applied.
     row("Hidden gem", cols.map(s => s.hidden_gem === true ? `<span class="gem">&#9733; Yes</span>`
-      : s.hidden_gem === false ? "No" : `<span class="schmeta">insufficient data</span>`));
+      : s.hidden_gem === false ? "No" : `<span class="schmeta">not assessed</span>`));
     row("Full profile", cols.map(s =>
       `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`));
 

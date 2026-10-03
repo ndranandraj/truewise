@@ -41,7 +41,7 @@ Positioning is infrastructure, not another consumer site. Where a module overlap
 
 ## Principles (non-negotiable)
 
-- Never impute suppressed or missing values; render "insufficient data" instead.
+- Never impute suppressed or missing values; render "not published" or "not assessed", with the reason, instead.
 - Every number carries its source and cohort year.
 - Earnings and aid are framed as "students like you earned/paid roughly," never a promise.
 - A warning describes the data; it never says "don't attend."

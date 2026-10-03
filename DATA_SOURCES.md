@@ -35,7 +35,7 @@ Key fields (institution-level):
 
 Field-of-study file grain: institution × 4-digit CIP code × credential level; includes
 cumulative debt at graduation and earnings ~1 year after completion. Note: values are
-**suppressed** (blank) for small cohorts, handle as "insufficient data," never impute.
+**suppressed** (blank) for small cohorts, show as "not published", never impute.
 
 ### IPEDS (Integrated Postsecondary Education Data System)
 - https://nces.ed.gov/ipeds/use-the-data
