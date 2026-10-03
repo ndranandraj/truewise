@@ -498,6 +498,14 @@ function probe(opts) {
       }
     }
     const sc = progs.querySelector(".tw-table__scroll");
+    /* At 768px and below rows stack into cards, which are not meant to scroll at all. The general
+     * overflow check skips anything inside a scroll wrapper, so a six-figure premium running 6px
+     * past its card at 320px (UCLA, Harvard) went unreported. */
+    if (vw <= 768 && sc && sc.scrollWidth - sc.clientWidth > TOL) {
+      add("profile-card-overflow", true,
+        `Content in the stacked program cards runs ${sc.scrollWidth - sc.clientWidth}px past the card ` +
+        `at ${vw}px; cards must fit the screen.`);
+    }
     if (vw >= 1200 && sc && sc.scrollWidth - sc.clientWidth > TOL) {
       add("profile-table-scrolls", true,
         `The program table scrolls sideways by ${sc.scrollWidth - sc.clientWidth}px at ${vw}px, where ` +

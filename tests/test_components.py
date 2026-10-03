@@ -210,3 +210,21 @@ def test_small_components_carry_their_contracts():
         "Escape",  # B11 disclosure collapses
     ):
         assert needed in js, f"ui.js missing {needed}"
+
+
+def test_stacked_premium_can_wrap_its_bar_above_the_figure():
+    """At 320px a six-figure premium ("+$132,123") needed 118px where the card leaves about 95px
+    beside its label, so the bar and figure ran 6px past the card on UCLA and Harvard. In the
+    stacked layout the premium may wrap, which moves only the decorative bar; the figure never
+    shrinks. The rule must stay inside the stacked-card media query, not apply to the desktop table."""
+    import re
+
+    css = re.sub(r"/\*.*?\*/", "", (COMPONENTS / "components.css").read_text(), flags=re.S)
+    stacked = css.split("@media (max-width: 768px)", 1)[1]
+    rule = re.search(r"\.tw-td > \.tw-prem \{([^}]*)\}", stacked)
+    assert rule, "the stacked premium lost its wrap rule"
+    assert "flex-wrap: wrap" in rule.group(1) and "min-width: 0" in rule.group(1)
+    assert ".tw-td > .tw-prem" not in css.split("@media (max-width: 768px)", 1)[0]
+    # The figure itself must not be allowed to break inside the number.
+    val = re.search(r"\.tw-prem__val \{([^}]*)\}", css)
+    assert val and "overflow-wrap" not in val.group(1) and "word-break" not in val.group(1)
