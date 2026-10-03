@@ -3,8 +3,10 @@
 #   ./scripts/gate.sh
 # Each step's own exit code is checked; nothing is piped into tail, because a pipe returns the last
 # command's status and that is how a failing check once slipped through twice.
+# The browser layout check is not part of this gate. It is a separate release check for page changes:
+#   ./preview-build.sh && node tests/layout_check.js
 set -u
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/.." || { echo "gate: cannot change to the repository root"; exit 1; }
 fail=0
 log_dir="${TMPDIR:-/tmp}"
 run() {
@@ -31,10 +33,24 @@ run pytest       python3 -m pytest -q
 # CI runs on a clean checkout with no built site/. Tests that pass locally only because site/college/
 # exists failed in CI twice, so the suite also runs on a copy holding tracked and new files only
 # (gitignored build output excluded), which is what the runner sees.
+# Every step of the copy is checked before pytest runs: a failed file listing or archive must fail
+# this step, never leave pytest passing on a partial copy. Each run gets its own scratch directory.
 ci_copy() {
-  ( dir="$log_dir/truewise-ci-copy" && rm -rf "$dir" && mkdir -p "$dir" \
-    && { git ls-files -z; git ls-files -z --others --exclude-standard; } | tar --null -T - -cf - | tar -xf - -C "$dir" \
-    && cd "$dir" && python3 -m pytest -q -p no:cacheprovider )
+  local dir list rc
+  dir="$(mktemp -d "$log_dir/truewise-ci-copy.XXXXXX")" || { echo "cannot create a scratch directory"; return 1; }
+  list="$(mktemp "$log_dir/truewise-ci-files.XXXXXX")" || { echo "cannot create a file list"; rm -rf "$dir"; return 1; }
+  (
+    set -o pipefail
+    git ls-files -z >"$list" || { echo "git ls-files (tracked) failed"; exit 1; }
+    git ls-files -z --others --exclude-standard >>"$list" || { echo "git ls-files (new files) failed"; exit 1; }
+    [ -s "$list" ] || { echo "no files listed to copy"; exit 1; }
+    tar --null -T "$list" -cf - | tar -xf - -C "$dir" || { echo "copying the files failed"; exit 1; }
+    cd "$dir" || { echo "cannot change to $dir"; exit 1; }
+    python3 -m pytest -q -p no:cacheprovider
+  )
+  rc=$?
+  rm -rf "$dir" "$list"
+  return $rc
 }
 run pytest_clean ci_copy
 run components   python3 -m pipeline.build_components --check
