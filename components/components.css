@@ -386,6 +386,15 @@
     min-width: 0;
     text-align: right;
   }
+  /* The premium is a 32px bar, an 8px gap and the figure. Held on one line, a six-figure premium
+     ("+$132,123") needed 118px where a 320px card leaves about 95px beside its label, so it ran 6px
+     past the card on UCLA and Harvard. Wrapping lets the bar, which is decorative, move above the
+     figure only when the row is too narrow; the figure itself never shrinks or breaks. */
+  .tw-td > .tw-prem {
+    flex-wrap: wrap;
+    row-gap: 4px;
+    min-width: 0;
+  }
   .tw-td::before {
     content: attr(data-label);
     font-weight: 600;
