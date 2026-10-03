@@ -20,8 +20,9 @@ PIPELINE = ROOT / "pipeline"
 # The one primary-nav order every page must share (links before the mobile menu).
 CANONICAL_NAV = ["/careers/", "/k12/", "/#data", "/methodology/", "/about/", "/value-check/"]
 
+# Builders that emit .t data tables. College profiles are not here: their table is the component's
+# own (tw-table inside .tw-table__scroll), checked in test_wide_tables_are_wrapped_for_horizontal_scroll.
 GENERATORS = [
-    "build_college_pages.py",
     "build_majors_pages.py",
     "build_lists.py",
     "build_stats_exposure.py",
@@ -783,6 +784,12 @@ def test_wide_tables_are_wrapped_for_horizontal_scroll():
     for gen in GENERATORS:
         src = (PIPELINE / gen).read_text()
         assert src.count('<table class="t') == len(wrapped.findall(src))
+    # The college profile's program table uses the component's scroll wrapper instead.
+    prof = (PIPELINE / "build_canonical_profiles.py").read_text()
+    assert prof.count('<table class="tw-table">') == 1
+    assert re.search(r'<div class="tw-table__scroll"[^>]*><table class="tw-table">', prof), (
+        "the profile's program table must sit in .tw-table__scroll"
+    )
 
 
 def test_headers_file_sets_cache_control_with_single_splat_paths():
@@ -969,8 +976,10 @@ def test_compare_states_coverage_and_labels_are_honest():
     # "Grads" implied the earnings-cohort sample size; it is a completions count.
     vc = (SITE / "value-check" / "index.html").read_text()
     assert "Recent completers" in vc and ">Grads<" not in vc
-    gen = (PIPELINE / "build_college_pages.py").read_text()
-    assert "Recent completers" in gen and '"num">Graduates<' not in gen
+    # The profile's table header: the static rows (build_profile_pilot.HEAD) and the live table.
+    for src in (PIPELINE / "build_profile_pilot.py", ROOT / "components" / "table.js"):
+        gen = src.read_text()
+        assert "Recent completers" in gen and ">Graduates<" not in gen, src.name
 
 
 # Committed source pages (generated pages come from head(), checked separately). Not a glob,
