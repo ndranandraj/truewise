@@ -1,0 +1,4 @@
+# Files Wrangler must never upload from site/. Prototypes are local-only review pages:
+# noindex keeps them out of search, but only this keeps them off the public site.
+_proto
+_proto/**

@@ -115,6 +115,14 @@ jobs:
             echo "CF_BEACON_TOKEN not set; stripped the beacon tag (no analytics until the secret is added)."
           fi
 
+      - name: No prototype pages in the upload
+        # Prototypes (site/_proto/) are local-only review pages. They are gitignored and listed in
+        # site/.assetsignore; this stops the deploy if one is ever present anyway, since noindex
+        # alone would still leave them publicly reachable.
+        run: |
+          if [ -e site/_proto ]; then echo "site/_proto exists; prototypes must never be deployed"; exit 1; fi
+          grep -qx '_proto' site/.assetsignore || { echo "site/.assetsignore no longer excludes _proto"; exit 1; }
+
       - name: Deploy to Cloudflare
         uses: cloudflare/wrangler-action@v4
         with:
