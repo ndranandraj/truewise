@@ -261,10 +261,15 @@ def canonical_page(
     chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in pl.NAV)
     loc = ", ".join(p for p in (meta.get("city"), st_name) if p)
     ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
+    # The rail and everything above Programs share one block (.prof__top), so from 1200px the rail
+    # ends where Programs starts and the program table can use the full column (profile layout,
+    # October 2026). The rail stays first in source order, so the reading order is unchanged.
     parts = [
         page_head,
-        '  <main class="wrap art prof has-rail">\n',
+        '  <main class="wrap art prof">\n',
+        '    <div class="prof__top">\n',
         pl.rail(meta, c, net_price),
+        '    <div class="prof__main">\n',
         f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; '
         f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n',
         f"    <h1>{esc(name)}</h1>\n",
@@ -274,6 +279,8 @@ def canonical_page(
         f"{len(pl.NAV)} sections</p>"
         f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
         pl.cost_section(meta, rows, net_price),
+        "    </div>\n",
+        "    </div>\n",
         '    <section id="programs" aria-labelledby="programs-h" class="progs">\n',
         '      <h2 id="programs-h">Program earnings</h2>\n',
         f"      <p>{intro}</p>\n",

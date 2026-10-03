@@ -2,12 +2,45 @@
    27 September). Loaded by profile pages only, after styles.css, pg.css, components.css and
    article.css, whose key-finding box, section nav and expandable sections it reuses. */
 
-/* The profile keeps the site's 860px edge for the program table; prose keeps its measure. */
+/* Width (profile layout, October 2026). Prose keeps its 760px measure; the program table and its
+   controls use the full column. The rail used to be positioned over the whole page, which capped
+   the table at 860px: tables that needed a little more (UCLA, Harvard, Irvine Valley) scrolled and
+   cut off their last column while the space beside them stayed empty. Now the rail and everything
+   above Programs share .prof__top, and from 1200px the rail is a grid column that ends where
+   Programs starts. The caps use :where() so a child's own narrower measure still wins. */
 .prof > * { max-width: 760px; }
-/* The table stops at the site's shared 860px edge, as production profiles do, so the side rail
-   (shown from 1200px, 240px wide at the right) never sits over it. Uncapped, it ran under the rail. */
-.prof > .progs { max-width: 860px; }
-.prof > .rail { max-width: none; }
+.prof > .prof__top,
+.prof > .progs { max-width: none; }
+:where(.prof__main) > * { max-width: 760px; }
+:where(.progs) > h2,
+:where(.progs) > p,
+:where(.progs) .tw-coverage { max-width: 760px; }
+
+/* Below 1200px the rail is hidden and the wrappers take no part in layout, so the page reads as one
+   column. This also keeps the section nav on phones sticky for the whole page: inside a wrapper box
+   a sticky element stops at the wrapper's end, which would be above Programs. */
+@media (max-width: 1199px) {
+  .prof__top,
+  .prof__main { display: contents; }
+}
+@media (min-width: 1200px) {
+  .prof__top {
+    display: grid;
+    grid-template-columns: minmax(0, 860px) 240px;
+    justify-content: space-between;
+    column-gap: var(--s5);
+  }
+  /* styles.css positions .rail over the page; here it is an ordinary grid item, still sticky inside. */
+  .prof__top > .rail { position: static; grid-column: 2; grid-row: 1; width: auto; }
+  .prof__main { grid-column: 1; grid-row: 1; min-width: 0; }
+  /* Automatic table layout shares the spare width by content, so long program names take most of
+     it and numeric columns stay compact. These floors give Program and Degree theirs first. Only
+     from 1200px: in a narrower column they just add scrolling (at 900px, UCLA scrolled 147px with
+     them and 59px without). Nothing is forced onto one line, so the 1-year marker and unassessed
+     labels wrap as before, and the scroll container stays as a fallback. */
+  .prof .tw-td--program { min-width: 14em; }
+  .prof .tw-td[data-label="Degree"] { min-width: 8.5em; }
+}
 .prof .idline { color: var(--ink-soft); margin: 0 0 var(--sp-group); }
 
 /* Summary: the earnings verdict with its coverage in the same box (R1), then the one cost figure

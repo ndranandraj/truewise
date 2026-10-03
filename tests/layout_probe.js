@@ -95,6 +95,9 @@ const ROUTES = [
     } },
   { label: "penn-state", path: "/college/pennsylvania-state-university-main-campus/", kind: "twtable" },
   { label: "agape", path: "/college/agape-college-of-business-and-science/", kind: "twtable" },
+  /* UCLA's table needed 19px more than the old 860px cap at 1280 and scrolled; it guards the
+   * full-width Programs column (profile layout, October 2026). */
+  { label: "ucla", path: "/college/university-of-california-los-angeles/", kind: "twtable" },
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
   /* A real major's detail view: a different layout from the listing, and the one that overflowed. */
@@ -475,6 +478,31 @@ function probe(opts) {
       `${describe(el)} renders "${txt}" as its whole value. Unknown must say why it is missing ("not published", "not reported"), ` +
       `never a sentinel and never 0.`,
       { selector: describe(el) });
+  }
+
+  /* --- 5. College profile layout ---------------------------------------------------------- */
+  /* October 2026: the rail used to be positioned over the whole page, so the program table was
+   * capped at 860px and tables that needed a little more (UCLA, Harvard, Irvine Valley) scrolled
+   * and cut off their last column while the space beside them stayed empty. The rail now ends where
+   * Programs starts and the table uses the full column. */
+  const progs = document.querySelector(".prof #programs");
+  if (progs) {
+    const rail = document.querySelector(".prof .rail");
+    const pr = progs.getBoundingClientRect();
+    if (rail && visible(rail, rail.getBoundingClientRect())) {
+      const rr = rail.getBoundingClientRect();
+      if (rr.bottom > pr.top + TOL && rr.left < pr.right - TOL) {
+        add("profile-rail-over-programs", true,
+          `The rail reaches ${Math.round(rr.bottom - pr.top)}px into Programs, so the program table ` +
+          `cannot use the full column.`);
+      }
+    }
+    const sc = progs.querySelector(".tw-table__scroll");
+    if (vw >= 1200 && sc && sc.scrollWidth - sc.clientWidth > TOL) {
+      add("profile-table-scrolls", true,
+        `The program table scrolls sideways by ${sc.scrollWidth - sc.clientWidth}px at ${vw}px, where ` +
+        `the full column should fit it.`);
+    }
   }
 
   return {
