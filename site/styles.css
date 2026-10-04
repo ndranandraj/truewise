@@ -440,6 +440,14 @@ a:hover { color: var(--brand-deep); }
   .site-footer .foot { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s6); }
   .foot__who { grid-column: 1 / -1; }
 }
+/* Enlarged text: on a 320px phone each of the two link columns was about 128px, and the uppercase
+   "RESEARCH" heading at 26px ran past the screen (by 6px with Linux fonts, just inside with macOS
+   fonts). The footer is a container, and below 16em of its own text (enlarged text only: a 320px
+   phone is about 23em at normal size) the link groups stack in one column. */
+.site-footer { container: site-foot / inline-size; }
+@container site-foot (max-width: 16em) {
+  .site-footer .foot { grid-template-columns: minmax(0, 1fr); }
+}
 .muted { color: var(--ink-faint); font-size: var(--t-label); }
 
 /* Responsive */

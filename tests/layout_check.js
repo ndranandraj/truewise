@@ -779,7 +779,10 @@ async function main() {
        * only blocking findings came from interactions, while the total said 2 blocking. */
       const b = Object.values(entry.widths).reduce(
         (n, s) => n + s.findings.filter((f) => f.blocking).length, 0)
-        + Object.values(entry.interactions).reduce((n, ix) => n + (ix.findings || []).length, 0);
+        + Object.values(entry.interactions).reduce((n, ix) => n + (ix.findings || []).length, 0)
+        // Enlarged-text findings count too: without them a route printed "ok" while its 320px
+        // enlarged pass was blocking the deploy (October 2026).
+        + Object.values(entry.enlarged || {}).reduce((n, fs) => n + fs.filter((f) => f.blocking).length, 0);
       const t = entry.perf
         ? `  LCP ${entry.perf.lcp.median}ms (${entry.perf.lcp.min}-${entry.perf.lcp.max}), ` +
           `CLS ${entry.perf.cls.median}, TBT ${entry.perf.tbt.median}ms`
