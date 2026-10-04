@@ -101,7 +101,10 @@ const ROUTES = [
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
   /* A real major's detail view: a different layout from the listing, and the one that overflowed. */
+  /* enlargedReady: the enlarged-text pass waits for the degree and occupation tables and fails if they
+   * never render, so the 769px degree-table check cannot pass on a page without the table. */
   { label: "careers-detail", path: "/careers/?field=1107&cred=5", kind: "static",
+    enlargedReady: [".cred-table", ".occ"],
     prepare: async (page) => { await page.waitForSelector(".fld-head h1", { timeout: 10000 }); } },
   /* Added for the design pass: every page family whose shell, type or tables Phase 2 changes needs
    * a before and an after, and none of these were measured until now. */
