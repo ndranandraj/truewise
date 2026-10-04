@@ -139,6 +139,11 @@ const ROUTES = [
       return { findings, steps: [{ step: "keyboard-remove", ...st }] };
     } },
   { label: "k12-courses", path: "/k12/advanced-courses/", kind: "static" },
+  /* A school's page: rendered by script, so both passes wait for its heading. Stuyvesant's name has the
+   * longest single word of the examples, which widened a 320px page at 200% text (October 2026). */
+  { label: "k12-school", path: "/k12/advanced-courses/?school=362058002877", kind: "static",
+    enlargedReady: [".sch-head h1"],
+    prepare: async (page) => { await page.waitForSelector(".sch-head h1", { timeout: 10000 }); } },
   { label: "methodology", path: "/methodology/", kind: "static" },
   { label: "embed-docs", path: "/about/embed/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },

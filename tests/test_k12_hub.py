@@ -88,3 +88,19 @@ def test_lookup_intro_is_one_sentence_and_enrollment_is_never_n_a():
     assert lede.count(". ") == 0 and lede.rstrip().endswith(".")
     assert "${num(s.enroll)} students</div>" not in LOOKUP
     assert 's.enroll == null ? "enrollment not reported"' in LOOKUP
+
+
+def test_school_names_may_hyphenate_and_the_layout_check_measures_a_school_page():
+    """CRDC names are in capitals; at 200% text one word was wider than a 320px phone."""
+    css = re.sub(
+        r"/\*.*?\*/", "", LOOKUP.split("<style>", 1)[1].split("</style>", 1)[0], flags=re.S
+    )
+    assert ".sch-head h1, .k-head h1 { overflow-wrap: break-word; hyphens: auto; }" in css
+    assert ".sch-head { container: sch-head / inline-size; }" in css
+    assert (
+        "@container sch-head (max-width: 12em) { .sch-head h1 { font-size: var(--t-lede); } }"
+        in css
+    )
+    assert '<html lang="en">' in LOOKUP
+    probe = (ROOT / "tests" / "layout_probe.js").read_text()
+    assert 'label: "k12-school", path: "/k12/advanced-courses/?school=362058002877"' in probe
