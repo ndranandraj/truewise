@@ -260,6 +260,15 @@ a:hover { color: var(--brand-deep); }
    fixed scroll-margin guesses (80px here, 90px and 130px for sections) that left a heading under
    223px of pinned bars at 390px with enlarged text. */
 :root { scroll-padding-top: calc(var(--pin-h, 0px) + 12px); }
+/* File paths and identifiers in prose (methodology, findings) have no break points, so at enlarged text
+   one path was wider than a phone screen (by up to 217px at 390px), and so was a DOI link. Code may
+   break anywhere; a link breaks only when it cannot fit on a line by itself. */
+:where(.art, .doc, .pg) code { overflow-wrap: anywhere; }
+:where(.art, .doc, .pg) a { overflow-wrap: break-word; }
+/* Page headings: one long word ("Methodology" at 60px) was wider than a 320px phone at enlarged text and
+   widened the page by about 62px. A word too long for the line is hyphenated (the pages set lang="en"),
+   and breaks only if hyphenation finds no point. At normal size every heading fits, so nothing changes. */
+:where(.art, .doc, .pg) h1 { overflow-wrap: break-word; hyphens: auto; }
 #main:focus { outline: none; }
 /* A hidden back-to-top button must not stay in the tab order (audit V9). */
 #to-top:not(.show) { visibility: hidden; }

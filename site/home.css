@@ -82,3 +82,8 @@
 .h-honest { background: var(--bg-alt); }
 .h-honest ul { margin: 0 0 var(--s4); padding-left: 20px; max-width: 66ch; }
 .h-honest li { margin: 0 0 var(--s2); }
+
+/* At enlarged text a long word (the heading joins "US education." with a no-break space; "undergraduate"
+   in the band) was wider than a phone screen. A word breaks only when it cannot fit on a line by itself,
+   which never happens at normal size. */
+.h-hero h1, .h-band__stat { overflow-wrap: break-word; }

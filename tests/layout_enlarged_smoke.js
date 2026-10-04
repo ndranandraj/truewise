@@ -12,7 +12,7 @@ let failures = 0;
 const check = (ok, msg) => { console.log(`${ok ? "ok  " : "FAIL"}  ${msg}`); if (!ok) failures += 1; };
 
 // A fake page: `goto` behaviour and which selectors render are set per case; evaluate() records calls.
-function fakePage({ gotoThrows = false, status = 200, noResponse = false, renders = [".site-header"] } = {}) {
+function fakePage({ gotoThrows = false, status = 200, noResponse = false, renders = [".site-header"], bodyPx = 30 } = {}) {
   const calls = [];
   return {
     calls,
@@ -25,7 +25,11 @@ function fakePage({ gotoThrows = false, status = 200, noResponse = false, render
       calls.push(`wait ${sel}`);
       if (!renders.includes(sel)) throw new Error(`page.waitForSelector: Timeout 10000ms exceeded waiting for ${sel}`);
     },
-    async evaluate(fn) { calls.push(`evaluate ${fn.name}`); return fn.name === "probe" ? { findings: [{ kind: "x", blocking: true, detail: "probe ran" }] } : undefined; },
+    async evaluate(fn) {
+      calls.push(`evaluate ${fn.name}`);
+      if (fn.name === "bodyFontPx") return bodyPx;
+      return fn.name === "probe" ? { findings: [{ kind: "x", blocking: true, detail: "probe ran" }] } : undefined;
+    },
     async waitForTimeout() {},
   };
 }
@@ -36,6 +40,7 @@ const blocking = (f, kind) => f.length === 1 && f[0].blocking === true && f[0].k
 
 async function main() {
   check(ENLARGED_WIDTHS.some((w) => w.width === 769), "the enlarged pass covers 769px, where the Careers degree table overflowed");
+  check(ENLARGED_WIDTHS.some((w) => w.width === 320), "the enlarged pass covers 320px, where the Methodology heading overflowed");
 
   let p = fakePage({ gotoThrows: true });
   let f = await enlargedPass(p, "http://x/careers/", opts());
@@ -60,6 +65,14 @@ async function main() {
   p = fakePage({ renders: [".site-header", ".cred-table"] });
   f = await enlargedPass(p, "http://x/careers/?field=1107&cred=5", opts({ ready: [".cred-table"] }));
   check(f.length === 1 && f[0].detail === "probe ran" && p.calls.indexOf("evaluate doubleText") > p.calls.indexOf("wait .cred-table"), "when the page is ready, text is doubled after it renders and the probes' findings are returned");
+
+  p = fakePage({ bodyPx: 15 });
+  f = await enlargedPass(p, "http://x/", opts());
+  check(blocking(f, "enlarged-not-applied") && /15px/.test(f[0].detail) && !p.calls.includes("evaluate probe"), "text that was not enlarged (body still 15px) is a blocking finding, and nothing is measured");
+
+  p = fakePage({ bodyPx: NaN });
+  f = await enlargedPass(p, "http://x/", opts());
+  check(blocking(f, "enlarged-not-applied"), "an unreadable body text size is a blocking finding");
 
   // headerProbe on a page with no header: a blocking finding, not an empty (clean) result.
   const dom = new JSDOM("<!doctype html><body><main><h1>No header here</h1></main></body>", { runScripts: "outside-only" });

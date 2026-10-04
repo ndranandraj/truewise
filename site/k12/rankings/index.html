@@ -51,6 +51,15 @@
        a negative series fill, which the forest palette names. */
     .bars li.hi .fill { background: var(--series-neg); }
     .bars .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: .92rem; }
+    /* Enlarged text: the name column's 8em minimum alone was 240px at 200% text, so on a 320px phone a
+       row was wider than the screen and "71%" ran 24px past it. The list is a container, and below 12em
+       of its own text (enlarged text only: about 19em at normal size on a 320px phone) the name takes
+       its own line and the bar and value share the line below, the value as wide as it needs. */
+    .bars { container: k12-bars / inline-size; }
+    @container k12-bars (max-width: 12em) {
+      .bars li { grid-template-columns: minmax(0, 1fr) auto; row-gap: 4px; }
+      .bars .st { grid-column: 1 / -1; }
+    }
     .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; max-width: 760px; color: var(--ink-soft); font-size: .9rem; }
   </style>
 </head>
