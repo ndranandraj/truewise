@@ -80,3 +80,28 @@ aside.rail .rail__h2 { margin-top: var(--sp-group); }
    than a 320px column. A word breaks only when it cannot fit on a line by itself, which never happens
    at normal size. */
 .prof h1 { overflow-wrap: break-word; }
+
+/* The program table (October 2026): the site's shared table treatment (pg.css), set out for this
+   table's eight columns. Desktop only (from 769px); the phone cards are unchanged. No stripes:
+   unassessed rows already carry the sand tint, and it means "no verdict". */
+@media (min-width: 769px) {
+  .prof .tw-table .tw-td { padding-top: 14px; padding-bottom: 14px; border-bottom-color: var(--line); }
+  .prof .tw-table tbody tr:last-child .tw-td { border-bottom: 0; }
+  .prof .tw-table thead .tw-th { padding-top: 12px; padding-bottom: 12px; border-bottom: 2px solid var(--ink-faint); color: var(--text); }
+  /* Column groups: the program, its earnings, its debt, and the graduate count. */
+  .prof .tw-table tr > :nth-child(3),
+  .prof .tw-table tr > :nth-child(6),
+  .prof .tw-table tr > :nth-child(8) { border-left: 1px solid var(--line-soft); }
+  /* Following a row: a highlight on hover and keyboard focus, never on unassessed rows, whose tint
+     must not change under the pointer. */
+  .prof .tw-table tbody tr:not(.tw-tr--insuf):hover > .tw-td,
+  .prof .tw-table tbody tr:not(.tw-tr--insuf):focus-within > .tw-td { background: var(--brand-50); }
+  .prof .tw-table .tw-td--program { font-size: var(--t-ui); }
+  /* The verdict as a tinted label in the existing pass and fail colours, with a thin border in its
+     own colour so it stays visible on the highlight. The words do not change (R1). */
+  .prof .tw-table .tw-verdict--pass,
+  .prof .tw-table .tw-verdict--fail { display: inline-block; padding: 2px 10px; border-radius: var(--r-pill); line-height: 1.5; }
+  .prof .tw-table .tw-verdict--pass { background: var(--good-bg); border: 1px solid color-mix(in srgb, var(--good) 30%, transparent); }
+  .prof .tw-table .tw-verdict--fail { background: var(--bad-bg); border: 1px solid color-mix(in srgb, var(--bad) 30%, transparent); }
+  .prof .tw-table .tw-td--num { font-variant-numeric: tabular-nums lining-nums; }
+}

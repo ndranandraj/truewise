@@ -609,6 +609,12 @@ function headerProbe() {
  *  fallback), so only the sign is judged there. */
 function tableEnlargedProbe() {
   const findings = [];
+  /* Careers detail tables: their sections do not scroll, so a table wider than its section widens
+   * the page (the degree table at 769px with doubled text, October 2026 review). */
+  for (const t of document.querySelectorAll(".cred-table, .occ")) {
+    const sec = t.parentElement.getBoundingClientRect(), r = t.getBoundingClientRect();
+    if (r.width && r.right > sec.right + 1) findings.push({ kind: "table-enlarged-section-overflow", blocking: true, detail: `At doubled text the ${t.className} table runs ${Math.round(r.right - sec.right)}px past its section.` });
+  }
   const sc = document.querySelector(".prof #programs .tw-table__scroll");
   if (!sc) return { findings };
   const t = sc.querySelector(".tw-table");

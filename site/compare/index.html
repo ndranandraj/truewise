@@ -94,6 +94,19 @@
     html.cmp-pending #cmp { min-height: 78vh; }
     .caveats { margin: 24px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; max-width: 780px; color: var(--ink-soft); font-size: .9rem; line-height: 1.55; }
     .caveats a { color: var(--brand); }
+    /* Data tables (October 2026): the site's shared table treatment (pg.css). Metrics run down the
+       side and schools across: the metric labels form a column of their own and each school is set
+       off from the next, so the eye can read one school down or one metric across. Only where it is
+       still a table; the phone layout is unchanged. */
+    @media (min-width: 769px) {
+      table.cmp th, table.cmp td { padding: 12px 14px; }
+      table.cmp thead th { background: var(--bg-alt); color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+      table.cmp tbody th { background: var(--surface); border-right: 1px solid var(--line); }
+      table.cmp td + td, table.cmp thead th + th { border-left: 1px solid var(--line-soft); }
+      table.cmp tbody tr:last-child > * { border-bottom: 0; }
+      table.cmp tbody tr:hover > *, table.cmp tbody tr:focus-within > * { background: var(--brand-50); }
+      table.cmp td { font-variant-numeric: tabular-nums lining-nums; }
+    }
   </style>
 </head>
 <body>
