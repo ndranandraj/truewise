@@ -185,6 +185,15 @@
     .caveats { margin: 28px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; max-width: 760px; color: var(--ink-soft); font-size: .92rem; }
     .caveats a { color: var(--brand); }
     .empty { color: var(--ink-soft); padding: 20px 0; }
+    /* Data tables (October 2026): the site's shared table treatment (pg.css), for the fallback
+       program table. It never stacks; it scrolls inside its focusable .table-wrap at every width.
+       Its highlighted row (tr.hl, the program a link pointed to) keeps --brand-50 and gains a leading
+       bar, so hover and keyboard focus elsewhere use a neutral tint. */
+    .prog-table th, .prog-table td { padding-top: 12px; padding-bottom: 12px; }
+    .prog-table thead th { color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+    .prog-table tbody tr:not(.hl):hover > *, .prog-table tbody tr:not(.hl):focus-within > * { background: var(--bg-alt); }
+    .prog-table tbody tr.hl > :first-child { box-shadow: inset 3px 0 0 var(--brand); }
+    .prog-table td.num { font-variant-numeric: tabular-nums lining-nums; }
   </style>
   <noscript><style>#boot-status { display: none; }</style></noscript>
 </head>

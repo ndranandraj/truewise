@@ -118,6 +118,55 @@
     .caveats a { color: var(--brand); }
     .empty { color: var(--ink-soft); padding: 20px 0; }
     @media (max-width: 560px) { .cr-table thead th { top: 0; } }
+    /* Data tables (October 2026): the site's shared table treatment (pg.css), for this page's three
+       tables. Only where each is still a table (phone cards are unchanged). */
+    @media (min-width: 769px) {
+      .cr-table th, .cr-table td { padding-top: 13px; padding-bottom: 13px; }
+      .cr-table thead th { color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+      .cr-table td.num, .cr-table th.num { font-variant-numeric: tabular-nums lining-nums; }
+      .cr-table tbody tr:focus-within { background: var(--brand-50); }
+      .cred-table, .occ { border: 1px solid var(--line); border-radius: var(--r-lg); border-collapse: separate; border-spacing: 0; overflow: hidden; }
+      .cred-table th, .cred-table td, .occ th, .occ td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+      .cred-table thead th, .occ thead th { background: var(--bg-alt); color: var(--text); font-weight: 600; border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+      .cred-table tbody tr:last-child > *, .occ tbody tr:last-child > * { border-bottom: 0; }
+      .occ tbody tr:hover > *, .occ tbody tr:focus-within > * { background: var(--brand-50); }
+      .cred-table .num, .occ .num { font-variant-numeric: tabular-nums lining-nums; }
+      /* The degree being viewed (tr.is-current, aria-current on its link, a visible label) keeps its
+         tint and a leading bar; hover and keyboard focus elsewhere use a neutral tint, so "this one"
+         and "under the pointer or focus" never look alike. */
+      .cred-table tbody tr:not(.is-current):hover > *,
+      .cred-table tbody tr:not(.is-current):focus-within > * { background: var(--bg-alt); }
+    }
+    .cred-table tbody tr.is-current > * { background: var(--brand-50); }
+    .cred-table tbody tr.is-current > :first-child { box-shadow: inset 3px 0 0 var(--brand); }
+    .cur-tag { display: inline-block; margin-left: var(--s2); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-deep); }
+    /* The detail tables at enlarged text: the degree table was 721px in a 689px section at 769px with
+       doubled text, and the section does not scroll, so the page grew. Below 44em of their own text
+       (36em for the four-column occupation table, which sits in a padded box) they use the phone card
+       layout. At normal size the narrowest desktop sections are about 46em and 43em. */
+    @media (min-width: 769px) {
+      .cr-detail-cq { container: cr-detail / inline-size; }
+      .cr-demand-cq { container: cr-demand / inline-size; }
+      @container cr-demand (max-width: 36em) {
+        .occ thead { display: none; }
+        .occ, .occ tbody, .occ tr, .occ td { display: block; width: 100%; border: 0; }
+        .occ tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
+        .occ td { border: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 6px 12px; text-align: right; }
+        .occ td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+        .occ td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
+        .occ td.rhead::before { content: none; }
+      }
+      @container cr-detail (max-width: 44em) {
+        .cred-table thead { display: none; }
+        .cred-table, .cred-table tbody, .cred-table tr, .cred-table td { display: block; width: 100%; border: 0; }
+        .cred-table tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
+        .cred-table td { border: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 6px 12px; text-align: right; }
+        .cred-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+        .cred-table td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
+        .cred-table td.rhead::before { content: none; }
+        .cred-table tbody tr.is-current { border-color: var(--brand); }
+      }
+    }
   </style>
 </head>
 <body>
@@ -522,7 +571,7 @@ window.addEventListener("resize", onResize);
       ? "OEWS " + d.vintage.oews + " wages and Employment Projections " + d.vintage.ep
       : "OEWS wages and Employment Projections";
     const demandHtml = d && d.occupations && d.occupations.length ? `
-      <div class="demand">
+      <div class="demand cr-demand-cq">
         <h3>Where it leads, and the outlook</h3>
         <p class="cr-count">${d.summary || "Occupations this field commonly leads to, with Bureau of Labor Statistics pay and 10-year outlook."}</p>
         <table class="occ"><thead><tr><th>Occupation</th><th class="num">Median pay</th><th class="num">Projected growth</th><th class="num">Annual openings</th></tr></thead>
@@ -544,11 +593,11 @@ window.addEventListener("resize", onResize);
       </div>
       <p class="cr-count">${basedOn(f)}</p>
       ${creds.length > 1 ? `
-        <section class="module">
+        <section class="module cr-detail-cq">
           <h2>By degree level</h2>
           <table class="cred-table"><thead><tr><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
-            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' style="background: var(--brand-50)"' : ""}>
-              <td class="rhead"><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink" style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a></td>
+            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' class="is-current"' : ""}>
+              <td class="rhead"><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink"${c.cred === f.cred ? ' aria-current="page"' : ""} style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a>${c.cred === f.cred ? ' <span class="cur-tag">Current degree</span>' : ""}</td>
               <td class="num" data-label="Median earnings">${money(c.med)}</td><td data-label="Typical range">${rangeTxt(c)}</td>
               <td class="num" data-label="Clear the bar">${c.pass_pct == null ? "not assessed" : c.pass_pct + "%"}</td><td class="num" data-label="Schools">${c.schools == null ? "not reported" : c.schools.toLocaleString()}</td></tr>`).join("")}</tbody></table>
         </section>` : ""}

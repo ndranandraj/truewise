@@ -101,7 +101,10 @@ const ROUTES = [
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
   /* A real major's detail view: a different layout from the listing, and the one that overflowed. */
+  /* enlargedReady: the enlarged-text pass waits for the degree and occupation tables and fails if they
+   * never render, so the 769px degree-table check cannot pass on a page without the table. */
   { label: "careers-detail", path: "/careers/?field=1107&cred=5", kind: "static",
+    enlargedReady: [".cred-table", ".occ"],
     prepare: async (page) => { await page.waitForSelector(".fld-head h1", { timeout: 10000 }); } },
   /* Added for the design pass: every page family whose shell, type or tables Phase 2 changes needs
    * a before and an after, and none of these were measured until now. */
@@ -610,6 +613,12 @@ function headerProbe() {
  *  fallback), so only the sign is judged there. */
 function tableEnlargedProbe() {
   const findings = [];
+  /* Careers detail tables: their sections do not scroll, so a table wider than its section widens
+   * the page (the degree table at 769px with doubled text, October 2026 review). */
+  for (const t of document.querySelectorAll(".cred-table, .occ")) {
+    const sec = t.parentElement.getBoundingClientRect(), r = t.getBoundingClientRect();
+    if (r.width && r.right > sec.right + 1) findings.push({ kind: "table-enlarged-section-overflow", blocking: true, detail: `At doubled text the ${t.className} table runs ${Math.round(r.right - sec.right)}px past its section.` });
+  }
   const sc = document.querySelector(".prof #programs .tw-table__scroll");
   if (!sc) return { findings };
   const t = sc.querySelector(".tw-table");

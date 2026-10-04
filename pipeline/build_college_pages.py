@@ -259,6 +259,23 @@ ul.schoollist .meta { color: var(--ink-soft); font-size: var(--t-ui); }
 /* Majors range chart: a phone-width drawing below 560px so its text is not scaled to 6px. */
 .ladder--narrow { display: none; }
 @media (max-width: 560px) { .ladder--wide { display: none; } .ladder--narrow { display: block; } }
+
+/* Data tables (October 2026): one look for every table, so a reader learns it once. A frame, a tinted
+   header band with a firmer base, rows with air and a clear rule between them, a highlight on the row
+   under the pointer or holding keyboard focus, and figures on tabular, lining numerals. No stripes:
+   the profile's sand tint means "no verdict", and a tinted row should have one meaning. From 521px,
+   where the table is still a table (below it, rows stack into labelled cards). */
+@media (min-width: 521px) {
+  .tscroll { border: 1px solid var(--line); border-radius: var(--r-lg); }
+  table.t th, table.t td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
+  table.t thead th { background: var(--bg-alt); color: var(--text); font-weight: 600; border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+  table.t tbody tr:last-child > * { border-bottom: 0; }
+  table.t tbody tr:hover > *, table.t tbody tr:focus-within > * { background: var(--brand-50); }
+  table.t td.num, table.t th.num { font-variant-numeric: tabular-nums lining-nums; }
+  /* The cell that names the row reads as its heading: the first cell, or the one after a rank. */
+  table.t tbody tr > :first-child:not(.num),
+  table.t tbody tr > .num:first-child + * { font-weight: 600; color: var(--ink); }
+}
 """
 
 _PG_CSS_WRITTEN = False
