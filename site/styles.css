@@ -265,6 +265,10 @@ a:hover { color: var(--brand-deep); }
    break anywhere; a link breaks only when it cannot fit on a line by itself. */
 :where(.art, .doc, .pg) code { overflow-wrap: anywhere; }
 :where(.art, .doc, .pg) a { overflow-wrap: break-word; }
+/* Page headings: one long word ("Methodology" at 60px) was wider than a 320px phone at enlarged text and
+   widened the page by about 62px. A word too long for the line is hyphenated (the pages set lang="en"),
+   and breaks only if hyphenation finds no point. At normal size every heading fits, so nothing changes. */
+:where(.art, .doc, .pg) h1 { overflow-wrap: break-word; hyphens: auto; }
 #main:focus { outline: none; }
 /* A hidden back-to-top button must not stay in the tab order (audit V9). */
 #to-top:not(.show) { visibility: hidden; }

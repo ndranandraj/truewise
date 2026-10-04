@@ -83,7 +83,7 @@ jobs:
           node tests/search_gold.js
       - name: Browser layout and interaction check (blocks deploy)
         run: |
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium firefox
           node tests/layout_check.js
       - name: Keep the layout report and screenshots
         if: always()

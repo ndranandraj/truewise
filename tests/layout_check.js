@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 
-const { probe, focusState, doubleText, headerProbe, tableEnlargedProbe, pageEnlargedProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
+const { probe, focusState, headerProbe, tableEnlargedProbe, pageEnlargedProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
 const perf = require("./perf_probe.js");
 const { makeShot } = require("./layout_shot.js");
 const { ENLARGED_WIDTHS, enlargedPass } = require("./layout_enlarged.js");
@@ -49,14 +49,14 @@ const valueOf = (n) => { const i = args.indexOf(n); return i === -1 ? null : arg
  * Preconditions, each with its own message. "Something went wrong" costs more time than it saves.
  * ------------------------------------------------------------------------------------------- */
 
-let chromium;
+let chromium, firefox;
 try {
-  ({ chromium } = require("playwright"));
+  ({ chromium, firefox } = require("playwright"));
 } catch (_) {
   console.error(
     "playwright is not installed.\n\n" +
     "  npm install                      (installs from package.json)\n" +
-    "  npx playwright install chromium  (downloads the browser, about 170 MB)\n",
+    "  npx playwright install chromium firefox  (downloads the browsers)\n",
   );
   process.exit(2);
 }
@@ -623,16 +623,22 @@ async function main() {
     }
   }
 
-  let browser;
+  let browser, enlargedBrowser;
+  // The enlarged-text pass zooms in the browser itself (see below), so its "doubling" step is empty.
+  const nativeZoom = function nativeZoom() {};
   try {
     browser = await chromium.launch({ headless: !flag("--open") });
+    enlargedBrowser = await firefox.launch({
+      headless: !flag("--open"),
+      firefoxUserPrefs: { "ui.textScaleFactor": 200, "browser.display.os-zoom-behavior": 2 },
+    });
   } catch (e) {
     /* The npm package installs without the browser binary, so this is the normal first-run state
      * rather than a broken machine. Say which command fixes it instead of printing a stack. */
     if (server) server.close();
     console.error(
-      "Chromium could not start, so NOTHING was checked. This is not a pass.\n\n" +
-      "  npx playwright install chromium\n\n" +
+      "Chromium or Firefox could not start, so NOTHING was checked. This is not a pass.\n\n" +
+      "  npx playwright install chromium firefox\n\n" +
       `Underlying error: ${String(e).split("\n")[0]}`,
     );
     process.exit(2);
@@ -736,16 +742,19 @@ async function main() {
         }
         await ctx.close();
       }
-      /* Enlarged text: each route loaded fresh at each enlarged width, text doubled, judged by the
+      /* Enlarged text: each route loaded fresh at each enlarged width at 200% text, judged by the
        * probes (blocking). A load that fails, returns an error status, or never renders the header or
        * the route's own ready selectors is itself a blocking finding (tests/layout_enlarged.js). */
       entry.enlarged = {};
       for (const ew of ENLARGED_WIDTHS) {
-        const ectx = await browser.newContext({ viewport: { width: ew.width, height: ew.height }, isMobile: ew.mobile, hasTouch: ew.mobile, deviceScaleFactor: 1 });
+        // Firefox with native text-only zoom at 200%: layout rules (container queries, responsive
+        // sizes) apply before the zoom, as for a reader. Chromium has no text-only zoom, and pinning
+        // every element's size (doubleText) blocks exactly those rules. Firefox has no isMobile.
+        const ectx = await enlargedBrowser.newContext({ viewport: { width: ew.width, height: ew.height }, deviceScaleFactor: 1 });
         const ehost = new URL(base).host; // only the site under test is fetched, as above
         await ectx.route("**/*", (r) => new URL(r.request().url()).host === ehost ? r.continue() : r.abort());
         const epage = await ectx.newPage();
-        const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe, tableEnlargedProbe, pageEnlargedProbe], ready: route.enlargedReady || [], doubleText });
+        const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe, tableEnlargedProbe, pageEnlargedProbe], ready: route.enlargedReady || [], doubleText: nativeZoom });
         // Kept apart from entry.widths: the report lists them under their own heading and column, so
         // a finding at a width outside WIDTHS (769, 1280) is never hidden from the reader.
         entry.enlarged[ew.label] = found;
@@ -779,6 +788,7 @@ async function main() {
     }
   } finally {
     await browser.close();
+    await enlargedBrowser.close();
     if (server) server.close();
   }
 

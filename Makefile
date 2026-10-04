@@ -159,7 +159,7 @@ test-components:
 #
 # First run on a machine:
 #   npm install
-#   npx playwright install chromium
+#   npx playwright install chromium firefox
 #
 # It checks what is in site/, so build first. Against production instead: make layout-check-live.
 layout-check:

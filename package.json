@@ -8,7 +8,7 @@
     "test:components": "node tests/components_smoke.js && node tests/table_smoke.js && node tests/ui_smoke.js && node tests/integration_smoke.js && node tests/profile_smoke.js",
     "test:search-gold": "node tests/search_gold.js",
     "layout-check": "node tests/layout_check.js",
-    "postinstall-note": "echo 'For the layout check, also run: npx playwright install chromium'"
+    "postinstall-note": "echo 'For the layout check, also run: npx playwright install chromium firefox'"
   },
   "devDependencies": {
     "axe-core": "^4.13.0",

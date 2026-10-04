@@ -6,9 +6,11 @@
 // earlier version reloaded with errors swallowed and no status check, and headerProbe() returned no
 // findings when the header was absent, so a failed load could report clean (October 2026 review).
 
-/** Widths for the enlarged-text pass. 769px is the narrowest desktop table layout, where the Careers
- *  degree table overflowed its section with doubled text; 390 and 1280 are the phone and laptop. */
+/** Widths for the enlarged-text pass. 320px is the narrowest phone (the FVT/GE boxes, the Careers
+ *  figures and the Methodology heading overflowed there); 769px is the narrowest desktop table layout,
+ *  where the Careers degree table overflowed its section; 390 and 1280 are the phone and laptop. */
 const ENLARGED_WIDTHS = [
+  { label: "320", width: 320, height: 720, mobile: true },
   { label: "390", width: 390, height: 844, mobile: true },
   { label: "769", width: 769, height: 900, mobile: false },
   { label: "1280", width: 1280, height: 900, mobile: false },
@@ -16,12 +18,18 @@ const ENLARGED_WIDTHS = [
 
 const first = (e) => String(e).split("\n")[0];
 
+/** The page's body text size in px, to confirm the text really is enlarged before measuring. */
+function bodyFontPx() {
+  return parseFloat(getComputedStyle(document.body).fontSize);
+}
+
 /**
  * Load `url` in `page`, require the header (and any route-specific `ready` selectors) to render,
- * double the text, then run each probe in the page. Returns the findings; every failure to reach
- * the state being measured is itself a blocking finding.
+ * enlarge the text (`doubleText`; a no-op when the browser itself zooms text, as Firefox does with
+ * native text-only zoom), confirm the body text really is at least `minBodyPx`, then run each probe.
+ * Returns the findings; every failure to reach the state being measured is a blocking finding.
  */
-async function enlargedPass(page, url, { probes, ready = [], doubleText, timeout = 30000, readyTimeout = 10000, settle = 300 }) {
+async function enlargedPass(page, url, { probes, ready = [], doubleText, timeout = 30000, readyTimeout = 10000, settle = 300, minBodyPx = 28 }) {
   let resp;
   try {
     resp = await page.goto(url, { waitUntil: "load", timeout });
@@ -40,6 +48,12 @@ async function enlargedPass(page, url, { probes, ready = [], doubleText, timeout
   }
   await page.evaluate(doubleText);
   await page.waitForTimeout(settle);
+  // Body text is 15px at normal size: anything under minBodyPx means the zoom did not apply (for
+  // example a browser preference that no longer takes effect), and the pass would measure normal size.
+  const body = await page.evaluate(bodyFontPx);
+  if (!(body >= minBodyPx)) {
+    return [{ kind: "enlarged-not-applied", blocking: true, detail: `${url}: body text is ${body}px, under ${minBodyPx}px, so the text was not enlarged and nothing was measured.` }];
+  }
   const findings = [];
   for (const probe of probes) {
     const got = await page.evaluate(probe);
