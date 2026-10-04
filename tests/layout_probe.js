@@ -584,7 +584,8 @@ function doubleText() {
  *  through a visible menu button). Header only: other content at enlarged text is not judged here. */
 function headerProbe() {
   const h = document.querySelector(".site-header");
-  if (!h) return { findings: [] };
+  // No header is a failure to measure, never a clean result.
+  if (!h) return { findings: [{ kind: "header-enlarged-missing", blocking: true, detail: "No .site-header on the page, so the header was not checked at doubled text." }] };
   const findings = [];
   const vw = document.documentElement.clientWidth;
   const vis = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };

@@ -34,6 +34,7 @@ const http = require("http");
 const { probe, focusState, doubleText, headerProbe, tableEnlargedProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
 const perf = require("./perf_probe.js");
 const { makeShot } = require("./layout_shot.js");
+const { ENLARGED_WIDTHS, enlargedPass } = require("./layout_enlarged.js");
 
 const BASELINE = path.resolve(__dirname, "perf_baseline.json");
 
@@ -721,19 +722,26 @@ async function main() {
           const before = r.findings.length;
           await shot(page, `${route.label}-${w.label}-after-interaction.png`, r.findings);
           result.advisory += r.findings.length - before;
-          /* The header at enlarged text: double every text size, let the header script re-check,
-           * and judge the header alone (blocking). Reloaded first so interactions above do not leak. */
-          await page.goto(base + route.path, { waitUntil: "load", timeout: 30000 }).catch(() => {});
-          await page.evaluate(doubleText);
-          await page.waitForTimeout(300);
-          const hp = await page.evaluate(headerProbe);
-          hp.findings.push(...(await page.evaluate(tableEnlargedProbe)).findings);
-          entry.headerEnlarged = entry.headerEnlarged || {};
-          entry.headerEnlarged[w.label] = hp;
-          r.findings.push(...hp.findings);
-          result.blocking += hp.findings.length;
         }
         await ctx.close();
+      }
+      /* Enlarged text: each route loaded fresh at each enlarged width, text doubled, judged by the
+       * probes (blocking). A load that fails, returns an error status, or never renders the header or
+       * the route's own ready selectors is itself a blocking finding (tests/layout_enlarged.js). */
+      entry.enlarged = {};
+      for (const ew of ENLARGED_WIDTHS) {
+        const ectx = await browser.newContext({ viewport: { width: ew.width, height: ew.height }, isMobile: ew.mobile, hasTouch: ew.mobile, deviceScaleFactor: 1 });
+        const ehost = new URL(base).host; // only the site under test is fetched, as above
+        await ectx.route("**/*", (r) => new URL(r.request().url()).host === ehost ? r.continue() : r.abort());
+        const epage = await ectx.newPage();
+        const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe, tableEnlargedProbe], ready: route.enlargedReady || [], doubleText });
+        entry.enlarged[ew.label] = found;
+        if (found.length) {
+          entry.widths[ew.label] = entry.widths[ew.label] || { findings: [] };
+          (entry.widths[ew.label].findings = entry.widths[ew.label].findings || []).push(...found);
+        }
+        result.blocking += found.filter((f) => f.blocking).length;
+        await ectx.close();
       }
       if (flag("--perf")) {
         entry.perf = await measureRoute(browser, base, route, (m) => console.log(m));
