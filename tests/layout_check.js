@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 
-const { probe, focusState, doubleText, headerProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
+const { probe, focusState, doubleText, headerProbe, tableEnlargedProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
 const perf = require("./perf_probe.js");
 const { makeShot } = require("./layout_shot.js");
 const { ENLARGED_WIDTHS, enlargedPass } = require("./layout_enlarged.js");
@@ -745,7 +745,7 @@ async function main() {
         const ehost = new URL(base).host; // only the site under test is fetched, as above
         await ectx.route("**/*", (r) => new URL(r.request().url()).host === ehost ? r.continue() : r.abort());
         const epage = await ectx.newPage();
-        const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe], ready: route.enlargedReady || [], doubleText });
+        const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe, tableEnlargedProbe], ready: route.enlargedReady || [], doubleText });
         // Kept apart from entry.widths: the report lists them under their own heading and column, so
         // a finding at a width outside WIDTHS (769, 1280) is never hidden from the reader.
         entry.enlarged[ew.label] = found;

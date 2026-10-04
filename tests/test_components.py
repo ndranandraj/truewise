@@ -228,3 +228,27 @@ def test_stacked_premium_can_wrap_its_bar_above_the_figure():
     # The figure itself must not be allowed to break inside the number.
     val = re.search(r"\.tw-prem__val \{([^}]*)\}", css)
     assert val and "overflow-wrap" not in val.group(1) and "word-break" not in val.group(1)
+
+
+def test_program_table_rules_for_enlarged_text_are_scoped_to_text_size():
+    """At 200% text the stacked cards cut values off and the premium split from its sign. The fixes
+    respond to text size, not screen width, so normal-size layouts are unchanged (October 2026)."""
+    import re
+
+    css = re.sub(r"/\*.*?\*/", "", (COMPONENTS / "components.css").read_text(), flags=re.S)
+    assert ".tw-table__scroll { container: tw-table / inline-size; }" in css
+    assert "@container tw-table (max-width: 40em) { .tw-prem__val { white-space: nowrap; } }" in css
+    card = css.split("@container tw-card (max-width: 12em)", 1)
+    assert len(card) == 2, "the card query is missing"
+    body = card[1].split("}\n}", 1)[0]
+    assert (
+        "flex-wrap: wrap" in body
+        and "flex: 0 0 100%" in body
+        and ".tw-verdict { white-space: normal;" in body
+    )
+    # The card container and the sort select limit exist only in the stacked layout.
+    last_stacked = css.rsplit("@media (max-width: 768px) {", 1)[1].split("\n}\n", 1)[0]
+    assert ".tw-tr { container: tw-card / inline-size; }" in last_stacked
+    assert ".tw-sort__select { max-width: 100%; min-width: 0; }" in last_stacked
+    profile = (COMPONENTS.parent / "site" / "profile.css").read_text()
+    assert ".prof h1 { overflow-wrap: break-word; }" in profile

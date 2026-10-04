@@ -605,6 +605,29 @@ function headerProbe() {
   return { findings, state: [...h.classList].filter((c) => c.startsWith("hdr-")).join(" ") };
 }
 
+/** The program table at enlarged text (October 2026): stacked cards fit (nothing runs past a card)
+ *  and no premium is split from its sign. Profiles only; the desktop table may scroll (the agreed
+ *  fallback), so only the sign is judged there. */
+function tableEnlargedProbe() {
+  const findings = [];
+  const sc = document.querySelector(".prof #programs .tw-table__scroll");
+  if (!sc) return { findings };
+  const t = sc.querySelector(".tw-table");
+  const stacked = t && getComputedStyle(t.querySelector("thead")).display === "none";
+  if (stacked) {
+    const over = sc.scrollWidth - sc.clientWidth;
+    if (over > 1) findings.push({ kind: "table-enlarged-card-overflow", blocking: true, detail: `At doubled text the program cards run ${over}px past their column.` });
+    for (const tr of [...t.querySelectorAll("tbody tr")].slice(0, 30)) {
+      const edge = tr.getBoundingClientRect().right;
+      const past = [...tr.querySelectorAll("td, th, td *, th *")].find((e) => { const b = e.getBoundingClientRect(); return b.width && b.right > edge + 1; });
+      if (past) { findings.push({ kind: "table-enlarged-value-cut", blocking: true, detail: `At doubled text "${(past.textContent || "").trim().slice(0, 24)}" runs past its card.` }); break; }
+    }
+  }
+  const split = [...document.querySelectorAll(".tw-prem__val")].slice(0, 60).filter((v) => v.getClientRects().length > 1).length;
+  if (split) findings.push({ kind: "table-enlarged-sign-split", blocking: true, detail: `At doubled text ${split} premium figure(s) break between the sign and the number.` });
+  return { findings };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { probe, focusState, liveText, doubleText, headerProbe, WIDTHS, ROUTES };
+  module.exports = { probe, focusState, liveText, doubleText, headerProbe, tableEnlargedProbe, WIDTHS, ROUTES };
 }

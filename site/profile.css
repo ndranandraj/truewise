@@ -75,3 +75,8 @@ aside.rail .rail__h2 { margin-top: var(--sp-group); }
 .src-links { font-size: var(--t-fine); }
 
 .sum .kf__of { white-space: normal; }
+
+/* At enlarged text one long word of a college name ("Pennsylvania", "Birmingham-Southern") is wider
+   than a 320px column. A word breaks only when it cannot fit on a line by itself, which never happens
+   at normal size. */
+.prof h1 { overflow-wrap: break-word; }
