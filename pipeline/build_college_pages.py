@@ -275,6 +275,18 @@ def ensure_pg_css() -> None:
     _PG_CSS_WRITTEN = True
 
 
+# The header's inline script (pipeline/header_script.js), comments and indentation stripped. Inserted
+# into head()'s f-string as a value, so its braces are not doubled.
+def _header_js() -> str:
+    src = (ROOT / "pipeline" / "header_script.js").read_text()
+    src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    lines = [ln.strip() for ln in src.splitlines()]
+    return "\n".join(ln for ln in lines if ln and not ln.startswith("//"))
+
+
+HEADER_JS = _header_js()
+
+
 def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
     ensure_pg_css()
     og = f"{BASE}{og_image}" if og_image.startswith("/") else og_image
@@ -328,7 +340,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
         </details>
       </nav>
     </div>
-    <script>document.addEventListener("keydown",function(e){{if(e.key!=="Escape")return;var d=document.querySelector(".nav-toggle[open]");if(d){{d.open=false;d.querySelector("summary").focus();}}}});document.addEventListener("click",function(e){{var d=document.querySelector(".nav-toggle[open]");if(d&&!d.contains(e.target))d.open=false;}});document.addEventListener("DOMContentLoaded",function(){{document.querySelectorAll("table.t").forEach(function(t){{var h=[].map.call(t.querySelectorAll("thead th"),function(x){{return x.textContent.trim();}});if(!h.length)return;t.querySelectorAll("tbody tr").forEach(function(r){{[].forEach.call(r.children,function(c,i){{if(h[i])c.setAttribute("data-label",h[i]);}});}});t.classList.add("stack");}});}});</script>
+    <script>{HEADER_JS}</script>
   </header>
   <span id="main" tabindex="-1"></span>
 """

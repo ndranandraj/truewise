@@ -54,11 +54,18 @@ def visible_text(markup: str) -> str:
     return re.sub(r"\s+", " ", H.unescape(re.sub(r"<[^>]+>", " ", markup)))
 
 
+# Local-only folders: prototypes and measurement fixtures, gitignored and never deployed
+# (site/.assetsignore; the deploy stops if site/_proto exists). Not part of the site being scanned.
+LOCAL_ONLY = ("_proto/", "_measure/")
+
+
 def scan(site=None) -> dict[str, list[tuple[str, str]]]:
     site = site or SITE
     hits: dict[str, list[tuple[str, str]]] = collections.defaultdict(list)
     for path in sorted(site.rglob("*.html")):
         rel = str(path.relative_to(site))
+        if rel.startswith(LOCAL_ONLY):
+            continue
         text = visible_text(path.read_text(errors="replace"))
         for name, rx in PATTERNS.items():
             if (name, rel) in ALLOW:
@@ -76,7 +83,9 @@ def main() -> None:
     if not SITE.exists():
         print("no site/ to scan; build first")
         return
-    total = sum(1 for _ in SITE.rglob("*.html"))
+    total = sum(
+        1 for p in SITE.rglob("*.html") if not str(p.relative_to(SITE)).startswith(LOCAL_ONLY)
+    )
     hits = scan()
     print(f"honesty scan: {total:,} built pages")
     found = 0

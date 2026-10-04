@@ -569,6 +569,42 @@ function liveText() {
     .filter(Boolean);
 }
 
+/** Doubles every element's text size without compounding: each computed size is read first, then
+ *  set to twice that. Chromium has no text-only zoom, so this stands in for it; the header script
+ *  re-checks on the resize event this dispatches (and its ResizeObserver sees the logo grow). */
+function doubleText() {
+  const els = [document.documentElement, ...document.querySelectorAll("body, body *")];
+  const sizes = els.map((e) => parseFloat(getComputedStyle(e).fontSize));
+  els.forEach((e, i) => e.style.setProperty("font-size", sizes[i] * 2 + "px", "important"));
+  window.dispatchEvent(new Event("resize"));
+}
+
+/** The header at enlarged text (October 2026): no header item overlaps another or runs past the
+ *  screen, the logo and Find a college stay visible, and the links stay reachable (in the row, or
+ *  through a visible menu button). Header only: other content at enlarged text is not judged here. */
+function headerProbe() {
+  const h = document.querySelector(".site-header");
+  // No header is a failure to measure, never a clean result.
+  if (!h) return { findings: [{ kind: "header-enlarged-missing", blocking: true, detail: "No .site-header on the page, so the header was not checked at doubled text." }] };
+  const findings = [];
+  const vw = document.documentElement.clientWidth;
+  const vis = (e) => { if (!e) return false; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(e).visibility !== "hidden"; };
+  const name = (e) => (e.textContent || e.getAttribute("aria-label") || e.className || e.tagName).trim().slice(0, 24);
+  const items = [h.querySelector(".brand"), h.querySelector(".brand-tagline"), ...h.querySelectorAll("nav > a"), h.querySelector(".nav-toggle summary")].filter(vis);
+  for (const e of items) {
+    const r = e.getBoundingClientRect();
+    if (r.right > vw + 1 || r.left < -1) findings.push({ kind: "header-enlarged-offscreen", blocking: true, detail: `"${name(e)}" runs past the screen at doubled text (${Math.round(r.left)} to ${Math.round(r.right)} in ${vw}px).` });
+  }
+  for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) {
+    const a = items[i].getBoundingClientRect(), b = items[j].getBoundingClientRect();
+    if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) findings.push({ kind: "header-enlarged-overlap", blocking: true, detail: `"${name(items[i])}" overlaps "${name(items[j])}" at doubled text.` });
+  }
+  if (!vis(h.querySelector(".brand")) || !vis(h.querySelector(".nav-cta"))) findings.push({ kind: "header-enlarged-hidden", blocking: true, detail: "The logo or Find a college is hidden at doubled text." });
+  const rowLinks = [...h.querySelectorAll("nav > a:not(.nav-cta)")].filter(vis);
+  if (!rowLinks.length && !vis(h.querySelector(".nav-toggle summary"))) findings.push({ kind: "header-enlarged-unreachable", blocking: true, detail: "At doubled text the links are hidden and the menu button is not visible." });
+  return { findings, state: [...h.classList].filter((c) => c.startsWith("hdr-")).join(" ") };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { probe, focusState, liveText, WIDTHS, ROUTES };
+  module.exports = { probe, focusState, liveText, doubleText, headerProbe, WIDTHS, ROUTES };
 }

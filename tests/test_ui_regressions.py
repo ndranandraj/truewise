@@ -956,7 +956,9 @@ def test_k12_search_uses_the_provider_with_state_narrowing():
 
 def test_k12_subnav_clears_the_sticky_header():
     """Both the site header and the K-12 subnav are sticky. Without an offset the subnav slides
-    underneath the header while scrolling, so every K-12 page pins it below the 64px header."""
+    underneath the header while scrolling. It pins below the header's measured height (--hdr-h, set by
+    the header script): the fixed 65px it used before was wrong for a header that wraps at enlarged
+    text (October 2026)."""
     for rel in (
         "k12/index.html",
         "k12/advanced-courses/index.html",
@@ -964,7 +966,10 @@ def test_k12_subnav_clears_the_sticky_header():
         "k12/rankings/index.html",
     ):
         css = (SITE / rel).read_text()
-        assert ".subnav {" in css and "top: 65px" in css, f"{rel} subnav must clear the header"
+        assert ".subnav {" in css and "top: var(--hdr-h" in css, (
+            f"{rel} subnav must clear the header"
+        )
+        assert "top: 65px" not in css, f"{rel} subnav still assumes a fixed header height"
 
 
 def test_compare_states_coverage_and_labels_are_honest():
@@ -1713,7 +1718,8 @@ def test_every_hand_written_page_uses_the_one_shared_header(tmp_path, monkeypatc
     monkeypatch.setattr(bcp, "_PG_CSS_WRITTEN", False)
     reference = header(bcp.head("t", "d", "/x/"))
     assert reference and "nav-toggle" in reference, "the reference header lost its mobile menu"
-    generated = re.compile(r"^(college|colleges|majors|lists|og|embed)/")
+    # _proto and _measure are local, gitignored and never deployed (site/.assetsignore).
+    generated = re.compile(r"^(college|colleges|majors|lists|og|embed|_proto|_measure)/")
     odd = []
     for page in sorted(SITE.rglob("index.html")):
         rel = page.relative_to(SITE).as_posix()
@@ -2173,7 +2179,7 @@ def test_every_page_has_a_skip_link_and_an_escapable_menu(tmp_path, monkeypatch)
         "the skip link must be the first focusable element"
     )
     assert '<span id="main" tabindex="-1"></span>' in h
-    assert 'e.key!=="Escape"' in h and ".nav-toggle[open]" in h
+    assert re.search(r'e\.key\s*!==\s*"Escape"', h) and ".nav-toggle[open]" in h
     css = (SITE / "styles.css").read_text()
     assert ".skip-link:focus" in css and "#to-top:not(.show) { visibility: hidden; }" in css
 

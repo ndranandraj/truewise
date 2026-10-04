@@ -4,7 +4,6 @@
 
 .home section { padding: var(--s10) 0; }
 @media (max-width: 600px) { .home section { padding: var(--s8) 0; } }
-#data { scroll-margin-top: 90px; }
 .home h2 { font-family: var(--display); font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--s4); }
 
 /* Hero: search is the focal point (R3); the latest finding ranks visibly below it. */
