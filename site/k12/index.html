@@ -34,7 +34,26 @@
     .k-hero h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 16px; }
     .k-hero .lede { font-size: var(--t-sub); max-width: var(--measure); color: var(--ink-soft); margin: 0 0 8px; }
     .live-modules { margin: 30px 0; }
-    .k-note { color: var(--ink-soft); font-size: .92rem; max-width: 64ch; margin: 4px 0 40px; }
+    .k-note { color: var(--ink-soft); font-size: .92rem; max-width: 64ch; margin: 0; }
+    /* Site frame (October 2026). The source note follows the tiles in the page, so phones and screen
+       readers reach the tools first; from 1100px the grid lifts it beside the intro, its rule level
+       with the eyebrow. The three sections are tiles of equal height. */
+    .k-side { margin: 0 0 var(--s8); }
+    @media (min-width: 1100px) {
+      .k-hub { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); column-gap: var(--frame-gap); align-items: start; }
+      .k-hub > .k-hero { grid-column: 1; grid-row: 1; }
+      .k-hub > .k-side { grid-column: 2; grid-row: 1; margin: var(--s9) 0 0; }
+      .k-hub > .live-modules { grid-column: 1 / -1; grid-row: 2; }
+    }
+    .k-hub .live-modules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); border: 0; }
+    @media (max-width: 900px) { .k-hub .live-modules { grid-template-columns: minmax(0, 1fr); } }
+    .k-hub .live-modules > .live-card {
+      display: flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+      padding: var(--s6);
+    }
+    .k-hub .live-modules > .live-card .live-cta { margin-top: auto; padding-top: var(--s4); }
+    .k-hub .live-modules > .live-card:hover { border-color: var(--brand); }
   </style>
 </head>
 <body>
@@ -195,7 +214,7 @@ window.addEventListener("resize", onResize);
     </div>
   </nav>
 
-  <main class="wrap">
+  <main class="wrap k-hub">
     <section class="k-hero">
       <p class="eyebrow">Truewise for high school</p>
       <h1>What US public high schools offer, and where students miss out.</h1>
@@ -206,9 +225,8 @@ window.addEventListener("resize", onResize);
     <div class="live-modules">
       <a class="live-card" href="/k12/advanced-courses/">
         <h2>Courses &amp; staff</h2>
-        <p>Which advanced courses a high school offers, AP, calculus, physics, chemistry, computer
-          science, dual enrollment and more, how many students take them, and its counselors and
-          security staff. About 1 in 4 reported no AP students and no calculus or physics classes in the 2023-24
+        <p>The advanced courses a high school offers, from AP and calculus to dual enrollment, how many
+          students take them, and its counselors and security staff. About 1 in 4 reported no AP students and no calculus or physics classes in the 2023-24
           federal collection, a count that includes alternative, special-education and juvenile-justice schools.</p>
         <span class="live-cta">Look up a high school &rarr;</span>
       </a>
@@ -226,8 +244,11 @@ window.addEventListener("resize", onResize);
       </a>
     </div>
 
-    <p class="k-note">All figures come from public U.S. Department of Education sources and are labeled with
-      their collection year on each page. Suppressed or too-small counts are shown as unavailable, never guessed.</p>
+    <aside class="k-side side-panel" aria-labelledby="k-side-h">
+      <p class="side-panel__h" id="k-side-h">About the data</p>
+      <p class="k-note">All figures come from public U.S. Department of Education sources and are labeled with
+        their collection year on each page. Suppressed or too-small counts are shown as unavailable, never guessed.</p>
+    </aside>
   </main>
 
   <footer class="site-footer">

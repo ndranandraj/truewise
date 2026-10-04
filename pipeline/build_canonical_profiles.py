@@ -284,7 +284,7 @@ def canonical_page(
         '    <section id="programs" aria-labelledby="programs-h" class="progs">\n',
         '      <h2 id="programs-h">Program earnings</h2>\n',
         f"      <p>{intro}</p>\n",
-        pl.program_notes(meta, c),
+        _notes_aside(pl.program_notes(meta, c)),
         *table,
         "    </section>\n",
         pl.sources_section(meta, benchmark),
@@ -296,6 +296,19 @@ def canonical_page(
         "</body>\n</html>\n",
     ]
     return "".join(parts), tail_json
+
+
+def _notes_aside(notes: str) -> str:
+    """The notes that change how the program table reads, as one group: from 1100px they sit beside
+    the Programs heading (the site frame, October 2026), and below that they follow the intro as
+    before. Still visible, never in an expandable section (R2). No notes, no group."""
+    if not notes:
+        return ""
+    return (
+        '      <aside class="progs__aside" aria-label="Reading the table">\n'
+        f"{notes}"
+        "      </aside>\n"
+    )
 
 
 # The status of each program in the CSV. Kept apart deliberately: a program ED reports without

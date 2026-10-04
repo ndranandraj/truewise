@@ -247,13 +247,21 @@ def test_profile_css_gives_programs_the_full_column_and_keeps_prose_measures():
     # Prose keeps its measure, at zero specificity so a child's own narrower measure still wins.
     for sel in (":where(.prof__main) > *", ":where(.progs) > h2", ":where(.progs) > p"):
         assert sel in css, f"{sel} lost its 760px measure"
-    narrow = css.split("@media (max-width: 1199px)", 1)[1].split("}", 2)
+    narrow = css.split("@media (max-width: 1099px)", 1)[1].split("}", 2)
     assert "display: contents" in narrow[0] + narrow[1], (
-        "below 1200px the wrappers must not box the page, or the phone section nav stops sticking"
+        "below 1100px the wrappers must not box the page, or the phone section nav stops sticking"
     )
+    # The site frame (October 2026): from 1100px the upper block and Programs take the 8/4 split.
+    frame = css.split("@media (min-width: 1100px)", 1)[1].split("@media (min-width: 1200px)", 1)[0]
+    assert (
+        ".prof__top { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);" in frame
+    )
+    assert re.search(r"\.prof__top > \.rail \{[^}]*position: static", frame)
+    assert ".progs > .progs__aside { grid-column: 2;" in frame
+    assert ".progs > [data-tw-profile], .progs > .tw-source { grid-column: 1 / -1; }" in frame
+    # Prose inside the wider column keeps its measure.
+    assert ":where(.prof__main) > p, :where(.prof__main) > .crumbs { max-width: 760px; }" in frame
     wide = css.split("@media (min-width: 1200px)", 1)[1]
-    assert "grid-template-columns: minmax(0, 860px) 240px" in wide
-    assert re.search(r"\.prof__top > \.rail \{[^}]*position: static", wide)
     # The column floors exist only where there is room for them.
     assert ".tw-td--program { min-width: 14em; }" in wide
     assert ".tw-td--program { min-width" not in css.split("@media (min-width: 1200px)", 1)[0]

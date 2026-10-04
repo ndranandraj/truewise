@@ -233,31 +233,30 @@ window.addEventListener("resize", onResize);
   <main class="home">
     <section class="h-hero" aria-labelledby="h-title">
       <div class="wrap">
-        <p class="eyebrow">Public federal data &middot; No ads</p>
-        <h1 id="h-title">The honest number behind US&nbsp;education.</h1>
-        <p class="h-lede">See, program by program, whether a college&rsquo;s graduates out-earn a
-          high-school graduate, and what families actually pay.</p>
-        <form class="h-search" action="/value-check/" method="get" role="search">
-          <label for="h-q">Find a college</label>
-          <div class="h-search__row">
-            <input id="h-q" name="q" type="search" placeholder="e.g. Baylor" autocomplete="off" />
-            <button type="submit">Search</button>
-          </div>
-          <p class="h-hint">Or browse <a href="/colleges/">colleges by state</a>.</p>
-        </form>
-        <aside class="h-latest" aria-label="Latest finding">
-          <p class="h-latest__tag">New finding</p>
-          <p class="hero-latest"><a href="/findings/fvtge-reporting/">1,932 of 4,635 colleges had not
-            submitted at least one required FVT/GE file</a>, as recorded in ED&rsquo;s list compiled on
-            6 August 2026. &ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</p>
+        <div class="h-main">
+          <p class="eyebrow">Public federal data &middot; No ads</p>
+          <h1 id="h-title">The honest number behind US&nbsp;education.</h1>
+          <p class="h-lede">See, program by program, whether a college&rsquo;s graduates out-earn a
+            high-school graduate, and what families actually pay.</p>
+          <form class="h-search" action="/value-check/" method="get" role="search">
+            <label for="h-q">Find a college</label>
+            <div class="h-search__row">
+              <input id="h-q" name="q" type="search" placeholder="e.g. Baylor" autocomplete="off" />
+              <button type="submit">Search</button>
+            </div>
+            <p class="h-hint">Or browse <a href="/colleges/">colleges by state</a>.</p>
+          </form>
+          <aside class="h-latest" aria-label="Latest finding">
+            <p class="h-latest__tag">New finding</p>
+            <p class="hero-latest"><a href="/findings/fvtge-reporting/">1,932 of 4,635 colleges had not
+              submitted at least one required FVT/GE file</a>, as recorded in ED&rsquo;s list compiled on
+              6 August 2026. &ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</p>
+          </aside>
+        </div>
+        <aside class="h-side side-panel" aria-labelledby="ex-h">
+          <h2 id="ex-h" class="side-panel__h">What a result looks like</h2>
+          <figure class="ex" aria-labelledby="ex-title"><p class="ex__title" id="ex-title">Median earnings four years after graduating. The line on each bar is that state&rsquo;s typical high-school graduate.</p><ul class="ex__rows"><li class="ex__row"><p class="ex__name"><a href="/college/baylor-university/">Psychology, bachelor&#x27;s</a><span class="ex__school">Baylor University, Texas</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:81.4%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$65,090</b>, <span class="ex__gap">87% above</span> the Texas high-school line of $34,809.</p></li><li class="ex__row"><p class="ex__name"><a href="/college/ivy-tech-community-college/">Nursing, associate&#x27;s</a><span class="ex__school">Ivy Tech Community College, Indiana</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:95.3%"></span><span class="ex__mark" style="left:45.6%"></span></div><p class="ex__val"><b>$76,217</b>, <span class="ex__gap">109% above</span> the Indiana high-school line of $36,492.</p></li><li class="ex__row ex__row--below"><p class="ex__name"><a href="/college/douglas-j-aveda-institute/">Cosmetology, certificate</a><span class="ex__school">Douglas J Aveda Institute, Michigan</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:36.3%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$29,047</b>, <span class="ex__gap">17% below</span> the Michigan high-school line of $34,809.</p></li></ul><p class="ex__axis" aria-hidden="true"><span>$0</span><span>$80,000</span></p><p class="chart-src">College Scorecard, release 2026-06-10. Each bar starts at $0 on the same scale; states set different lines.</p></figure>
         </aside>
-      </div>
-    </section>
-
-    <section class="h-examples" aria-labelledby="ex-h">
-      <div class="wrap">
-        <h2 id="ex-h">What a result looks like</h2>
-        <figure class="ex" aria-labelledby="ex-title"><p class="ex__title" id="ex-title">Median earnings four years after graduating. The line on each bar is that state&rsquo;s typical high-school graduate.</p><ul class="ex__rows"><li class="ex__row"><p class="ex__name"><a href="/college/baylor-university/">Psychology, bachelor&#x27;s</a><span class="ex__school">Baylor University, Texas</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:81.4%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$65,090</b>, <span class="ex__gap">87% above</span> the Texas high-school line of $34,809.</p></li><li class="ex__row"><p class="ex__name"><a href="/college/ivy-tech-community-college/">Nursing, associate&#x27;s</a><span class="ex__school">Ivy Tech Community College, Indiana</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:95.3%"></span><span class="ex__mark" style="left:45.6%"></span></div><p class="ex__val"><b>$76,217</b>, <span class="ex__gap">109% above</span> the Indiana high-school line of $36,492.</p></li><li class="ex__row ex__row--below"><p class="ex__name"><a href="/college/douglas-j-aveda-institute/">Cosmetology, certificate</a><span class="ex__school">Douglas J Aveda Institute, Michigan</span></p><div class="ex__track" aria-hidden="true"><span class="ex__bar" style="width:36.3%"></span><span class="ex__mark" style="left:43.5%"></span></div><p class="ex__val"><b>$29,047</b>, <span class="ex__gap">17% below</span> the Michigan high-school line of $34,809.</p></li></ul><p class="ex__axis" aria-hidden="true"><span>$0</span><span>$80,000</span></p><p class="chart-src">College Scorecard, release 2026-06-10. Each bar starts at $0 on the same scale; states set different lines.</p></figure>
       </div>
     </section>
 

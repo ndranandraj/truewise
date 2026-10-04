@@ -193,6 +193,30 @@
         .cred-table tbody tr.is-current { border-color: var(--brand); }
       }
     }
+    /* Site frame (October 2026): the list becomes cards by its width in its own text, not by screen
+       width. The five figure columns need about 43em on one line (643px at normal size, with the
+       longest degree label) and Major needs about 15em to read, so below 60em (a 900px list at
+       normal size, about a 940px screen; any desktop width at 200% text) the list is cards instead of
+       a table that scrolls sideways (153px at 769px) or squeezes its headers onto two or three lines.
+       Above that, headers and figures stay on one line and Major takes the remaining width. Both the
+       script's list (#list) and the no-JavaScript table (#boot-fallback) are containers. The rules
+       repeat the max-width: 768px block above, which still applies below 769px, unchanged, and come
+       after the desktop table treatment so its cell padding does not reach the cards. */
+    #list, #boot-fallback { container: cr-list / inline-size; }
+    @media (min-width: 769px) {
+      @container cr-list (max-width: 60em) {
+        .table-wrap { overflow-x: visible; border: 0; }
+        .cr-table thead { display: none; }
+        .cr-table, .cr-table tbody, .cr-table tr, .cr-table td, .cr-table caption { display: block; width: 100%; }
+        .cr-table tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
+        .cr-table td, .cr-table tbody tr:last-child td { border: 0; white-space: normal; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 6px 12px; text-align: right; }
+        .cr-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
+        .cr-table td.mname { display: block; text-align: left; min-width: 0; padding-bottom: 8px; }
+        .cr-table td.mname::before { content: none; }
+        .cr-table td .rangecell { flex: 1 1 auto; min-width: 0; max-width: 60%; align-items: flex-end; }
+        .cr-table td .rangebar { width: 100%; min-width: 0; }
+      }
+    }
   </style>
 </head>
 <body>

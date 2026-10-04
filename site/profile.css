@@ -16,23 +16,38 @@
 :where(.progs) > p,
 :where(.progs) .tw-coverage { max-width: 760px; }
 
-/* Below 1200px the rail is hidden and the wrappers take no part in layout, so the page reads as one
+/* Below 1100px the rail is hidden and the wrappers take no part in layout, so the page reads as one
    column. This also keeps the section nav on phones sticky for the whole page: inside a wrapper box
    a sticky element stops at the wrapper's end, which would be above Programs. */
-@media (max-width: 1199px) {
+@media (max-width: 1099px) {
   .prof__top,
   .prof__main { display: contents; }
 }
-@media (min-width: 1200px) {
-  .prof__top {
-    display: grid;
-    grid-template-columns: minmax(0, 860px) 240px;
-    justify-content: space-between;
-    column-gap: var(--s5);
-  }
+/* Site frame (October 2026): from 1100px the upper block takes the frame's 8/4 split (it was 860px
+   plus a 240px rail from 1200px). The summary, the cost tools and the rail line up on the frame's
+   columns; the summary box and its contents fill the main column, and prose inside it keeps the
+   column's measure (about 750px). With the rail showing, the section links repeat it, so they go. */
+@media (min-width: 1100px) {
+  .prof__top { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); column-gap: var(--frame-gap); }
   /* styles.css positions .rail over the page; here it is an ordinary grid item, still sticky inside. */
-  .prof__top > .rail { position: static; grid-column: 2; grid-row: 1; width: auto; }
+  .prof__top > .rail { display: block; position: static; grid-column: 2; grid-row: 1; width: auto; }
+  .prof__top .rail__inner { position: sticky; top: calc(var(--hdr-h, 0px) + 31px); padding-top: 40px; }
   .prof__main { grid-column: 1; grid-row: 1; min-width: 0; }
+  .prof .sectnav { display: none; }
+  :where(.prof__main) > * { max-width: none; }
+  :where(.prof__main) > p, :where(.prof__main) > .crumbs { max-width: 760px; }
+  .kf.sum > * { max-width: none; }
+  /* Programs: the heading and intro in the main column, the notes that change how the table reads
+     beside them (still visible, R2), then the table across the whole frame. Extra height from tall
+     notes goes to the intro's row, so the heading and intro stay together. */
+  .prof > .progs { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); grid-template-rows: auto 1fr; column-gap: var(--frame-gap); }
+  .progs > h2 { grid-column: 1; grid-row: 1; }
+  .progs > p:not(.tw-source) { grid-column: 1; grid-row: 2; align-self: start; }
+  .progs > .progs__aside { grid-column: 2; grid-row: 1 / span 2; align-self: start; }
+  .progs__aside .note { margin: 0 0 var(--s3); }
+  .progs > [data-tw-profile], .progs > .tw-source { grid-column: 1 / -1; }
+}
+@media (min-width: 1200px) {
   /* Automatic table layout shares the spare width by content, so long program names take most of
      it and numeric columns stay compact. These floors give Program and Degree theirs first. Only
      from 1200px: in a narrower column they just add scrolling (at 900px, UCLA scrolled 147px with
@@ -69,6 +84,9 @@
 
 /* Notes that change how the table reads stay visible (R2). */
 .art .note { font-size: var(--t-fine); color: var(--ink-soft); border-left: 3px solid var(--line); padding: 2px 0 2px 12px; margin: 0 0 var(--sp-control); }
+/* The 1-year marker inside a sentence is a word, not a block (beside the table it split the note
+   over three lines). */
+.note .tw-oneyr { display: inline; margin: 0; }
 .progs .tw-verdict--none { color: var(--ink-faint); font-weight: 400; }
 
 aside.rail .rail__h2 { margin-top: var(--sp-group); }
