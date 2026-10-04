@@ -135,7 +135,10 @@
 
     /* Program table + controls */
     .vc-controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; margin: 14px 0 4px; }
-    .vc-tools { display: flex; gap: 8px; }
+    /* The search box and the Sort select wrap onto two lines when they cannot share one; on phones the
+       select was pushed 77px off a 390px screen. */
+    .vc-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+    .vc-tools select { max-width: 100%; min-width: 0; }
     .baseline { color: var(--ink-soft); font-size: .92rem; max-width: 760px; margin: 8px 0 0; }
     .table-wrap { overflow-x: auto; margin-top: 12px; border: 1px solid var(--line); border-radius: var(--r-lg); }
     .prog-table { width: 100%; border-collapse: collapse; font-size: var(--t-ui); }

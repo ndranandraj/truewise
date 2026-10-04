@@ -637,6 +637,25 @@ function tableEnlargedProbe() {
   return { findings };
 }
 
+/** No page wider than the screen at enlarged text (October 2026): the FVT/GE association boxes, the
+ *  Careers detail figures and article headings once widened 320px pages by 25 to 76px with doubled
+ *  text. Content inside a deliberate horizontal scroller (a table wrapper, the section links) does
+ *  not count; the document itself must fit. */
+function pageEnlargedProbe() {
+  const vw = document.documentElement.clientWidth;
+  const over = document.documentElement.scrollWidth - vw;
+  if (over <= 1) return { findings: [] };
+  const inScroller = (n) => { for (let e = n; e && e !== document.body; e = e.parentElement) { const o = getComputedStyle(e).overflowX; if (o === "auto" || o === "scroll" || o === "hidden") return true; } return false; };
+  let src = "";
+  const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n; (n = tw.nextNode());) {
+    if (!n.textContent.trim() || inScroller(n.parentElement)) continue;
+    const r = document.createRange(); r.selectNodeContents(n); const b = r.getBoundingClientRect();
+    if (b.width && b.right > vw + 1) { src = ` First text past the edge: "${n.textContent.trim().slice(0, 40)}" in ${n.parentElement.tagName.toLowerCase()}.${(n.parentElement.getAttribute("class") || "").split(" ")[0]}.`; break; }
+  }
+  return { findings: [{ kind: "page-enlarged-overflow", blocking: true, detail: `At doubled text the page is ${over}px wider than the ${vw}px screen.${src}` }] };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { probe, focusState, liveText, doubleText, headerProbe, tableEnlargedProbe, WIDTHS, ROUTES };
+  module.exports = { probe, focusState, liveText, doubleText, headerProbe, tableEnlargedProbe, pageEnlargedProbe, WIDTHS, ROUTES };
 }
