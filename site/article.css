@@ -40,7 +40,7 @@
 .sectnav a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-fine); color: var(--ink-soft); text-decoration: none; background: var(--surface); }
 .sectnav a:hover { border-color: var(--brand); color: var(--brand); }
 @media (max-width: 767px) {
-  .sectnav { position: sticky; top: 65px; z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
+  .sectnav { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
   .sectnav__label { display: none; }
   .sectnav__scroll { position: relative; }
   .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
@@ -49,8 +49,7 @@
   .sectnav a { white-space: nowrap; }
 }
 @media (min-width: 1200px) { .sectnav { display: none; } }
-.art section { scroll-margin-top: 130px; margin: 0 0 var(--sp-section); }
-@media (min-width: 768px) { .art section { scroll-margin-top: 90px; } }
+.art section { margin: 0 0 var(--sp-section); }
 .art .crumbs { margin-top: 12px; }
 .art h2 { font-family: var(--display); font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 0 0 var(--sp-related); }
 .art p { line-height: 1.6; max-width: 66ch; }

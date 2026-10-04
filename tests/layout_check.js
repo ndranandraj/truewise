@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 
-const { probe, focusState, WIDTHS, ROUTES } = require("./layout_probe.js");
+const { probe, focusState, doubleText, headerProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
 const perf = require("./perf_probe.js");
 const { makeShot } = require("./layout_shot.js");
 
@@ -721,6 +721,16 @@ async function main() {
           const before = r.findings.length;
           await shot(page, `${route.label}-${w.label}-after-interaction.png`, r.findings);
           result.advisory += r.findings.length - before;
+          /* The header at enlarged text: double every text size, let the header script re-check,
+           * and judge the header alone (blocking). Reloaded first so interactions above do not leak. */
+          await page.goto(base + route.path, { waitUntil: "load", timeout: 30000 }).catch(() => {});
+          await page.evaluate(doubleText);
+          await page.waitForTimeout(300);
+          const hp = await page.evaluate(headerProbe);
+          entry.headerEnlarged = entry.headerEnlarged || {};
+          entry.headerEnlarged[w.label] = hp;
+          r.findings.push(...hp.findings);
+          result.blocking += hp.findings.length;
         }
         await ctx.close();
       }

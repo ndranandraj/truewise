@@ -254,7 +254,12 @@ a:hover { color: var(--brand-deep); }
 /* Skip link: off-screen until focused, then the first thing a keyboard user sees (audit V7). */
 .skip-link { position: absolute; left: var(--s4); top: -100px; z-index: 100; padding: var(--s2) var(--s4); background: var(--surface); color: var(--ink); border: 1px solid var(--focus-ring); border-radius: var(--r-sm); font-size: var(--t-ui); }
 .skip-link:focus { top: var(--s2); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
-#main { display: block; scroll-margin-top: 80px; }
+#main { display: block; }
+/* In-page links, the skip link and keyboard focus clear everything pinned, plus breathing room.
+   --pin-h is the pinned header plus a pinned section bar, measured by the header script; it replaced
+   fixed scroll-margin guesses (80px here, 90px and 130px for sections) that left a heading under
+   223px of pinned bars at 390px with enlarged text. */
+:root { scroll-padding-top: calc(var(--pin-h, 0px) + 12px); }
 #main:focus { outline: none; }
 /* A hidden back-to-top button must not stay in the tab order (audit V9). */
 #to-top:not(.show) { visibility: hidden; }
@@ -470,6 +475,53 @@ a:hover { color: var(--brand-deep); }
   .hero { padding: var(--s9) 0 var(--s8); }
 }
 
+/* ---- Header at enlarged text (October 2026) ----
+   The header script (pipeline/header_script.js) measures and stops at the first step that fits:
+   the tagline hidden (.hdr-tight), the links in the menu (.hdr-collapsed), the row wrapping
+   (.hdr-wrap). At normal size nothing changes; text is never made smaller. */
+.site-header.hdr-tight .brand-tagline { display: none; }
+.site-header.hdr-collapsed nav { gap: 0; }
+.site-header.hdr-collapsed nav > a:not(.nav-cta) { display: none; }
+.site-header.hdr-collapsed .nav-toggle { display: block; position: relative; margin-left: var(--s3); }
+.site-header.hdr-collapsed .nav-toggle summary {
+  list-style: none; cursor: pointer;
+  font-size: var(--t-lede); line-height: 1; color: var(--ink-soft);
+  padding: 11px var(--s3); border: 1px solid var(--control-border); border-radius: var(--r-md);
+}
+.site-header.hdr-collapsed .nav-toggle summary::-webkit-details-marker { display: none; }
+.site-header.hdr-collapsed .nav-toggle[open] summary { color: var(--brand); border-color: var(--brand); }
+.site-header.hdr-collapsed .nav-toggle .menu {
+  position: absolute; right: 0; top: calc(100% + 8px);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  display: flex; flex-direction: column; min-width: 200px; padding: var(--s2); z-index: 40;
+}
+.site-header.hdr-collapsed .nav-toggle .menu a { display: block; color: var(--ink); text-decoration: none; font-size: var(--t-ui); padding: var(--s3) var(--s4); border-radius: var(--r-sm); }
+.site-header.hdr-collapsed .nav-toggle .menu a:hover { background: var(--sand); color: var(--brand); }
+/* The open menu is never wider than the screen less the gutters, long labels wrap inside it, and
+   while the header is pinned it scrolls inside itself rather than running below the screen. */
+.site-header .nav-toggle .menu { max-width: calc(100vw - 2 * var(--s8)); max-height: calc(100vh - var(--hdr-h, 0px) - 16px); overflow-y: auto; }
+@media (max-width: 520px) { .site-header .nav-toggle .menu { max-width: calc(100vw - 2 * var(--s5)); } }
+.site-header .nav-toggle .menu a { white-space: normal; }
+/* Wrapped, the menu button may sit anywhere, so the menu hangs from the header's right edge. */
+.site-header.hdr-wrap .wrap { position: relative; }
+.site-header.hdr-wrap .nav-toggle { position: static; }
+.site-header.hdr-wrap .nav-toggle .menu { right: var(--s8); left: auto; }
+@media (max-width: 520px) { .site-header.hdr-wrap .nav-toggle .menu { right: var(--s5); } }
+/* The last step, and the fallback without the script: the row wraps rather than letting items
+   overlap or run off-screen; the button group keeps to the right. */
+.site-header.hdr-wrap .wrap,
+.site-header:not(.hdr-js) .wrap { flex-wrap: wrap; row-gap: var(--s2); }
+.site-header.hdr-wrap nav,
+.site-header:not(.hdr-js) nav { flex-wrap: wrap; row-gap: var(--s2); margin-left: auto; justify-content: flex-end; }
+
+/* Pinning. Only once the script has measured (html.pin-ok); without it nothing pins, because a fixed
+   offset is wrong for a header that wraps. A header, section bar or rail too tall for the screen
+   scrolls with the page (.hdr-unstick, .pin-off), and bars pin below the header's real height. */
+:root:not(.pin-ok) .site-header,
+.site-header.hdr-unstick { position: relative; }
+:root:not(.pin-ok) .sectnav, :root:not(.pin-ok) .subnav { position: static; }
+:root .sectnav.pin-off, :root .subnav.pin-off, :root .rail__inner.pin-off { position: static; }
+
 @media (max-width: 520px) { .wrap { padding: 0 var(--s5); } }
 
 /* Side rail (September 2026 review). Content keeps its shared 860px edge on the left; above 1200px
@@ -479,7 +531,7 @@ a:hover { color: var(--brand-deep); }
 .rail { display: none; }
 @media (min-width: 1200px) {
   .rail { display: block; position: absolute; top: 0; right: var(--s8); bottom: 0; width: 240px; }
-  .rail__inner { position: sticky; top: 96px; padding-top: 40px; }
+  .rail__inner { position: sticky; top: calc(var(--hdr-h, 0px) + 31px); padding-top: 40px; }
 }
 aside.rail h2 { font-family: var(--font); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--s3); }
 aside.rail ul, aside.rail dl { list-style: none; margin: 0; padding: 0 0 0 var(--s4); border-left: 1px solid var(--line); }
