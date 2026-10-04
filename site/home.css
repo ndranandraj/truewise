@@ -8,7 +8,20 @@
 
 /* Hero: search is the focal point (R3); the latest finding ranks visibly below it. */
 .h-hero { padding-top: var(--s8) !important; padding-bottom: var(--s8) !important; }
-.h-hero .wrap > * { max-width: 680px; }
+.h-main > * { max-width: 680px; }
+/* Site frame (October 2026): the real example bars sit beside the search on wide screens, in the
+   frame's 4-column side panel, explaining what a result looks like. Search keeps the main column.
+   Below 1100px they follow the search, as the separate examples section did. */
+.h-side { margin-top: var(--s7); }
+/* The panel's label is an h2, and .home h2 (a display-size section heading) outranks the shared
+   .side-panel__h; restate the label's type here so it reads as a label. */
+.home .side-panel__h { font-family: var(--ui); font-size: var(--t-label); letter-spacing: 0.04em; margin: 0 0 var(--s3); }
+.h-side .ex__title { font-size: var(--t-fine); max-width: none; }
+.h-side .ex__row { padding: var(--s3) 0; }
+@media (min-width: 1100px) {
+  .h-hero .wrap { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); column-gap: var(--frame-gap); align-items: start; }
+  .h-side { margin-top: var(--s2); }
+}
 .h-hero h1 { font-family: var(--display); font-size: var(--t-display); line-height: 1.05; letter-spacing: -0.03em; margin: var(--s2) 0 var(--s4); }
 .h-lede { font-size: var(--t-lede); line-height: 1.5; color: var(--ink-soft); margin: 0 0 var(--s6); }
 .h-search { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; box-shadow: 0 1px 0 var(--line); }
@@ -24,8 +37,6 @@
 .h-latest a { color: var(--ink); font-weight: 600; }
 
 /* Example graphic: absolute earnings from $0 on one scale, each with its own state line (spec 4.1). */
-.h-examples { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.h-examples .wrap > * { max-width: 760px; }
 .ex { margin: 0; }
 .ex__title { font-size: var(--t-ui); color: var(--ink-soft); margin: 0 0 var(--s4); max-width: 62ch; }
 .ex__rows { list-style: none; margin: 0; padding: 0; }

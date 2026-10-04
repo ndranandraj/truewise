@@ -260,6 +260,12 @@ a:hover { color: var(--brand-deep); }
    fixed scroll-margin guesses (80px here, 90px and 130px for sections) that left a heading under
    223px of pinned bars at 390px with enlarged text. */
 :root { scroll-padding-top: calc(var(--pin-h, 0px) + 12px); }
+/* The site frame (October 2026): wide pages share one grid, an 8-column main area beside a
+   4-column side area, from 1100px. It is a layout tool, not a rule that every page fills its right
+   side. A side panel is quiet: a top rule and a label, no box. */
+:root { --frame-gap: var(--s7); }
+.side-panel { border-top: 2px solid var(--ink); padding-top: var(--s4); }
+.side-panel__h, h2.side-panel__h { font-family: var(--ui); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--s3); }
 /* File paths and identifiers in prose (methodology, findings) have no break points, so at enlarged text
    one path was wider than a phone screen (by up to 217px at 390px), and so was a DOI link. Code may
    break anywhere; a link breaks only when it cannot fit on a line by itself. */
