@@ -443,8 +443,8 @@ function markdown(result) {
     ? `**No blocking findings.** ${result.advisory} advisory.`
     : `**${result.blocking} blocking findings.** ${result.advisory} advisory.`);
   L.push("");
-  L.push("| Route | " + WIDTHS.map((w) => w.label).join(" | ") + " | Interactions |");
-  L.push("|---" .repeat(WIDTHS.length + 2) + "|");
+  L.push("| Route | " + WIDTHS.map((w) => w.label).join(" | ") + " | Enlarged text | Interactions |");
+  L.push("|---" .repeat(WIDTHS.length + 3) + "|");
   for (const r of result.routes) {
     const cells = WIDTHS.map((w) => {
       const s = r.widths[w.label];
@@ -460,7 +460,15 @@ function markdown(result) {
       : ix.findings.length ? `**${ix.findings.length} blocking**`
       : ix.steps.length ? `${ix.steps.map((s) => s.step).join(", ")}: clean`
       : "**none driven**")).join("; ") || "**none driven**";
-    L.push(`| ${r.label} | ${cells.join(" | ")} | ${icell} |`);
+    /* Enlarged text: every enlarged width, by name, so a width outside WIDTHS is never "not run" by
+     * omission; a route the pass did not reach says so rather than reading as clean. */
+    const ecell = r.enlarged
+      ? Object.entries(r.enlarged).map(([wl, fs]) => {
+        const b = fs.filter((f) => f.blocking).length;
+        return `${wl}: ${b ? `**${b} blocking**` : "clean"}`;
+      }).join("; ")
+      : "**not run**";
+    L.push(`| ${r.label} | ${cells.join(" | ")} | ${ecell} | ${icell} |`);
   }
   L.push("");
 
@@ -472,6 +480,9 @@ function markdown(result) {
     }
     for (const [wl, ix] of Object.entries(r.interactions)) {
       for (const f of ix.findings || []) all.push({ where: `${r.label} (interaction @ ${wl})`, ...f });
+    }
+    for (const [wl, fs] of Object.entries(r.enlarged || {})) {
+      for (const f of fs) all.push({ where: `${r.label} (enlarged text @ ${wl})`, ...f });
     }
     if (r.perf) {
       for (const f of (r.perf.regressions || [])) all.push({ where: `${r.label} (timing)`, ...f });
@@ -735,11 +746,9 @@ async function main() {
         await ectx.route("**/*", (r) => new URL(r.request().url()).host === ehost ? r.continue() : r.abort());
         const epage = await ectx.newPage();
         const found = await enlargedPass(epage, base + route.path, { probes: [headerProbe, tableEnlargedProbe], ready: route.enlargedReady || [], doubleText });
+        // Kept apart from entry.widths: the report lists them under their own heading and column, so
+        // a finding at a width outside WIDTHS (769, 1280) is never hidden from the reader.
         entry.enlarged[ew.label] = found;
-        if (found.length) {
-          entry.widths[ew.label] = entry.widths[ew.label] || { findings: [] };
-          (entry.widths[ew.label].findings = entry.widths[ew.label].findings || []).push(...found);
-        }
         result.blocking += found.filter((f) => f.blocking).length;
         await ectx.close();
       }
