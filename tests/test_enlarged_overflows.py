@@ -60,6 +60,15 @@ def test_k12_ranking_rows_stack_at_enlarged_text():
     )
 
 
+def test_footer_link_groups_stack_at_enlarged_text():
+    """The footer's "Research" heading ran 6px past a 320px screen at enlarged text in the deploy
+    job's Firefox (Linux fonts), on every page, and blocked the deploy of PR #11."""
+    css = _css("styles.css")
+    assert ".site-footer { container: site-foot / inline-size; }" in css
+    block = css.split("@container site-foot (max-width: 16em)", 1)[1].split("\n}\n", 1)[0]
+    assert ".site-footer .foot { grid-template-columns: minmax(0, 1fr); }" in block
+
+
 def test_value_check_fallback_search_and_sort_may_wrap():
     page = _css("value-check/index.html")
     assert ".vc-tools { display: flex; gap: 8px; flex-wrap: wrap; }" in page
