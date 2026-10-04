@@ -240,7 +240,7 @@ window.addEventListener("resize", onResize);
   <main class="wrap" id="app">
     <div id="boot-fallback">
       <h1 style="font-size:var(--t-title);line-height:1.08;letter-spacing:-.03em;margin:36px 0 10px">Advanced courses at US high schools</h1>
-      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US public high school to see which advanced courses it offers, AP, calculus, physics, chemistry, computer science, dual enrollment and more, plus counselors and support staff, from the U.S. Department of Education Civil Rights Data Collection (2023-24). Loading the data now.</p>
+      <p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">Search any US public high school to see which advanced courses it offers and who is on staff, from the federal Civil Rights Data Collection (2023-24). Loading the data now.</p>
       <noscript><p style="color:var(--ink-soft);max-width:62ch;line-height:1.65">This interactive view needs JavaScript to run. You can still read how every number is computed on the <a href="/methodology/">methodology page</a>, or download the full open dataset from the <a href="/#data">data section</a>.</p></noscript>
     </div>
   </main>
@@ -288,9 +288,7 @@ window.addEventListener("resize", onResize);
     app.innerHTML = `
       <section class="k-head">
         <h1>Advanced courses at your high school</h1>
-        <p class="lede">What does a US public high school actually offer, AP, calculus, physics, chemistry, computer
-          science, dual enrollment, IB, and gifted programs, how many students take them, and who's on staff
-          (counselors, security)? From the federal Civil Rights Data Collection.</p>
+        <p class="lede">See which advanced courses a US public high school offers and who is on staff, from the federal Civil Rights Data Collection (2023-24).</p>
         <label class="field-label" for="q">Search ${INDEX.length.toLocaleString()} public high schools by name</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -420,7 +418,7 @@ window.addEventListener("resize", onResize);
       <a class="backlink" href="/k12/advanced-courses/" id="back">← Find another school</a>
       <div class="sch-head">
         <h1>${esc(s.name)}</h1>
-        <div class="sub">${esc(s.district || "")}${s.district ? " · " : ""}${esc(s.state)}${tags.length ? " · " + tags.join(" · ") : ""} · ${num(s.enroll)} students</div>
+        <div class="sub">${esc(s.district || "")}${s.district ? " · " : ""}${esc(s.state)}${tags.length ? " · " + tags.join(" · ") : ""} · ${s.enroll == null ? "enrollment not reported" : num(s.enroll) + " students"}</div>
       </div>
       <div class="equity"><h2>Advanced-course access</h2>
         <p class="read"><span class="gap ${breadthCls}">${breadthMsg}</span></p></div>
