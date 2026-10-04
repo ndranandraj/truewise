@@ -31,7 +31,7 @@ const fs = require("fs");
 const path = require("path");
 const http = require("http");
 
-const { probe, focusState, doubleText, headerProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
+const { probe, focusState, doubleText, headerProbe, tableEnlargedProbe, WIDTHS, ROUTES } = require("./layout_probe.js");
 const perf = require("./perf_probe.js");
 const { makeShot } = require("./layout_shot.js");
 
@@ -727,6 +727,7 @@ async function main() {
           await page.evaluate(doubleText);
           await page.waitForTimeout(300);
           const hp = await page.evaluate(headerProbe);
+          hp.findings.push(...(await page.evaluate(tableEnlargedProbe)).findings);
           entry.headerEnlarged = entry.headerEnlarged || {};
           entry.headerEnlarged[w.label] = hp;
           r.findings.push(...hp.findings);

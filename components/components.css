@@ -740,3 +740,37 @@
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
+
+/* ---- Program table at enlarged text (October 2026) ----
+   At 200% text-only enlargement the stacked cards cut values off: the verdict "above HS line
+   (1-yr)" (nowrap) ran past the card, "$169,099" was clipped at the card edge, the premium split as
+   "+" / "$132,123", and the phone sort select ran off-screen. At normal text size nothing below
+   changes: each threshold is in the element's own text units, so it only moves when text does. */
+
+/* The premium's sign stays with its number. In the stacked cards always (no change at normal size,
+   measured on ten profiles). On the desktop table only when the table is narrower than 40em of its
+   own text: a nowrap figure raises the column's minimum width, and at normal size, where the premium
+   never splits, applying it shifted columns by 2 to 9px for nothing. The narrowest desktop table at
+   normal size is about 46em (769px); at 200% text every desktop table is under 40em. */
+.tw-table__scroll { container: tw-table / inline-size; }
+@container tw-table (max-width: 40em) { .tw-prem__val { white-space: nowrap; } }
+
+@media (max-width: 768px) {
+  .tw-prem__val { white-space: nowrap; }
+  /* The sort select is never wider than the screen; its options list is the browser's own. */
+  .tw-sort__select { max-width: 100%; min-width: 0; }
+  /* Each card is a container, so its rows respond to the card's width in its own text: `em` in a
+     container query is the card's font size, so 12em doubles when text doubles. The narrowest card
+     at normal size (320px screen) is about 16em; at 200% text a 390px card is about 10.5em. */
+  .tw-tr { container: tw-card / inline-size; }
+}
+
+/* A card too narrow, in text, for a label and its value side by side: the label takes its own line
+   and the value sits below it, so a long figure or verdict moves down instead of running past the
+   card. No minimum width is added and nothing is hidden. */
+@container tw-card (max-width: 12em) {
+  .tw-td { flex-wrap: wrap; justify-content: flex-start; text-align: left; row-gap: 2px; }
+  .tw-td::before { flex: 0 0 100%; max-width: none; }
+  .tw-td > .tw-val, .tw-td > .tw-prem { text-align: left; justify-content: flex-start; }
+  .tw-verdict { white-space: normal; }
+}
