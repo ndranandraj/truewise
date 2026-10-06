@@ -96,6 +96,24 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "October 2026",
+        "title": "Compare counts undergraduate programs, as college pages do",
+        "body": (
+            "Compare counted every program a college reports, graduate programs included, when it "
+            "showed how many programs were measured and how many cleared the high-school line. "
+            "College pages and Value Check count undergraduate programs, because the federal "
+            "earnings test compares those with high-school graduates; graduate programs are "
+            "compared with bachelor's holders. Compare now counts undergraduate programs too, so "
+            "its figures change: Baylor reads 51 of 83 undergraduate programs assessed and 96% of "
+            "them above the high-school line, where it read 64 of 183 programs measured and 97% "
+            "clearing the bar. The rows now say what was calculated: a program is assessed when ED "
+            "publishes its graduates' earnings and the state has a high-school benchmark, and a "
+            "college without a benchmark reads none could be assessed. The share is no longer "
+            "coloured, because a colour cut-off read as a rating the page did not explain."
+        ),
+        "link": "/compare/",
+    },
+    {
+        "date": "October 2026",
         "title": "Compare: college names linked to the wrong profile",
         "body": (
             "On the Compare page, each college's name linked to its profile through a second copy of "

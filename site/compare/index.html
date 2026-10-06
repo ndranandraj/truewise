@@ -43,16 +43,14 @@
     table.cmp { border-collapse: collapse; width: 100%; }
     table.cmp thead th:not(:first-child), table.cmp tbody td { min-width: 160px; }
     table.cmp th, table.cmp td { border-bottom: 1px solid var(--line); padding: 11px 12px; text-align: left; vertical-align: top; font-size: var(--t-ui); }
-    table.cmp thead th { border-bottom: 2px solid var(--line); }
+    table.cmp thead th, table.cmp thead td { border-bottom: 2px solid var(--line); }
     table.cmp tbody th { color: var(--ink-soft); font-weight: 600; width: 210px; }
     table.cmp td { font-variant-numeric: tabular-nums; }
     /* Metric-major cards, the phone presentation. One card per measure, each school listed under
        it, so the two figures being compared sit one line apart and nothing scrolls sideways. */
     .cmp-stack { display: none; margin: 14px 0 8px; }
-    .cmp-picked { list-style: none; margin: 0 0 var(--s6); padding: 0; display: grid; gap: var(--s3); }
-    .cmp-picked li { display: grid; gap: 2px; padding-bottom: var(--s3); border-bottom: 1px solid var(--line); }
     .cmp-metric { margin: 0 0 var(--s5); }
-    .cmp-metric h3 { font-size: var(--t-fine); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 var(--s2); }
+    .cmp-metric h2 { font-size: var(--t-fine); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-faint); margin: 0 0 var(--s2); }
     .cmp-metric dl { margin: 0; display: grid; gap: var(--s2); }
     /* Both columns are fractions, never `auto`. With an auto value column the longest helper text
        on the card sized it to its own content: "97% of programs have earnings data" took 233px,
@@ -75,14 +73,8 @@
     .schname { font-weight: 700; }
     .schname a { color: var(--brand); text-decoration: none; }
     .schmeta { color: var(--ink-soft); font-size: .85rem; font-weight: 400; margin-top: 2px; }
-    .rm { display: inline-block; margin-top: 6px; padding: 2px 4px; border: 0; background: none; color: var(--bad); font: inherit; font-size: .82rem; font-weight: 600; cursor: pointer; border-radius: var(--r-md); }
-    .rm:hover { text-decoration: underline; }
-    .rm:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-    .good { color: var(--good); font-weight: 600; }
-    .bad { color: var(--bad); font-weight: 600; }
     .gem { display: inline-block; background: var(--caution-bg); color: var(--caution); border: 1px solid var(--caution); border-radius: var(--r-pill); padding: 1px 8px; font-size: .76rem; font-weight: 700; }
-    .hint { color: var(--ink-soft); }
     /* Reserve room for the comparison BEFORE it arrives, but only when the URL says one is coming.
        #cmp is empty in the HTML and fills after a fetch. On a fast connection that happens before
        first paint and nothing moves. On a throttled phone the shell paints at about 1s and the
@@ -100,13 +92,63 @@
        still a table; the phone layout is unchanged. */
     @media (min-width: 769px) {
       table.cmp th, table.cmp td { padding: 12px 14px; }
-      table.cmp thead th { background: var(--bg-alt); color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
+      table.cmp thead th, table.cmp thead td { background: var(--bg-alt); color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
       table.cmp tbody th { background: var(--surface); border-right: 1px solid var(--line); }
-      table.cmp td + td, table.cmp thead th + th { border-left: 1px solid var(--line-soft); }
+      table.cmp td + td, table.cmp thead th + th, table.cmp thead td + th { border-left: 1px solid var(--line-soft); }
       table.cmp tbody tr:last-child > * { border-bottom: 0; }
       table.cmp tbody tr:hover > *, table.cmp tbody tr:focus-within > * { background: var(--brand-50); }
       table.cmp td { font-variant-numeric: tabular-nums lining-nums; }
     }
+    /* Compare, the comparison first (Prototype I, approved October 2026). */
+    /* The selected colleges, one compact label each: the name and its Remove as one component. They sit
+       above the comparison at every width and are the only Remove controls on the page. */
+    .picks { margin: var(--s5) 0 0; }
+    .picks__h { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--s2); }
+    .picks__list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+    .pick { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; padding: 2px 2px 2px 12px; border: 1px solid var(--control-border); border-radius: var(--r-md); background: var(--surface); font-size: var(--t-ui); font-weight: 600; line-height: 1.3; }
+    .pick__name { min-width: 0; overflow-wrap: break-word; }
+    /* In em, so the target grows with enlarged text: 33px at normal size, above the 24px minimum. */
+    .pick__rm { flex: none; display: inline-grid; place-items: center; width: 2.2em; height: 2.2em; border: 0; border-radius: var(--r-sm); background: none; color: var(--ink-soft); cursor: pointer; }
+    .pick__rm svg { width: 0.9em; height: 0.9em; }
+    .pick__rm:hover { background: var(--bg-alt); color: var(--bad); }
+    .pick__rm:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 1px; }
+
+    /* The search, with a visible label that says what it does now ("Search for a college to compare",
+       then "Add another college"). */
+    .add-label { display: block; font-weight: 600; font-size: var(--t-ui); margin: var(--s5) 0 var(--s2); }
+    .results button.res:disabled { cursor: default; color: var(--ink-soft); }
+    .results button.res:disabled:hover { background: none; }
+
+    /* The search and the net-price choice share a row when there is room, so the comparison starts
+       higher; they wrap onto two rows on phones and at enlarged text by their own widths. */
+    .cmp-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s3) var(--s6); margin: var(--s5) 0 var(--s4); }
+    /* min-width 0: a flex item will not shrink below its content otherwise, and at 200% text on a phone
+       the search ran 185px past the screen. */
+    .cmp-controls .add-box { flex: 1 1 22em; min-width: 0; max-width: 620px; }
+    .cmp-controls .add-label { margin-top: 0; }
+    .cmp-controls .income-row { flex: 0 1 auto; min-width: 0; max-width: 100%; flex-direction: column; align-items: flex-start; gap: var(--s2); margin: 0; }
+    .cmp-controls .income-row select { max-width: 100%; }
+    .cmp-controls .income-row label { font-size: var(--t-ui); }
+    .cmp-controls .add-box .searchbox { margin: 0; }
+    .add-box .results { position: relative; }
+
+    /* At four, the search goes and this says why. */
+    .full { flex: 1 1 22em; min-width: 0; margin: 0; padding: 10px 14px; border-left: 3px solid var(--brand); background: var(--bg-alt); font-size: var(--t-fine); color: var(--ink-soft); max-width: 620px; }
+
+    /* Example comparisons on the empty page, each a pair with what it shows. */
+    .examples { margin: var(--s6) 0 0; }
+    .examples h2 { font-size: var(--t-sub); margin: 0 0 2px; }
+    .examples__note { margin: 0; font-size: var(--t-fine); color: var(--ink-soft); }
+    /* Two columns at desktop, one on phones and at enlarged text: the 680px cap leaves room for two
+       17em cards and never a third (three plus one looked unfinished). */
+    .examples ul { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 17em), 1fr)); gap: var(--s2); max-width: 680px; }
+    .examples a { display: block; height: 100%; box-sizing: border-box; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); text-decoration: none; }
+    .examples a:hover { border-color: var(--brand); }
+    .examples a:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    .examples a b { color: var(--brand); }
+    .examples a span { display: block; margin-top: 2px; color: var(--ink-soft); font-size: var(--t-fine); }
+
+    .c-head .lede { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -262,17 +304,19 @@ window.addEventListener("resize", onResize);
   <main class="wrap">
     <section class="c-head">
       <h1>Compare colleges side by side</h1>
-      <p class="lede">Put up to four colleges next to each other on the things that decide whether a degree
-        pays off: what families at your income actually pay, whether graduates out-earn a typical
-        high-school graduate, and who the school serves. All from public federal data.</p>
-      <div class="searchbox">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-        <input id="q" type="search" autocomplete="off" placeholder="Search a college to add, try Baylor or UCLA" aria-label="Search a college to add" />
+      <p class="lede">Put up to four colleges side by side on what families pay, whether graduates earned
+        more than a typical high-school graduate, and who each school serves.</p>
+      <div class="picks" id="picks" hidden></div>
+      <div class="cmp-controls">
+      <div class="add-box" id="add-box">
+        <label class="add-label" id="add-label" for="q">Search for a college to compare</label>
+        <div class="searchbox">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="q" type="search" autocomplete="off" placeholder="e.g. Baylor or UCLA" />
+        </div>
+        <ul class="results" id="results"></ul>
       </div>
-      <ul class="results" id="results"></ul>
-      <p id="live" class="sr-only" role="status" aria-live="polite"></p>
-      <noscript><p class="lede" style="font-size:var(--t-ui)">This comparison tool needs JavaScript. You can still
-        browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
+      <p class="full" id="full" tabindex="-1" hidden>Four colleges is the most this page compares. Remove one to add another.</p>
       <div class="income-row" id="income-row" style="display:none">
         <label for="income">Show net price for families earning</label>
         <select id="income" class="control">
@@ -284,23 +328,32 @@ window.addEventListener("resize", onResize);
           <option value="4">$110k and up</option>
         </select>
       </div>
-      <!-- Set before first paint, so the reservation is in place for the very first layout. A
-           class added later by the main script would arrive after the shell has already painted at
-           its short height, which is the moment the shift happens. Inline is permitted: the CSP
-           allows 'unsafe-inline' for scripts, and the page already carries its whole application
-           inline below. -->
+      </div>
+      <p id="live" class="sr-only" role="status" aria-live="polite"></p>
+      <noscript><p class="lede" style="font-size:var(--t-ui)">This comparison tool needs JavaScript. You can still
+        browse <a href="/colleges/">every college by state</a> or read the <a href="/methodology/">methodology</a>.</p></noscript>
+      <div class="examples" id="examples">
+        <h2>Try an example comparison</h2>
+        <p class="examples__note">Examples, not recommendations.</p>
+        <ul><li><a href="?schools=223232,110662"><b>Baylor and UCLA</b><span>A private and a public university</span></a></li><li><a href="?schools=110583,110422"><b>Cal State Long Beach and Cal Poly San Luis Obispo</b><span>Two public universities in California</span></a></li><li><a href="?schools=131520,140553"><b>Howard and Morehouse</b><span>Two historically Black colleges</span></a></li><li><a href="?schools=150987,433387"><b>Ivy Tech and Western Governors</b><span>A community college and an online university</span></a></li></ul>
+      </div>
       <script>
         if (new URLSearchParams(location.search).get("schools")) {
           document.documentElement.classList.add("cmp-pending");
         }
       </script>
       <div id="cmp"></div>
-      <div class="caveats"><strong>How to read this.</strong> "Programs clearing the bar" is the share of a
-        school's programs whose graduates out-earn a typical high-school graduate in that state (the federal
-        earnings-premium test), counted only on programs with reported earnings; the rest are
-        privacy-suppressed by the Department of Education and never guessed. Net price is the yearly cost
-        after grants and scholarships. Figures describe past graduates and are never a promise. Source: U.S.
-        Department of Education College Scorecard, release 2026-06-10. Full method:
+      <div class="caveats"><strong>How to read this.</strong> Program counts are of undergraduate programs,
+        as on each college's profile; graduate programs, which the federal rule compares with bachelor's
+        holders, are listed on the profile. A program can be assessed when the Department of Education
+        publishes its graduates' earnings and the state has a high-school benchmark; programs without both
+        are not assessed, and nothing is estimated for them. "Above the high-school line" is the share of
+        assessed programs whose graduates' median earnings were at or above a typical high-school graduate's
+        in that state, the federal earnings-premium test. Earnings are measured four years after graduating
+        where ED publishes them, and one year after where it does not; the two are different career stages,
+        and each college's profile marks the programs that use the one-year figure. Net price is the yearly
+        cost after grants and scholarships. Figures describe past graduates and are never a promise. Source:
+        U.S. Department of Education College Scorecard, release 2026-06-10. Full method:
         <a href="/methodology/">methodology</a>.</div>
     </section>
   </main>
@@ -311,21 +364,22 @@ window.addEventListener("resize", onResize);
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
+  // A missing figure says why, in the site's one vocabulary: ED did not publish it.
   const money = n => n == null ? "not published" : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
   const pct = f => f == null ? "not published" : Math.round(f * 100) + "%";
   const MAX = 4;
 
   let SCHOOLS = null;
+  // Profile links come from the slug map the page builder writes, never from a second copy of its
+  // naming rules: the copy here linked 33 colleges to a different college's profile and 11 to
+  // pages that do not exist, and gave no link to 1,178 that have a profile.
+  let SLUGS = {};
   let picked = [];     // {unitid, s}; reassigned wholesale when the URL changes
 
-  // Profile links come from the slug map the page builder publishes, the one source of each
-  // college's address. A second copy of the naming rules used to live here; slugs now come from
-  // the slug registry and cannot be recomputed from names, so the copy linked 33 colleges to a
-  // different college's profile, 11 to pages that do not exist, and gave no link to 1,178 that
-  // have one. If the map cannot be fetched, names are shown without links rather than guessed.
-  let SLUGS = {};
   async function load() {
     if (SCHOOLS) return SCHOOLS;
+    // The map is optional, as on the live page (PR #15): if it cannot be fetched, the comparison
+    // still renders and names are shown without links rather than guessed.
     const [r, map] = await Promise.all([
       fetch("/value-check/data/schools.json"),
       fetch("/college/slug-map.json").then(m => (m.ok ? m.json() : {})).catch(() => ({})),
@@ -334,10 +388,14 @@ window.addEventListener("resize", onResize);
     SLUGS = map;
     return SCHOOLS;
   }
+  const profile = unitid => SLUGS[unitid] ? "/college/" + SLUGS[unitid] + "/" : null;
 
   const q = document.getElementById("q"), results = document.getElementById("results"),
         cmp = document.getElementById("cmp"), incomeRow = document.getElementById("income-row"),
-        income = document.getElementById("income"), live = document.getElementById("live");
+        income = document.getElementById("income"), live = document.getElementById("live"),
+        picks = document.getElementById("picks"), addBox = document.getElementById("add-box"),
+        addLabel = document.getElementById("add-label"), full = document.getElementById("full"),
+        examples = document.getElementById("examples");
   const announce = msg => { if (live) live.textContent = msg; };
   let t;
   q.addEventListener("input", () => { clearTimeout(t); t = setTimeout(search, 140); });
@@ -346,13 +404,32 @@ window.addEventListener("resize", onResize);
   async function search() {
     await load();
     const term = q.value.trim();
-    if (TWSearch.normalize(term).length < 2) { results.innerHTML = ""; return; }
+    // Below two letters there is no search: clear the list and what was last announced, so a
+    // cleared field does not keep saying "No colleges match" for the old text.
+    if (TWSearch.normalize(term).length < 2) {
+      results.innerHTML = "";
+      announce(term ? "Type two or more letters to search." : "");
+      return;
+    }
     // Same normalized alias index as Value Check, so "UCLA" resolves here too.
-    const hits = TWSearch.searchSchools(SCHOOLS, term).slice(0, 8);
+    const all = TWSearch.searchSchools(SCHOOLS, term), hits = all.slice(0, 8);
+    // Say what the search found: the count, or that nothing matched. The list alone was silent to a
+    // screen reader. The shared search returns at most 25, so beyond the 8 shown no total is given
+    // (it would be the cap, not the number of matches).
+    announce(!all.length ? `No colleges match \u201c${term}\u201d.`
+      : all.length > hits.length ? `Showing the top ${hits.length} matches. Keep typing to narrow.`
+      : `${all.length} college${all.length === 1 ? "" : "s"} found.`);
+    // A college already in the comparison is shown, marked and not offered again: clicking it used
+    // to do nothing at all, with no sign why.
     results.innerHTML = hits.length
-      ? hits.map(s => `<li><button type="button" class="res" data-u="${esc(s.unitid)}"><b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}</span></button></li>`).join("")
-      : `<li class="empty">No colleges match that search.</li>`;
-    results.querySelectorAll("button[data-u]").forEach(b =>
+      ? hits.map(s => {
+          const added = picked.some(p => p.unitid === s.unitid);
+          return `<li><button type="button" class="res" data-u="${esc(s.unitid)}"${added ? " disabled" : ""}>`
+            + `<b>${esc(s.name)}</b> <span class="meta">${esc(s.city || "")}${s.city ? ", " : ""}${esc(s.state)}`
+            + `${added ? " &middot; already in the comparison" : ""}</span></button></li>`;
+        }).join("")
+      : `<li class="empty">No colleges match \u201c${esc(term)}\u201d.</li>`;
+    results.querySelectorAll("button[data-u]:not([disabled])").forEach(b =>
       b.addEventListener("click", () => add(b.dataset.u)));
   }
 
@@ -377,6 +454,10 @@ window.addEventListener("resize", onResize);
     picked.push({ unitid, s });
     q.value = ""; results.innerHTML = ""; render();
     syncUrl(true);
+    // The result button that was clicked is gone, so focus would fall to the page. It goes back to
+    // the search for the next college, or, at four, to the note that says the comparison is full.
+    announce(`${s.name} added. ${picked.length} of ${MAX} colleges selected.`);
+    (picked.length < MAX ? q : full).focus();
   }
 
   // Back and forward have to rebuild the comparison, or the URL and the page disagree: without
@@ -392,38 +473,64 @@ window.addEventListener("resize", onResize);
   }
   function remove(unitid) {
     const i = picked.findIndex(p => p.unitid === unitid);
-    if (i > -1) {
-      const name = picked[i].s.name;
-      picked.splice(i, 1); render();
-      announce(`${name} removed. ${picked.length} of ${MAX} colleges selected.`);
-      // Return focus predictably: next remove button, else back to the search box.
-      const next = cmp.querySelector("[data-rm]");
-      (next || q).focus();
-      syncUrl(false);
-    }
+    if (i < 0) return;
+    const name = picked[i].s.name;
+    picked.splice(i, 1); render();
+    announce(`${name} removed. ${picked.length} of ${MAX} colleges selected.`);
+    // Return focus predictably: the Remove of the college that took its place, else the one
+    // before it, else the search box.
+    const rms = picks.querySelectorAll("[data-rm]");
+    (rms[i] || rms[i - 1] || q).focus();
+    syncUrl(false);
   }
 
-  function passRate(s) {
-    const decided = s.n_pass + s.n_fail;
-    return decided ? s.n_pass / decided : null;
+  // Undergraduate programs, as each college's profile and the Value Check cards count them: the
+  // federal rule compares graduate programs with bachelor's holders, not the high-school line.
+  function ug(s) {
+    const decided = (s.n_ug_pass || 0) + (s.n_ug_fail || 0);
+    return { total: s.n_ug_programs || 0, decided, pass: s.n_ug_pass || 0, fail: s.n_ug_fail || 0 };
+  }
+
+  // The selected colleges: one compact label each, the name and its Remove as one component, above
+  // the comparison on every width. Remove used to sit inside the table's column headings and again
+  // in a separate list on phones.
+  function renderPicks() {
+    const n = picked.length;
+    picks.hidden = !n;
+    picks.innerHTML = n
+      ? `<p class="picks__h" id="picks-h">Comparing ${n} of ${MAX} colleges</p>`
+        + `<ul class="picks__list" aria-labelledby="picks-h">` + picked.map(p =>
+          `<li class="pick"><span class="pick__name">${esc(p.s.name)}</span>`
+          + `<button type="button" class="pick__rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(p.s.name)}">`
+          + `<svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" focusable="false"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`
+          + `</button></li>`).join("") + `</ul>`
+      : "";
+    picks.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
+    // The search stays until the comparison is full; then a note says why it has gone.
+    addBox.hidden = n >= MAX;
+    full.hidden = n < MAX;
+    addLabel.textContent = n ? "Add another college" : "Search for a college to compare";
+    examples.hidden = n > 0;
   }
 
   function render() {
+    renderPicks();
     if (!picked.length) {
       incomeRow.style.display = "none";
-      cmp.innerHTML = `<p class="hint">Search above to add colleges, up to four at a time.</p>`;
+      cmp.innerHTML = "";
       return;
     }
     incomeRow.style.display = "flex";
     const bracket = parseInt(income.value, 10);
     const cols = picked.map(p => p.s);
+    const nameHtml = p => profile(p.unitid) ? `<a href="${profile(p.unitid)}">${esc(p.s.name)}</a>` : esc(p.s.name);
 
-    const head = `<tr><th></th>${picked.map(p => {
-      const s = p.s, slug = SLUGS[p.unitid];
-      const nameHtml = slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name);
-      return `<th><div class="schname">${nameHtml}</div>
-        <div class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}${s.control ? " &middot; " + esc(s.control) : ""}</div>
-        <button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></th>`;
+    // The corner above the measure labels is an ordinary empty cell, not a heading: an empty <th>
+    // was an axe finding, and hidden text there was clipped text to the layout check.
+    const head = `<tr><td class="corner"></td>${picked.map(p => {
+      const s = p.s;
+      return `<th><div class="schname">${nameHtml(p)}</div>
+        <div class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}${s.control ? " &middot; " + esc(s.control) : ""}</div></th>`;
     }).join("")}</tr>`;
 
     // Collect the comparison as (label, cells) pairs, then render it twice from the one source:
@@ -441,62 +548,55 @@ window.addEventListener("resize", onResize);
         return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
       }));
 
-    // Coverage first: a school with 89 of 254 programs measured should not read as equivalent to
-    // one with broad coverage, however good its pass rate looks. Computed per school, never copied.
-    // Coverage is not a verdict. It was drawn in the failing red below 50%, which is nearly every
-    // school, since most programs are too small to publish earnings. Missing data must never take
-    // the colour of a bad result, so the count is plain and the sentence says what it means.
-    row("Programs measured", cols.map(s => {
-      const decided = s.n_pass + s.n_fail;
-      const total = decided + (s.n_insufficient || 0);
-      if (!total) return "not published";
-      const share = Math.round(100 * decided / total);
-      return `<b>${decided} of ${total}</b> <span class='schmeta'>${share}% of programs have earnings data</span>`;
+    // Coverage first: a school with 51 of 83 programs assessed should not read as equivalent to one
+    // with broad coverage, however good its share looks. "Assessed" is what was calculated: a program
+    // needs published earnings and a state benchmark. With a benchmark, the rest have no published
+    // earnings; without one, none can be assessed. Coverage is not a verdict, so it is plain text.
+    row("Undergraduate programs assessed", cols.map(s => {
+      const u = ug(s);
+      if (!u.total) return "no undergraduate programs";
+      if (s.threshold == null) return `<b>0 of ${u.total}</b> <span class='schmeta'>none could be assessed: no state benchmark</span>`;
+      const rest = u.total - u.decided, share = Math.round(100 * u.decided / u.total);
+      return `<b>${u.decided} of ${u.total}</b> <span class='schmeta'>${share}% could be assessed`
+        + (rest ? `; ${rest} with no published earnings` : "") + `</span>`;
     }));
 
-    row("Programs clearing the bar", cols.map(s => {
-      const r = passRate(s), decided = s.n_pass + s.n_fail;
-      if (r == null) return "not assessed";
-      const cls = r >= 0.9 ? "good" : (r < 0.6 ? "bad" : "");
-      return `<span class="${cls}">${Math.round(r * 100)}%</span> <span class="schmeta">of ${decided} measured</span>`;
+    // Neutral figures: a colour cut-off read as a quality rating the page never explains.
+    row("Above the high-school line", cols.map(s => {
+      const u = ug(s);
+      if (!u.decided) return "not assessed";
+      return `${Math.round(100 * u.pass / u.decided)}% <span class="schmeta">of ${u.decided} assessed</span>`;
     }));
 
-    row("Programs falling short", cols.map(s =>
-      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not assessed"));
+    row("Below the high-school line", cols.map(s => {
+      const u = ug(s);
+      return u.decided ? `${u.fail} <span class="schmeta">of ${u.decided} assessed</span>` : "not assessed";
+    }));
 
-    row("Typical HS-grad benchmark", cols.map(s => s.threshold == null ? "no state benchmark" : money(s.threshold)));
+    row("State high-school line", cols.map(s => s.threshold == null ? "no state benchmark"
+      : money(s.threshold) + ` <span class='schmeta'>${esc(s.state)}</span>`));
 
     row("Students on Pell grants", cols.map(s => pct(s.pell)));
     row("Complete their program", cols.map(s => pct(s.completion)));
-    // Was "Truewise flag" / "no": jargon, and a bare "no" read like a verdict against the school.
     // hidden_gem is three-state: null means an input was missing, so the rule could not be applied.
     row("Hidden gem", cols.map(s => s.hidden_gem === true ? `<span class="gem">&#9733; Yes</span>`
       : s.hidden_gem === false ? "No" : `<span class="schmeta">not assessed</span>`));
-    row("Full profile", cols.map(s =>
-      `<a href="/value-check/?school=${esc(s.unitid)}">Open &rarr;</a>`));
+    // With the map, the profile's own address; without it, the legacy address, which resolves the
+    // profile itself. Never "no profile": every college has one.
+    row("Full profile", picked.map(p =>
+      `<a href="${profile(p.unitid) || "/value-check/?school=" + esc(p.unitid)}">Open &rarr;</a>`));
 
     const body = specs.map(([label, cells]) =>
       `<tr><th>${label}</th>${cells.map(c => `<td>${c}</td>`).join("")}</tr>`).join("");
 
-    /* Phone presentation: one card per METRIC, listing each school beneath it.
-     *
-     * The sticky-label table was the interim repair and it did not hold. At 320px one school still
-     * overflowed the 280px content box, and with two or more schools a fragment of the outgoing
-     * column sat between the sticky label and the next full column, so a phone user read partial
-     * words and partial numbers. Grouping by metric instead of by school removes the horizontal
-     * axis entirely, and keeps the schools adjacent to each other, which is the whole point of
-     * Compare: stacking one school per card would have meant scrolling between the two figures
-     * being compared. */
+    /* Phone presentation: one card per METRIC, listing each school beneath it, so the figures
+     * being compared sit one line apart and nothing scrolls sideways. The selected colleges and
+     * their Remove buttons are the labels above, shared with the wide layout. */
     const stack =
       `<div class="cmp-stack">` +
-      `<ol class="cmp-picked">` + picked.map(p => {
-        const s = p.s, slug = SLUGS[p.unitid];
-        return `<li><span class="schname">${slug ? `<a href="/college/${slug}/">${esc(s.name)}</a>` : esc(s.name)}</span>` +
-          `<span class="schmeta">${esc(s.city || "")}${s.city ? " &middot; " : ""}${esc(s.state)}</span>` +
-          `<button type="button" class="rm" data-rm="${esc(p.unitid)}" aria-label="Remove ${esc(s.name)} from comparison">Remove</button></li>`;
-      }).join("") + `</ol>` +
       specs.map(([label, cells]) =>
-        `<section class="cmp-metric"><h3>${label}</h3><dl>` +
+        // h2: these follow the page's h1 directly (h3 skipped a level, an axe finding).
+        `<section class="cmp-metric"><h2>${label}</h2><dl>` +
         cells.map((c, i) =>
           `<div><dt>${esc(picked[i].s.name)}</dt><dd>${c}</dd></div>`).join("") +
         `</dl></section>`).join("") +
@@ -505,7 +605,6 @@ window.addEventListener("resize", onResize);
     cmp.innerHTML =
       `<div class="table-wrap" tabindex="0" role="region" aria-label="College comparison">` +
       `<table class="cmp"><thead>${head}</thead><tbody>${body}</tbody></table></div>` + stack;
-    cmp.querySelectorAll("[data-rm]").forEach(el => el.addEventListener("click", () => remove(el.dataset.rm)));
   }
 
   // Shareable URLs: /compare/?schools=110662,223232
