@@ -311,38 +311,27 @@ window.addEventListener("resize", onResize);
   // The sign goes OUTSIDE the currency symbol: "$-2,533" reads as a bug rather than a
   // number. A Scorecard net price genuinely goes negative when grant aid exceeds the
   // published cost, so the figure is real and stays, correctly written.
-  const money = n => n == null ? "not reported" : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
-  const pct = f => f == null ? "n/a" : Math.round(f * 100) + "%";
+  const money = n => n == null ? "not published" : (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString();
+  const pct = f => f == null ? "not published" : Math.round(f * 100) + "%";
   const MAX = 4;
 
   let SCHOOLS = null;
   let picked = [];     // {unitid, s}; reassigned wholesale when the URL changes
 
-  // Slug must match the pre-rendered /college/<slug>/ pages (name; collision adds state, then unitid).
-  function slugify(name) {
-    return (name || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
-  }
-  let SLUGS = null;
-  function buildSlugs(list) {
-    const used = new Set(), out = {};
-    [...list].sort((a, b) => (a.name || "").toLowerCase() < (b.name || "").toLowerCase() ? -1 : 1)
-      .forEach(s => {
-        if ((s.n_pass + s.n_fail) < 1) return;      // only schools that have a page
-        const base = slugify(s.name);
-        let cand = base;
-        if (used.has(cand)) cand = base + "-" + (s.state || "").toLowerCase();
-        if (used.has(cand)) cand = base + "-" + s.unitid;
-        used.add(cand);
-        out[s.unitid] = cand;
-      });
-    return out;
-  }
-
+  // Profile links come from the slug map the page builder publishes, the one source of each
+  // college's address. A second copy of the naming rules used to live here; slugs now come from
+  // the slug registry and cannot be recomputed from names, so the copy linked 33 colleges to a
+  // different college's profile, 11 to pages that do not exist, and gave no link to 1,178 that
+  // have one. If the map cannot be fetched, names are shown without links rather than guessed.
+  let SLUGS = {};
   async function load() {
     if (SCHOOLS) return SCHOOLS;
-    const r = await fetch("/value-check/data/schools.json");
+    const [r, map] = await Promise.all([
+      fetch("/value-check/data/schools.json"),
+      fetch("/college/slug-map.json").then(m => (m.ok ? m.json() : {})).catch(() => ({})),
+    ]);
     SCHOOLS = (await r.json()).schools;
-    SLUGS = buildSlugs(SCHOOLS);
+    SLUGS = map;
     return SCHOOLS;
   }
 
@@ -443,11 +432,11 @@ window.addEventListener("resize", onResize);
     const specs = [];
     const row = (label, cells) => { specs.push([label, cells]); return ""; };
 
-    row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not reported"));
+    row("Undergraduates", cols.map(s => s.enrollment ? s.enrollment.toLocaleString() : "not published"));
 
     row(bracket < 0 ? "Net price, all families" : "Net price at this income",
       cols.map(s => {
-        if (!s.net_price) return "not reported";
+        if (!s.net_price) return "not published";
         const v = bracket < 0 ? s.net_price.avg : (s.net_price.brackets || [])[bracket];
         return money(v) + (v == null ? "" : " <span class='schmeta'>per year</span>");
       }));
@@ -460,22 +449,22 @@ window.addEventListener("resize", onResize);
     row("Programs measured", cols.map(s => {
       const decided = s.n_pass + s.n_fail;
       const total = decided + (s.n_insufficient || 0);
-      if (!total) return "not reported";
+      if (!total) return "not published";
       const share = Math.round(100 * decided / total);
       return `<b>${decided} of ${total}</b> <span class='schmeta'>${share}% of programs have earnings data</span>`;
     }));
 
     row("Programs clearing the bar", cols.map(s => {
       const r = passRate(s), decided = s.n_pass + s.n_fail;
-      if (r == null) return "not enough data";
+      if (r == null) return "not assessed";
       const cls = r >= 0.9 ? "good" : (r < 0.6 ? "bad" : "");
       return `<span class="${cls}">${Math.round(r * 100)}%</span> <span class="schmeta">of ${decided} measured</span>`;
     }));
 
     row("Programs falling short", cols.map(s =>
-      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not enough data"));
+      (s.n_pass + s.n_fail) ? `${s.n_fail}` : "not assessed"));
 
-    row("Typical HS-grad benchmark", cols.map(s => money(s.threshold)));
+    row("Typical HS-grad benchmark", cols.map(s => s.threshold == null ? "no state benchmark" : money(s.threshold)));
 
     row("Students on Pell grants", cols.map(s => pct(s.pell)));
     row("Complete their program", cols.map(s => pct(s.completion)));

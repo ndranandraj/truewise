@@ -1157,6 +1157,30 @@ def test_all_college_pickers_share_one_search_module():
         assert "ALIASES = {" not in html, f"{rel} still defines an inline alias map"
 
 
+def test_compare_links_profiles_from_the_published_slug_map():
+    """Compare rebuilt each college's address from its name with a copy of the naming rules. Slugs
+    come from the slug registry and cannot be recomputed, so the copy linked 33 colleges to another
+    college's profile and 11 to pages that do not exist, and gave 1,178 colleges with a profile no
+    link (October 2026). The page must take addresses from the map the builder publishes; the
+    deploy's compare_smoke.js checks every college against the built map."""
+    html = (SITE / "compare" / "index.html").read_text()
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", html, flags=re.S)
+    assert 'fetch("/college/slug-map.json")' in code, "Compare must load the published slug map"
+    assert "function slugify" not in code and "buildSlugs" not in code, (
+        "Compare must not recompute profile addresses from names"
+    )
+
+
+def test_compare_missing_values_use_the_site_vocabulary():
+    """The October correction said Compare's missing values used the college pages' terms; only the
+    hidden-gem row did. Unknowns say why: not published, not assessed, no state benchmark."""
+    html = (SITE / "compare" / "index.html").read_text()
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", html, flags=re.S)
+    for bad in ('"not reported"', '"n/a"', '"not enough data"'):
+        assert bad not in code, f"Compare still prints {bad} for a missing value"
+    assert '"no state benchmark"' in code, "a missing benchmark must say so"
+
+
 def test_compare_remove_control_is_an_accessible_button():
     """The Compare remove control was a click-only <div> (no keyboard, no name). It must be a
     real button with an accessible label, and the page must expose a polite live region."""
