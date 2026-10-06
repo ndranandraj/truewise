@@ -96,6 +96,22 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "October 2026",
+        "title": "Compare: college names linked to the wrong profile",
+        "body": (
+            "On the Compare page, each college's name linked to its profile through a second copy of "
+            "the rules that name college pages. That copy had drifted from the list the site "
+            "publishes: 33 colleges linked to the profile of a different college with the same name, "
+            "11 linked to pages that do not exist, and 1,178 colleges that have a profile had no "
+            "link. Names now link through the published list, and a test checks every college. "
+            "Separately, the entry below said missing values on the compare page now use the same "
+            "terms as college pages. On Compare that was true only of the hidden-gem row; enrollment, "
+            "net price, Pell grants and completion now say not published, program counts not "
+            "assessed, and a missing benchmark no state benchmark. No figures changed."
+        ),
+        "link": "/compare/",
+    },
+    {
+        "date": "October 2026",
         "title": "Wording clarifications: the ED spot check, and why a comparison is missing",
         "body": (
             "The methodology said our four-year earnings match the Department of Education's "
