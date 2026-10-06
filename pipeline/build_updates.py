@@ -104,9 +104,12 @@ CORRECTIONS = [
             "11 linked to pages that do not exist, and 1,178 colleges that have a profile had no "
             "link. Names now link through the published list, and a test checks every college. "
             "Separately, the entry below said missing values on the compare page now use the same "
-            "terms as college pages. On Compare that was true only of the hidden-gem row; enrollment, "
-            "net price, Pell grants and completion now say not published, program counts not "
-            "assessed, and a missing benchmark no state benchmark. No figures changed."
+            "terms as college pages. On Compare that was true only of the hidden-gem row. Now the "
+            'undergraduates, net price, "Programs measured", Pell grant and completion rows say not '
+            'published where ED did not publish the figure; the "Programs clearing the bar" and '
+            '"Programs falling short" rows say not assessed where no program could be assessed; and '
+            'the "Typical HS-grad benchmark" row says no state benchmark where there is none. No '
+            "figures changed."
         ),
         "link": "/compare/",
     },

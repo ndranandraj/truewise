@@ -240,10 +240,69 @@ const ck = (name, cond) => {
   ck("going back rebuilds the comparison", cols() === 1 && txt().includes("Baylor"));
 
   /* Profile links (October 2026). The page used to rebuild each college's address from its name
-     with a copy of the naming rules; slugs come from the slug registry and cannot be recomputed, so
+     with a copy of the naming rules. Slugs come from the slug registry and cannot be recomputed, so
      the copy sent some names to another college's profile, some to pages that do not exist, and
-     gave many colleges no link at all. The old rules are kept HERE, only to find those colleges,
-     so the regression cases follow the data rather than a hand-picked list. */
+     gave many colleges no link at all. Two layers of checks:
+       1. Fixed fixtures, independent of the data: a small school list and map in which the old
+          rules give each kind of wrong answer. These always run.
+       2. Every college in the real data links to its own existing profile. The three defect kinds
+          are counted for the record, but an empty kind is reported, not failed: a legitimate data
+          refresh can remove the last case, and the fixtures still cover it. What does fail is a
+          pass that measured nothing. */
+  const linkFor = async (unitid) => {
+    global.location.search = "?schools=" + unitid;
+    await applyFromUrl();
+    const m = els.cmp.innerHTML.match(/<div class="schname">(<a href="([^"]+)">)?/);
+    return m && m[2] ? m[2] : null;
+  };
+  const realFetch = global.fetch;
+  const fixture = (schools, map) => {
+    global.fetch = async (url) =>
+      String(url).includes("/college/slug-map.json")
+        ? { ok: true, json: async () => map }
+        : { ok: true, json: async () => ({ schools }) };
+  };
+  // The page caches what it loaded, so each fixture needs a fresh copy of the page's script.
+  const freshPage = () => eval(js + "\n;({ applyFromUrl })");
+  const school = (unitid, name, state, verdicts) =>
+    ({ unitid, name, state, city: "", n_pass: verdicts, n_fail: 0, n_insufficient: 1, threshold: 30000 });
+  {
+    // Old rules, alphabetical then by order: the first "Academy of Example" takes the bare slug and
+    // the second gets "-wi". The registry assigned them the other way round, as it does for real
+    // colleges whose slugs were set before a namesake appeared.
+    const schools = [
+      school("900001", "Academy of Example", "MO", 3),
+      school("900002", "Academy of Example", "WI", 3),
+      school("900003", "Example College", "OK", 2), // old rules: "example-college"; registry: "-ok"
+      school("900004", "Unassessed Institute", "TX", 0), // old rules: no link at all
+    ];
+    const map = { 900001: "academy-of-example-mo", 900002: "academy-of-example", 900003: "example-college-ok", 900004: "unassessed-institute" };
+    fixture(schools, map);
+    const page = freshPage();
+    const at = async (u) => {
+      global.location.search = "?schools=" + u;
+      await page.applyFromUrl();
+      const m = els.cmp.innerHTML.match(/<div class="schname">(<a href="([^"]+)">)?/);
+      return m && m[2] ? m[2] : null;
+    };
+    ck("fixture, wrong school: a namesake links to its own profile", (await at("900001")) === "/college/academy-of-example-mo/");
+    ck("fixture, wrong school: the other namesake too", (await at("900002")) === "/college/academy-of-example/");
+    ck("fixture, missing page: the registry's slug, not a recomputed one", (await at("900003")) === "/college/example-college-ok/");
+    ck("fixture, formerly absent: a college with no verdict still links", (await at("900004")) === "/college/unassessed-institute/");
+    // The map cannot be fetched: the comparison still renders, names unlinked, nothing guessed.
+    global.fetch = async (url) => {
+      if (String(url).includes("/college/slug-map.json")) throw new Error("blocked");
+      return { ok: true, json: async () => ({ schools }) };
+    };
+    const offline = freshPage();
+    global.location.search = "?schools=900001";
+    await offline.applyFromUrl();
+    ck("map unavailable: the comparison renders with the name unlinked",
+      els.cmp.innerHTML.includes("Academy of Example") && !/<div class="schname"><a /.test(els.cmp.innerHTML));
+  }
+  global.fetch = realFetch;
+  eval(js); // back to the page as loaded with the real data
+
   const oldSlugs = (() => {
     const slugify = (n) => (n || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "school";
     const used = new Set(), out = {};
@@ -259,34 +318,18 @@ const ck = (name, cond) => {
     return out;
   })();
   const owner = Object.fromEntries(Object.entries(SLUG_MAP).map(([u, slug]) => [slug, u]));
-  const cases = { wrongSchool: [], missingPage: [], formerlyAbsent: [] };
+  const kinds = { wrongSchool: 0, missingPage: 0, formerlyAbsent: 0 };
+  let right = 0, checked = 0;
   for (const s of data) {
-    const was = oldSlugs[s.unitid], now = SLUG_MAP[s.unitid];
-    if (!now) continue;
-    if (!was) cases.formerlyAbsent.push(s.unitid);
-    else if (was !== now) (owner[was] ? cases.wrongSchool : cases.missingPage).push(s.unitid);
+    const now = SLUG_MAP[s.unitid], was = oldSlugs[s.unitid];
+    if (!was) kinds.formerlyAbsent++;
+    else if (was !== now) owner[was] ? kinds.wrongSchool++ : kinds.missingPage++;
+    checked++;
+    if (now && (await linkFor(s.unitid)) === `/college/${now}/` && fs.existsSync(`site/college/${now}/index.html`)) right++;
   }
-  // A check that cannot measure must fail: if the data no longer has a case of a kind, say so.
-  for (const [kind, ids] of Object.entries(cases)) ck(`there are ${kind} cases to test (${ids.length})`, ids.length > 0);
-  const pageExists = (slug) => fs.existsSync(`site/college/${slug}/index.html`);
-  const linkFor = async (unitid) => {
-    global.location.search = "?schools=" + unitid;
-    await applyFromUrl();
-    const m = els.cmp.innerHTML.match(/<div class="schname"><a href="([^"]+)">/);
-    return m ? m[1] : null;
-  };
-  for (const [kind, ids] of Object.entries(cases)) {
-    let right = 0;
-    for (const u of ids) if ((await linkFor(u)) === `/college/${SLUG_MAP[u]}/` && pageExists(SLUG_MAP[u])) right++;
-    ck(`${kind}: every college links to its own existing profile (${right} of ${ids.length})`, right === ids.length);
-  }
-  // And none of the old wrong destinations survives.
-  let stale = 0;
-  for (const u of [...cases.wrongSchool, ...cases.missingPage]) if ((await linkFor(u)) === `/college/${oldSlugs[u]}/`) stale++;
-  ck(`no college keeps its old wrong link (${stale})`, stale === 0);
-  // Every college in the data has a profile in the map, so every name can link.
-  const unmapped = data.filter((s) => !SLUG_MAP[s.unitid]).length;
-  ck(`every college in the data is in the slug map (${unmapped} missing)`, unmapped === 0);
+  console.log(`      old-rule defects in this data: ${kinds.wrongSchool} wrong school, ${kinds.missingPage} missing page, ${kinds.formerlyAbsent} formerly absent`);
+  ck(`the dataset-wide pass measured colleges (${checked})`, checked > 1000);
+  ck(`every college links to its own existing profile (${right} of ${checked})`, right === checked);
 
   console.log(fails ? "\n" + fails + " FAILURE(S)" : "\nALL COMPARE CHECKS PASSED");
   process.exit(fails ? 1 : 0);
