@@ -1,0 +1,27 @@
+ok    homepage
+ok    value-check
+ok    value-check-failed
+ok    penn-state
+ok    agape
+ok    ucla
+ok    compare
+ok    careers
+ok    careers-detail
+ok    k12-hub
+ok    k12-rankings
+ok    k12-compare
+ok    k12-compare-2
+ok    k12-courses
+ok    k12-search
+ok    k12-school
+ok    methodology
+ok    embed-docs
+ok    major
+ok    finding
+ok    finding-fvtge
+ok    list
+ok    careers-open-field
+
+92 of 92 page-states measured.
+0 blocking, 0 advisory.
+Report: layout-check-2026-10-07T02-05-31/report.md

@@ -1,0 +1,22 @@
+  ok    ruff_check
+  ok    ruff_format
+  ok    pytest
+  ok    pytest_clean
+  ok    components
+  ok    tokens
+  ok    components_smoke
+  ok    table_smoke
+  ok    ui_smoke
+  ok    integration_smoke
+  ok    profile_smoke
+  ok    compare_smoke
+  ok    search_smoke
+  ok    embed_smoke
+  ok    search_gold
+  ok    value_check_states
+  ok    k12_compare_states
+  ok    k12_lookup_states
+  ok    careers_states
+  ok    layout_shot_smoke
+  ok    layout_enlarged_smoke
+GATE PASSED
