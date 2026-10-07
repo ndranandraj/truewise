@@ -1,0 +1,88 @@
+
+== Layout, Firefox normal
+ok    /k12/ 320x568: body 15px, page overflow 0, clipped in form 0, field 246px
+ok    /k12/ 320x700: body 15px, page overflow 0, clipped in form 0, field 246px
+ok    /k12/ 375x667: body 15px, page overflow 0, clipped in form 0, field 201px
+ok    /k12/ 390x844: body 15px, page overflow 0, clipped in form 0, field 216px
+ok    /k12/ 768x1024: body 15px, page overflow 0, clipped in form 0, field 546px
+ok    /k12/ 1100x800: body 15px, page overflow 0, clipped in form 0, field 525px
+ok    /k12/ 1280x800: body 15px, page overflow 0, clipped in form 0, field 546px
+ok    /k12/ 1440x900: body 15px, page overflow 0, clipped in form 0, field 546px
+ok    /k12/advanced-courses/ 320x568: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 320x700: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 375x667: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 390x844: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 768x1024: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1100x800: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1280x800: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1440x900: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 320x568: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 320x700: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 375x667: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 390x844: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 768x1024: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1100x800: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1280x800: body 15px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1440x900: body 15px, page overflow 0, clipped in form 0
+
+== Layout, Firefox 200%
+ok    /k12/ 320x568: body 30px, page overflow 0, clipped in form 0, field 246px
+ok    /k12/ 320x700: body 30px, page overflow 0, clipped in form 0, field 246px
+ok    /k12/ 375x667: body 30px, page overflow 0, clipped in form 0, field 301px
+ok    /k12/ 390x844: body 30px, page overflow 0, clipped in form 0, field 316px
+ok    /k12/ 768x1024: body 30px, page overflow 0, clipped in form 0, field 500px
+ok    /k12/ 1100x800: body 30px, page overflow 0, clipped in form 0, field 479px
+ok    /k12/ 1280x800: body 30px, page overflow 0, clipped in form 0, field 500px
+ok    /k12/ 1440x900: body 30px, page overflow 0, clipped in form 0, field 500px
+ok    /k12/advanced-courses/ 320x568: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 320x700: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 375x667: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 390x844: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 768x1024: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1100x800: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1280x800: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/ 1440x900: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 320x568: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 320x700: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 375x667: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 390x844: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 768x1024: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1100x800: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1280x800: body 30px, page overflow 0, clipped in form 0
+ok    /k12/advanced-courses/?school=170993000942 1440x900: body 30px, page overflow 0, clipped in form 0
+
+== Handoff, examples, keyboard (Firefox)
+ok    Enter hands off: ?q=Lane+Tech, lookup field "Lane Tech", focus #q, first result LANE TECHNICAL HIGH SCHOOL
+ok    the Search button hands off (Stuyvesant found)
+ok    an empty search lands on the lookup with an empty field (no error)
+ok    a two-letter search asks for three letters
+ok    example 170993000942 opens "LANE TECHNICAL HIGH SCHOOL"
+ok    example 362058002877 opens "STUYVESANT HIGH SCHOOL"
+ok    example 530771001171 opens "GARFIELD HIGH SCHOOL"
+ok    example 050900000607 opens "CENTRAL HIGH SCHOOL"
+ok    example 350237000551 opens "SANTA FE HIGH"
+ok    Find another school returns to the search
+ok    focus is visible (outline at least 2px) on the field, button, examples and tiles
+      order: Overview | Courses & staff | State report cards | Compare | e.g. Lane Tech | Search | Lane Tech Chicago | Stuyvesant New York | Garfield Seattle | Central High School Little | Santa Fe High New Mexico | State report cards How sta
+ok    after the section links: field, Search, five examples, then the tiles
+ok    Enter on a focused example opens it
+ok    Back returns to the hub
+
+== Handoff, examples, keyboard (Chromium)
+ok    Enter hands off: ?q=Lane+Tech, lookup field "Lane Tech", focus #q, first result LANE TECHNICAL HIGH SCHOOL
+ok    the Search button hands off (Stuyvesant found)
+ok    an empty search lands on the lookup with an empty field (no error)
+ok    a two-letter search asks for three letters
+ok    example 170993000942 opens "LANE TECHNICAL HIGH SCHOOL"
+ok    example 362058002877 opens "STUYVESANT HIGH SCHOOL"
+ok    example 530771001171 opens "GARFIELD HIGH SCHOOL"
+ok    example 050900000607 opens "CENTRAL HIGH SCHOOL"
+ok    example 350237000551 opens "SANTA FE HIGH"
+ok    Find another school returns to the search
+ok    focus is visible (outline at least 2px) on the field, button, examples and tiles
+      order: Overview | Courses & staff | State report cards | Compare | e.g. Lane Tech | Search | Lane Tech Chicago | Stuyvesant New York | Garfield Seattle | Central High School Little | Santa Fe High New Mexico | State report cards How sta
+ok    after the section links: field, Search, five examples, then the tiles
+ok    Enter on a focused example opens it
+ok    Back returns to the hub
+
+76 passed, 0 failed
