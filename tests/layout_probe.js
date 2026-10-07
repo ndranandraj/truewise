@@ -139,6 +139,16 @@ const ROUTES = [
       return { findings, steps: [{ step: "keyboard-remove", ...st }] };
     } },
   { label: "k12-courses", path: "/k12/advanced-courses/", kind: "static" },
+  /* A school's page: rendered by script, so both passes wait for its heading. Stuyvesant's name has the
+   * longest single word of the examples, which widened a 320px page at 200% text (October 2026). */
+  /* A populated search: result cards with long CRDC names, the state that let "INTERNATIONAL" run
+   * past its card at doubled text (October 2026). */
+  { label: "k12-search", path: "/k12/advanced-courses/?q=international", kind: "static",
+    enlargedReady: [".school-card"],
+    prepare: async (page) => { await page.waitForSelector(".school-card", { timeout: 10000 }); } },
+  { label: "k12-school", path: "/k12/advanced-courses/?school=362058002877", kind: "static",
+    enlargedReady: [".sch-head h1"],
+    prepare: async (page) => { await page.waitForSelector(".sch-head h1", { timeout: 10000 }); } },
   { label: "methodology", path: "/methodology/", kind: "static" },
   { label: "embed-docs", path: "/about/embed/", kind: "static" },
   { label: "major", path: "/majors/computer-science/", kind: "static" },
@@ -656,6 +666,39 @@ function pageEnlargedProbe() {
   return { findings: [{ kind: "page-enlarged-overflow", blocking: true, detail: `At doubled text the page is ${over}px wider than the ${vw}px screen.${src}` }] };
 }
 
+/** Text stays inside the box it is drawn in (October 2026). At 200% text on a 320px phone the High
+ *  Schools lookup's result cards let "INTERNATIONAL" run 5px past the card's border while the page
+ *  itself still fitted, so the document-width checks above passed. A box here is any element that
+ *  draws both a left and a right border (cards, labels, framed panels); text inside a deliberate
+ *  scroller is skipped, as above. Reports the first few boxes, each once. */
+function boxedTextProbe() {
+  const scrolls = (e) => { const o = getComputedStyle(e).overflowX; return o === "auto" || o === "scroll" || o === "hidden"; };
+  const inScroller = (n, stop) => { for (let e = n; e && e !== stop; e = e.parentElement) if (scrolls(e)) return true; return false; };
+  const findings = [];
+  for (const box of document.querySelectorAll("body *")) {
+    if (findings.length >= 5) break;
+    const cs = getComputedStyle(box);
+    const bl = parseFloat(cs.borderLeftWidth), br = parseFloat(cs.borderRightWidth);
+    if (!(bl > 0 && br > 0) || cs.borderLeftStyle === "none" || cs.borderRightStyle === "none") continue;
+    if (cs.display === "inline" || cs.display === "none" || scrolls(box)) continue;
+    const r = box.getBoundingClientRect();
+    if (!r.width || !r.height) continue;
+    const left = r.left + bl, right = r.right - br;
+    const tw = document.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+    for (let n; (n = tw.nextNode());) {
+      if (!n.textContent.trim() || inScroller(n.parentElement, box)) continue;
+      const range = document.createRange(); range.selectNodeContents(n);
+      const past = Math.max(0, ...[...range.getClientRects()].filter((q) => q.width).map((q) => Math.max(q.right - right, left - q.left)));
+      if (past > 1) {
+        const cls = (box.getAttribute("class") || "").split(" ")[0];
+        findings.push({ kind: "text-past-box", blocking: true, detail: `At doubled text "${n.textContent.trim().slice(0, 40)}" runs ${Math.round(past)}px past the border of ${box.tagName.toLowerCase()}${cls ? "." + cls : ""}.` });
+        break;
+      }
+    }
+  }
+  return { findings };
+}
+
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { probe, focusState, liveText, doubleText, headerProbe, tableEnlargedProbe, pageEnlargedProbe, WIDTHS, ROUTES };
+  module.exports = { probe, focusState, liveText, doubleText, headerProbe, tableEnlargedProbe, pageEnlargedProbe, boxedTextProbe, WIDTHS, ROUTES };
 }
