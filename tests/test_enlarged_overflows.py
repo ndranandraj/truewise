@@ -92,7 +92,10 @@ def test_layout_check_fails_pages_wider_than_the_screen_at_enlarged_text():
         "function pageEnlargedProbe()" in probe
         and '"page-enlarged-overflow", blocking: true' in probe
     )
-    assert "probes: [headerProbe, tableEnlargedProbe, pageEnlargedProbe]" in check
+    # The page-width probe stays in the enlarged pass; boxedTextProbe (text inside its bordered box,
+    # October 2026) runs beside it.
+    assert "probes: [headerProbe, tableEnlargedProbe, pageEnlargedProbe, boxedTextProbe]" in check
+    assert '"text-past-box", blocking: true' in probe
     enlarged = (ROOT / "tests" / "layout_enlarged.js").read_text()
     assert '{ label: "320", width: 320' in enlarged, "the enlarged pass must cover 320px phones"
 

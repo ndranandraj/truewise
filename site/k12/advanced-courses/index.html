@@ -37,7 +37,15 @@
     .results li { margin: 0 0 10px; }
     .school-card { display: block; text-decoration: none; color: inherit; border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; background: var(--surface); transition: border-color .15s, box-shadow .15s; }
     .school-card:hover { border-color: var(--brand); box-shadow: 0 4px 16px rgba(12,21,18,.08); }
-    .school-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+    /* h2, not h3: the names follow the page's h1 directly (an h3 skipped a level, an axe finding in
+       review of PR #14). Sized like the hub's tool cards (.live-card h2), the type token nearest
+       the old 1.05rem. */
+    .school-card h2 { margin: 0 0 4px; font-size: var(--t-sub); }
+    /* Names come from the CRDC in capitals: at 200% text on a 320px phone "INTERNATIONAL" was wider
+       than its card and ran 5px past the border while the page still fitted. A word too long for
+       the card breaks (hyphenated where the browser can) instead; the text keeps its size. */
+    .school-card { overflow-wrap: break-word; }
+    .school-card h2 { hyphens: auto; }
     .school-card .meta { color: var(--ink-soft); font-size: .9rem; }
     .chips { display: inline-flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
     .chip { font-size: .74rem; font-weight: 700; border-radius: var(--r-pill); padding: 3px 9px; }
@@ -50,6 +58,8 @@
     .stchip.on { background: var(--brand); border-color: var(--brand); color: var(--surface); font-weight: 600; }
     .stchip:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
     .rescount { margin: 6px 0 0; font-size: .86rem; color: var(--ink-soft); }
+    /* No match is said here, in the status region, and only here, at the size the old list item had. */
+    .rescount.none { font-size: var(--t-ui); padding: 14px 0 0; }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
@@ -68,8 +78,11 @@
     @container sch-head (max-width: 12em) { .sch-head h1 { font-size: var(--t-lede); } }
     .sch-head h1, .k-head h1 { overflow-wrap: break-word; hyphens: auto; }
     .sec-h { font-size: 1.15rem; letter-spacing: -.02em; margin: 26px 0 6px; }
-    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 10px 0 6px; max-width: 820px; }
-    .course { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; background: var(--surface); }
+    /* The column minimum is in em, 13.333em being the old 200px at 15px text, so normal size is
+       unchanged; at 200% text the cards widen with their text instead of staying 222px with a 34px
+       heading, where "International Baccalaureate" ran 19px past the card. */
+    .course-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.333em), 1fr)); gap: 12px; margin: 10px 0 6px; max-width: 820px; }
+    .course { border: 1px solid var(--line); border-radius: var(--r-lg); padding: 16px 18px; background: var(--surface); overflow-wrap: break-word; }
     .course h3 { margin: 0 0 4px; font-size: 1.05rem; }
     .course .status { font-weight: 700; font-size: .95rem; }
     .course .status.yes { color: var(--good); } .course .status.no { color: var(--bad); }
@@ -318,7 +331,7 @@ window.addEventListener("resize", onResize);
       stateFilter = stateFilter && term ? stateFilter : stateFilter;
       if (term.length < 3) {
         results.innerHTML = `<li class="empty">Type at least three letters to search.</li>`;
-        statebar.hidden = true; rescount.textContent = ""; return;
+        statebar.hidden = true; rescount.textContent = ""; rescount.classList.remove("none"); return;
       }
       // School names repeat heavily: "Central High School" alone matches hundreds across the
       // country. Offer the states the matches fall in so a person can narrow instead of scrolling.
@@ -338,14 +351,18 @@ window.addEventListener("resize", onResize);
       const hits = TWSearch.K12SearchProvider
         .search(term, { data: INDEX, state: stateFilter, limit: 40 })
         .map(r => r.raw);
+      // The status region (role="status") is what a screen reader announces. No match used to be a
+      // list item, shown but never announced; it is now said there, and the list is left empty so it
+      // is not shown twice.
       rescount.textContent = hits.length
         ? `${hits.length}${hits.length === 40 ? "+" : ""} school${hits.length === 1 ? "" : "s"}`
           + (stateFilter ? ` in ${stateFilter}` : "")
-        : "";
-      if (!hits.length) { results.innerHTML = `<li class="empty">No high schools match “${esc(term)}”.</li>`; return; }
+        : `No high schools match \u201c${term}\u201d.`;
+      rescount.classList.toggle("none", !hits.length);
+      if (!hits.length) { results.innerHTML = ""; return; }
       results.innerHTML = hits.map(s => `
         <li><a class="school-card" href="?school=${s.k}" data-k="${s.k}" data-s="${s.s}">
-          <h3>${esc(s.n)}</h3>
+          <h2>${esc(s.n)}</h2>
           <div class="meta">${esc(s.d || "")}${s.d ? ", " : ""}${esc(s.s)}</div>
           <div class="chips">
             <span class="chip ${s.ap === true ? "on" : s.ap === false ? "off" : "unk"}">${s.ap === true ? "AP" : s.ap === false ? "No AP" : "AP not reported"}</span>

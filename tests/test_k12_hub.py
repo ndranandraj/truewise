@@ -104,3 +104,29 @@ def test_school_names_may_hyphenate_and_the_layout_check_measures_a_school_page(
     assert '<html lang="en">' in LOOKUP
     probe = (ROOT / "tests" / "layout_probe.js").read_text()
     assert 'label: "k12-school", path: "/k12/advanced-courses/?school=362058002877"' in probe
+
+
+def test_lookup_text_stays_inside_its_cards_and_no_match_is_announced():
+    """Review of PR #14 (October 2026): at 200% text on a 320px phone, result-card names such as
+    "INTERNATIONAL" ran past their cards, and on a school page "International Baccalaureate" ran
+    past its course card at 769px, while the page itself still fitted. No match was a list item
+    outside the status region. tests/k12_lookup_states.js runs the search sequence; the layout check
+    measures a populated search (k12-search) with boxedTextProbe at doubled text."""
+    css = re.sub(
+        r"/\*.*?\*/", "", LOOKUP.split("<style>", 1)[1].split("</style>", 1)[0], flags=re.S
+    )
+    assert ".school-card { overflow-wrap: break-word; }" in css
+    assert "minmax(min(100%, 13.333em), 1fr)" in css, "course columns size with their text"
+    assert "minmax(200px, 1fr)" not in css
+    assert "overflow-wrap: break-word; }" in css.split(".course {", 1)[1].split("}", 1)[0] + "}"
+    assert 'rescount.classList.toggle("none", !hits.length);' in LOOKUP
+    assert '<li class="empty">No high schools match' not in LOOKUP, "no match is not shown twice"
+    # Result names are h2 under the page's h1 (h3 skipped a level: axe heading-order).
+    assert "<h2>${esc(s.n)}</h2>" in LOOKUP and "<h3>${esc(s.n)}</h3>" not in LOOKUP
+    probe = (ROOT / "tests" / "layout_probe.js").read_text()
+    assert 'label: "k12-search", path: "/k12/advanced-courses/?q=international"' in probe
+    assert "function boxedTextProbe()" in probe
+    check = (ROOT / "tests" / "layout_check.js").read_text()
+    assert "pageEnlargedProbe, boxedTextProbe]" in check, (
+        "the enlarged pass runs the boxed-text probe"
+    )
