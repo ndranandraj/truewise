@@ -47,3 +47,10 @@ jobs:
 
       - name: Ask each host what it returns
         run: python -m pipeline.reachability_probe
+
+      # A separate question (October 2026): can a runner reach ED's FVT/GE reporting list on
+      # fsapartners.ed.gov? Asked before any monitor is designed for the list. It runs even when the
+      # Scorecard step above reports a block, and it never reports the list as unchanged.
+      - name: Ask fsapartners.ed.gov about the FVT/GE reporting list
+        if: always()
+        run: python -m pipeline.fvtge_reachability_probe
