@@ -11,9 +11,11 @@ This asks two things and reports what came back:
   * the announcement page that links each version of the list (a GET; the page is small), and
   * the newest spreadsheet known on 8 October 2026 (a HEAD, so nothing is downloaded).
 
-It sends the project's own agent, does not retry, and does not impersonate a browser. Its only
-answers are "reachable", "refused" and "could not ask": a probe that cannot reach a source must
-never report that source as unchanged, so it says nothing about whether the list has changed.
+It sends the project's own agent, does not retry, and does not impersonate a browser. It reports
+each request's method, URL, final URL, status and any error, then whether the page answered a GET
+and the file a HEAD. A HEAD answers only for HEAD: a success does not show that a GET would download
+a valid workbook, and 405 or 501 means HEAD is unsupported, not that downloads are refused. It never
+reports the list as unchanged: a probe that cannot reach a source must never say so.
 
     python -m pipeline.fvtge_reachability_probe
 """
@@ -44,46 +46,40 @@ def main() -> None:
     except OSError:
         pass
     print()
-    results = [
-        probe("announcement", ANNOUNCEMENT),
-        probe("latest list", LATEST_LIST, method="head"),
-    ]
-    for r in results:
+    page = probe("announcement", ANNOUNCEMENT)
+    file_ = probe("latest list", LATEST_LIST, method="head")
+    # Every endpoint's outcome is printed in full, whatever the verdict, so the run's log is the
+    # record even when another step has turned the run red.
+    for r in (page, file_):
         mark = "ok  " if r.get("ok") else "FAIL"
-        print(f"[{mark}] {r['label']:<13} {r['method']:<4} {r.get('status') or r.get('error')}")
-        print(f"         {r['url']}")
+        print(f"[{mark}] {r['label']:<13} {r['method']:<4} status={r.get('status')}")
+        print(f"         url       {r['url']}")
+        if r.get("final_url") and r.get("final_url") != r["url"]:
+            print(f"         final url {r['final_url']}")
+        if r.get("error"):
+            print(f"         error     {r['error']}")
         if r.get("server") or r.get("edge"):
             print(f"         server={r.get('server', '')} {r.get('edge', '')}".rstrip())
         print()
     print("-" * 72)
-    if not any(r["reached_host"] for r in results):
-        print(
-            "COULD NOT ASK. No request reached fsapartners.ed.gov: this machine's network refused"
-        )
-        print(
-            "the connection, which says nothing about what ED would answer. Run it from a runner."
-        )
+    if not page["reached_host"] and not file_["reached_host"]:
+        print("COULD NOT ASK. Neither request reached fsapartners.ed.gov: this machine's network")
+        print("refused the connection, which says nothing about what ED would answer.")
         sys.exit(2)
-    if all(r["ok"] for r in results):
-        print(
-            "REACHABLE. Both the page and the file answered from here. A monitor for the list could"
-        )
-        print(
-            "run from this address; it would still have to report a failed fetch as a failure, never"
-        )
-        print("as 'unchanged'.")
-        sys.exit(0)
-    if not any(r["ok"] for r in results):
-        print(
-            "REFUSED. fsapartners.ed.gov answered and refused both requests from here. A monitor for"
-        )
-        print(
-            "the list cannot run from this address; checking for new versions stays a manual step."
-        )
-        sys.exit(1)
-    print("MIXED. One request was refused and one was not. Do not design around this until it is")
-    print("reproduced: it may be transient, or specific to the page or the file.")
-    sys.exit(1)
+    # HEAD answers only about HEAD. 405 or 501 means the method is not supported, not that a
+    # download is refused; a 2xx means a HEAD succeeded, not that a GET would return a valid
+    # workbook. A monitor would need its own GET and a check of what came back.
+    head_unsupported = file_.get("status") in (405, 501)
+    print(f"page (GET)  : {'answered' if page['ok'] else 'refused or failed'}")
+    if head_unsupported:
+        print("file (HEAD) : HEAD is not supported here; this says nothing about a GET")
+    else:
+        print(f"file (HEAD) : {'answered' if file_['ok'] else 'refused or failed'}")
+    print()
+    print("A HEAD that succeeds does not show that a GET would download a valid workbook, and this")
+    print("probe never reports the list as unchanged. Designing a monitor needs a separate GET and")
+    print("content check.")
+    sys.exit(0 if page["ok"] and (file_["ok"] or head_unsupported) else 1)
 
 
 if __name__ == "__main__":
