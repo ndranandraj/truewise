@@ -19,16 +19,24 @@ nothing is guessed, renamed or mapped onto an older meaning.
      name is a different release and must be registered, with ED's caveats re-read, before use.
   2. ED's own text names the registered compile date ("compiled on October 5th, 2026").
   3. The Data sheet's header is exactly the release's columns, in order.
-  4. Every row is kept. A fully empty row is skipped; a row with any value but no OPEID is refused,
-     as is a duplicate OPEID, an OPEID that is not six characters, or a missing name, state or
-     control. Control must be one of ED's four.
+  4. Every row is kept. A row whose cells are all empty is skipped; any other row must be a
+     complete institution, or the file is refused: a row with values (zeros included) but no OPEID,
+     an OPEID that is not six digits as text (ED writes them with leading zeros, "001002", and a
+     number would lose them), a duplicate OPEID (compared exactly, with no normalisation), or a
+     missing name, state or control. Control must be one of ED's four. Names are kept as written.
   5. Every component status is in the release's vocabulary, kept exactly as ED wrote it.
-  6. ED's derived columns agree with the components on every row: each num_miss count equals the
-     number of "Not Submitted" components in its group, and each yes_missing flag is ED's exact
-     wording for whether that count is above zero.
+  6. ED's derived columns agree with the components on every row: each num_miss count is an
+     integer (not text, a float or a boolean) equal to the number of "Not Submitted" components in
+     its group, and each yes_missing flag is ED's exact wording for whether that count is above
+     zero. A release without a cycle has no columns for it: August's output has no 2026 fields,
+     never zeros.
   7. ED's Frequencies sheet agrees with the rows, both ways: every listed outcome has the stated
      count (or the stated percentage, to ED's precision, where no count is given), and every value in
      the data appears in the sheet.
+
+Output is written only after every rule passes, to a temporary file beside the target that is read
+back and compared value for value before it replaces the target; on any failure the existing
+output is left untouched.
 
 Usage (from repo root, with the spreadsheet in data/raw/):
     python -m pipeline.build_fvtge_source                                  # 2026-08-06, as before
@@ -39,6 +47,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -196,8 +205,8 @@ def read_rows(release: Release, path: Path | None = None, check_sha: bool = True
             continue
         d = dict(zip(release.columns, r, strict=True))
         op = d["opeid6"]
-        if not isinstance(op, str) or len(op) != 6:
-            refuse(f"row {n} has OPEID {op!r}, not six characters.")
+        if not isinstance(op, str) or len(op) != 6 or not op.isdigit():
+            refuse(f"row {n} has OPEID {op!r}, not six digits as text.")
         if op in seen:
             refuse(f"OPEID {op} appears twice.")
         seen.add(op)
@@ -208,10 +217,10 @@ def read_rows(release: Release, path: Path | None = None, check_sha: bool = True
         comps = [c for c in release.columns if c in PRIOR or c in CURRENT]
         bad = {d[c] for c in comps} - release.statuses
         if bad:
-            refuse(f"unknown submission status {sorted(bad)} for OPEID {op}.")
+            refuse(f"unknown submission status {sorted(map(repr, bad))} for OPEID {op}.")
         for num, (group, flag, yes, no) in release.counts.items():
             ns = sum(d[c] == "Not Submitted" for c in group)
-            if d[num] != ns:
+            if type(d[num]) is not int or d[num] != ns:
                 refuse(
                     f"{num} is {d[num]!r} for OPEID {op}, but {ns} of its components are Not Submitted."
                 )
@@ -268,18 +277,36 @@ def check_frequencies(wb, release: Release, body: list[dict]) -> None:
 
 
 def write(release: Release, body: list[dict], out: Path) -> None:
-    con = duckdb.connect()
-    cols = ", ".join(
-        f"{c} INTEGER" if c.startswith("num_miss") else f"{c} VARCHAR" for c in release.columns
-    )
-    con.execute(f"CREATE TABLE ed ({cols})")
-    con.executemany(
-        f"INSERT INTO ed VALUES ({', '.join('?' * len(release.columns))})",
-        [tuple(d[c] for c in release.columns) for d in body],
-    )
-    extra = ", ".join(f"'{v}' AS {k}" for k, v in release.extra)
+    """Write to a temporary file beside `out`, read it back, and only if every value matches replace
+    `out` with it. Any failure leaves `out` as it was."""
     out.parent.mkdir(parents=True, exist_ok=True)
-    con.execute(f"COPY (SELECT *, {extra} FROM ed ORDER BY opeid6) TO '{out}' (FORMAT PARQUET)")
+    tmp = out.with_name(f".{out.name}.tmp-{os.getpid()}")
+    try:
+        con = duckdb.connect()
+        cols = ", ".join(
+            f"{c} INTEGER" if c.startswith("num_miss") else f"{c} VARCHAR" for c in release.columns
+        )
+        con.execute(f"CREATE TABLE ed ({cols})")
+        con.executemany(
+            f"INSERT INTO ed VALUES ({', '.join('?' * len(release.columns))})",
+            [tuple(d[c] for c in release.columns) for d in body],
+        )
+        extra = ", ".join(f"'{v}' AS {k}" for k, v in release.extra)
+        con.execute(f"COPY (SELECT *, {extra} FROM ed ORDER BY opeid6) TO '{tmp}' (FORMAT PARQUET)")
+        want = [
+            (*(d[c] for c in release.columns), *(v for _, v in release.extra))
+            for d in sorted(body, key=lambda d: d["opeid6"])
+        ]
+        names = [
+            c[0] for c in duckdb.sql(f"DESCRIBE SELECT * FROM read_parquet('{tmp}')").fetchall()
+        ]
+        got = duckdb.sql(f"SELECT * FROM read_parquet('{tmp}') ORDER BY opeid6").fetchall()
+        if names != [*release.columns, *(k for k, _ in release.extra)] or got != want:
+            refuse(f"the written file did not read back identically; {out} is unchanged.")
+        os.replace(tmp, out)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
 
 
 def main(argv=None) -> None:
