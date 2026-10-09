@@ -1,0 +1,16 @@
+revision: 3c1097f8e1ed45d5d854ce79afac4497b5c7bd75
+input: FVTGEDataReportingFinal.xlsx sha256=7b994e293c8f4091729e1a449235d0e7a46895673aed5751d56b12f1b46a7f13
+input: fvtge-updates/FVTGEDataReportingOct082026.xlsx sha256=76b99260cdb97714fffead6ed2f11c2216d04fb0d0637c7a0454d1fa116923c8
+
+FVT/GE status, compiled 2026-08-06: 4,635 institutions, 1,932 with a num_miss above zero
+wrote -> <temporary dir>/aug.parquet
+FVT/GE status, compiled 2026-10-05: 4,674 institutions, 1,396 with a num_miss_prior above zero
+wrote -> <temporary dir>/oct.parquet
+
+--- October without --out (must refuse before reading or writing):
+Refused: release 2026-10-05 has no default output yet; pass --out.
+
+August vs published/fvtge_reporting.parquet: values identical True; column names and types identical True
+August output has 2026 columns: False
+October: rows 4674, distinct OPEIDs 4674, 2024-25 missing 1396, all seven 478, 2026 missing 1007, all three 633, OPEID range 001002..043167
+published/ unchanged: 0 changed files; fvtge_reporting.parquet sha256 a94ec4cce82fcffc...

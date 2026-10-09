@@ -1,0 +1,39 @@
+revision: 3c1097f8e1ed45d5d854ce79afac4497b5c7bd75 (branch fvtge-parser, local, unpushed)
+python: Python 3.14.2; duckdb 1.5.4; openpyxl 3.1.5
+ED files present locally: yes, so the two real-file tests ran (they are skipped in CI)
+
+============================= test session starts ==============================
+platform darwin -- Python 3.14.2, pytest-9.1.1, pluggy-1.6.0 -- /Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+cachedir: .pytest_cache
+rootdir: <repo root>
+configfile: pyproject.toml
+collecting ... collected 26 items
+
+tests/test_fvtge_source.py::test_october_layout_keeps_every_row_and_value_exactly PASSED [  3%]
+tests/test_fvtge_source.py::test_august_layout_has_no_2026_fields_rather_than_zeros PASSED [  7%]
+tests/test_fvtge_source.py::test_a_fully_empty_row_is_skipped_but_a_row_of_zeros_is_not PASSED [ 11%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown submission status0] PASSED [ 15%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown submission status1] PASSED [ 19%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-OPEID 001001 appears twice] PASSED [ 23%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits0] PASSED [ 26%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits1] PASSED [ 30%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits2] PASSED [ 34%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-missing name or state] PASSED [ 38%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown control] PASSED [ 42%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_prior is 6] PASSED [ 46%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_prior is 6.5] PASSED [ 50%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_current is False] PASSED [ 53%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_total is '10'] PASSED [ 57%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-yes_missing_current is] PASSED [ 61%]
+tests/test_fvtge_source.py::test_a_row_with_values_but_no_opeid_is_refused_not_dropped PASSED [ 65%]
+tests/test_fvtge_source.py::test_a_changed_header_is_refused PASSED      [ 69%]
+tests/test_fvtge_source.py::test_a_different_compile_date_is_refused PASSED [ 73%]
+tests/test_fvtge_source.py::test_the_real_registered_checksum_is_enforced PASSED [ 76%]
+tests/test_fvtge_source.py::test_frequencies_counts_percentages_and_listing_are_each_checked PASSED [ 80%]
+tests/test_fvtge_source.py::test_a_refused_file_leaves_the_existing_output_untouched PASSED [ 84%]
+tests/test_fvtge_source.py::test_a_write_that_does_not_read_back_identically_changes_nothing PASSED [ 88%]
+tests/test_fvtge_source.py::test_october_without_an_output_path_fails_before_reading_or_writing PASSED [ 92%]
+tests/test_fvtge_source.py::test_august_reproduces_the_published_file_exactly PASSED [ 96%]
+tests/test_fvtge_source.py::test_october_keeps_every_row_and_agrees_with_ed PASSED [100%]
+
+============================== 26 passed in 2.34s ==============================
