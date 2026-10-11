@@ -16,7 +16,9 @@ date ED compiled it. Two releases are registered here:
 The rules, in the order they are checked. A file that breaks any of them is refused with the reason;
 nothing is guessed, renamed or mapped onto an older meaning.
   1. The file is byte-for-byte the registered release (SHA-256). A re-published file under the same
-     name is a different release and must be registered, with ED's caveats re-read, before use.
+     name is a different release and must be registered, with ED's caveats re-read, before use. The
+     file is read once and every later rule parses those same bytes, so it cannot change between
+     the checksum and the parse.
   2. ED's own text names the registered compile date ("compiled on October 5th, 2026").
   3. The Data sheet's header is exactly the release's columns, in order.
   4. Every row is kept. A row whose cells are all empty is skipped; any other row must be a
@@ -30,13 +32,17 @@ nothing is guessed, renamed or mapped onto an older meaning.
      its group, and each yes_missing flag is ED's exact wording for whether that count is above
      zero. A release without a cycle has no columns for it: August's output has no 2026 fields,
      never zeros.
-  7. ED's Frequencies sheet agrees with the rows, both ways: every listed outcome has the stated
-     count (or the stated percentage, to ED's precision, where no count is given), and every value in
-     the data appears in the sheet.
+  7. ED's Frequencies sheet agrees with the rows, both ways. Its header is the release's. It has
+     exactly the release's counted groups, no more and no fewer (August has no control group,
+     October does), and lists each outcome of a group once. The only other rows allowed are ED's
+     identifier rows (opeid6, instnm, stabbr, marked N/A) and its notes. Every listed outcome has the
+     stated count (or the stated percentage, to ED's precision, where no count is given), and every
+     value in the data appears in the sheet.
 
-Output is written only after every rule passes, to a temporary file beside the target that is read
-back and compared value for value before it replaces the target; on any failure the existing
-output is left untouched.
+Output is written only after every rule passes, to a temporary file beside the target. That file is
+read back and must have exactly the release's columns, in order and with their types, and the same
+values with the same types, before it replaces the target. Paths reach SQL only as bound
+parameters, so any filename works. On any failure the existing output is left untouched.
 
 Usage (from repo root, with the spreadsheet in data/raw/):
     python -m pipeline.build_fvtge_source                                  # 2026-08-06, as before
@@ -47,6 +53,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -67,6 +74,8 @@ PRIOR = (
 )
 CURRENT = ("program2526", "annual2526", "total2526")
 CONTROLS = {"Public", "Private Non-Profit", "Private For-Profit", "Foreign"}
+# ED lists the identifiers on its Frequencies sheet with N/A in place of counts.
+FREQ_IDENTIFIERS = ("opeid6", "instnm", "stabbr")
 
 
 @dataclass(frozen=True)
@@ -82,6 +91,9 @@ class Release:
     statuses: frozenset[str]
     # num column -> (components it counts, flag column, flag wording when > 0, wording when 0)
     counts: dict
+    # The Frequencies sheet: its header, and the variables it gives counts or percentages for.
+    freq_header: tuple[str, ...]
+    freq_groups: tuple[str, ...]
     # Columns written after the sheet's own, with their values. The August output keeps its
     # original two so published/fvtge_reporting.parquet is reproduced exactly.
     extra: tuple[tuple[str, str], ...]
@@ -99,6 +111,8 @@ AUG = Release(
     columns=("opeid6", "instnm", "stabbr", "control", *PRIOR, "yes_missing", "num_miss"),
     statuses=frozenset({"Submitted", "Not Submitted", "Not Required"}),
     counts={"num_miss": (PRIOR, "yes_missing", "HAS MISSING FILES", "NO MISSING FILES")},
+    freq_header=("Variable", "Outcome", "Frequency (%)"),
+    freq_groups=(*PRIOR, "yes_missing", "num_miss"),  # no control group in August
     extra=(
         ("compiled", "2026-08-06"),
         (
@@ -159,6 +173,18 @@ OCT = Release(
             "NO MISSING FILES FROM ANY CYCLE",
         ),
     },
+    freq_header=("Variable", "Outcome", "Count (N)", "Frequency (%)"),
+    freq_groups=(
+        "control",
+        *PRIOR,
+        *CURRENT,
+        "num_miss_prior",
+        "yes_missing_prior",
+        "num_miss_current",
+        "yes_missing_current",
+        "num_miss_total",
+        "yes_missing_total",
+    ),
     extra=(
         ("compiled", "2026-10-05"),
         ("published", "2026-10-08"),
@@ -188,9 +214,10 @@ def sha256(path: Path) -> str:
 def read_rows(release: Release, path: Path | None = None, check_sha: bool = True) -> list[dict]:
     """Every institution row of the release, as ED wrote it, after rules 1 to 7."""
     path = path or release.path
-    if check_sha and sha256(path) != release.sha256:
+    data = path.read_bytes()  # hashed and parsed from these same bytes
+    if check_sha and hashlib.sha256(data).hexdigest() != release.sha256:
         refuse(f"{path.name} is not the registered {release.compiled} release (SHA-256 differs).")
-    wb = openpyxl.load_workbook(path, read_only=True)
+    wb = openpyxl.load_workbook(io.BytesIO(data), read_only=True)
     text = " ".join(
         str(c) for r in wb[release.compile_sheet].iter_rows(values_only=True) for c in r if c
     )
@@ -231,30 +258,70 @@ def read_rows(release: Release, path: Path | None = None, check_sha: bool = True
     return body
 
 
+def _blank(v) -> bool:
+    return v is None or v == ""
+
+
 def check_frequencies(wb, release: Release, body: list[dict]) -> None:
     """Rule 7: ED's Frequencies sheet against the rows, in both directions."""
     rows = list(wb["Frequencies"].iter_rows(values_only=True))
-    hdr = [str(h) if h else "" for h in rows[0]]
-    has_count = "Count (N)" in hdr
-    i_out = hdr.index("Outcome")
-    i_n = hdr.index("Count (N)") if has_count else None
-    i_pct = hdr.index("Frequency (%)")
+    if not rows or tuple(rows[0]) != release.freq_header:
+        refuse(f"ED changed the Frequencies sheet's columns: {rows[0] if rows else None}")
+    width = len(release.freq_header)
+    has_count = "Count (N)" in release.freq_header
     listed: dict[str, dict[str, tuple]] = {}
+    identifiers: set[str] = set()
     var = None
-    for r in rows[1:]:
-        if not r or all(v is None for v in r):
+    for n, r in enumerate(rows[1:], start=2):
+        r = tuple(r or ()) + (None,) * (width - len(r or ()))
+        if all(_blank(v) for v in r):
             continue
-        if r[0]:
-            var = str(r[0])
-        if var not in release.columns or r[i_out] is None:
-            continue  # notes and the identifier rows ("N/A") carry no counts
-        if str(r[i_pct]) == "N/A":
+        if not all(_blank(v) for v in r[width:]):
+            refuse(f"Frequencies row {n} has values beyond the sheet's {width} columns.")
+        head, outcome, *vals = r[:width]
+        if isinstance(head, str) and head.startswith("Note") and all(_blank(v) for v in r[1:]):
+            var = None  # a note ends the group above it
             continue
-        listed.setdefault(var, {})[str(r[i_out])] = (r[i_n] if has_count else None, r[i_pct])
-    if not listed:
-        refuse("the Frequencies sheet lists no outcomes to check against.")
+        if not _blank(head):
+            var = str(head)
+        if var is None:
+            refuse(f"Frequencies row {n} has an outcome but no variable.")
+        if var in FREQ_IDENTIFIERS:
+            if (
+                var in identifiers
+                or _blank(head)
+                or _blank(outcome)
+                or any(v != "N/A" for v in vals)
+            ):
+                refuse(f"Frequencies row {n}: {var} is an identifier, listed once with N/A only.")
+            identifiers.add(var)
+            continue
+        if var not in release.freq_groups:
+            refuse(
+                f"the Frequencies sheet has a counted group {var!r} that the {release.compiled} "
+                "release does not have."
+            )
+        if _blank(outcome):
+            refuse(f"Frequencies row {n} ({var}) has no outcome.")
+        key = str(outcome)
+        if key in listed.get(var, {}):
+            refuse(f"the Frequencies sheet lists {var} = {key!r} twice.")
+        count, pct = vals if has_count else (None, vals[0])
+        if has_count and type(count) is not int:
+            refuse(
+                f"the Frequencies sheet gives count {count!r} for {var} = {key!r}, not a whole number."
+            )
+        if type(pct) not in (int, float):
+            refuse(
+                f"the Frequencies sheet gives percentage {pct!r} for {var} = {key!r}, not a number."
+            )
+        listed.setdefault(var, {})[key] = (count, pct)
+    absent = [v for v in release.freq_groups if v not in listed]
+    if absent:
+        refuse(f"the Frequencies sheet has no group for {absent}.")
     total = len(body)
-    for var, outcomes in listed.items():
+    for var in release.freq_groups:
+        outcomes = listed[var]
         actual: dict[str, int] = {}
         for d in body:
             actual[str(d[var])] = actual.get(str(d[var]), 0) + 1
@@ -276,32 +343,41 @@ def check_frequencies(wb, release: Release, body: list[dict]) -> None:
             refuse(f"{var} has values {sorted(missing)} that ED's Frequencies sheet does not list.")
 
 
+def schema(release: Release) -> list[tuple[str, str]]:
+    """The output's columns and types, in order: the sheet's own, then the release's extra ones."""
+    own = [(c, "INTEGER" if c.startswith("num_miss") else "VARCHAR") for c in release.columns]
+    return own + [(k, "VARCHAR") for k, _ in release.extra]
+
+
 def write(release: Release, body: list[dict], out: Path) -> None:
-    """Write to a temporary file beside `out`, read it back, and only if every value matches replace
-    `out` with it. Any failure leaves `out` as it was."""
+    """Write to a temporary file beside `out`, read it back, and only if its columns, types and
+    values all match replace `out` with it. Any failure leaves `out` as it was."""
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_name(f".{out.name}.tmp-{os.getpid()}")
+    want_schema = schema(release)
     try:
         con = duckdb.connect()
-        cols = ", ".join(
-            f"{c} INTEGER" if c.startswith("num_miss") else f"{c} VARCHAR" for c in release.columns
-        )
-        con.execute(f"CREATE TABLE ed ({cols})")
-        con.executemany(
-            f"INSERT INTO ed VALUES ({', '.join('?' * len(release.columns))})",
-            [tuple(d[c] for c in release.columns) for d in body],
-        )
-        extra = ", ".join(f"'{v}' AS {k}" for k, v in release.extra)
-        con.execute(f"COPY (SELECT *, {extra} FROM ed ORDER BY opeid6) TO '{tmp}' (FORMAT PARQUET)")
-        want = [
+        con.execute(f"CREATE TABLE ed ({', '.join(f'{c} {t}' for c, t in want_schema)})")
+        rows = [
             (*(d[c] for c in release.columns), *(v for _, v in release.extra))
             for d in sorted(body, key=lambda d: d["opeid6"])
         ]
-        names = [
-            c[0] for c in duckdb.sql(f"DESCRIBE SELECT * FROM read_parquet('{tmp}')").fetchall()
+        con.executemany(f"INSERT INTO ed VALUES ({', '.join('?' * len(want_schema))})", rows)
+        con.execute("COPY (SELECT * FROM ed ORDER BY opeid6) TO ? (FORMAT PARQUET)", [str(tmp)])
+        con.close()
+        back = duckdb.connect()
+        got_schema = [
+            (r[0], r[1])
+            for r in back.execute("DESCRIBE SELECT * FROM read_parquet(?)", [str(tmp)]).fetchall()
         ]
-        got = duckdb.sql(f"SELECT * FROM read_parquet('{tmp}') ORDER BY opeid6").fetchall()
-        if names != [*release.columns, *(k for k, _ in release.extra)] or got != want:
+        got = back.execute("SELECT * FROM read_parquet(?) ORDER BY opeid6", [str(tmp)]).fetchall()
+        back.close()
+        if got_schema != want_schema:
+            refuse(
+                f"the written file's columns or types are not the release's; {out} is unchanged."
+            )
+        typed = lambda rs: [tuple((type(v), v) for v in r) for r in rs]  # noqa: E731
+        if typed(got) != typed(rows):
             refuse(f"the written file did not read back identically; {out} is unchanged.")
         os.replace(tmp, out)
     finally:
