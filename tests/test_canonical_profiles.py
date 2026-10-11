@@ -265,3 +265,14 @@ def test_profile_css_gives_programs_the_full_column_and_keeps_prose_measures():
     # The column floors exist only where there is room for them.
     assert ".tw-td--program { min-width: 14em; }" in wide
     assert ".tw-td--program { min-width" not in css.split("@media (min-width: 1200px)", 1)[0]
+
+
+def test_the_section_links_carry_their_script():
+    """As on the finding: the phone row's script comes straight after the bar, once."""
+    from pipeline.build_college_pages import sectnav_script
+
+    html, _ = canonical_page(META, _rows(3, 1, one_year=1), "x", 36498, DEFAULT_THRESHOLD)
+    bar = html[html.index('<nav class="sectnav"') :]
+    end = bar.index("</nav>") + len("</nav>")
+    assert bar[end:].startswith(sectnav_script())
+    assert html.count(sectnav_script()) == 1

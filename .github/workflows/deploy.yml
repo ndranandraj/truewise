@@ -92,6 +92,18 @@ jobs:
           name: layout-check
           path: layout-check-*/
           retention-days: 14
+      # The section links by keyboard on the finding and a profile: every link, forwards and back,
+      # Chromium and Firefox, normal and 200% text, reduced motion, JavaScript off and the script
+      # failing. A focused link stayed partly under the fade on phones until October 2026.
+      - name: Section links by keyboard (blocks deploy)
+        run: node tests/sectnav_focus.js --out sectnav-focus
+      - name: Keep the section-links report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sectnav-focus
+          path: sectnav-focus/
+          retention-days: 14
 
       - name: Publish downloadable datasets on the domain
         # Serve the parquet(s) from truewise.dev/data/ so downloads hit Cloudflare and are

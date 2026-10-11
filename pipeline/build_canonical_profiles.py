@@ -27,6 +27,7 @@ from pipeline.build_college_pages import (
     esc,
     head,
     known_state,
+    sectnav_script,
     slugify,
     state_label,
 )
@@ -277,7 +278,8 @@ def canonical_page(
         pl.summary(meta, rows, benchmark, net_price),
         f'    <nav class="sectnav" aria-label="Sections"><p class="sectnav__label" id="sn-l">'
         f"{len(pl.NAV)} sections</p>"
-        f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
+        f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>'
+        f"{sectnav_script()}\n",
         pl.cost_section(meta, rows, net_price),
         "    </div>\n",
         "    </div>\n",

@@ -29,7 +29,16 @@ import json
 
 import duckdb
 
-from pipeline.build_college_pages import BASE, BEACON, FOOTER, STATE_NAMES, esc, head, state_label
+from pipeline.build_college_pages import (
+    BASE,
+    BEACON,
+    FOOTER,
+    STATE_NAMES,
+    esc,
+    head,
+    sectnav_script,
+    state_label,
+)
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -398,7 +407,7 @@ def render_page(s) -> str:
     <nav class="sectnav" aria-label="Sections">
       <p class="sectnav__label" id="sn-l">{len(NAV_ITEMS)} sections</p>
       <div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div>
-    </nav>
+    </nav>{sectnav_script()}
 
     <section id="why" class="why" aria-labelledby="why-h">
       <h2 id="why-h">Why it matters</h2>
