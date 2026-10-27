@@ -96,6 +96,24 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "October 2026",
+        "title": "College pages: the cost estimate's starting years could change between updates",
+        "body": (
+            "The cost section on each college page starts its estimate at the length of the "
+            "school's most common undergraduate credential. On 249 college pages two or more "
+            "credentials, for example certificates and associate's degrees, are listed in equal "
+            "numbers, and since late September that tie was settled differently from one site "
+            "update to the next with no change in the data, so the estimated total shown before you "
+            "choose a number of years could change. Ties now go to the credential with more "
+            "reported completions, and to the shorter credential where a tied program's count is "
+            "not published or the counts are equal. Non-credential programs no longer count "
+            "towards the most common credential. The estimate multiplies the yearly net price by "
+            "the years chosen; it is not the school's own price for a whole program. Yearly net "
+            "prices did not change."
+        ),
+        "link": "/methodology/#the-other-modules-in-brief",
+    },
+    {
+        "date": "October 2026",
         "title": "Compare: college names linked to the wrong profile",
         "body": (
             "On the Compare page, each college's name linked to its profile through a second copy of "
