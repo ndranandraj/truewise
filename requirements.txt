@@ -1,7 +1,7 @@
 # Truewise — core dependencies for the data spine + first module
 # Install: pip install -r requirements.txt
 
-duckdb>=1.0.0          # columnar analytics engine (the spine)
+duckdb>=1.0.0,<2       # columnar analytics engine (the spine); 2.0 drops relation.fetchone()
 pandas>=2.0.0          # data wrangling
 requests>=2.31.0       # downloading bulk files / API calls
 pyarrow>=15.0.0        # Parquet read/write
