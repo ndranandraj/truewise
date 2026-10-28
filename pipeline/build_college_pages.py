@@ -235,7 +235,7 @@ table.t a:hover { color: var(--brand); text-decoration: underline; }
 .dl-note { color: var(--ink-faint); font-size: var(--t-fine); }
 .upd { border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }
 .upd h2.sec { margin: 4px 0 6px; font-size: var(--t-sub); }
-.upd-meta { color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure); line-height: 1.55; margin: 4px 0; }
+.upd-meta { color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure); line-height: 1.55; margin: 4px 0; overflow-wrap: anywhere; }
 .upd-src { color: var(--ink-faint); font-size: var(--t-label); margin: 3px 0; word-break: break-all; }
 .mono { font-family: var(--mono); font-size: var(--t-fine); overflow-wrap: anywhere; }
 .statecols { columns: 220px 4; column-gap: 20px; margin: 14px 0; }

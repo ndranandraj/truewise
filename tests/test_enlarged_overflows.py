@@ -85,6 +85,25 @@ def test_long_words_paths_and_links_may_break_in_prose():
     assert ".h-hero h1, .h-band__stat { overflow-wrap: break-word; }" in _css("home.css")
 
 
+def test_update_log_timestamps_may_break_and_the_log_is_measured():
+    """An archived fetch timestamp (2026-09-12T06:09:08.423960Z) is one long word. In the plain
+    .upd-meta line it pushed /updates/ to 348px on a 320px phone at native 200% text; .mono already
+    wrapped, but the timestamp is not in it (PR #18 acceptance, 27 October 2026)."""
+    from pipeline.build_college_pages import PG_CSS
+
+    m = re.search(r"^\.upd-meta \{[^}]*\}", PG_CSS, re.M)
+    assert m and "overflow-wrap: anywhere;" in m.group(0), (
+        "update-log metadata must be able to wrap"
+    )
+    probe = (ROOT / "tests" / "layout_probe.js").read_text()
+    assert '{ label: "updates", path: "/updates/"' in probe, (
+        "/updates/ must be a layout-check route"
+    )
+    assert """enlargedReady: ['.upd-meta:has-text("Fetched 20")']""" in probe, (
+        "the enlarged pass must wait for a timestamp-bearing entry, or an empty log passes"
+    )
+
+
 def test_layout_check_fails_pages_wider_than_the_screen_at_enlarged_text():
     probe = (ROOT / "tests" / "layout_probe.js").read_text()
     check = (ROOT / "tests" / "layout_check.js").read_text()
