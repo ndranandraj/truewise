@@ -175,6 +175,44 @@ def summary(meta: dict, rows: list[dict], bench, net_price) -> str:
     )
 
 
+# The years the cost total starts at follow the school's usual undergraduate credential (audit V19:
+# a certificate school shown "over 4 years" overstated the cost fourfold). Only these three have a
+# set length. Non-credential programs (ED level 99) and any other label do not count towards the
+# usual credential, so they never bring a length of their own.
+CRED_YEARS = {
+    "Undergraduate Certificate or Diploma": 1,
+    "Associate's Degree": 2,
+    "Bachelor's Degree": 4,
+}
+
+
+def default_years(rows: list[dict]) -> int:
+    """The cost section's starting years: the length of the undergraduate credential the school
+    lists the most programs in.
+
+    A tie used to go to whichever credential a Python set yielded first, which follows the
+    per-process string hash, so two builds of the same data could start the same page at different
+    years (found 11 October 2026). A tie now goes to the credential with more reported completions
+    (IPEDS award counts), compared only when every tied program reports one: a missing count is not
+    read as zero. Otherwise, or on equal completions, the shorter credential. With no credential of
+    set length, 1 year, so the total equals the yearly price."""
+    ug = [r for r in rows if not r.get("grad") and r.get("credential") in CRED_YEARS]
+    if not ug:
+        return 1
+    n: dict[str, int] = {}
+    for r in ug:
+        n[r["credential"]] = n.get(r["credential"], 0) + 1
+    top = max(n.values())
+    tied = sorted((c for c, k in n.items() if k == top), key=CRED_YEARS.__getitem__)
+    if len(tied) == 1:
+        return CRED_YEARS[tied[0]]
+    done = {c: [r.get("completers") for r in ug if r["credential"] == c] for c in tied}
+    if any(v is None for vals in done.values() for v in vals):
+        return CRED_YEARS[tied[0]]
+    most = max(sum(vals) for vals in done.values())
+    return min(CRED_YEARS[c] for c in tied if sum(done[c]) == most)
+
+
 def cost_section(meta: dict, rows: list[dict], net_price) -> str:
     _, release = _consts()
     if not net_price or (
@@ -190,9 +228,7 @@ def cost_section(meta: dict, rows: list[dict], net_price) -> str:
         )
     brackets = list(net_price.get("brackets") or [None] * 5)
     avg = net_price.get("avg")
-    ug = [r["credential"] for r in rows if not r.get("grad")]
-    common = max(set(ug), key=ug.count) if ug else None
-    years = {"Undergraduate Certificate or Diploma": 1, "Associate's Degree": 2}.get(common, 4)
+    years = default_years(rows)
     band_opts = "".join(
         f'<option value="{i}"{"" if b is not None else " disabled"}>'
         f"{lab if b is not None else lab + ' (not reported)'}</option>"

@@ -168,6 +168,12 @@ const ROUTES = [
       return { findings, steps: [{ step: "search-palomar", ...st }, { step: "search-no-match", ...none }] };
     } },
   { label: "list", path: "/lists/best-value-colleges-ca/", kind: "static" },
+  /* The update log. An archived fetch timestamp (2026-09-12T06:09:08.423960Z) is one long word and
+   * pushed the page to 348px on a 320px phone at native 200% text (PR #18 acceptance, October 2026).
+   * Both passes require a timestamp-bearing snapshot entry, so a log without one cannot pass. */
+  { label: "updates", path: "/updates/", kind: "static",
+    enlargedReady: ['.upd-meta:has-text("Fetched 20")'],
+    prepare: async (page) => { await page.waitForSelector('.upd-meta:has-text("Fetched 20")', { timeout: 10000 }); } },
   /* Opening a major on Careers in place must retitle the page and move focus to its heading, so
    * keyboard and screen-reader users land on what changed (September 2026 audit, V4). */
   { label: "careers-open-field", path: "/careers/", kind: "flow",
