@@ -144,11 +144,15 @@ def test_graduate_counts_are_the_ones_ed_displays():
     from pipeline.config import FOS_FIELD_CANDIDATES, ROOT
 
     assert FOS_FIELD_CANDIDATES["completers_count"][0] == "IPEDSCOUNT2"
-    got = duckdb.sql(
-        f"SELECT completers_count FROM '{ROOT / 'published' / 'value_check.parquet'}' "
-        "WHERE unitid = '110662' AND cip_code = '5202' AND credential_level = '5'"
-    ).fetchone()
-    assert got and got[0] == 46
+    got = (
+        duckdb.sql(
+            f"SELECT completers_count FROM '{ROOT / 'published' / 'value_check.parquet'}' "
+            "WHERE unitid = '110662' AND cip_code = '5202' AND credential_level = '5'"
+        )
+        .limit(1)
+        .fetchall()
+    )
+    assert got and got[0][0] == 46
 
 
 def test_a_school_in_eds_file_is_not_told_it_has_no_record():

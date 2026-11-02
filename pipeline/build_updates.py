@@ -70,7 +70,7 @@ def collect_snapshots() -> list[dict]:
         }
         if pq.exists():
             con = duckdb.connect()
-            rec["rows"] = con.sql(f"SELECT count(*) FROM read_parquet('{pq}')").fetchone()[0]
+            rec["rows"] = con.sql(f"SELECT count(*) FROM read_parquet('{pq}')").fetchall()[0][0]
         out.append(rec)
     return out
 
