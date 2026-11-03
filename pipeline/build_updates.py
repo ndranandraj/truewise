@@ -95,6 +95,22 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 # what the page said before and what it says now, so a reader who quoted the old figure can see why.
 CORRECTIONS = [
     {
+        "date": "November 2026",
+        "title": "Lists and findings: rows with equal figures could change order between updates",
+        "body": (
+            "Rows with equal figures had no fixed order, so their order could change from one site "
+            "update to the next with no change in the data. This affected five state best-value lists "
+            "(Connecticut, DC, Louisiana, Oregon and Virginia), the list of fields with the most "
+            "programs below the high-school line that report debt, the graduate-program exposure "
+            "finding and the FVT/GE downloads. On the debt list it also changed which fields appeared: "
+            "three fields tie at 20 programs for the last two places. Tied rows now have one fixed "
+            "order, by name, or by federal ID where names match, and every field tied at the cut-off "
+            "is shown, so that list has 26 rows. Same-named schools in the K-12 search also have a "
+            "fixed order now. No count, earnings or debt figure changed."
+        ),
+        "link": "/lists/programs-where-debt-does-not-pay-back/",
+    },
+    {
         "date": "October 2026",
         "title": "College pages: the cost estimate's starting years could change between updates",
         "body": (

@@ -210,7 +210,7 @@ def institutions(con) -> list[dict]:
                   count(v.unitid) FILTER (WHERE v.value_flag != 'insufficient_data') AS judged,
                   count(v.unitid) FILTER (WHERE v.value_flag = 'fails_earnings_premium') AS fail
            FROM ed e LEFT JOIN vc v USING (opeid6)
-           GROUP BY ALL ORDER BY e.stabbr, e.instnm"""
+           GROUP BY ALL ORDER BY e.stabbr, e.instnm, e.opeid6"""
     ).fetchall()
     out = []
     for r in rows:
