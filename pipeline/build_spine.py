@@ -30,6 +30,7 @@ from pipeline.config import (
     RAW_DIR,
     SUPPRESSION_SENTINELS,
 )
+from pipeline.sorted_parquet import PROGRAM_KEY, write_sorted_parquet
 
 
 def _find_csv(*needles: str) -> str:
@@ -166,7 +167,7 @@ def main() -> None:
         FROM inst_raw
         """
     )
-    con.execute(f"COPY institutions TO '{PARQUET_DIR / 'institutions.parquet'}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "institutions", "unitid", PARQUET_DIR / "institutions.parquet")
 
     # Program-level table joined to its institution's thresholds by UNITID.
     con.execute(
@@ -205,7 +206,7 @@ def main() -> None:
         f"\n  programs: {n:,}  |  with a state threshold joined: {matched:,} ({100 * matched / n:.1f}%)"
     )
     out = PARQUET_DIR / "fos.parquet"
-    con.execute(f"COPY fos TO '{out}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "fos", PROGRAM_KEY, out)
     print(f"  wrote -> {out}")
     con.close()
     print("Next: python -m pipeline.value_check")

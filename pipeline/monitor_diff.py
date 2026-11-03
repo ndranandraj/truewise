@@ -35,6 +35,7 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
         SELECT
             COALESCE(o.unitid, n.unitid)                     AS unitid,
             COALESCE(o.cip_code, n.cip_code)                 AS cip_code,
+            COALESCE(o.credential_level, n.credential_level) AS credential_level,
             COALESCE(o.credential_desc, n.credential_desc)   AS credential_desc,
             COALESCE(o.inst_name, n.inst_name)               AS inst_name,
             o.value_flag AS old_flag, n.value_flag AS new_flag,
@@ -49,6 +50,10 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
         cols = (
             "inst_name, credential_desc, cip_code, old_flag, new_flag, old_earnings, new_earnings"
         )
+        # The changelog prints the first 50 of each list, so which programs it names must not depend
+        # on the order of the files. The program key comes first, then every printed column, because
+        # the key repeats under UNITID "NA": rows still tied after that print the same.
+        order = f"unitid, cip_code, credential_level, {cols}"
         return [
             dict(
                 zip(
@@ -65,7 +70,9 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
                     strict=True,
                 )
             )
-            for r in con.execute(f"SELECT {cols} FROM joined WHERE {where}").fetchall()
+            for r in con.execute(
+                f"SELECT {cols} FROM joined WHERE {where} ORDER BY {order}"
+            ).fetchall()
         ]
 
     newly_failing = rows(

@@ -36,6 +36,8 @@ Key fields (institution-level):
 Field-of-study file grain: institution × 4-digit CIP code × credential level; includes
 cumulative debt at graduation and earnings ~1 year after completion. Note: values are
 **suppressed** (blank) for small cohorts, show as "not published", never impute.
+Rows with UNITID `NA` (7,020 in the 10 June 2026 release) are told apart only by OPEID6, so
+what identifies a row is UNITID, OPEID6, CIP code and credential level.
 
 ### IPEDS (Integrated Postsecondary Education Data System)
 - https://nces.ed.gov/ipeds/use-the-data

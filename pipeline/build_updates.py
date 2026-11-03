@@ -95,6 +95,22 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 # what the page said before and what it says now, so a reader who quoted the old figure can see why.
 CORRECTIONS = [
     {
+        "date": "November 2026",
+        "title": "K-12 search: schools with the same name now have a fixed order",
+        "body": (
+            "Many high schools share a name: 38 are named Central High School. They had no fixed "
+            "order in our files, so their order in K-12 search could change whenever those files "
+            "were rebuilt, with no change in the data. Where a search shows only part of the list, "
+            "the first 40 on the advanced courses page and the first 8 on Compare, it could also "
+            "change which of those schools appeared. They now have one fixed order, by federal "
+            "school ID, which groups them by state. Compared with the site before this change, "
+            "2,036 of 27,085 schools hold a different place in the search list, all among "
+            "same-named schools. No school was added or removed, and no course, enrollment or "
+            "staffing figure changed."
+        ),
+        "link": "/k12/advanced-courses/",
+    },
+    {
         "date": "October 2026",
         "title": "College pages: the cost estimate's starting years could change between updates",
         "body": (

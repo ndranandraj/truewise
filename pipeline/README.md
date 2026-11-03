@@ -32,6 +32,38 @@ Or with make: `make data && make spine && make flags` (or `make all`).
 
 `data/` is gitignored; `archive/fvt/` is committed (the snapshots are the artifact).
 
+## Row order
+
+A join with no `ORDER BY` returns rows in an order that changes with the DuckDB version and the
+thread count, which moved checksums with no change in the data. So every parquet a refresh writes
+is sorted on a key that identifies one row. `sorted_parquet.py` does this for most of them and stops
+the refresh if the key repeats; a test fails on any parquet writer with no `ORDER BY`.
+
+| File | Key |
+|------|-----|
+| `fos`, `value_check`, the monitor snapshot, the package copy | `unitid, opeid6, cip_code, credential_level` |
+| `institutions`, `main_campus` | `unitid` |
+| `k12` | `combokey` |
+| `careers_demand` | `cip_code` |
+| `fvtge_reporting` | `opeid6` |
+
+From the same raw files, any DuckDB version and thread count now write the same rows in the same
+order (checked on 1.5.6 and 2.0.0, at 8 threads and 1). Bytes match within one version; another
+version records itself in the file, so its bytes differ.
+
+**The first refresh after this change.** `published/` was left in the old order on purpose, so the
+new order lands with real data rather than alone. Even with unchanged raw files that refresh shows:
+
+- A new checksum for every parquet it copies, and a new row order in `value_check`, `institutions`
+  and `k12`, and in the package copy. The rows themselves are the same.
+- A new snapshot whose checksum differs from the July one, so `check_diff_readiness` counts two
+  distinct snapshots whatever the data did. Read the diff itself.
+- `monitor_diff` listing 21,404 earnings revisions that did not happen. It joins on UNITID, CIP and
+  credential level, which repeat under UNITID `NA`, so unrelated rows pair up. Real programs print
+  first, but the count is inflated until that join is fixed.
+- The Connecticut and Louisiana best-value lists swapping tied rows, unless the tie-order fix for
+  those lists has landed first. Nothing else under `site/` moved (one thread, 13,472 files).
+
 ## The Value Check flag
 
 Per program (school × 4-digit CIP × credential):
