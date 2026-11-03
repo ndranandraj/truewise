@@ -6,8 +6,8 @@ silently. Each refresh we archive a compact snapshot (`pipeline.value_check` wri
 produces a human-readable changelog: programs that newly fail the earnings-premium test,
 ones that flipped back to passing, notable earnings revisions, and rows added or removed.
 
-Programs are keyed on UNITID + CIP + credential level. The diff logic lives in
-`compute_diff` (unit-tested on synthetic snapshots).
+Programs are keyed on UNITID + CIP + credential level, plus OPEID6 where ED gives no real UNITID.
+The diff logic lives in `compute_diff` (unit-tested on synthetic snapshots and the archived ones).
 
 Usage (from repo root):
     python -m pipeline.monitor_diff                 # diff the two most recent snapshots
@@ -22,6 +22,7 @@ from pathlib import Path
 import duckdb
 
 from pipeline.config import ARCHIVE_DIR
+from pipeline.sorted_parquet import PROGRAM_KEY
 
 # A revision in median earnings at least this large is worth flagging.
 EARNINGS_DELTA = 1000
@@ -29,11 +30,16 @@ EARNINGS_DELTA = 1000
 
 def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
     """Diff `old` and `new` tables (both with the snapshot columns) on `con`."""
+    # UNITID "NA" covers many schools, and only OPEID6 says which: without it, unrelated schools pair
+    # up and read as revisions. A real UNITID is enough on its own, so a school whose OPEID6 changes
+    # keeps its programs rather than reading as every one removed and added. The comparison stays an
+    # equality so DuckDB can hash it: written with OR, 1.5.6 falls back to a nested loop (26 seconds).
     con.execute(
         """
         CREATE OR REPLACE TEMP VIEW joined AS
         SELECT
             COALESCE(o.unitid, n.unitid)                     AS unitid,
+            COALESCE(o.opeid6, n.opeid6)                     AS opeid6,
             COALESCE(o.cip_code, n.cip_code)                 AS cip_code,
             COALESCE(o.credential_level, n.credential_level) AS credential_level,
             COALESCE(o.credential_desc, n.credential_desc)   AS credential_desc,
@@ -43,6 +49,8 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
         FROM old o FULL OUTER JOIN new n
           ON o.unitid = n.unitid AND o.cip_code = n.cip_code
          AND o.credential_level = n.credential_level
+         AND IF(regexp_matches(o.unitid, '^[0-9]+$'), '', o.opeid6)
+           = IF(regexp_matches(n.unitid, '^[0-9]+$'), '', n.opeid6)
         """
     )
 
@@ -51,9 +59,7 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
             "inst_name, credential_desc, cip_code, old_flag, new_flag, old_earnings, new_earnings"
         )
         # The changelog prints the first 50 of each list, so which programs it names must not depend
-        # on the order of the files. The program key comes first, then every printed column, because
-        # the key repeats under UNITID "NA": rows still tied after that print the same.
-        order = f"unitid, cip_code, credential_level, {cols}"
+        # on the order of the files.
         return [
             dict(
                 zip(
@@ -71,7 +77,7 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
                 )
             )
             for r in con.execute(
-                f"SELECT {cols} FROM joined WHERE {where} ORDER BY {order}"
+                f"SELECT {cols} FROM joined WHERE {where} ORDER BY {PROGRAM_KEY}"
             ).fetchall()
         ]
 

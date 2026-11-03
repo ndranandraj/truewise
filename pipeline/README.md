@@ -57,12 +57,22 @@ new order lands with real data rather than alone. Even with unchanged raw files 
 - A new checksum for every parquet it copies, and a new row order in `value_check`, `institutions`
   and `k12`, and in the package copy. The rows themselves are the same.
 - A new snapshot whose checksum differs from the July one, so `check_diff_readiness` counts two
-  distinct snapshots whatever the data did. Read the diff itself.
-- `monitor_diff` listing 21,404 earnings revisions that did not happen. It joins on UNITID, CIP and
-  credential level, which repeat under UNITID `NA`, so unrelated rows pair up. Real programs print
-  first, but the count is inflated until that join is fixed.
+  distinct snapshots whatever the data did. Read the diff itself: with no real change it lists
+  nothing, and `/updates/` prints a row of zeros against the July snapshot.
 - The Connecticut and Louisiana best-value lists swapping tied rows, unless the tie-order fix for
   those lists has landed first. Nothing else under `site/` moved (one thread, 13,472 files).
+
+## Matching programs between snapshots
+
+`monitor_diff` matches a program on UNITID, CIP and credential level, and on OPEID6 as well when the
+UNITID is not a real one. The 7,020 rows with UNITID `NA` span 822 OPEID6 values, and only OPEID6
+says which school a row is. Without it, unrelated schools paired up: an unchanged file listed 21,404
+earnings revisions, and real additions and removals under `NA` were hidden.
+
+A real UNITID does not use OPEID6, so a school whose OPEID6 changes keeps its programs. Requiring
+OPEID6 on every row would read that as each program removed and added (489 at the school with the
+most). A row with no real UNITID whose OPEID6 changes, or one that gains a UNITID, still reads as
+removed and added: nothing else connects the two rows.
 
 ## The Value Check flag
 

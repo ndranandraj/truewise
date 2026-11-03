@@ -211,8 +211,8 @@ def test_k12_json_does_not_depend_on_file_order(tmp_path, monkeypatch):
 
 
 SNAP_COLUMNS = (
-    "unitid VARCHAR, cip_code VARCHAR, credential_level VARCHAR, credential_desc VARCHAR, "
-    "inst_name VARCHAR, value_flag VARCHAR, earnings DOUBLE"
+    "unitid VARCHAR, opeid6 VARCHAR, cip_code VARCHAR, credential_level VARCHAR, "
+    "credential_desc VARCHAR, inst_name VARCHAR, value_flag VARCHAR, earnings DOUBLE"
 )
 
 
@@ -227,11 +227,13 @@ def _diff_rows() -> tuple[list[tuple], list[tuple]]:
         new.append((str(u + 100), "0202", "3", "BA", name, "passes_earnings_premium", 50000.0))
         old.append((str(u + 100), "0303", "3", "BA", name, "passes_earnings_premium", 50000.0))
         new.append((str(u + 100), "0404", "3", "BA", name, "passes_earnings_premium", 50000.0))
-    # UNITID "NA": the short key repeats, so these pair with each other across the join.
+    old = [(r[0], f"{int(r[0]):06d}", *r[1:]) for r in old]
+    new = [(r[0], f"{int(r[0]):06d}", *r[1:]) for r in new]
+    # UNITID "NA": the same CIP and credential, told apart only by OPEID6. Each has a real revision.
     for o in range(12):
-        row = ("NA", "0505", "3", "BA", f"Closed {o}", "insufficient_data", 40000.0 + o * 2000)
-        old.append(row)
-        new.append(row)
+        row = ("NA", f"{o + 900:06d}", "0505", "3", "BA", f"Closed {o}", "insufficient_data")
+        old.append((*row, 40000.0 + o * 2000))
+        new.append((*row, 41000.0 + o * 2000))
     return old, new
 
 
@@ -239,7 +241,7 @@ def _changelog(old: list[tuple], new: list[tuple]) -> str:
     con = duckdb.connect()
     for name, rows in (("old", old), ("new", new)):
         con.execute(f"CREATE TABLE {name} ({SNAP_COLUMNS})")
-        con.executemany(f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?)", rows)
+        con.executemany(f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?,?)", rows)
     return render_markdown(compute_diff(con), "a", "b")
 
 
@@ -261,12 +263,13 @@ def test_changelog_keeps_every_count():
     old, new = _diff_rows()
     for name, rows in (("old", old), ("new", new)):
         con.execute(f"CREATE TABLE {name} ({SNAP_COLUMNS})")
-        con.executemany(f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?)", rows)
+        con.executemany(f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?,?)", rows)
     d = compute_diff(con)
     assert len(d["newly_failing"]) == 70
     assert len(d["newly_passing"]) == 70
     assert len(d["added"]) == 70
     assert len(d["removed"]) == 70
+    assert len(d["earnings_revised"]) == 152
     # Real programs print ahead of the UNITID "NA" rows, which sort after every numeric UNITID.
     assert not d["earnings_revised"][139]["inst_name"].startswith("Closed")
     assert d["earnings_revised"][140]["inst_name"].startswith("Closed")
