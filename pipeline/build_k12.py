@@ -40,7 +40,7 @@ def main() -> None:
         f"""
         SELECT * FROM read_parquet('{src}')
         WHERE name IS NOT NULL AND enroll_total > 0
-        ORDER BY name
+        ORDER BY name, combokey
         """
     )
     cols = [d[0] for d in cur.description]

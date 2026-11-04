@@ -42,6 +42,19 @@ MIN_SCHOOL_PROGRAMS = 10  # a school needs this many decided programs to be rank
 TOP_N = 25
 
 
+def _ranked(metric: str) -> str:
+    """End a field list's query: order by its metric, then name, and cut without splitting a tie.
+
+    With no unique final key, DuckDB leaves equal rows in whichever order its threads finish, so the
+    order changed between builds with no change in the data. A tie at the cut changed which fields
+    appeared at all (three fields at 20 programs for the debt list's last two places). Every field
+    tied at the cut is kept, so a list can run past TOP_N rather than drop one for how its name sorts.
+    """
+    return (
+        f"QUALIFY rank() OVER (ORDER BY {metric}) <= {TOP_N} ORDER BY {metric}, lower(field), field"
+    )
+
+
 def _views(con) -> None:
     vc = PARQUET_DIR / "value_check.parquet"
     if not vc.exists():
@@ -180,7 +193,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(earnings)) AS med, count(*) AS n
         FROM pu WHERE credential_level='3' AND value_flag != 'insufficient_data'
-        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY med DESC LIMIT {TOP_N}""")
+        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} {_ranked("med DESC")}""")
     out.append(
         (
             "highest-paying-majors",
@@ -207,7 +220,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(earnings)) AS med, count(*) AS n
         FROM pu WHERE credential_level='3' AND value_flag != 'insufficient_data'
-        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY med ASC LIMIT {TOP_N}""")
+        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} {_ranked("med ASC")}""")
     out.append(
         (
             "lowest-paying-majors",
@@ -264,7 +277,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
         SELECT rtrim(cip_desc,'. ') AS field, count(*) AS n,
                round(median(debt_median)) AS debt, round(median(earnings)) AS earn
         FROM pu WHERE value_flag='fails_earnings_premium' AND debt_median IS NOT NULL
-        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY n DESC LIMIT {TOP_N}""")
+        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} {_ranked("n DESC")}""")
     out.append(
         (
             "programs-where-debt-does-not-pay-back",
@@ -280,8 +293,10 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 ["Field of study", "Programs", "Median debt", "Median earnings"],
                 [(_major_link(f, cip_slugs), f"{n:,}", money(d), money(e)) for f, n, d, e in r],
                 "Counted across all credential levels: programs flagged as falling short of the "
-                "state high-school-graduate earnings benchmark that also report median debt. A "
-                "program appearing here is a signal to ask questions, not a verdict on any student.",
+                "state high-school-graduate earnings benchmark that also report median debt. "
+                f"Fields with the same count are listed alphabetically. A tie at the cut-off is "
+                f"kept, so this list can run past {TOP_N} rows. A program appearing here is a "
+                "signal to ask questions, not a verdict on any student.",
                 "programs-where-debt-does-not-pay-back",
             ),
         )
@@ -303,7 +318,7 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
         rows = con.sql(f"""
             SELECT unitid, nm, n_dec, round(100.0*n_pass/n_dec) AS pass_pct, round(med_earn) AS med
             FROM sch WHERE st='{st}' AND n_dec >= {MIN_SCHOOL_PROGRAMS}
-            ORDER BY pass_pct DESC, med DESC LIMIT {TOP_N}""").fetchall()
+            ORDER BY pass_pct DESC, med DESC, lower(nm), unitid LIMIT {TOP_N}""").fetchall()
         # Never rank a "state" the data did not report; the label would be a fiction.
         if not known_state(st):
             continue
@@ -333,7 +348,8 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
                     ],
                     cells,
                     f"Ranked on one stated metric, the share of a school's programs that clear the "
-                    f"benchmark. Schools need at least {MIN_SCHOOL_PROGRAMS} programs with reported "
+                    "benchmark. Schools with the same share are ordered by median earnings, then "
+                    f"by name. Schools need at least {MIN_SCHOOL_PROGRAMS} programs with reported "
                     "earnings to appear. Note that specialised graduate institutions (medical and "
                     "health-science centres, for example) often rank at the top because their "
                     "programs are almost all high-earning; the 'programs measured' column and each "
@@ -391,7 +407,7 @@ def main() -> None:
     # Slug maps so list rows can link to the existing major and college pages.
     cip_slugs, used = {}, set()
     for (field,) in con.sql(
-        "SELECT DISTINCT rtrim(cip_desc,'. ') FROM p WHERE cip_desc IS NOT NULL"
+        "SELECT DISTINCT rtrim(cip_desc,'. ') FROM p WHERE cip_desc IS NOT NULL ORDER BY 1"
     ).fetchall():
         cand = slugify(field)
         if cand not in used:

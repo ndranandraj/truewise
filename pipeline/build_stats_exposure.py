@@ -67,14 +67,14 @@ def compute_exposure(con) -> dict:
         f"""SELECT credential_desc,
                count(*) FILTER (WHERE earn IS NOT NULL) AS with_earn,
                count(*) FILTER (WHERE earn IS NOT NULL AND earn < {REF}) AS below
-            FROM grad GROUP BY credential_desc ORDER BY with_earn DESC"""
+            FROM grad GROUP BY credential_desc ORDER BY with_earn DESC, credential_desc"""
     ).fetchall()
 
     top_fields = con.sql(
         f"""SELECT rtrim(cip_desc, '. ') AS field, count(*) AS below,
                round(median(earn)) AS med
             FROM grad WHERE earn IS NOT NULL AND earn < {REF}
-            GROUP BY field ORDER BY below DESC LIMIT 15"""
+            GROUP BY field ORDER BY below DESC, lower(field), field LIMIT 15"""
     ).fetchall()
 
     pct = con.sql(
