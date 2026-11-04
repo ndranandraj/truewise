@@ -4,9 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>High schools | Truewise</title>
-  <meta name="description" content="Truewise's high-school data: which public high schools offer advanced courses, where financial aid goes unclaimed, and more. From federal data." />
+  <meta name="description" content="Truewise's high-school data: which advanced courses each US public high school offers, who is on staff, and how states compare. From federal data." />
   <meta property="og:title" content="High schools | Truewise" />
-  <meta property="og:description" content="Federal data on US public high schools: advanced courses, financial aid, and more." />
+  <meta property="og:description" content="Federal data on US public high schools: advanced courses, staffing, and state comparisons." />
   <meta property="og:site_name" content="Truewise US education data" />
   <meta property="og:url" content="https://truewise.dev/k12/" />
   <link rel="canonical" href="https://truewise.dev/k12/" />
@@ -37,7 +37,7 @@
     .k-note { color: var(--ink-soft); font-size: .92rem; max-width: 64ch; margin: 0; }
     /* Site frame (October 2026). The source note follows the tiles in the page, so phones and screen
        readers reach the tools first; from 1100px the grid lifts it beside the intro, its rule level
-       with the eyebrow. The three sections are tiles of equal height. */
+       with the eyebrow. The tools are tiles of equal height. */
     .k-side { margin: 0 0 var(--s8); }
     @media (min-width: 1100px) {
       .k-hub { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); column-gap: var(--frame-gap); align-items: start; }
@@ -45,7 +45,8 @@
       .k-hub > .k-side { grid-column: 2; grid-row: 1; margin: var(--s9) 0 0; }
       .k-hub > .live-modules { grid-column: 1 / -1; grid-row: 2; }
     }
-    .k-hub .live-modules { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s5); border: 0; }
+    /* Two tools remain as tiles (the search replaced the Courses & staff tile). */
+    .k-hub .live-modules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s5); border: 0; }
     @media (max-width: 900px) { .k-hub .live-modules { grid-template-columns: minmax(0, 1fr); } }
     .k-hub .live-modules > .live-card {
       display: flex; flex-direction: column;
@@ -54,6 +55,38 @@
     }
     .k-hub .live-modules > .live-card .live-cta { margin-top: auto; padding-top: var(--s4); }
     .k-hub .live-modules > .live-card:hover { border-color: var(--brand); }
+    /* High Schools, action first (Prototype H, approved October 2026). The search hands off to the
+       Courses & staff lookup, as the homepage's hands off to Value Check, and looks the same. */
+    .k-hero .lede { margin: 0 0 var(--s6); }
+    .k-search { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px; box-shadow: 0 1px 0 var(--line); max-width: 680px; }
+    .k-search label { display: block; font-weight: 600; font-size: var(--t-ui); margin: 0 0 var(--s2); }
+    .k-search__row { display: flex; gap: var(--s2); }
+    /* The field and button are the shared .control and .btn (contrast-safe edge, 16px text so iOS does
+       not zoom on focus); here they only share the row. */
+    .k-search input { flex: 1 1 auto; min-width: 0; }
+    /* Narrow forms: at 200% text on a phone the field shrank until its placeholder read "e.g. Lane", and
+       at normal size on a 320px phone it was about 150px. Below 18em of the form's own text the button
+       goes below the field, full width. A 390px phone at normal size is about 21em: one row. */
+    .k-search { container: k-search / inline-size; }
+    @container k-search (max-width: 18em) {
+      .k-search__row { flex-wrap: wrap; }
+      .k-search input { flex-basis: 100%; }
+      .k-search button { flex: 1 1 100%; }
+    }
+    .k-hint { margin: var(--s2) 0 0; font-size: var(--t-fine); color: var(--ink-soft); line-height: 1.6; }
+    /* Examples as a list: the label on its own line, then one link per school with its place (a
+       comma-separated paragraph mixed names and places into a dense block on phones). */
+    .k-ex { list-style: none; margin: var(--s2) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2); }
+    .k-ex a { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; padding: 4px 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--paper); font-size: var(--t-fine); text-decoration: none; }
+    .k-ex a:hover { border-color: var(--brand); }
+    .k-ex a:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    .k-ex__name { color: var(--brand); font-weight: 600; }
+    .k-ex__place { color: var(--ink-soft); }
+    /* The figure that sat in the old Courses & staff tile, with its count and qualifier beside it
+       (emphasis never adds certainty). "No AP students", not "no AP courses". */
+    .k-fact { margin: var(--s6) 0 0; padding: 10px 14px; border-left: 3px solid var(--brand); background: var(--bg-alt); font-size: var(--t-fine); color: var(--ink-soft); max-width: 680px; }
+    .k-fact p { margin: 0; line-height: 1.5; }
+    .k-fact__tag { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 2px; }
   </style>
 </head>
 <body>
@@ -217,19 +250,24 @@ window.addEventListener("resize", onResize);
   <main class="wrap k-hub">
     <section class="k-hero">
       <p class="eyebrow">Truewise for high school</p>
-      <h1>What US public high schools offer, and where students miss out.</h1>
-      <p class="lede">Separate from Truewise's college tools, this section looks at the 26,000+ public high
-        schools themselves: the opportunities they offer their students, drawn straight from federal data.</p>
+      <h1>What does your high school offer?</h1>
+      <p class="lede">See the advanced courses and staff at any of 27,085 US public high schools, from the federal Civil Rights Data Collection (2023-24).</p>
+      <form class="k-search" action="/k12/advanced-courses/" method="get" role="search">
+        <label for="k-q">Find a high school</label>
+        <div class="k-search__row">
+          <input id="k-q" class="control" name="q" type="search" placeholder="e.g. Lane Tech" autocomplete="off" />
+          <button type="submit" class="btn">Search</button>
+        </div>
+        <p class="k-hint" id="k-ex-h">Examples, not recommendations</p>
+        <ul class="k-ex" aria-labelledby="k-ex-h"><li><a href="/k12/advanced-courses/?school=170993000942"><span class="k-ex__name">Lane Tech</span> <span class="k-ex__place">Chicago</span></a></li><li><a href="/k12/advanced-courses/?school=362058002877"><span class="k-ex__name">Stuyvesant</span> <span class="k-ex__place">New York</span></a></li><li><a href="/k12/advanced-courses/?school=530771001171"><span class="k-ex__name">Garfield</span> <span class="k-ex__place">Seattle</span></a></li><li><a href="/k12/advanced-courses/?school=050900000607"><span class="k-ex__name">Central High School</span> <span class="k-ex__place">Little Rock</span></a></li><li><a href="/k12/advanced-courses/?school=350237000551"><span class="k-ex__name">Santa Fe High</span> <span class="k-ex__place">New Mexico</span></a></li></ul>
+      </form>
+      <aside class="k-fact" aria-label="From the data">
+        <p class="k-fact__tag">In the 2023-24 collection</p>
+        <p>About 1 in 4 public high schools (7,016 of 27,085) reported no AP students and no calculus or physics classes, a count that includes alternative, special-education and juvenile-justice schools.</p>
+      </aside>
     </section>
 
     <div class="live-modules">
-      <a class="live-card" href="/k12/advanced-courses/">
-        <h2>Courses &amp; staff</h2>
-        <p>The advanced courses a high school offers, from AP and calculus to dual enrollment, how many
-          students take them, and its counselors and security staff. About 1 in 4 reported no AP students and no calculus or physics classes in the 2023-24
-          federal collection, a count that includes alternative, special-education and juvenile-justice schools.</p>
-        <span class="live-cta">Look up a high school &rarr;</span>
-      </a>
       <a class="live-card" href="/k12/rankings/">
         <h2>State report cards</h2>
         <p>How states compare on high-school opportunity: which states' schools offer advanced courses,

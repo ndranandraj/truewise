@@ -55,7 +55,7 @@ ci_copy() {
 run pytest_clean ci_copy
 run components   python3 -m pipeline.build_components --check
 run tokens       python3 -m pipeline.build_tokens --check
-for s in components_smoke table_smoke ui_smoke integration_smoke profile_smoke compare_smoke search_smoke embed_smoke search_gold value_check_states k12_compare_states careers_states layout_shot_smoke layout_enlarged_smoke; do
+for s in components_smoke table_smoke ui_smoke integration_smoke profile_smoke compare_smoke search_smoke embed_smoke search_gold value_check_states k12_compare_states k12_lookup_states careers_states layout_shot_smoke layout_enlarged_smoke; do
   run "$s" node "tests/$s.js"
 done
 if [ $fail -eq 0 ]; then echo "GATE PASSED"; else echo "GATE FAILED"; exit 1; fi
