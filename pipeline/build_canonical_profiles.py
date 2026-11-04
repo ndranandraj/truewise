@@ -61,10 +61,9 @@ NP_LABELS = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$11
 
 
 def _benchmark(con, unitid: str):
-    row = con.sql(
+    return con.sql(
         f"SELECT max(earnings_threshold_state) AS t FROM '{PARQUET}' WHERE unitid = '{unitid}'"
-    ).fetchone()
-    return row[0] if row else None
+    ).fetchall()[0][0]
 
 
 def _net_price(con, unitid: str) -> dict | None:
@@ -72,14 +71,18 @@ def _net_price(con, unitid: str) -> dict | None:
     summary page). Returns None when the school reports no net price."""
     if not INSTITUTIONS.exists():
         return None
-    row = con.sql(
-        f"""SELECT net_price_avg, net_price_0_30k, net_price_30_48k, net_price_48_75k,
+    rows = (
+        con.sql(
+            f"""SELECT net_price_avg, net_price_0_30k, net_price_30_48k, net_price_48_75k,
                    net_price_75_110k, net_price_110k_plus
             FROM '{INSTITUTIONS}' WHERE unitid = '{unitid}'"""
-    ).fetchone()
-    if not row:
+        )
+        .limit(1)
+        .fetchall()
+    )
+    if not rows:
         return None
-    avg, *brackets = (None if v is None else round(float(v)) for v in row)
+    avg, *brackets = (None if v is None else round(float(v)) for v in rows[0])
     if avg is None and not any(b is not None for b in brackets):
         return None
     return {"avg": avg, "brackets": brackets}

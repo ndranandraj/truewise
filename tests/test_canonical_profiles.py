@@ -6,7 +6,9 @@ pilot-review fixes (escaping, assessed-first selection, could-be-assessed label)
 
 from __future__ import annotations
 
-from pipeline.build_canonical_profiles import canonical_page
+import duckdb
+
+from pipeline.build_canonical_profiles import _benchmark, _net_price, canonical_page
 from pipeline.build_profile_pilot import DEFAULT_THRESHOLD, _row_from
 
 
@@ -122,6 +124,16 @@ def test_no_net_price_omits_the_calculator():
     """A school with no reported net price shows no calculator, not an empty or broken one."""
     html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=None)
     assert 'id="c-data"' not in html and "ED reports no net price for this school" in html
+
+
+def test_a_school_with_no_row_reads_as_no_data():
+    """DuckDB 2.0 removed relation.fetchone(), which returned None on no rows. A school missing from
+    the files must still read as no benchmark and no net price, not raise."""
+    con = duckdb.connect()
+    assert _benchmark(con, "000000") is None
+    assert _net_price(con, "000000") is None
+    assert _benchmark(con, "110662") is not None
+    assert _net_price(con, "110662") is not None
 
 
 def test_one_year_label_and_notice_on_mixed_window():
