@@ -43,7 +43,14 @@ OUT_DIR = SITE / "findings" / SLUG
 # presentation change, never automatically on a cosmetic or unrelated deploy. The data's own date
 # ("as of 6 August 2026") comes from ED's compile date and is separate.
 PUBLISHED_ON = "23 Sep 2026"
-UPDATED_ON = "2 Oct 2026"
+UPDATED_ON = "4 Nov 2026"
+# ED's page, read 4 November 2026: lists updated 28 August, 25 September and 8 October. The counts
+# below stay on the 6 August list until a later list is recounted by the same method (draft PR #17).
+NEWER_LISTS_NOTE = (
+    "ED has published newer lists since, most recently on 8 October 2026, and says nearly 1,400 "
+    "institutions still have files outstanding for these two cycles. This page has not been "
+    "recounted from them."
+)
 
 COMPONENT_LABELS = [
     ("total2223", "Student file, total amounts, 2022-23"),
@@ -390,7 +397,8 @@ def render_page(s) -> str:
       <p class="kf__text">({_pct(missing, total)}%) had not submitted at least one of the seven required FVT/GE files for the
         2024 and 2025 reporting cycles, as recorded in ED&rsquo;s list compiled on {when}.</p>
       <p class="kf__qual"><b>&ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</b> Files
-        rejected with errors count as not submitted. Filings after {short_when} are not reflected.</p>
+        rejected with errors count as not submitted. Filings after {short_when} are not reflected.
+        {NEWER_LISTS_NOTE}</p>
       <p class="kf__more"><span><b>{s["none_filed"]:,}</b> submitted no file at all</span>
         <span><b>{s["all7"]:,}</b> of those had all seven marked not submitted</span></p>
     </div>
@@ -404,7 +412,9 @@ def render_page(s) -> str:
       <h2 id="why-h">Why it matters</h2>
       <p>These files are what the Department intends to use for the program-level data and statistics
         it plans to publish in 2027. Colleges have until 15 January 2027 to submit anything missing
-        from the 2024 and 2025 cycles, and the 2026 cycle was due 1 October 2026, after ED compiled this list.</p>
+        from the 2024 and 2025 cycles, and the 2026 cycle was due 1 October 2026, after ED compiled this
+        list. ED says more than 1,000 institutions missed that deadline, and they have until the same
+        date in January.</p>
       <p>The list records whether a file arrived, not why one did not. It is a status report, not a
         finding about any college&rsquo;s programs.</p>
     </section>

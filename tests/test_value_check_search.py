@@ -46,7 +46,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://truewise.
     w.scrollTo = () => {}; w.HTMLElement.prototype.scrollIntoView = () => {}; } });
 const w = dom.window, d = w.document, wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const type = async (v) => { const q = d.getElementById("q"); q.value = v; q.dispatchEvent(new w.Event("input")); await wait(150); };
-const card = (name) => { const h = [...d.querySelectorAll("#results h3")].find((x) => x.textContent === name);
+const card = (name) => { const h = [...d.querySelectorAll("#results h2")].find((x) => x.textContent === name);
   return h ? h.closest("a").querySelector(".mini").textContent.replace(/\\s+/g, " ").trim() : null; };
 (async () => {
   await wait(400);
@@ -64,6 +64,15 @@ const card = (name) => { const h = [...d.querySelectorAll("#results h3")].find((
   await type("baylor university"); out.baylor = card("Baylor University");
   await type("albizu university miami"); out.albizu = card("Albizu University-Miami");
   await type("university of california san francisco"); out.ucsf = card("University of California-San Francisco");
+  await type("university of");
+  const q = d.getElementById("q"), key = (el, k) => el.dispatchEvent(new w.KeyboardEvent("keydown", { key: k, bubbles: true }));
+  const cards = [...d.querySelectorAll("#results a.school-card")];
+  q.focus(); key(q, "ArrowDown"); const down = d.activeElement === cards[0];
+  key(d.activeElement, "ArrowDown"); const next = d.activeElement === cards[1];
+  key(d.activeElement, "ArrowUp"); key(d.activeElement, "ArrowUp"); const back = d.activeElement === q;
+  key(q, "ArrowUp"); const last = d.activeElement === cards[cards.length - 1];
+  key(d.activeElement, "Escape"); const esc = d.activeElement === q;
+  out.keys = { down, next, back, last, esc, roles: d.querySelectorAll("#results [role]").length };
   console.log(JSON.stringify(out));
 })();
 """
@@ -112,6 +121,20 @@ def test_a_search_with_no_match_is_announced(run_page):
     assert nm["status"] == "No colleges match “zzqxv”." and nm["shown"] and nm["live"] == "polite"
     assert nm["options"] == 0, "the message must not sit inside the results listbox"
     assert "No colleges match" not in nm["help"], "the sentence is not shown twice"
+
+
+def test_results_are_links_the_keyboard_can_reach(run_page):
+    """A link inside role=option is a control nested in a control (axe: nested-interactive). The
+    results are plain links now: Tab reaches them, and the arrow keys move real focus."""
+    got, _ = run_page
+    assert got["keys"] == {
+        "down": True,
+        "next": True,
+        "back": True,
+        "last": True,
+        "esc": True,
+        "roles": 0,
+    }
 
 
 def test_cards_count_what_the_profile_counts(run_page):

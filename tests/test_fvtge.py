@@ -185,6 +185,8 @@ def test_the_key_finding_keeps_its_qualifier_beside_the_figure(built):
     assert "does not mean &ldquo;complete&rdquo;" in text
     assert "Files rejected with errors count as not submitted." in text
     assert "Filings after 6 August are not reflected." in text
+    # The key finding says newer lists exist, beside the figure, not in the method at the bottom.
+    assert "ED has published newer lists since" in text and "nearly 1,400" in text
     # Read as "received files count as not submitted" in review; this wording must not come back.
     assert "counts any file received" not in text
 
@@ -234,7 +236,7 @@ def test_the_browser_check_drives_the_lookup_that_exists(built):
 def test_the_dateline_carries_both_editorial_dates_in_full(built):
     _, _, out = built
     html = (out / "index.html").read_text()
-    assert "<span>Published 23 Sep 2026</span><span>updated 2 Oct 2026</span>" in html
+    assert "<span>Published 23 Sep 2026</span><span>updated 4 Nov 2026</span>" in html
 
 
 def test_a_passed_deadline_is_not_described_as_upcoming(built):

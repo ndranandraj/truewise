@@ -1,0 +1,6 @@
+# Parents of real addresses that have no page of their own. Exact paths only, no splats: these must
+# never touch /college/<slug>/ or a dataset under /data/.
+/college /colleges/ 301
+/college/ /colleges/ 301
+/data /#data 301
+/data/ /#data 301

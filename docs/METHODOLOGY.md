@@ -168,6 +168,13 @@ has a **sworn police officer** and/or security guards, and the share of teachers
 fully certified**. A notable civil-rights signal is a school that has a police officer but no
 counselor. These describe reported staffing, not judgments about a school.
 
+Some filings cannot be real: Huntington Beach High reports 300 full-time counselors for 2,721
+students. Where a school reports ten or more counselors at fewer than 50 students each (50 schools
+in 2023-24), the page shows the count as filed, calculates no ratio, and leaves the school out of
+its state's median. Where one figure of ten or more fills the counselor, police and guard columns
+alike (one school), police and guards read as not reported. `k12.parquet` keeps every count as
+filed.
+
 Counts are summed from the CRDC race-by-sex cells rather than the published totals on purpose: the
 CRDC sometimes suppresses a total (e.g. `TOT_ENR_F = -11`) while the underlying cells are present,
 so summing the cells gives a complete count where the total would silently undercount. This is only
@@ -175,9 +182,9 @@ used to reconstruct a school's overall enrollment and course counts; Truewise do
 figures out by student race or other demographics. Every negative CRDC code (suppressed or not
 applicable) is treated as missing, never as zero data.
 
-**Vintage.** This uses the **2021-22** CRDC, the most recent collection; course *offerings* are
-fairly stable year to year. The collection year is labeled on every page. The pipeline reads the CRDC
-files by name, so refreshing to a newer collection (2022-23 and later) is a drop-in replacement.
+**Vintage.** This uses the **2023-24** CRDC, the most recent collection, released by ED in September
+2026. The collection year is labeled on every page. The pipeline reads the CRDC files by name, and
+`build_k12_source` records the collection in the data.
 
 ## Known limitations
 

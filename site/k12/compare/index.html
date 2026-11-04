@@ -352,7 +352,7 @@ window.addEventListener("resize", onResize);
     rows.push(row("Students", cols.map(s => `<span class="num">${num(s.enroll)}</span>`)));
     COURSES.forEach(([key, label]) => rows.push(row(label, cols.map(s => yn(s.courses[key].offered)))));
     rows.push(row("Students per counselor", cols.map(s =>
-      s.staff.no_counselor ? `<span class="no">No counselor</span>` : s.staff.counselor_ratio != null ? `<span class="num">${s.staff.counselor_ratio}:1</span>` : `<span class="na">Not reported</span>`)));
+      s.staff.no_counselor ? `<span class="no">No counselor</span>` : s.staff.counselor_ratio != null ? `<span class="num">${s.staff.counselor_ratio}:1</span>` : s.staff.counselor_reported != null ? `<span class="na">Not usable: reported ${num(s.staff.counselor_reported)} counselors for ${num(s.enroll)} students</span>` : `<span class="na">Not reported</span>`)));
     rows.push(row("Police officer on staff", cols.map(s => staffYN(s.staff.police))));
     rows.push(row("Security guards", cols.map(s => staffYN(s.staff.guard))));
     rows.push(row("Teachers not certified", cols.map(s => s.staff.uncert_pct != null ? `<span class="num">${s.staff.uncert_pct}%</span>` : `<span class="na">Not reported</span>`)));

@@ -96,6 +96,35 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "November 2026",
+        "title": "High schools: students-per-counselor figures that could not be real",
+        "body": (
+            "High School Compare showed a students-per-counselor ratio for every school that reported "
+            "counselors, including filings that cannot be real: Huntington Beach High reports 300 "
+            "full-time counselors for 2,721 students, which read as 9:1. These counts are in the "
+            "federal data as filed. For the 50 schools reporting ten or more counselors at fewer than "
+            "50 students each, Compare now shows the count as filed and no ratio, and those schools "
+            "no longer count towards their state's median on High School rankings. Nine state medians "
+            "move, most by one or two students; Oregon moves most, from 248 to 258. At one school, "
+            "Kalama High, one figure fills the counselor, police and guard columns, so its police and "
+            "guard answers now read as not reported. The published dataset keeps every count as filed."
+        ),
+        "link": "/methodology/#k12",
+    },
+    {
+        "date": "November 2026",
+        "title": "College lookup: website links that did not reach the school",
+        "body": (
+            "The Department of Education's website field is free text, and the college lookup turned "
+            "it into a link as written. Ten schools had a broken link from the value NA, and two had "
+            "a broken link because a second address or a sentence followed the first. One linked to "
+            "gmail.com, because its email address was entered as a web address. The link now goes to "
+            "the first address given, and a value with no real address gives no link. No figures "
+            "changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
         "body": (
             "Rows with equal figures had no fixed order, so their order could change from one site "

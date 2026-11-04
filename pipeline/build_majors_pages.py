@@ -53,6 +53,11 @@ CRED_SHORT = {
 }
 
 
+def growth_text(g: float) -> str:
+    """Signed percent. The median can be -0.0, which formats as "-0%", so add 0.0 to normalise it."""
+    return f"{g + 0.0:+g}%"
+
+
 def _cred_short(cred: str) -> str:
     """Compact label for the chart axis, with a safe fallback so an unmapped credential can
     never overflow the label column."""
@@ -333,7 +338,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         g = demand.get("growth_pct")
         opn = demand.get("annual_openings")
         # BLS unknowns read "not published", the site rule for BLS figures.
-        gtxt = "not published" if g is None else f"{g:+g}%"
+        gtxt = "not published" if g is None else growth_text(g)
         otxt = "not published" if opn is None else f"{int(round(opn)):,}"
         # The projection years come from the data (see build_careers_demand), not from this file.
         ep_start, ep_end = ep_years(demand["vintage"]["ep"])
@@ -351,7 +356,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
             )
             for o in occ:
                 w = money(o.get("wage"))
-                gr = "not published" if o.get("growth") is None else f"{o['growth']:+g}%"
+                gr = "not published" if o.get("growth") is None else growth_text(o["growth"])
                 op = (
                     "not published"
                     if o.get("openings") is None

@@ -1,17 +1,19 @@
 # Truewise — core dependencies for the data spine + first module
 # Install: pip install -r requirements.txt
+# Upper bounds sit at the next major version: an open-ended line let DuckDB 2.0 into CI unreviewed
+# on 27 Oct 2026. Moving a bound is a deliberate change, with a build compared.
 
 duckdb>=1.0.0,<2       # columnar analytics engine (the spine); 2.0 drops relation.fetchone()
-pandas>=2.0.0          # data wrangling
-requests>=2.31.0       # downloading bulk files / API calls
+pandas>=2.0.0,<4       # data wrangling
+requests>=2.31.0,<3    # downloading bulk files / API calls
 pyarrow>=15.0.0        # Parquet read/write
-openpyxl>=3.1.0        # read BLS / NCES .xlsx sources for the Careers demand layer
-python-dotenv>=1.0.0   # load API key from .env
-Pillow>=10.0.0         # render per-page social share cards (Open Graph images)
+openpyxl>=3.1.0,<4     # read BLS / NCES .xlsx sources for the Careers demand layer
+python-dotenv>=1.0.0,<2  # load API key from .env
+Pillow>=10.0.0,<13     # render per-page social share cards (Open Graph images)
 
 # Analysis / modeling (add when needed)
 # scikit-learn>=1.4.0  # earnings estimation for thin cohorts
 # geopandas>=0.14.0    # maps
 
 # Dev / testing
-pytest>=8.0.0
+pytest>=8.0.0,<10

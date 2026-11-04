@@ -5,7 +5,7 @@
 # Python interpreter. macOS ships `python3`, not `python`; override with `make PYTHON=python`.
 PYTHON ?= python3
 
-.PHONY: layout-check layout-check-live perf-check perf-baseline perf-check-local refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
+.PHONY: freshness layout-check layout-check-live perf-check perf-baseline perf-check-local refresh monitor honesty-scan search-probe install components tokens tokens-check prune-check prune slug-registry slug-registry-check data spine flags value-check site careers careers-demand bls k12-source k12 package-data value test test-compare test-search test-embed test-search-gold test-components lint format all
 
 install:
 	pip install -r requirements-dev.txt
@@ -128,6 +128,10 @@ test-embed:
 # release. Needs open network, so not a GitHub runner.
 refresh:
 	./refresh.sh
+
+# Has ED published something newer than the site uses? Needs open network, so not on a runner.
+freshness:
+	$(PYTHON) -m pipeline.source_freshness
 
 # The offline integrity + freshness check the monthly job runs. No network.
 monitor:

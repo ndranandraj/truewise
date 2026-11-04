@@ -274,7 +274,8 @@ window.addEventListener("resize", onResize);
       every data refresh; a test checks that this page matches it.</p>
     <p class="repro">Reproduce these numbers: the dataset lives in <code>published/value_check.parquet</code> and
       the exact script is <code>analysis/summary.py</code> in the
-      <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>
+      <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>. To verify a download from
+      <code>/data/</code>, compare it with the <a href="/data/SHA256SUMS.txt">SHA-256 checksums</a>.</p>
 
     <h2 id="principles">Principles</h2>
     <ul>
@@ -341,7 +342,7 @@ window.addEventListener("resize", onResize);
     <ul>
       <li>Earnings cohorts predate the current year; figures describe past graduates.</li>
       <li>The debt-to-earnings ratio shown is a plain ratio, not the amortized federal D/E rate.</li>
-      <li id="k12">High-school data is the <b>2023-24</b> CRDC, released by ED in September 2026; the collection year is labeled on every high-school page. Two readings are ours, not ED's. First, ED published a high school's AP or IB answer of &ldquo;No&rdquo; as -9 (&ldquo;not applicable&rdquo;): the School Form asks every school with grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), no &ldquo;No&rdquo; appears anywhere in the file, and read as &ldquo;No&rdquo; the national rates match 2021-22 (AP 53.5% against 54.1%, IB 3.8% against 3.9%). So Truewise reads -9 as &ldquo;No&rdquo; at regular high schools, and as unknown at justice facilities and where a school reported AP courses under a -9 (about 850 schools for AP, 790 for IB). Second, ED withheld every count of nonbinary students under Executive Order 14168, so enrollment totals and participation rates count only students reported as male or female.</li>
+      <li id="k12">High-school data is the <b>2023-24</b> CRDC, released by ED in September 2026; the collection year is labeled on every high-school page. Two readings are ours, not ED's. First, ED published a high school's AP or IB answer of &ldquo;No&rdquo; as -9 (&ldquo;not applicable&rdquo;): the School Form asks every school with grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), no &ldquo;No&rdquo; appears anywhere in the file, and read as &ldquo;No&rdquo; the national rates match 2021-22 (AP 53.5% against 54.1%, IB 3.8% against 3.9%). So Truewise reads -9 as &ldquo;No&rdquo; at regular high schools, and as unknown at justice facilities and where a school reported AP courses under a -9 (about 850 schools for AP, 790 for IB). Second, ED withheld every count of nonbinary students under Executive Order 14168, so enrollment totals and participation rates count only students reported as male or female. Some schools file staffing counts that cannot be real: Huntington Beach High reports 300 full-time counselors for 2,721 students. Where a school reports ten or more counselors at fewer than 50 students each (50 schools), we show the count as filed and calculate no ratio, and leave the school out of its state&rsquo;s median. Where one figure of ten or more fills the counselor, police and guard columns alike (one school), we treat police and guards as not reported. The published dataset keeps every count as filed.</li>
       <li>The Careers occupation layer uses a many-to-many CIP-to-occupation crosswalk, so it lists the
         occupations a field commonly leads to rather than predicting any one graduate's job.</li>
     </ul>

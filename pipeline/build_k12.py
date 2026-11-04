@@ -31,6 +31,26 @@ def _int(x):
     return None if x is None else int(round(x))
 
 
+def counselor_count_unusable(counselors, enroll) -> bool:
+    """True when a reported counselor count cannot be a real staffing figure.
+
+    The CRDC publishes what schools file, and some filings are plainly mis-keyed: Huntington Beach
+    High reports 300 full-time counselors for 2,721 students, likely 3.00 entered without its point.
+    Ten or more counselors at fewer than 50 students each catches these (50 schools in 2023-24).
+    The published parquet keeps the count as filed; only the ratio derived from it is withheld.
+    """
+    return bool(counselors and enroll and counselors >= 10 and enroll / counselors < 50)
+
+
+def staff_columns_copied(counselors, police, guards) -> bool:
+    """True when one large figure fills every staffing column, as at Kalama High School (155.15).
+
+    Then the police and guard columns say nothing about police or guards. A real count of 2 in all
+    three happens, so this needs ten or more.
+    """
+    return bool(counselors and counselors >= 10 and counselors == police == guards)
+
+
 def main() -> None:
     src = PARQUET_DIR / "k12.parquet"
     if not src.exists():
@@ -70,15 +90,21 @@ def main() -> None:
         state = r["state"] or "ZZ"
         enroll = r["enroll_total"]
         couns, teach, uncert = r["fte_counselors"], r["fte_teachers"], r["fte_teach_uncert"]
+        unusable = counselor_count_unusable(couns, enroll)
+        copied = staff_columns_copied(couns, r["fte_police"], r["fte_guards"])
         staff = {
             # student-to-counselor ratio; a real reported 0 counselors is meaningful.
-            "counselor_ratio": round(enroll / couns) if (couns and enroll) else None,
+            "counselor_ratio": round(enroll / couns)
+            if (couns and enroll and not unusable)
+            else None,
             "no_counselor": couns == 0,
+            # The count as filed, shown beside the reason, when it cannot be a real ratio.
+            "counselor_reported": float(couns) if unusable else None,
             # Three states: True, False, or None when the school did not report the count. bool() made
             # a missing count False, so 817 schools read "No" for police and 1,335 for guards without
             # having reported either.
-            "police": None if r["fte_police"] is None else r["fte_police"] > 0,
-            "guard": None if r["fte_guards"] is None else r["fte_guards"] > 0,
+            "police": None if (r["fte_police"] is None or copied) else r["fte_police"] > 0,
+            "guard": None if (r["fte_guards"] is None or copied) else r["fte_guards"] > 0,
             "uncert_pct": round(100 * uncert / teach) if (uncert is not None and teach) else None,
         }
         by_state[state][r["combokey"]] = {
@@ -160,7 +186,11 @@ def main() -> None:
                 a["none3"] += 1
         if r["fte_counselors"] == 0:
             a["no_couns"] += 1
-        elif r["fte_counselors"] and r["enroll_total"]:
+        elif (
+            r["fte_counselors"]
+            and r["enroll_total"]
+            and not counselor_count_unusable(r["fte_counselors"], r["enroll_total"])
+        ):
             a["ratios"].append(r["enroll_total"] / r["fte_counselors"])
     states = []
     for st, a in agg.items():

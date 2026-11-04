@@ -141,3 +141,13 @@ def test_major_page_unknown_counts_say_why_and_a_real_zero_stays_zero(tmp_path, 
     cert = cells["Undergraduate Certificate or Diploma"]
     assert cert[1] == "not assessed" and cert[3] == "not assessed"
     assert "insufficient data" not in h and "n/a" not in h
+
+
+def test_growth_that_rounds_to_nothing_has_no_minus_sign():
+    """Twelve major pages read "Projected employment growth -0%": the median can be -0.0."""
+    from pipeline.build_majors_pages import growth_text
+
+    assert growth_text(-0.0) == "+0%"
+    assert growth_text(0.0) == "+0%"
+    assert growth_text(4.0) == "+4%"
+    assert growth_text(-3.0) == "-3%"

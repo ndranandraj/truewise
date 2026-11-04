@@ -25,6 +25,8 @@ const INDEX = { schools: [
   { k: "b", n: "Lane Technical High School", d: "District", s: "NY" },
 ] };
 const STATE = { a: school("Stuyvesant High School", true), b: school("Lane Technical High School", null) };
+// A count no school could have: withheld from the ratio, shown as filed, never a small ratio.
+Object.assign(STATE.b.staff, { counselor_ratio: null, counselor_reported: 300 });
 
 let failures = 0;
 const check = (ok, msg) => { console.log(`${ok ? "ok  " : "FAIL"}  ${msg}`); if (!ok) failures += 1; };
@@ -63,6 +65,12 @@ async function main() {
   check(cells[0] === "Yes" && cells[1] === "Not reported", `unreported police reads "Not reported" (got ${JSON.stringify(cells)})`);
   check(!!(staffRow && staffRow.querySelector("td[data-label='Lane Technical High School']")),
     "each cell carries its school name for the phone card layout");
+
+  const counsRow = [...d.querySelectorAll("#cmp tbody tr")].find((tr) => /per counselor/.test(tr.textContent));
+  const couns = counsRow ? [...counsRow.querySelectorAll("td")].map((td) => td.textContent.trim()) : [];
+  check(couns[0] === "300:1", `a usable count reads as a ratio (got ${JSON.stringify(couns[0])})`);
+  check(couns[1] === "Not usable: reported 300 counselors for 3,000 students",
+    `an unusable count says so and shows what was filed (got ${JSON.stringify(couns[1])})`);
 
   rms[0].focus();
   rms[0].click();

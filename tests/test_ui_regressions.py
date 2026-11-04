@@ -1139,9 +1139,10 @@ def test_search_is_hardened_with_tokens_ranking_aliases_and_empty_state():
     vc = (SITE / "value-check" / "index.html").read_text()
     assert "function detectState" in vc and "emptyStateHTML" in vc, "routed empty state missing"
     assert "best-value-colleges-" in vc, "empty state should link the per-state best-value list"
-    # Accessibility + progressive load.
-    assert 'role="combobox"' in vc and 'role="listbox"' in vc
-    assert "aria-activedescendant" in vc
+    # Accessibility: results are real links, never links nested in listbox options (axe:
+    # nested-interactive, November 2026). The keyboard contract is pinned in test_value_check_search.
+    assert 'role="combobox"' not in vc and 'role="option"' not in vc and 'role="listbox"' not in vc
+    assert 'id="rescount" aria-live="polite"' in vc
     # The old naive one-liner must be gone.
     assert 'SCHOOLS.filter(s => (s.name || "").toLowerCase().includes(term)).slice(0, 40)' not in vc
 
