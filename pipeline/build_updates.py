@@ -125,6 +125,18 @@ CORRECTIONS = [
     },
     {
         "date": "November 2026",
+        "title": "Bachelor's majors with the lowest debt relative to earnings gain: 21 tied fields were left out",
+        "body": (
+            "This list stopped at 25 rows, but 23 fields show the same figure, 0.5 years, for its last "
+            "two places. Two appeared and 21 did not, decided only by how their names sort, including "
+            "Registered Nursing (835 programs), Finance (387), Computer and Information Sciences (351), "
+            "Economics (317) and Civil Engineering (200). Every field tied at the cut-off is now shown, "
+            "so the list has 46 rows. The 25 rows already shown keep their order, and no figure changed."
+        ),
+        "link": "/lists/fastest-debt-payback-majors/",
+    },
+    {
+        "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
         "body": (
             "Rows with equal figures had no fixed order, so their order could change from one site "
