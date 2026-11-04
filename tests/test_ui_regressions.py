@@ -976,8 +976,10 @@ def test_compare_states_coverage_and_labels_are_honest():
     """A pass rate over 89 measured programs must not read like one over 254. Coverage is computed
     per school, and the completers column says what it actually counts."""
     compare = (SITE / "compare" / "index.html").read_text()
-    assert "Programs measured" in compare, "coverage row missing from Compare"
-    assert "n_insufficient" in compare, "coverage must include the unmeasured programs"
+    assert "Undergraduate programs assessed" in compare, "coverage row missing from Compare"
+    # The denominator is every undergraduate program, assessed or not (n_ug_programs includes the
+    # programs without published earnings).
+    assert "u.decided} of ${u.total}" in compare, "coverage must include the unassessed programs"
     # "Grads" implied the earnings-cohort sample size; it is a completions count.
     vc = (SITE / "value-check" / "index.html").read_text()
     assert "Recent completers" in vc and ">Grads<" not in vc
@@ -1183,12 +1185,56 @@ def test_compare_missing_values_use_the_site_vocabulary():
 
 def test_compare_remove_control_is_an_accessible_button():
     """The Compare remove control was a click-only <div> (no keyboard, no name). It must be a
-    real button with an accessible label, and the page must expose a polite live region."""
+    real button with an accessible label, and the page must expose a polite live region. Since
+    Prototype I (October 2026) it is part of each selected college's label, above the comparison,
+    and the only Remove on the page."""
     html = (SITE / "compare" / "index.html").read_text()
-    assert '<button type="button" class="rm"' in html, "remove must be a <button>"
-    assert 'aria-label="Remove ' in html, "remove button needs an accessible name"
-    assert '<div class="rm"' not in html, "the old inaccessible div.rm must be gone"
+    assert '<button type="button" class="pick__rm"' in html, "remove must be a <button>"
+    assert 'aria-label="Remove ${esc(p.s.name)}"' in html, "remove button needs an accessible name"
+    assert 'class="rm"' not in html, "Remove no longer sits in the table or a separate phone list"
     assert 'aria-live="polite"' in html, "removals should be announced via a live region"
+
+
+def test_compare_is_action_first_and_counts_undergraduate_programs():
+    """Prototype I, approved October 2026: a one-sentence introduction, the search labelled, the
+    selected colleges as labels with their own Remove, a note at four, labelled examples, and the
+    program rows counted on undergraduate programs as profiles and Value Check count them. The
+    figures are neutral (no pass-rate colour) and coverage says what was calculated."""
+    html = (SITE / "compare" / "index.html").read_text()
+    head = html.split('<section class="c-head">', 1)[1].split('<div id="cmp">', 1)[0]
+    lede = re.search(r'<p class="lede">(.*?)</p>', head, re.S).group(1)
+    assert lede.count(". ") == 0 and lede.strip().endswith("."), "the introduction is one sentence"
+    assert '<label class="add-label" id="add-label" for="q">' in head
+    assert 'id="full" tabindex="-1" hidden>Four colleges is the most this page compares.' in head
+    assert '<p class="examples__note">Examples, not recommendations.</p>' in head
+    assert "Cal Poly San Luis Obispo" in head and "Cal Poly<" not in head
+    code = re.sub(r"/\*.*?\*/|//[^\n]*", "", html, flags=re.S)
+    for label in (
+        '"Undergraduate programs assessed"',
+        '"Above the high-school line"',
+        '"Below the high-school line"',
+        '"State high-school line"',
+    ):
+        assert f"row({label}" in code, f"Compare lost the {label} row"
+    assert "s.n_ug_pass" in code and "s.n_ug_programs" in code, "count undergraduate programs"
+    assert "could be assessed" in code and "have earnings data" not in code
+    assert "none could be assessed: no state benchmark" in code
+    assert 'class="good"' not in code and '"good"' not in code, "no pass-rate colour"
+    # Search feedback reaches screen readers: a count, the cap, no match, and a cleared field.
+    for said in (
+        "No colleges match",
+        "Showing the top",
+        "college${all.length === 1",
+        "Type two or more letters",
+    ):
+        assert said in code, f"Compare's search no longer announces {said!r}"
+    # The reading note explains unassessed programs without a reason that does not always apply.
+    note = re.sub(r"\s+", " ", html.split('<div class="caveats">', 1)[1].split("</div>", 1)[0])
+    assert "privacy" not in note and "nothing is estimated" in note
+    assert (
+        "four years after graduating where ED publishes them, and one year after where it does not"
+        in note
+    )
 
 
 def test_home_and_hubs_have_self_canonical():
@@ -1952,7 +1998,7 @@ def test_phase_three_polish_holds():
     assert 'href="/colleges/"' in boot, "the static view needs a route that works without script"
 
     cmp_src = (SITE / "compare" / "index.html").read_text()
-    measured = cmp_src.split('row("Programs measured"', 1)[1].split("}));", 1)[0]
+    measured = cmp_src.split('row("Undergraduate programs assessed"', 1)[1].split("}));", 1)[0]
     assert '"bad"' not in measured, "coverage must not take the colour of a failing result"
 
     k12 = re.sub(

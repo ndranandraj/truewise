@@ -46,6 +46,12 @@ const els = {
   live: mk(),
   "income-row": mk(),
   income: Object.assign(mk(), { value: "-1" }),
+  // The selected-college labels and the controls around the search (Prototype I).
+  picks: mk(),
+  "add-box": mk(),
+  "add-label": mk(),
+  full: mk(),
+  examples: mk(),
 };
 global.document = { getElementById: (id) => els[id] || mk() };
 global.window = { addEventListener() {} };
@@ -106,8 +112,19 @@ const ck = (name, cond) => {
   await add("223232"); // Baylor University
   await add("110538"); // California State University-Chico
   let o = txt();
-  ck("Baylor pass rate 97% of 64 measured", /97%.*of 64 measured/.test(o));
-  ck("Chico pass rate 100% of 66 measured", /100%.*of 66 measured/.test(o));
+  // Undergraduate programs, as each profile and Value Check count them; expected values come from
+  // the data, so a refresh changes both sides together.
+  const ugLine = (u) => {
+    const s = data.find((x) => x.unitid === u), d = s.n_ug_pass + s.n_ug_fail;
+    return { pct: Math.round((100 * s.n_ug_pass) / d), d, total: s.n_ug_programs, fail: s.n_ug_fail };
+  };
+  for (const [u, name] of [["223232", "Baylor"], ["110538", "Chico"]]) {
+    const e = ugLine(u);
+    ck(`${name}: ${e.pct}% of ${e.d} assessed, ${e.d} of ${e.total} could be assessed`,
+      o.includes(`${e.pct}% |of ${e.d} assessed`) && o.includes(`|${e.d} of ${e.total}|`));
+  }
+  ck("Baylor today: 96% of 51 assessed (was 97% of 64 counting graduate programs)", o.includes("96% |of 51 assessed"));
+  ck("no pass-rate colouring", !/class="(good|bad)"/.test(els.cmp.innerHTML));
   ck("net price averages 41,104 and 14,480", o.includes("$41,104") && o.includes("$14,480"));
   ck("state thresholds 34,809 and 36,976", o.includes("$34,809") && o.includes("$36,976"));
   ck("Pell 12% and 43%", o.includes("12%") && o.includes("43%"));
@@ -123,13 +140,13 @@ const ck = (name, cond) => {
   els.income.value = "-1";
   render();
 
-  // Distinct removable schools is the observable proxy for the internal picked[] list. Counting
-  // occurrences of data-rm would double now: each school gets a Remove control in the desktop
-  // table header AND in the phone card list, and only one of the two is displayed at a width.
+  // The selected colleges' labels carry the only Remove controls, one per college, so the count
+  // of them is the observable proxy for the internal picked[] list.
   const cols = () =>
     new Set(
-      Array.from(els.cmp.innerHTML.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+      Array.from(els.picks.innerHTML.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
     ).size;
+  ck("Remove is not inside the comparison", !els.cmp.innerHTML.includes("data-rm"));
 
   ck("duplicate add is ignored", (await add("223232"), cols() === 2));
 
@@ -180,8 +197,8 @@ const ck = (name, cond) => {
   await add("110538");
   const out = els.cmp.innerHTML;
   const metrics = (out.match(/<section class="cmp-metric">/g) || []).length;
-  // Minus the header row, whose first cell is the empty corner above the metric labels.
-  const tableRows = (out.match(/<tr><th>/g) || []).length - 1;
+  // Body rows only: the header row starts with the empty corner <td>, so it does not match.
+  const tableRows = (out.match(/<tr><th>/g) || []).length;
   ck("phone view exists", out.includes('class="cmp-stack"'));
   ck(
     `one card per metric (${metrics} cards vs ${tableRows} table rows)`,
@@ -190,7 +207,7 @@ const ck = (name, cond) => {
 
   // Same numbers in both renderings, or the phone view is quietly a different product.
   const picked2 = new Set(
-    Array.from(out.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
+    Array.from(els.picks.innerHTML.matchAll(/data-rm="([^"]+)"/g), (m) => m[1]),
   );
   const cells = Array.from(out.matchAll(/<tr><th>[^<]*<\/th>(.*?)<\/tr>/g), (m) =>
     Array.from(m[1].matchAll(/<td>(.*?)<\/td>/g), (c) => c[1]),
