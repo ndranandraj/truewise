@@ -28,6 +28,7 @@ from pathlib import Path
 import duckdb
 
 from pipeline.config import PARQUET_DIR, RAW_DIR
+from pipeline.sorted_parquet import write_sorted_parquet
 
 # The seven CRDC race/ethnicity codes; each appears with a _M and _F suffix.
 RACES = ("HI", "AM", "AS", "HP", "BL", "WH", "TR")
@@ -266,7 +267,7 @@ def main() -> None:
     build(con, folder)
     PARQUET_DIR.mkdir(parents=True, exist_ok=True)
     out = PARQUET_DIR / "k12.parquet"
-    con.execute(f"COPY k12 TO '{out}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "k12", "combokey", out)
 
     n = con.execute("SELECT count(*) FROM k12").fetchone()[0]
     print(f"high schools: {n:,}")

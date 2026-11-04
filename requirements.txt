@@ -3,7 +3,7 @@
 # Upper bounds sit at the next major version: an open-ended line let DuckDB 2.0 into CI unreviewed
 # on 27 Oct 2026. Moving a bound is a deliberate change, with a build compared.
 
-duckdb>=1.0.0,<2       # columnar analytics engine (the spine); 2.0 drops relation.fetchone()
+duckdb>=1.0.0,<2.1     # columnar analytics engine (the spine); a 2.0 build matches a 1.5 build
 pandas>=2.0.0,<4       # data wrangling
 requests>=2.31.0,<3    # downloading bulk files / API calls
 pyarrow>=15.0.0        # Parquet read/write
