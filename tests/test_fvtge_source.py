@@ -478,6 +478,15 @@ def test_october_without_an_output_path_fails_before_reading_or_writing(tmp_path
     assert S.OCT.default_out is None
 
 
+def test_source_url_is_the_list_the_published_file_came_from():
+    """SOURCE_URL says which list the live finding uses, and pipeline/source_freshness.py compares
+    ED's page with it, so it must move when published/ does."""
+    pub = ROOT / "published" / "fvtge_reporting.parquet"
+    got = duckdb.connect().execute("SELECT DISTINCT source_url FROM read_parquet(?)", [str(pub)])
+    assert got.fetchall() == [(S.SOURCE_URL,)]
+    assert S.SOURCE_URL in {r.url for r in S.RELEASES.values()}
+
+
 # ---- the real releases: local evidence only (skipped in CI) ------------------------------------
 
 

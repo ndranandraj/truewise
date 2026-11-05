@@ -197,6 +197,9 @@ OCT = Release(
     default_out=None,  # decided at release; until then --out is required
 )
 RELEASES = {r.compiled: r for r in (AUG, OCT)}
+# The list the live finding is built from, which a check of ED's page compares against
+# (pipeline/source_freshness.py). It moves when the finding does; a test holds it to the published file.
+SOURCE_URL = AUG.url
 
 
 def refuse(msg: str) -> None:
