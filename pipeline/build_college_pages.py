@@ -293,16 +293,24 @@ def ensure_pg_css() -> None:
     _PG_CSS_WRITTEN = True
 
 
-# The header's inline script (pipeline/header_script.js), comments and indentation stripped. Inserted
-# into head()'s f-string as a value, so its braces are not doubled.
-def _header_js() -> str:
-    src = (ROOT / "pipeline" / "header_script.js").read_text()
+# An inline script from pipeline/, comments and indentation stripped. Inserted into f-strings as a
+# value, so its braces are not doubled.
+def _inline_js(name: str) -> str:
+    src = (ROOT / "pipeline" / name).read_text()
     src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    src = re.sub(r"\s+// .*$", "", src, flags=re.M)
     lines = [ln.strip() for ln in src.splitlines()]
     return "\n".join(ln for ln in lines if ln and not ln.startswith("//"))
 
 
-HEADER_JS = _header_js()
+HEADER_JS = _inline_js("header_script.js")
+SECTNAV_JS = _inline_js("sectnav_script.js")
+
+
+def sectnav_script() -> str:
+    """The section links' script (pipeline/sectnav_script.js), placed right after the .sectnav: it
+    runs before the first paint, so the row does not change shape after the page appears."""
+    return f"<script>{SECTNAV_JS}</script>"
 
 
 def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:

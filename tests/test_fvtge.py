@@ -244,3 +244,17 @@ def test_a_passed_deadline_is_not_described_as_upcoming(built):
     _, _, out = built
     text = re.sub(r"\s+", " ", (out / "index.html").read_text())
     assert "is due 1 October 2026" not in text and "was due 1 October 2026" in text
+
+
+def test_the_section_links_carry_their_script(built):
+    """The phone row's script comes straight after the bar, so it runs before the first paint, and
+    without it the links wrap (tests/test_sectnav.py, tests/sectnav_focus.js)."""
+    from pipeline.build_college_pages import sectnav_script
+
+    _, _, out = built
+    html = (out / "index.html").read_text()
+    assert html.count('<nav class="sectnav"') == 1
+    bar = html[html.index('<nav class="sectnav"') :]
+    end = bar.index("</nav>") + len("</nav>")
+    assert bar[end:].startswith(sectnav_script())
+    assert html.count(sectnav_script()) == 1
