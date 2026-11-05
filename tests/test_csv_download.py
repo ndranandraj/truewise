@@ -50,7 +50,7 @@ def test_the_download_is_a_real_file_not_a_blob(tmp_path, monkeypatch):
     already record, with no new collection at all, and gives every list a stable URL.
     """
     block = _download_block("highest-paying-majors")
-    fname = "truewise-highest-paying-majors-scorecard-2026-06-10.csv"
+    fname = "truewise-highest-paying-majors-scorecard-2026-11-02.csv"
     assert f'href="/data/lists/{fname}" download' in block, "the download must be a real URL"
     assert "CC BY 4.0" in block
     # And none of the old machinery, which would mean the bytes are still duplicated in the page.

@@ -29,7 +29,17 @@ import json
 
 import duckdb
 
-from pipeline.build_college_pages import BASE, BEACON, FOOTER, STATE_NAMES, esc, head, state_label
+from pipeline.build_college_pages import (
+    BASE,
+    BEACON,
+    FOOTER,
+    STATE_NAMES,
+    esc,
+    head,
+    sectnav_script,
+    state_label,
+)
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -43,7 +53,14 @@ OUT_DIR = SITE / "findings" / SLUG
 # presentation change, never automatically on a cosmetic or unrelated deploy. The data's own date
 # ("as of 6 August 2026") comes from ED's compile date and is separate.
 PUBLISHED_ON = "23 Sep 2026"
-UPDATED_ON = "2 Oct 2026"
+UPDATED_ON = "4 Nov 2026"
+# ED's page, read 4 November 2026: lists updated 28 August, 25 September and 8 October. The counts
+# below stay on the 6 August list until a later list is recounted by the same method (draft PR #17).
+NEWER_LISTS_NOTE = (
+    "ED has published newer lists since, most recently on 8 October 2026, and says nearly 1,400 "
+    "institutions still have files outstanding for these two cycles. This page has not been "
+    "recounted from them."
+)
 
 COMPONENT_LABELS = [
     ("total2223", "Student file, total amounts, 2022-23"),
@@ -129,13 +146,16 @@ def compute(con) -> dict:
 
     matched = q("SELECT count(DISTINCT e.opeid6) FROM ed e JOIN vc v USING (opeid6)")[0][0]
 
-    # The association. Programs with an earnings verdict, at institutions on ED's list.
+    # The association. Undergraduate programs with an earnings verdict, at institutions on ED's list:
+    # the high-school line is the test for these, and the method and the nine-group table say so.
+    # Until November 2026 the three figures above the table counted graduate programs too.
     con.execute(
         """CREATE OR REPLACE TEMP VIEW judged AS
         SELECT v.control AS sector, v.credential_desc AS cred, e.num_miss > 0 AS missing,
                v.value_flag = 'fails_earnings_premium' AS fail
         FROM vc v JOIN ed e USING (opeid6)
-        WHERE v.value_flag IN ('passes_earnings_premium', 'fails_earnings_premium')"""
+        WHERE v.value_flag IN ('passes_earnings_premium', 'fails_earnings_premium')
+          AND v.credential_level IN ('1', '2', '3')"""
     )
     raw = {
         m: (n, f)
@@ -390,7 +410,8 @@ def render_page(s) -> str:
       <p class="kf__text">({_pct(missing, total)}%) had not submitted at least one of the seven required FVT/GE files for the
         2024 and 2025 reporting cycles, as recorded in ED&rsquo;s list compiled on {when}.</p>
       <p class="kf__qual"><b>&ldquo;Submitted&rdquo; does not mean &ldquo;complete&rdquo;.</b> Files
-        rejected with errors count as not submitted. Filings after {short_when} are not reflected.</p>
+        rejected with errors count as not submitted. Filings after {short_when} are not reflected.
+        {NEWER_LISTS_NOTE}</p>
       <p class="kf__more"><span><b>{s["none_filed"]:,}</b> submitted no file at all</span>
         <span><b>{s["all7"]:,}</b> of those had all seven marked not submitted</span></p>
     </div>
@@ -398,13 +419,15 @@ def render_page(s) -> str:
     <nav class="sectnav" aria-label="Sections">
       <p class="sectnav__label" id="sn-l">{len(NAV_ITEMS)} sections</p>
       <div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div>
-    </nav>
+    </nav>{sectnav_script()}
 
     <section id="why" class="why" aria-labelledby="why-h">
       <h2 id="why-h">Why it matters</h2>
       <p>These files are what the Department intends to use for the program-level data and statistics
         it plans to publish in 2027. Colleges have until 15 January 2027 to submit anything missing
-        from the 2024 and 2025 cycles, and the 2026 cycle was due 1 October 2026, after ED compiled this list.</p>
+        from the 2024 and 2025 cycles, and the 2026 cycle was due 1 October 2026, after ED compiled this
+        list. ED says more than 1,000 institutions missed that deadline, and they have until the same
+        date in January.</p>
       <p>The list records whether a file arrived, not why one did not. It is a status report, not a
         finding about any college&rsquo;s programs.</p>
     </section>
@@ -439,7 +462,8 @@ def render_page(s) -> str:
     <section id="earnings" aria-labelledby="earnings-h">
       <h2 id="earnings-h">What the College Scorecard shows about these colleges</h2>
       <p>Using the Scorecard earnings Truewise already publishes, not the FVT/GE files: the share of
-        programs whose graduates earn less than a typical high-school graduate in their state.</p>
+        undergraduate programs whose graduates earn less than a typical high-school graduate in their
+        state.</p>
       <div class="stats">
         <div class="stat"><p class="stat__kind">Observed</p><div class="stat__fig">{r_comp:.1f}%</div><p class="stat__lab">all required files submitted</p></div>
         <div class="stat stat--est"><p class="stat__kind">Expected</p><div class="stat__fig">{r_exp:.1f}%</div><p class="stat__lab">for the other colleges, after allowing for sector and credential</p></div>
@@ -477,7 +501,7 @@ def render_page(s) -> str:
         <li><b>The adjustment.</b> For each sector and credential, the complete filers&rsquo; rate is applied to the other colleges&rsquo; programs and summed.</li>
       </ul></details>
       <ul class="srcs"><li>ED, <a href="https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-08-11/guidance-fvt/ge-data-reporting-stats-early-implementation-and-next-steps-publication">GENERAL-26-49</a> and <a href="https://fsapartners.ed.gov/sites/default/files/2026-08/FVTGEDataReportingFinal.xlsx">the spreadsheet</a></li>
-        <li>College Scorecard, release 2026-06-10</li>
+        <li>College Scorecard, release {SCORECARD_RELEASE}</li>
         <li>Reproduce: <code>published/fvtge_reporting.parquet</code>, <code>pipeline/build_fvtge.py</code></li></ul>
     </section>
   </main>

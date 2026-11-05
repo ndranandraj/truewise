@@ -276,6 +276,7 @@ ul.schoollist .meta { color: var(--ink-soft); font-size: var(--t-ui); }
   table.t tbody tr > :first-child:not(.num),
   table.t tbody tr > .num:first-child + * { font-weight: 600; color: var(--ink); }
 }
+.retired li:target { background: var(--brand-50); outline: 2px solid var(--brand-50); }
 """
 
 _PG_CSS_WRITTEN = False
@@ -292,16 +293,24 @@ def ensure_pg_css() -> None:
     _PG_CSS_WRITTEN = True
 
 
-# The header's inline script (pipeline/header_script.js), comments and indentation stripped. Inserted
-# into head()'s f-string as a value, so its braces are not doubled.
-def _header_js() -> str:
-    src = (ROOT / "pipeline" / "header_script.js").read_text()
+# An inline script from pipeline/, comments and indentation stripped. Inserted into f-strings as a
+# value, so its braces are not doubled.
+def _inline_js(name: str) -> str:
+    src = (ROOT / "pipeline" / name).read_text()
     src = re.sub(r"/\*.*?\*/", "", src, flags=re.S)
+    src = re.sub(r"\s+// .*$", "", src, flags=re.M)
     lines = [ln.strip() for ln in src.splitlines()]
     return "\n".join(ln for ln in lines if ln and not ln.startswith("//"))
 
 
-HEADER_JS = _header_js()
+HEADER_JS = _inline_js("header_script.js")
+SECTNAV_JS = _inline_js("sectnav_script.js")
+
+
+def sectnav_script() -> str:
+    """The section links' script (pipeline/sectnav_script.js), placed right after the .sectnav: it
+    runs before the first paint, so the row does not change shape after the page appears."""
+    return f"<script>{SECTNAV_JS}</script>"
 
 
 def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
@@ -523,7 +532,7 @@ def state_index(st, schools_in_state) -> str:
     return "".join(parts)
 
 
-def national_index(states_present, profiled=None, searchable=None) -> str:
+def national_index(states_present, profiled=None, searchable=None, retired=0) -> str:
     canonical = f"{BASE}/colleges/"
     title = "All US colleges: what families pay and what graduates earn"
     desc = (
@@ -552,6 +561,52 @@ def national_index(states_present, profiled=None, searchable=None) -> str:
     for st in sorted(states_present, key=lambda s: (not known_state(s), state_label(s))):
         parts.append(f'      <a href="/colleges/{st.lower()}/">{esc(state_label(st))}</a>\n')
     parts.append("    </div>\n")
+    if retired:
+        parts.append(
+            f'    <p class="src"><a href="/colleges/no-longer-listed/">{retired:,} schools</a> that had '
+            "a page here are no longer in the federal data.</p>\n"
+        )
+    parts.append("  </main>\n")
+    parts.append(FOOTER)
+    parts.append(BEACON)
+    parts.append("</body>\n</html>\n")
+    return "".join(parts)
+
+
+def retired_page(record: list[dict]) -> str:
+    """Schools that have left ED's data. Each one's old address leads to its entry here."""
+    from pipeline.build_canonical_profiles import SCORECARD_RELEASE
+
+    canonical = f"{BASE}/colleges/no-longer-listed/"
+    title = "Colleges no longer in the federal data"
+    desc = (
+        "Schools with a page here that the Department of Education's College Scorecard no longer "
+        "lists, often a sign a school has closed or merged."
+    )
+    parts = [head(title, desc, canonical)]
+    parts.append('  <main class="wrap pg">\n')
+    parts.append(
+        '    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; No longer listed</nav>\n'
+    )
+    parts.append(f"    <h1>{title}</h1>\n")
+    parts.append(
+        f'    <p class="idline">The College Scorecard (release {SCORECARD_RELEASE}) no longer lists '
+        "these schools, often a sign a school has closed or merged. It does not say which, and a "
+        "school may continue under another name, so "
+        '<a href="/value-check/">search by name</a> before concluding either. Truewise shows only '
+        "current federal figures, so these pages have been retired.</p>\n"
+    )
+    by_state: dict[str, list] = defaultdict(list)
+    for e in record:
+        by_state[e["state"] or "ZZ"].append(e)
+    for st in sorted(by_state, key=lambda x: (not known_state(x), state_label(x))):
+        parts.append(f'    <h2 class="sec">{esc(state_label(st))}</h2>\n    <ul class="retired">\n')
+        for e in sorted(by_state[st], key=lambda x: (x["name"], x["slug"])):
+            parts.append(
+                f'      <li id="{esc(e["slug"])}"><b>{esc(e["name"])}</b>, last listed in the '
+                f"{esc(e['last_release'])} release</li>\n"
+            )
+        parts.append("    </ul>\n")
     parts.append("  </main>\n")
     parts.append(FOOTER)
     parts.append(BEACON)
@@ -634,8 +689,8 @@ def main() -> None:
         render_og_card(s, slug, rows)
         states_present[s["state"]].append((slug, s, u))
 
-    # The complete program list as CSV for every profile with more than 150 programs (245 schools).
-    # Not all 6,127: the static-asset host caps a deploy's file count, and one file per school would
+    # The complete program list as CSV for every profile with more than 150 programs (243 schools).
+    # Not all 6,013: the static-asset host caps a deploy's file count, and one file per school would
     # bring the site close to it. Smaller schools' tables are short enough to read or copy whole.
     from pipeline import build_site as _bs
     from pipeline.build_canonical_profiles import PROGRAMS_CSV, programs_csv
@@ -649,9 +704,21 @@ def main() -> None:
         d = colleges_dir / st.lower()
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(state_index(st, lst))
+    from pipeline.retired_schools import load as load_retired
+
+    retired = [e for e in load_retired() if e["slug"] not in set(slugs.values())]
     (colleges_dir / "index.html").write_text(
-        national_index(states_present.keys(), profiled=len(qualified), searchable=len(schools))
+        national_index(
+            states_present.keys(),
+            profiled=len(qualified),
+            searchable=len(schools),
+            retired=len(retired),
+        )
     )
+    if retired:
+        d = colleges_dir / "no-longer-listed"
+        d.mkdir(parents=True, exist_ok=True)
+        (d / "index.html").write_text(retired_page(retired))
 
     # Publish the UNITID -> canonical slug map. The Stage 4 consolidation retires
     # /value-check/?school=<id> in favour of /college/<slug>/; because Cloudflare cannot redirect on a

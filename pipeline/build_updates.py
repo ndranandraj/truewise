@@ -54,6 +54,10 @@ def collect_snapshots() -> list[dict]:
         return []
     out = []
     for d in sorted(ARCHIVE.iterdir(), reverse=True):
+        # monitor_diff writes archive/fvt/diffs/ once two snapshots exist. Listed as a snapshot, it
+        # put "last verified diffs" on the homepage.
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name):
+            continue
         if not d.is_dir():
             continue
         meta = _read_source(d)
@@ -70,7 +74,7 @@ def collect_snapshots() -> list[dict]:
         }
         if pq.exists():
             con = duckdb.connect()
-            rec["rows"] = con.sql(f"SELECT count(*) FROM read_parquet('{pq}')").fetchone()[0]
+            rec["rows"] = con.sql(f"SELECT count(*) FROM read_parquet('{pq}')").fetchall()[0][0]
         out.append(rec)
     return out
 
@@ -94,6 +98,89 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 # Corrections to published figures, newest first. A correction is logged here, in plain words, with
 # what the page said before and what it says now, so a reader who quoted the old figure can see why.
 CORRECTIONS = [
+    {
+        "date": "November 2026",
+        "title": "New College Scorecard data: the headline moves from 1 in 10 to 1 in 11",
+        "body": (
+            "The Department of Education published new College Scorecard files on 15 October and "
+            "2 November 2026, and every college figure here now comes from them. Undergraduate "
+            "programs whose graduates earn less than a typical high-school graduate went from 4,308 "
+            "of 41,198 (10.5%) to 3,891 of 42,429 (9.2%). This is new data, not a correction. About "
+            "half of the change comes from ED's new high-school lines, based on 2024 Census estimates "
+            "and lower in most states, and about half from newer one-year earnings and the programs "
+            "ED added and removed. Almost no four-year earnings figure changed. ED's new file gives "
+            "no high-school line for Puerto Rico, so its 554 programs with a verdict, 47 of which "
+            "fell short, now have none. It also dropped 156 schools that had pages here, often a "
+            "sign a school has closed or merged; their addresses now lead to a page that lists them."
+        ),
+        "link": "/methodology/#the-headline-number-in-full",
+    },
+    {
+        "date": "November 2026",
+        "title": "FVT/GE finding: its earnings figures counted graduate programs",
+        "body": (
+            "The finding compares how often graduates earn less than a typical high-school graduate "
+            "at colleges with and without a missing file. Its three figures, 6.6%, 11.5% and 14.1%, "
+            "counted every credential, including graduate programs, while the table beneath them and "
+            "the method described undergraduate programs. Counted as the table counts, they were "
+            "8.5%, 14.4% and 17.6%. On the new College Scorecard data they are 7.4%, 13.3% and 15.8%. "
+            "It remains an association, not an explanation."
+        ),
+        "link": "/findings/fvtge-reporting/#earnings",
+    },
+    {
+        "date": "November 2026",
+        "title": "High schools: students-per-counselor figures that could not be real",
+        "body": (
+            "High School Compare showed a students-per-counselor ratio for every school that reported "
+            "counselors, including filings that cannot be real: Huntington Beach High reports 300 "
+            "full-time counselors for 2,721 students, which read as 9:1. These counts are in the "
+            "federal data as filed. For the 50 schools reporting ten or more counselors at fewer than "
+            "50 students each, Compare now shows the count as filed and no ratio, and those schools "
+            "no longer count towards their state's median on High School rankings. Nine state medians "
+            "move, most by one or two students; Oregon moves most, from 248 to 258. At one school, "
+            "Kalama High, one figure fills the counselor, police and guard columns, so its police and "
+            "guard answers now read as not reported. The published dataset keeps every count as filed."
+        ),
+        "link": "/methodology/#k12",
+    },
+    {
+        "date": "November 2026",
+        "title": "College lookup and Compare: some percentages read one point too high",
+        "body": (
+            "Pell, first-generation and completion shares were rounded twice, so a school at 16.45% "
+            "became 16.5% and then read 17%. On the data published through October, this affected "
+            "225 Pell shares, 205 first-generation shares and 196 completion rates, each by one "
+            "point. They are now rounded once. College profiles' earnings and cost figures were not "
+            "affected."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "November 2026",
+        "title": "College lookup: website links that did not reach the school",
+        "body": (
+            "The Department of Education's website field is free text, and the college lookup turned "
+            "it into a link as written. Ten schools had a broken link from the value NA, and two had "
+            "a broken link because a second address or a sentence followed the first. One linked to "
+            "gmail.com, because its email address was entered as a web address. The link now goes to "
+            "the first address given, and a value with no real address gives no link. No figures "
+            "changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "November 2026",
+        "title": "Bachelor's majors with the lowest debt relative to earnings gain: 21 tied fields were left out",
+        "body": (
+            "This list stopped at 25 rows, but 23 fields show the same figure, 0.5 years, for its last "
+            "two places. Two appeared and 21 did not, decided only by how their names sort, including "
+            "Registered Nursing (835 programs), Finance (387), Computer and Information Sciences (351), "
+            "Economics (317) and Civil Engineering (200). Every field tied at the cut-off is now shown, "
+            "so the list has 46 rows. The 25 rows already shown keep their order, and no figure changed."
+        ),
+        "link": "/lists/fastest-debt-payback-majors/",
+    },
     {
         "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
@@ -253,8 +340,9 @@ def render(snaps: list[dict]) -> str:
     p.append('    <nav class="crumbs">Updates</nav>\n')
     p.append("    <h1>Update log</h1>\n")
     p.append(
-        '    <div class="verdict">A monitor checks the federal data on the 8th of each month. This page '
-        "lists every snapshot it recorded, gaps included: one entry per snapshot, each with the exact "
+        '    <div class="verdict">A monthly job checks that the data we hold is intact and how old '
+        "ED&rsquo;s release is. It cannot reach ED&rsquo;s servers, so each new release is fetched by "
+        "hand. This page lists every snapshot, gaps included: one entry per snapshot, each with the exact "
         "files fetched, when they were fetched, and a checksum anyone can recompute. The Department of "
         "Education publishes only the current release, so this archive is the history it does not "
         "keep. Corrections to our own figures are listed first.</div>\n"
@@ -269,8 +357,8 @@ def render(snaps: list[dict]) -> str:
 
     if not snaps:
         p.append(
-            '    <p class="idline">No snapshots recorded yet. The monitor runs on the 8th of each '
-            "month and will log its first entry here.</p>\n"
+            '    <p class="idline">No snapshots recorded yet. The first release fetched will be '
+            "logged here.</p>\n"
         )
     else:
         with_data = [s for s in snaps if s["has_dataset"]]
@@ -294,11 +382,16 @@ def render(snaps: list[dict]) -> str:
                     d = diff_between(s["path"], prev["path"])
                     if d:
                         p.append(
-                            f'      <p class="upd-meta">Compared with {esc(prev["date"])}: '
-                            f"<b>{d.get('newly_failing', 0):,}</b> programs newly fell short, "
-                            f"<b>{d.get('newly_passing', 0):,}</b> newly cleared the bar, "
-                            f"<b>{d.get('added', 0):,}</b> added, <b>{d.get('removed', 0):,}</b> removed, "
-                            f"<b>{d.get('earnings_revised', 0):,}</b> had earnings revised.</p>\n"
+                            f'      <p class="upd-meta">Compared with {esc(prev["date"])}, counting '
+                            "each campus&rsquo;s row: "
+                            f"<b>{d.get('newly_failing', 0):,}</b> went from clearing the bar to "
+                            f"falling short and <b>{d.get('newly_passing', 0):,}</b> the other way; "
+                            f"<b>{d.get('gained_failing', 0) + d.get('gained_passing', 0):,}</b> "
+                            f"gained a verdict, <b>{d.get('gained_failing', 0):,}</b> of them falling "
+                            f"short; <b>{d.get('lost_verdict', 0):,}</b> lost one; "
+                            f"<b>{d.get('added', 0):,}</b> added, <b>{d.get('removed', 0):,}</b> "
+                            f"removed; <b>{d.get('earnings_revised', 0):,}</b> had earnings revised "
+                            "by $1,000 or more.</p>\n"
                         )
             else:
                 p.append(

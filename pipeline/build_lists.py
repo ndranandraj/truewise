@@ -31,6 +31,7 @@ from pipeline.build_college_pages import (
     slugify,
     state_label,
 )
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
@@ -99,7 +100,7 @@ CSV_DIR = "/data/lists"
 
 
 def csv_filename(slug: str) -> str:
-    return f"truewise-{slug}-scorecard-2026-06-10.csv"
+    return f"truewise-{slug}-scorecard-{SCORECARD_RELEASE}.csv"
 
 
 def _download_block(slug) -> str:
@@ -164,7 +165,7 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
     p.append(f'    <p class="src">{note}</p>\n')
     p.append(
         '    <p class="src">Source: U.S. Department of Education College Scorecard (release '
-        "2026-06-10). Earnings are median earnings of graduates measured up to four years after "
+        f"{SCORECARD_RELEASE}). Earnings are median earnings of graduates measured up to four years after "
         "completing, and describe past graduates rather than a promise. Method: "
         '<a href="/methodology/">methodology</a>. '
         '<a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">'
@@ -248,7 +249,7 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     r = rows_for(f"""
         SELECT rtrim(cip_desc,'. ') AS field, round(median(debt_payback_years),1) AS pb, count(*) AS n
         FROM pu WHERE credential_level='3' AND debt_payback_years IS NOT NULL
-        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} ORDER BY pb ASC, field LIMIT {TOP_N}""")
+        GROUP BY field HAVING count(*) >= {MIN_PROGRAMS} {_ranked("pb ASC")}""")
     out.append(
         (
             "fastest-debt-payback-majors",
@@ -266,7 +267,9 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
                 "Debt as years of gain is median federal debt divided by the yearly earnings gain "
                 "over a typical high-school graduate. It is a plain ratio, not how long repayment "
                 "takes: it ignores interest, taxes, living costs and time to degree, and it is not "
-                "the federal debt-to-earnings rate. Each program is counted once.",
+                "the federal debt-to-earnings rate. Each program is counted once. Fields with the "
+                "same figure are listed alphabetically. A tie at the cut-off is kept, so this list "
+                f"can run past {TOP_N} rows.",
                 "fastest-debt-payback-majors",
             ),
         )

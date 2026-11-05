@@ -15,7 +15,7 @@ Verify URLs and field names against current docs when you build (federal sites r
 - API docs: https://collegescorecard.ed.gov/data/api-documentation/
 - API key (free): https://api.data.gov/signup/  (rate limit 1,000 req/IP/hour)
 - Data dictionary + field-of-study docs linked from the data home page.
-- Last refreshed: 2026-06-10. Institution files cover 1996-97 → 2025-26.
+- Last refreshed: 2026-11-04, from ED's release of 2026-11-02 (Field-of-Study file 2026-10-15). Institution files cover 1996-97 → 2025-26.
 - Two access routes: **bulk download** (full CSV, no rate limit, use this for the pipeline)
   and the **API** (JSON, needs key, use for spot lookups).
 - Grain: institution-level (one row per school, ~6,500 rows, ~3,000 fields) AND
@@ -36,6 +36,8 @@ Key fields (institution-level):
 Field-of-study file grain: institution × 4-digit CIP code × credential level; includes
 cumulative debt at graduation and earnings ~1 year after completion. Note: values are
 **suppressed** (blank) for small cohorts, show as "not published", never impute.
+Rows with UNITID `NA` (7,020 in the 10 June 2026 release) are told apart only by OPEID6, so
+what identifies a row is UNITID, OPEID6, CIP code and credential level.
 
 ### IPEDS (Integrated Postsecondary Education Data System)
 - https://nces.ed.gov/ipeds/use-the-data

@@ -103,6 +103,7 @@ def test_builds_agree_across_thread_counts_and_hash_seeds():
         runs[(seed, threads)] = json.loads(out.stdout.splitlines()[-1])
     first = runs[RUNS[0]]
     assert any("debt-does-not-pay-back" in name for name in first), "the debt list was not built"
+    assert any("fastest-debt-payback" in name for name in first), "the payback list was not built"
     assert any(name.startswith("fvtge/") and name.endswith(".csv") for name in first)
     assert "stats.html" in first and "k12/index.json" in first
     assert len({tuple(r) for r in runs.values()}) == 1, "the runs did not write the same files"
@@ -111,7 +112,10 @@ def test_builds_agree_across_thread_counts_and_hash_seeds():
 
 
 def _vc(tmp_path, monkeypatch, rows) -> duckdb.DuckDBPyConnection:
-    """A value_check parquet from (unitid, name, state, field, flag, earnings) rows, in a list view."""
+    """A value_check parquet from (unitid, name, state, field, flag, earnings) rows, in a list view.
+
+    A row can carry its debt_payback_years as a seventh value; otherwise it is 1.0.
+    """
     pq = tmp_path / "parquet"
     pq.mkdir()
     cips: dict[str, str] = {}
@@ -122,10 +126,19 @@ def _vc(tmp_path, monkeypatch, rows) -> duckdb.DuckDBPyConnection:
         debt_median DOUBLE, debt_payback_years DOUBLE, value_flag VARCHAR)"""
     )
     con.executemany(
-        "INSERT INTO vc VALUES (?, ?, ?, ?, ?, '3', 'Bachelor''s Degree', ?, 9000.0, 1.0, ?)",
+        "INSERT INTO vc VALUES (?, ?, ?, ?, ?, '3', 'Bachelor''s Degree', ?, 9000.0, ?, ?)",
         [
-            (uid, name, state, cips.setdefault(field, f"{len(cips):04d}"), field, earnings, flag)
-            for uid, name, state, field, flag, earnings in rows
+            (
+                uid,
+                name,
+                state,
+                cips.setdefault(field, f"{len(cips):04d}"),
+                field,
+                earnings,
+                payback[0] if payback else 1.0,
+                flag,
+            )
+            for uid, name, state, field, flag, earnings, *payback in rows
         ],
     )
     con.execute(f"COPY vc TO '{pq / 'value_check.parquet'}' (FORMAT PARQUET)")
@@ -137,9 +150,13 @@ def _vc(tmp_path, monkeypatch, rows) -> duckdb.DuckDBPyConnection:
     return view
 
 
-def _csv_names(tmp_path, slug) -> list[str]:
+def _csv_rows(tmp_path, slug) -> list[list[str]]:
     with (tmp_path / "site" / "data" / "lists" / bl.csv_filename(slug)).open(newline="") as f:
-        return [row[1] for row in list(csv.reader(f))[1:]]
+        return list(csv.reader(f))[1:]
+
+
+def _csv_names(tmp_path, slug) -> list[str]:
+    return [row[1] for row in _csv_rows(tmp_path, slug)]
 
 
 def _programs(counts) -> list[tuple]:
@@ -148,6 +165,15 @@ def _programs(counts) -> list[tuple]:
         (f"{f}{i:03d}", "S", "TX", field, "fails_earnings_premium", 20000.0)
         for f, (field, n) in enumerate(counts, 1)
         for i in range(n)
+    ]
+
+
+def _paybacks(fields) -> list[tuple]:
+    """Rows from {field: debt_payback_years of each program}, each program at its own school."""
+    return [
+        (f"{f}{i:03d}", "S", "TX", field, "passes_earnings_premium", 60000.0, years)
+        for f, (field, figures) in enumerate(fields.items(), 1)
+        for i, years in enumerate(figures)
     ]
 
 
@@ -186,6 +212,57 @@ def test_a_cut_clear_of_any_tie_still_holds(tmp_path, monkeypatch):
     assert _csv_names(tmp_path, "programs-where-debt-does-not-pay-back") == [
         "Biology",
         "Cosmetology",
+    ]
+
+
+def test_the_payback_list_keeps_a_tie_at_the_figure_it_shows(tmp_path, monkeypatch):
+    # 23 fields show 0.5 years for the last two of 25 places on the June 2026 release. A hard limit left
+    # 21 out for how their names sort, among them Registered Nursing (835 programs).
+    # debt_payback_years is rounded to one decimal per program, so a median can only fall between two
+    # programs, as Forestry's does here at 0.45. That is not a finer figure: it shows as 0.5 and ties.
+    fields = {
+        "Zoology": [0.5] * 10,
+        "art History": [0.5] * 10,
+        "Forestry": [0.4] * 5 + [0.5] * 5,
+        "Cosmetology": [0.3] * 10,
+        "Welding": [0.6] * 10,
+    }
+    view = _vc(tmp_path, monkeypatch, _paybacks(fields))
+    monkeypatch.setattr(bl, "TOP_N", 2)
+    pages = {slug: page for slug, _, page in bl.build_major_lists(view, {})}
+    slug = "fastest-debt-payback-majors"
+    assert [(row[1], row[2]) for row in _csv_rows(tmp_path, slug)] == [
+        ("Cosmetology", "0.3 yrs"),
+        ("art History", "0.5 yrs"),
+        ("Forestry", "0.5 yrs"),
+        ("Zoology", "0.5 yrs"),
+    ]
+    assert "Fields with the same figure are listed alphabetically." in pages[slug]
+    assert "A tie at the cut-off is kept, so this list can run past 2 rows." in pages[slug]
+
+
+def test_the_committed_payback_list_leaves_out_no_field_at_the_figure_it_ends_on(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(bl, "PARQUET_DIR", PUBLISHED)
+    monkeypatch.setattr(bl, "SITE", tmp_path / "site")
+    monkeypatch.setattr(bl, "render_card", lambda *args, **kwargs: None)
+    view = duckdb.connect()
+    bl._views(view)
+    bl.build_major_lists(view, {})
+    eligible = view.sql(
+        f"""SELECT rtrim(cip_desc,'. ') AS field, round(median(debt_payback_years),1) AS pb, count(*)
+        FROM pu WHERE credential_level='3' AND debt_payback_years IS NOT NULL
+        GROUP BY field HAVING count(*) >= {bl.MIN_PROGRAMS}"""
+    ).fetchall()
+    # The rule, restated without SQL: the figure at the last of TOP_N places decides, and every field
+    # at or below it is in, by figure and then name ignoring case.
+    last_figure = sorted(pb for _, pb, _ in eligible)[bl.TOP_N - 1]
+    expected = sorted(
+        (pb, field.lower(), field, n) for field, pb, n in eligible if pb <= last_figure
+    )
+    assert [tuple(row[1:]) for row in _csv_rows(tmp_path, "fastest-debt-payback-majors")] == [
+        (field, f"{pb:g} yrs", f"{n:,}") for pb, _, field, n in expected
     ]
 
 

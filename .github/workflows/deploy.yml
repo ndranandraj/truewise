@@ -64,6 +64,10 @@ jobs:
       - name: Data-quality gate + tests (block deploy on failure)
         run: |
           python -m analysis.validate
+          # preview-build.sh runs these as "gates that would block a deploy", so they have to.
+          python -m pipeline.honesty_scan --strict
+          python -m pipeline.prune_orphans --check
+          python -m pipeline.build_components --check
           pytest -q
 
       # The browser checks, before anything is published. Until 2026-09-23 no JavaScript test and
@@ -92,16 +96,26 @@ jobs:
           name: layout-check
           path: layout-check-*/
           retention-days: 14
+      # The section links by keyboard on the finding and a profile: every link, forwards and back,
+      # Chromium and Firefox, normal and 200% text, reduced motion, JavaScript off and the script
+      # failing. A focused link stayed partly under the fade on phones until October 2026.
+      - name: Section links by keyboard (blocks deploy)
+        run: node tests/sectnav_focus.js --out sectnav-focus
+      - name: Keep the section-links report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sectnav-focus
+          path: sectnav-focus/
+          retention-days: 14
 
       - name: Publish downloadable datasets on the domain
         # Serve the parquet(s) from truewise.dev/data/ so downloads hit Cloudflare and are
         # counted in the zone's request analytics. Kept out of the repo (built at deploy).
         run: |
           mkdir -p site/data
-          cp published/value_check.parquet site/data/
-          cp published/institutions.parquet site/data/ 2>/dev/null || true
-          cp published/careers_demand.parquet site/data/ 2>/dev/null || true
-          cp published/k12.parquet site/data/ 2>/dev/null || true
+          # Every file the checksum manifest names, and the manifest, so a download can be verified.
+          cp published/*.parquet published/SHA256SUMS.txt site/data/
 
       - name: Inject Cloudflare Web Analytics token (or strip the beacon if unset)
         env:

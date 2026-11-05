@@ -15,11 +15,41 @@ Usage (from repo root, after the pipeline has produced value_check.parquet):
 from __future__ import annotations
 
 import json
+import re
 from collections import defaultdict
 
 import duckdb
 
 from pipeline.config import PARQUET_DIR, ROOT
+
+_URL_HOST = re.compile(
+    r"^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$", re.I
+)
+
+
+def clean_school_url(raw: str | None) -> str | None:
+    """A school's INSTURL as a link that goes to the school, or None when it cannot.
+
+    ED's field is free text. It holds "NA", two addresses joined by "and", a sentence after the
+    address, and an email address written as a URL: "https://imbeautyschool@gmail.com/" would send
+    a reader to gmail.com. Keep the first address and drop any fragment. A value with no real host,
+    or with credentials in it, gives no link rather than a wrong one.
+    """
+    words = (raw or "").split()
+    if not words:
+        return None
+    first = words[0].split("#", 1)[0]
+    scheme, sep, rest = first.partition("://")
+    if not sep:
+        scheme, rest = "", first
+    elif scheme.lower() not in ("http", "https"):
+        return None
+    host, slash, path = rest.partition("/")
+    host = host.rstrip(".")
+    if not _URL_HOST.match(host):
+        return None
+    return f"{scheme}{sep}{host}{slash}{path}"
+
 
 OUT_DIR = ROOT / "site" / "value-check" / "data"
 
@@ -217,18 +247,20 @@ def build_model(con) -> tuple[dict, dict, dict]:
             if repay:
                 s["repayment"] = repay
             s["city"] = city
-            s["url"] = url
+            s["url"] = clean_school_url(url)
             s["enrollment"] = int(enr) if enr else None
             brackets = [_round(b1), _round(b2), _round(b3), _round(b4), _round(b5)]
             if npa is not None or any(b is not None for b in brackets):
                 s["net_price"] = {"avg": _round(npa), "brackets": brackets}
             # Mobility: access (Pell / first-gen share) + completion. Stored as fractions.
             if pell is not None:
-                s["pell"] = round(pell, 3)
+                # Four places, as ED publishes them. At three, the page's own rounding rounded twice:
+                # Baylor's 16.45% became 16.5% and then read 17%.
+                s["pell"] = round(pell, 4)
             if first_gen is not None:
-                s["first_gen"] = round(first_gen, 3)
+                s["first_gen"] = round(first_gen, 4)
             if compl is not None:
-                s["completion"] = round(compl, 3)
+                s["completion"] = round(compl, 4)
 
     # Rule-based "hidden gem": a school that beats the national median on all three of
     # access (Pell share), completion, and the earnings-premium pass rate. Transparent

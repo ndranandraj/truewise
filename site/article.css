@@ -31,22 +31,31 @@
 .kf__more { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: var(--sp-related) 0 0; font-size: var(--t-ui); color: var(--ink-soft); }
 .kf__more b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
 
-/* Section nav. A labelled row of chips; on phones it sticks under the 65px header and scrolls
-   sideways, with a fade and a visible scrollbar so the later sections are discoverable. From 1200px
-   the side rail carries the same links, so the row is hidden there. */
+/* Section nav. A labelled list of chips that wraps. On phones, once pipeline/sectnav_script.js has
+   run (.sectnav--scroll), it becomes one row that sticks under the header and scrolls sideways, with
+   a fade and a visible scrollbar so the later sections are discoverable; the script keeps a focused
+   link and its focus ring clear of the fade and the edges. Without the script (JavaScript off, or the
+   script failing) the chips keep wrapping and the bar scrolls with the page, so no link can be hidden
+   (review of 11 October). From 1200px the side rail carries the same links, so the row is hidden. */
 .sectnav { margin: 0 0 var(--sp-section); }
 .sectnav__label { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
 .sectnav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .sectnav a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-fine); color: var(--ink-soft); text-decoration: none; background: var(--surface); }
+/* A link at the fold: the browser scrolls it just into view, which leaves its focus ring cut off. */
+.sectnav a { scroll-margin-block: 12px; }
 .sectnav a:hover { border-color: var(--brand); color: var(--brand); }
 @media (max-width: 767px) {
-  .sectnav { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
-  .sectnav__label { display: none; }
-  .sectnav__scroll { position: relative; }
-  .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
-  .sectnav ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-  .sectnav li:last-child { padding-right: 36px; }
-  .sectnav a { white-space: nowrap; }
+  .sectnav--scroll { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 2px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
+  .sectnav--scroll .sectnav__label { display: none; }
+  /* The row keeps 6px inside its top and side edges: the focus ring (2px outline, 2px offset) plus a
+     2px margin, which the scroller would otherwise clip. The wrapper's -6px gives it back, so the
+     chips stay where they were. */
+  .sectnav--scroll .sectnav__scroll { position: relative; margin: 0 -6px; }
+  .sectnav--scroll .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
+  .sectnav--scroll ul { flex-wrap: nowrap; overflow-x: auto; padding: 6px 6px 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  /* Room for the last link and its ring to scroll clear of the fade: 36px fade, 4px gap, 4px ring. */
+  .sectnav--scroll li:last-child { padding-right: 44px; }
+  .sectnav--scroll a { white-space: nowrap; }
 }
 @media (min-width: 1200px) { .sectnav { display: none; } }
 .art section { margin: 0 0 var(--sp-section); }

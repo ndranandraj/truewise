@@ -10,10 +10,10 @@ U.S. Department of Education.
 
 ## The headline finding
 
-Of the undergraduate programs with reported earnings, about **1 in 10 (10.5%)** have
+Of the undergraduate programs with reported earnings, about **1 in 11 (9.2%)** have
 graduates who earn less than a typical high-school graduate, measured up to four years after
 finishing, using the Department of Education's own College Scorecard figures. Each program is
-counted once, even where ED repeats its figures on several campuses. Only about **28% of
+counted once, even where ED repeats its figures on several campuses. Only about **29% of
 undergraduate programs** have earnings data (the rest are privacy-suppressed by ED for small cohorts); we
 compute the rate on the reported set and say so. Among cosmetology programs specifically,
 **96%** fall short.
@@ -67,7 +67,7 @@ df = tw.load_value_check(decided_only=True)  # earnings vs a HS-grad benchmark, 
 
 ## Data sources
 
-- U.S. Dept. of Education **College Scorecard** (Field-of-Study + Institution), release 2026-06-10.
+- U.S. Dept. of Education **College Scorecard** (Field-of-Study + Institution), release 2026-11-02.
 - **NCES CIP-to-SOC crosswalk**, **BLS OEWS** (May 2025) and **Employment Projections** (2025-35).
 - **Civil Rights Data Collection (CRDC)**, 2023-24.
 
