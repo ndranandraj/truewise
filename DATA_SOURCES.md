@@ -15,7 +15,7 @@ Verify URLs and field names against current docs when you build (federal sites r
 - API docs: https://collegescorecard.ed.gov/data/api-documentation/
 - API key (free): https://api.data.gov/signup/  (rate limit 1,000 req/IP/hour)
 - Data dictionary + field-of-study docs linked from the data home page.
-- Last refreshed: 2026-06-10. Institution files cover 1996-97 → 2025-26.
+- Last refreshed: 2026-11-04, from ED's release of 2026-11-02 (Field-of-Study file 2026-10-15). Institution files cover 1996-97 → 2025-26.
 - Two access routes: **bulk download** (full CSV, no rate limit, use this for the pipeline)
   and the **API** (JSON, needs key, use for spot lookups).
 - Grain: institution-level (one row per school, ~6,500 rows, ~3,000 fields) AND

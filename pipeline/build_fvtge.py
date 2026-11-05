@@ -30,6 +30,7 @@ import json
 import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, STATE_NAMES, esc, head, state_label
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -487,7 +488,7 @@ def render_page(s) -> str:
         <li><b>The adjustment.</b> For each sector and credential, the complete filers&rsquo; rate is applied to the other colleges&rsquo; programs and summed.</li>
       </ul></details>
       <ul class="srcs"><li>ED, <a href="https://fsapartners.ed.gov/knowledge-center/library/electronic-announcements/2026-08-11/guidance-fvt/ge-data-reporting-stats-early-implementation-and-next-steps-publication">GENERAL-26-49</a> and <a href="https://fsapartners.ed.gov/sites/default/files/2026-08/FVTGEDataReportingFinal.xlsx">the spreadsheet</a></li>
-        <li>College Scorecard, release 2026-06-10</li>
+        <li>College Scorecard, release {SCORECARD_RELEASE}</li>
         <li>Reproduce: <code>published/fvtge_reporting.parquet</code>, <code>pipeline/build_fvtge.py</code></li></ul>
     </section>
   </main>

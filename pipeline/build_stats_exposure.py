@@ -21,6 +21,7 @@ from __future__ import annotations
 import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -239,7 +240,7 @@ def render_page(s) -> str:
         "(credential levels 4 to 8) with <code>earnings_median_4yr</code> below the benchmark. Script: "
         "<code>pipeline/build_stats_exposure.py</code>. Full method: "
         '<a href="/methodology/">methodology</a>. Sources: U.S. Department of Education College Scorecard '
-        "(release 2026-06-10); the final STATS / Earnings Accountability rule (Federal Register, "
+        f"(release {SCORECARD_RELEASE}); the final STATS / Earnings Accountability rule (Federal Register, "
         "2026-07-01).</p>\n"
     )
     p.append(

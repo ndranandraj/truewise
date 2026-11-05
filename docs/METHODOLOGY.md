@@ -6,7 +6,7 @@ high-school graduate (the federal "earnings-premium" test). Version 0.1, 2026-07
 ## Sources
 
 Everything comes from two public U.S. Department of Education College Scorecard bulk
-files (most recent release, dated 2026-06-10), joined on the IPEDS **UNITID**:
+files (most recent release, dated 2026-11-02), joined on the IPEDS **UNITID**:
 
 - **Field-of-Study file**, one row per school × 4-digit CIP × credential level.
   Provides median earnings after completion (`EARN_MDN_1YR`, `EARN_MDN_4YR`), median
@@ -41,14 +41,14 @@ planned addition).
   we frame them as "graduates typically earned," never a promise.
 - **A flag describes the data.** It never tells anyone whether to attend a program.
 
-## Coverage (2026-06-10 data)
+## Coverage (2026-11-02 data)
 
 Counting each undergraduate program once (per OPEID6 x 4-digit CIP x credential, because ED
-repeats field-of-study figures on every campus sharing an OPEID), **41,198 of 149,340 (28%)
+repeats field-of-study figures on every campus sharing an OPEID), **42,429 of 146,686 (29%)
 have sufficient data** for a determination; the rest have earnings suppressed by ED for privacy
-(small cohorts) or lack a state benchmark. Among the decided programs, **10.5% fall short of the
+(small cohorts) or lack a state benchmark. Among the decided programs, **9.2% fall short of the
 earnings-premium test**: their graduates typically earn less than a typical high-school
-graduate, measured up to four years after finishing (see `pipeline/program_unit.py`). 94.8% of programs matched
+graduate, measured up to four years after finishing (see `pipeline/program_unit.py`). 95.2% of programs matched
 an institution-level threshold.
 
 ## Validation

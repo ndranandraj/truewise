@@ -43,7 +43,7 @@ from pipeline.config import ROOT
 PARQUET = ROOT / "published" / "value_check.parquet"
 OUT = ROOT / "staging"
 # College Scorecard release the value_check parquet was built from (matches the live source line).
-SCORECARD_RELEASE = "2026-06-10"
+SCORECARD_RELEASE = "2026-11-02"
 
 
 INSTITUTIONS = ROOT / "published" / "institutions.parquet"
@@ -92,10 +92,6 @@ REPORT_URL = (
     "https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction"
     "&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A"
 )
-
-
-def loc_text(meta: dict, st_name: str) -> str:
-    return f"{meta['city']}, {st_name}" if meta.get("city") else st_name
 
 
 def canonical_page(

@@ -254,11 +254,13 @@ def build_model(con) -> tuple[dict, dict, dict]:
                 s["net_price"] = {"avg": _round(npa), "brackets": brackets}
             # Mobility: access (Pell / first-gen share) + completion. Stored as fractions.
             if pell is not None:
-                s["pell"] = round(pell, 3)
+                # Four places, as ED publishes them. At three, the page's own rounding rounded twice:
+                # Baylor's 16.45% became 16.5% and then read 17%.
+                s["pell"] = round(pell, 4)
             if first_gen is not None:
-                s["first_gen"] = round(first_gen, 3)
+                s["first_gen"] = round(first_gen, 4)
             if compl is not None:
-                s["completion"] = round(compl, 3)
+                s["completion"] = round(compl, 4)
 
     # Rule-based "hidden gem": a school that beats the national median on all three of
     # access (Pell share), completion, and the earnings-premium pass rate. Transparent

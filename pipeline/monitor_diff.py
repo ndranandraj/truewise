@@ -81,12 +81,21 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
             ).fetchall()
         ]
 
+    # A verdict changing and a verdict appearing are different events, and each is counted in both
+    # directions. Counting "no verdict -> falls short" as newly failing, with no match on the other
+    # side, read as 1,036 newly fell short and 666 newly cleared on the November 2026 release, when
+    # 63 verdicts had flipped down and 666 up.
     newly_failing = rows(
-        "old_flag IS DISTINCT FROM 'fails_earnings_premium' "
-        "AND new_flag = 'fails_earnings_premium' AND old_flag IS NOT NULL"
+        "old_flag = 'passes_earnings_premium' AND new_flag = 'fails_earnings_premium'"
     )
     newly_passing = rows(
         "old_flag = 'fails_earnings_premium' AND new_flag = 'passes_earnings_premium'"
+    )
+    gained_failing = rows("old_flag = 'insufficient_data' AND new_flag = 'fails_earnings_premium'")
+    gained_passing = rows("old_flag = 'insufficient_data' AND new_flag = 'passes_earnings_premium'")
+    lost_verdict = rows(
+        "old_flag IN ('passes_earnings_premium', 'fails_earnings_premium') "
+        "AND new_flag = 'insufficient_data'"
     )
     added = rows("old_flag IS NULL")
     removed = rows("new_flag IS NULL")
@@ -97,6 +106,9 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
     return {
         "newly_failing": newly_failing,
         "newly_passing": newly_passing,
+        "gained_failing": gained_failing,
+        "gained_passing": gained_passing,
+        "lost_verdict": lost_verdict,
         "added": added,
         "removed": removed,
         "earnings_revised": revised,
@@ -122,6 +134,9 @@ def render_markdown(diff: dict, old_label: str, new_label: str) -> str:
     for key, title in [
         ("newly_failing", "Newly failing the earnings-premium test"),
         ("newly_passing", "Newly passing (recovered)"),
+        ("gained_failing", "No verdict before, now failing"),
+        ("gained_passing", "No verdict before, now passing"),
+        ("lost_verdict", "Had a verdict, now none"),
         ("earnings_revised", "Notable earnings revisions"),
         ("added", "New programs"),
         ("removed", "Removed programs"),
@@ -155,7 +170,16 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"{old_label}_to_{new_label}.md"
     out.write_text(md)
-    for key in ("newly_failing", "newly_passing", "earnings_revised", "added", "removed"):
+    for key in (
+        "newly_failing",
+        "newly_passing",
+        "gained_failing",
+        "gained_passing",
+        "lost_verdict",
+        "earnings_revised",
+        "added",
+        "removed",
+    ):
         print(f"  {key:18s} {len(diff[key]):>6,}")
     print(f"\nchangelog -> {out}")
 

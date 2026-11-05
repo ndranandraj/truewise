@@ -31,6 +31,7 @@ from pipeline.build_college_pages import (
     slugify,
     state_label,
 )
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
@@ -99,7 +100,7 @@ CSV_DIR = "/data/lists"
 
 
 def csv_filename(slug: str) -> str:
-    return f"truewise-{slug}-scorecard-2026-06-10.csv"
+    return f"truewise-{slug}-scorecard-{SCORECARD_RELEASE}.csv"
 
 
 def _download_block(slug) -> str:
@@ -164,7 +165,7 @@ def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
     p.append(f'    <p class="src">{note}</p>\n')
     p.append(
         '    <p class="src">Source: U.S. Department of Education College Scorecard (release '
-        "2026-06-10). Earnings are median earnings of graduates measured up to four years after "
+        f"{SCORECARD_RELEASE}). Earnings are median earnings of graduates measured up to four years after "
         "completing, and describe past graduates rather than a promise. Method: "
         '<a href="/methodology/">methodology</a>. '
         '<a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">'

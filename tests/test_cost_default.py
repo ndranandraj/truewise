@@ -123,3 +123,19 @@ def test_two_builds_with_different_hash_seeds_render_the_same_cost_section():
     html = outputs["0"]
     assert "About $12,076 over 1 year," in html
     assert "About $24,152 over 2 years," in html
+
+
+def test_a_lowest_band_above_the_next_says_so_beside_the_figures():
+    """Baylor's under-$30k net price is $45,498 in ED's file, the next band $24,146. Shown as
+    published, with a word: a family reading that table should check it with the school."""
+    rows = [{"grad": False, "credential": "Bachelor's Degree", "completers": 10}]
+    odd = {"avg": 44441, "brackets": [45498, 24146, 33908, 38607, 50541]}
+    plain = {"avg": 20000, "brackets": [12000, 13000, 18000, 24000, 30000]}
+    close = {"avg": 20000, "brackets": [14000, 13000, 18000, 24000, 30000]}
+    section = cost_section({}, rows, odd)
+    assert "higher net price for the lowest income band" in section
+    assert "$45,498 against $24,146" in section
+    assert "lowest income band" not in cost_section({}, rows, plain)
+    assert "lowest income band" not in cost_section({}, rows, close)
+    no_next = {"avg": 20000, "brackets": [45498, None, 33908, 38607, 50541]}
+    assert "lowest income band" not in cost_section({}, rows, no_next)

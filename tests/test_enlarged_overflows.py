@@ -85,6 +85,14 @@ def test_long_words_paths_and_links_may_break_in_prose():
     assert ".h-hero h1, .h-band__stat { overflow-wrap: break-word; }" in _css("home.css")
 
 
+def test_program_names_may_break_inside_a_card_at_enlarged_text():
+    """The cell allows it; the link inside must too, or a shared link rule takes it back: "Communications
+    and Media" ran UCLA's cards 14px past their column at doubled text on a 320px phone."""
+    css = re.sub(r"/\*.*?\*/", "", (ROOT / "components" / "components.css").read_text(), flags=re.S)
+    block = re.search(r"\.tw-prog \{[^}]*\}", css)
+    assert block and "overflow-wrap: anywhere;" in block.group(0)
+
+
 def test_update_log_timestamps_may_break_and_the_log_is_measured():
     """An archived fetch timestamp (2026-09-12T06:09:08.423960Z) is one long word. In the plain
     .upd-meta line it pushed /updates/ to 348px on a 320px phone at native 200% text; .mono already

@@ -71,7 +71,7 @@ def test_coverage_and_benchmark_are_honest():
     assert (
         "($36,498 a year)" in html
     )  # the benchmark dollar value is stated (was missing in the pilot)
-    assert "release 2026-06-10" in html  # dated source line
+    assert "release 2026-11-02" in html  # dated source line
 
 
 def test_no_verdict_school_is_truthful_not_blank():

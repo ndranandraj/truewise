@@ -381,7 +381,7 @@ window.addEventListener("resize", onResize);
 
   <script src="/assets/college-search.js"></script>
   <script>
-  const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-06-10)";
+  const DATA_VINTAGE = "U.S. Dept. of Education College Scorecard, most recent release (2026-11-02)";
   const app = document.getElementById("app");
   let SCHOOLS = null;                 // school index
   // The college list has three states, and the search view shows each one: "loading", "ready" or
@@ -547,9 +547,10 @@ window.addEventListener("resize", onResize);
     // query. "Largest" (by enrollment) is honest about what the sort produces, unlike "popular".
     const buildLanding = () => {
       if (!SCHOOLS || landing.dataset.built) return;
-      // Chosen to show the range the tool covers: private, public, community college, online,
-      // an HBCU and Puerto Rico. Every one has programs with a verdict.
-      const EXAMPLES = ["223232", "110662", "150987", "433387", "131520", "243197"];
+      // Chosen to show the range the tool covers: private, public, community college, online and
+      // an HBCU. Every one has programs with a verdict. A Puerto Rico school was here until ED's
+      // November 2026 release, which gives Puerto Rico no benchmark.
+      const EXAMPLES = ["223232", "110662", "150987", "433387", "131520"];
       const popular = EXAMPLES.map(u => SCHOOLS.find(s => s.unitid === u))
         .filter(s => s && (s.n_pass + s.n_fail) > 0);
       // The territories have state pages too, as do the schools with no location on ED's file

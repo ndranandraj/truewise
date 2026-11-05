@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "truewise-data"
-version = "0.1.0"
+version = "0.2.0"
 description = "Clean, ready-to-use US college program value data: median earnings vs a high-school-graduate benchmark, derived from the Dept. of Education's College Scorecard."
 readme = "README.md"
 requires-python = ">=3.10"

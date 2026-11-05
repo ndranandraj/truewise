@@ -61,6 +61,13 @@ def test_redirects_are_exact_paths_that_cannot_shadow_a_real_page():
         if ln.strip() and not ln.startswith("#")
     ]
     assert rules, "no redirect rules"
-    for source, _target, status in rules:
+    site = ROOT / "site"
+    built = (site / "colleges").is_dir()
+    for source, target, status in rules:
         assert "*" not in source and ":" not in source, f"{source} is not an exact path"
         assert status == "301"
+        if built and target != "/#data":
+            path = target.split("#")[0].lstrip("/")
+            assert (site / path / "index.html").exists() or (site / path).is_file(), (
+                f"{source} redirects to {target}, which the build does not produce"
+            )

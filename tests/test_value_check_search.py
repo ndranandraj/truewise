@@ -101,7 +101,6 @@ def test_starting_points_are_labelled_examples(run_page):
         "Ivy Tech Community College",
         "Western Governors University",
         "Howard University",
-        "University of Puerto Rico-Mayaguez",
     ]
     assert got["note"] == "Examples, not recommendations."
 
@@ -138,11 +137,11 @@ def test_results_are_links_the_keyboard_can_reach(run_page):
 
 
 def test_cards_count_what_the_profile_counts(run_page):
-    """Baylor's profile leads with 49 of 51 assessed undergraduate programs; its card used to read
+    """Baylor's profile leads with 51 of 52 assessed undergraduate programs; its card used to read
     62 pass and 2 fall short across all 183. Every card's undergraduate counts must equal the
     profile's, school by school."""
     got, schools = run_page
-    assert got["baylor"] == "Undergraduate programs: 49 clear the bar 2 fall short 32 no verdict"
+    assert got["baylor"] == "Undergraduate programs: 51 clear the bar 1 falls short 32 no verdict"
     # Undergraduate programs, none with a verdict: said, never filled with graduate results.
     assert got["albizu"] == "Undergraduate programs: none of the 6 has a verdict"
     # Graduate-only: labelled as such.

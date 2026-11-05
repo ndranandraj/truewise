@@ -1359,16 +1359,10 @@ def test_a_profile_description_states_the_size_that_separates_two_same_named_cam
 KNOWN_TITLE_COLLISIONS = frozenset(
     {
         frozenset({"larry-s-barber-college-il", "larry-s-barber-college"}),
-        frozenset({"city-college-hollywood-zz", "city-college-hollywood"}),
         frozenset({"western-technical-college-tx", "western-technical-college-224660"}),
         frozenset({"cortiva-institute-438285", "cortiva-institute-387925"}),
-        frozenset(
-            {"international-school-of-cosmetology", "international-school-of-cosmetology-zz"}
-        ),
         frozenset({"trend-barber-college-tx", "trend-barber-college"}),
         frozenset({"tulsa-welding-school-jacksonville-fl", "tulsa-welding-school-jacksonville"}),
-        frozenset({"royal-learning-institute", "royal-learning-institute-zz"}),
-        frozenset({"mitchells-academy", "mitchells-academy-zz"}),
         frozenset({"ideal-beauty-academy", "ideal-beauty-academy-zz"}),
         frozenset({"american-university-of-puerto-rico-zz", "american-university-of-puerto-rico"}),
         frozenset({"interactive-college-of-technology-tx", "interactive-college-of-technology"}),
@@ -1379,7 +1373,7 @@ KNOWN_TITLE_COLLISIONS = frozenset(
 )
 
 
-def test_no_college_title_collides_outside_the_approved_thirteen():
+def test_no_college_title_collides_outside_the_approved_pairs():
     """An allowlist, so an accidental collision still fails.
 
     The template fix took duplicate titles from 86 values over 202 pages down to 13 over 26. Marking
@@ -1426,12 +1420,13 @@ def test_no_two_college_pages_share_a_description():
         if m:
             by_desc.setdefault(m.group(1), []).append(p.parent.name)
     dupes = {k: v for k, v in by_desc.items() if len(v) > 1}
-    # One named exception. These two Royal Learning Institute records (UNITIDs 495165 and 495396)
-    # are identical in every field ED publishes: the same OPEID 042849, name, single program, no
-    # location and no graduate count. Their descriptions differed only while graduate counts came
-    # from IPEDSCOUNT1; with the count ED displays (September 2026) nothing true separates them
-    # but the record number. The pair is already an approved title collision.
-    identical = {frozenset({"royal-learning-institute", "royal-learning-institute-zz"})}
+    # One named exception. These two American University of Puerto Rico records (UNITIDs 241100 and
+    # 241128) are identical in every field ED publishes: the same OPEID 011941, name, programs and
+    # earnings, no location and no graduate count, so nothing true separates them but the record
+    # number. The pair is already an approved title collision.
+    identical = {
+        frozenset({"american-university-of-puerto-rico", "american-university-of-puerto-rico-zz"})
+    }
     dupes = {k: v for k, v in dupes.items() if frozenset(v) not in identical}
     assert not dupes, f"{len(dupes)} duplicate description groups: {list(dupes.values())[:5]}"
 

@@ -54,6 +54,10 @@ def collect_snapshots() -> list[dict]:
         return []
     out = []
     for d in sorted(ARCHIVE.iterdir(), reverse=True):
+        # monitor_diff writes archive/fvt/diffs/ once two snapshots exist. Listed as a snapshot, it
+        # put "last verified diffs" on the homepage.
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d.name):
+            continue
         if not d.is_dir():
             continue
         meta = _read_source(d)
@@ -96,6 +100,23 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "November 2026",
+        "title": "New College Scorecard data: the headline moves from 1 in 10 to 1 in 11",
+        "body": (
+            "The Department of Education published new College Scorecard files on 15 October and "
+            "2 November 2026, and every college figure here now comes from them. Undergraduate "
+            "programs whose graduates earn less than a typical high-school graduate went from 4,308 "
+            "of 41,198 (10.5%) to 3,891 of 42,429 (9.2%). This is new data, not a correction. About "
+            "half of the change comes from ED's new high-school lines, based on 2024 Census estimates "
+            "and lower in most states, and about half from newer one-year earnings and the programs "
+            "ED added and removed. Almost no four-year earnings figure changed. ED's new file gives "
+            "no high-school line for Puerto Rico, so its 554 programs with a verdict, 47 of which "
+            "fell short, now have none. It also dropped 156 schools that had pages here, often a "
+            "sign a school has closed or merged; their addresses now lead to a page that lists them."
+        ),
+        "link": "/methodology/#the-headline-number-in-full",
+    },
+    {
+        "date": "November 2026",
         "title": "High schools: students-per-counselor figures that could not be real",
         "body": (
             "High School Compare showed a students-per-counselor ratio for every school that reported "
@@ -109,6 +130,18 @@ CORRECTIONS = [
             "guard answers now read as not reported. The published dataset keeps every count as filed."
         ),
         "link": "/methodology/#k12",
+    },
+    {
+        "date": "November 2026",
+        "title": "College lookup and Compare: some percentages read one point too high",
+        "body": (
+            "Pell, first-generation and completion shares were rounded twice, so a school at 16.45% "
+            "became 16.5% and then read 17%. On the data published through October, this affected "
+            "225 Pell shares, 205 first-generation shares and 196 completion rates, each by one "
+            "point. They are now rounded once. College profiles' earnings and cost figures were not "
+            "affected."
+        ),
+        "link": "/methodology/",
     },
     {
         "date": "November 2026",
@@ -294,8 +327,9 @@ def render(snaps: list[dict]) -> str:
     p.append('    <nav class="crumbs">Updates</nav>\n')
     p.append("    <h1>Update log</h1>\n")
     p.append(
-        '    <div class="verdict">A monitor checks the federal data on the 8th of each month. This page '
-        "lists every snapshot it recorded, gaps included: one entry per snapshot, each with the exact "
+        '    <div class="verdict">A monthly job checks that the data we hold is intact and how old '
+        "ED&rsquo;s release is. It cannot reach ED&rsquo;s servers, so each new release is fetched by "
+        "hand. This page lists every snapshot, gaps included: one entry per snapshot, each with the exact "
         "files fetched, when they were fetched, and a checksum anyone can recompute. The Department of "
         "Education publishes only the current release, so this archive is the history it does not "
         "keep. Corrections to our own figures are listed first.</div>\n"
@@ -310,8 +344,8 @@ def render(snaps: list[dict]) -> str:
 
     if not snaps:
         p.append(
-            '    <p class="idline">No snapshots recorded yet. The monitor runs on the 8th of each '
-            "month and will log its first entry here.</p>\n"
+            '    <p class="idline">No snapshots recorded yet. The first release fetched will be '
+            "logged here.</p>\n"
         )
     else:
         with_data = [s for s in snaps if s["has_dataset"]]
@@ -335,11 +369,16 @@ def render(snaps: list[dict]) -> str:
                     d = diff_between(s["path"], prev["path"])
                     if d:
                         p.append(
-                            f'      <p class="upd-meta">Compared with {esc(prev["date"])}: '
-                            f"<b>{d.get('newly_failing', 0):,}</b> programs newly fell short, "
-                            f"<b>{d.get('newly_passing', 0):,}</b> newly cleared the bar, "
-                            f"<b>{d.get('added', 0):,}</b> added, <b>{d.get('removed', 0):,}</b> removed, "
-                            f"<b>{d.get('earnings_revised', 0):,}</b> had earnings revised.</p>\n"
+                            f'      <p class="upd-meta">Compared with {esc(prev["date"])}, counting '
+                            "each campus&rsquo;s row: "
+                            f"<b>{d.get('newly_failing', 0):,}</b> went from clearing the bar to "
+                            f"falling short and <b>{d.get('newly_passing', 0):,}</b> the other way; "
+                            f"<b>{d.get('gained_failing', 0) + d.get('gained_passing', 0):,}</b> "
+                            f"gained a verdict, <b>{d.get('gained_failing', 0):,}</b> of them falling "
+                            f"short; <b>{d.get('lost_verdict', 0):,}</b> lost one; "
+                            f"<b>{d.get('added', 0):,}</b> added, <b>{d.get('removed', 0):,}</b> "
+                            f"removed; <b>{d.get('earnings_revised', 0):,}</b> had earnings revised "
+                            "by $1,000 or more.</p>\n"
                         )
             else:
                 p.append(

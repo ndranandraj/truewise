@@ -106,19 +106,19 @@ const ck = (name, cond) => {
   await add("223232"); // Baylor University
   await add("110538"); // California State University-Chico
   let o = txt();
-  ck("Baylor pass rate 97% of 64 measured", /97%.*of 64 measured/.test(o));
-  ck("Chico pass rate 100% of 66 measured", /100%.*of 66 measured/.test(o));
-  ck("net price averages 41,104 and 14,480", o.includes("$41,104") && o.includes("$14,480"));
-  ck("state thresholds 34,809 and 36,976", o.includes("$34,809") && o.includes("$36,976"));
-  ck("Pell 12% and 43%", o.includes("12%") && o.includes("43%"));
-  ck("completion 80% and 63%", o.includes("80%") && o.includes("63%"));
+  ck("Baylor pass rate 99% of 69 measured", /99%.*of 69 measured/.test(o));
+  ck("Chico pass rate 100% of 61 measured", /100%.*of 61 measured/.test(o));
+  ck("net price averages 44,441 and 14,157", o.includes("$44,441") && o.includes("$14,157"));
+  ck("state thresholds 33,516 and 36,661", o.includes("$33,516") && o.includes("$36,661"));
+  ck("Pell 16% and 46%", o.includes("16%") && o.includes("46%"));
+  ck("completion 82% and 60%", o.includes("82%") && o.includes("60%"));
   ck("enrollment 14,785 and 13,631", o.includes("14,785") && o.includes("13,631"));
   ck("links to pre-rendered college page", /href="\/college\/baylor-university\//.test(els.cmp.innerHTML));
 
   els.income.value = "0"; // Under $30k
   render();
   o = txt();
-  ck("income selector reprices to under-30k (22,024 / 9,902)", o.includes("$22,024") && o.includes("$9,902"));
+  ck("income selector reprices to under-30k (45,498 / 9,227)", o.includes("$45,498") && o.includes("$9,227"));
   ck("row label switches to per-income", o.includes("Net price at this income"));
   els.income.value = "-1";
   render();

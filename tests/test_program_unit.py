@@ -140,7 +140,8 @@ def test_a_one_year_verdict_is_marked_as_one():
 
 def test_graduate_counts_are_the_ones_ed_displays():
     """Audit D8: "Recent completers" used IPEDSCOUNT1, a different award year from the count ED's
-    site shows, so UCLA's MBA read 3 graduates beside $223,358 while ED showed 46."""
+    site shows, so UCLA's MBA read 3 graduates beside $223,358 while ED showed 46. ED's release of
+    15 October 2026 rolled the years on: the 46 is now IPEDSCOUNT1, and IPEDSCOUNT2 is 25."""
     from pipeline.config import FOS_FIELD_CANDIDATES, ROOT
 
     assert FOS_FIELD_CANDIDATES["completers_count"][0] == "IPEDSCOUNT2"
@@ -152,7 +153,7 @@ def test_graduate_counts_are_the_ones_ed_displays():
         .limit(1)
         .fetchall()
     )
-    assert got and got[0][0] == 46
+    assert got and got[0][0] == 25
 
 
 def test_a_school_in_eds_file_is_not_told_it_has_no_record():

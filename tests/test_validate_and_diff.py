@@ -140,6 +140,38 @@ def test_compute_diff_categories():
     assert "03" in revised_cips  # 60k -> 68k crosses the $1000 threshold
 
 
+def test_a_verdict_appearing_is_not_a_verdict_flipping():
+    """Counting "no verdict -> falls short" as newly failing, with no match the other way, made the
+    November 2026 release read as 1,036 newly fell short and 666 newly cleared. 63 had flipped down."""
+    con = duckdb.connect()
+    u = ("1", "A", "3", "BA", "A Univ")
+    _snap(
+        con,
+        "old",
+        [
+            (*u[:1], "01", *u[2:], "insufficient_data", None),
+            (*u[:1], "02", *u[2:], "insufficient_data", None),
+            (*u[:1], "03", *u[2:], "passes_earnings_premium", 50000),
+            (*u[:1], "04", *u[2:], "fails_earnings_premium", 20000),
+        ],
+    )
+    _snap(
+        con,
+        "new",
+        [
+            (*u[:1], "01", *u[2:], "fails_earnings_premium", 20000),
+            (*u[:1], "02", *u[2:], "passes_earnings_premium", 50000),
+            (*u[:1], "03", *u[2:], "insufficient_data", 50000),
+            (*u[:1], "04", *u[2:], "insufficient_data", 20000),
+        ],
+    )
+    d = compute_diff(con)
+    assert d["newly_failing"] == [] and d["newly_passing"] == []
+    assert [r["cip"] for r in d["gained_failing"]] == ["01"]
+    assert [r["cip"] for r in d["gained_passing"]] == ["02"]
+    assert [r["cip"] for r in d["lost_verdict"]] == ["03", "04"]
+
+
 def test_rows_with_no_unitid_pair_only_with_the_same_school():
     """Pairing every UNITID "NA" row at a CIP and credential invented 21,404 revisions on real data."""
     flag = "insufficient_data"

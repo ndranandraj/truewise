@@ -85,6 +85,12 @@ def _txt(resolved: dict[str, str], logical: str) -> str:
     return f'"{col}"' if col else "NULL"
 
 
+def _name(resolved: dict[str, str]) -> str:
+    """A school name with its spacing tidied: 23 of ED's carry double spaces ("Clayton  State")."""
+    col = resolved.get("inst_name")
+    return f"""regexp_replace(trim("{col}"), '\\s+', ' ', 'g')""" if col else "NULL"
+
+
 # Average net price and net-price-by-income-bracket come in parallel columns per sector
 # (NPT4x_PUB / _PRIV / _PROG / _OTHER); a school populates only its own sector, so we
 # COALESCE across them. bracket "" = average; "1".."5" = the five income brackets.
@@ -140,7 +146,7 @@ def main() -> None:
         f"""
         CREATE OR REPLACE TABLE institutions AS SELECT
             {_txt(inst, "unitid")}                        AS unitid,
-            {_txt(inst, "inst_name")}                     AS inst_name,
+            {_name(inst)}                     AS inst_name,
             {_txt(inst, "city")}                          AS city,
             {_txt(inst, "state")}                         AS state,
             {_txt(inst, "school_url")}                    AS school_url,
@@ -177,7 +183,7 @@ def main() -> None:
             SELECT
                 {_txt(fos, "unitid")}            AS unitid,
                 {_txt(fos, "opeid6")}            AS opeid6,
-                {_txt(fos, "inst_name")}         AS inst_name,
+                {_name(fos)}         AS inst_name,
                 {_txt(fos, "control")}           AS control,
                 {_txt(fos, "cip_code")}          AS cip_code,
                 {_txt(fos, "cip_desc")}          AS cip_desc,

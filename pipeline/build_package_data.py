@@ -24,7 +24,7 @@ from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.sorted_parquet import PROGRAM_KEY, write_sorted_parquet
 
 PKG_DATA = ROOT / "packages" / "truewise-data" / "truewise_data" / "data"
-SCORECARD_RELEASE = "2026-06-10"  # College Scorecard bulk release the data derives from
+SCORECARD_RELEASE = "2026-11-02"  # College Scorecard bulk release the data derives from
 
 COLUMNS = [
     "unitid",
