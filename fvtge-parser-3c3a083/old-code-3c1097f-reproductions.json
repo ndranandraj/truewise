@@ -1,0 +1,17 @@
+{
+ "freq[0] expects 'no group for \\['program2526'\\]'": "accepted",
+ "freq[1] expects 'no group for \\['control'\\]'": "accepted",
+ "freq[2] expects 'no group for \\['num_miss'\\]'": "accepted",
+ "freq[3] expects 'counted group 'control''": "accepted",
+ "freq[4] expects 'counted group 'num_miss_2027''": "accepted",
+ "freq[5] expects 'lists control = 'Public' twice'": "accepted",
+ "freq[6] expects 'lists total2223 = 'Submitted' twice'": "accepted",
+ "freq[7] expects 'instnm is an identifier'": "accepted",
+ "freq[8] expects 'stabbr is an identifier'": "accepted",
+ "freq[9] expects 'count '1' for control'": "refused: Refused: ED's Frequencies sheet gives 1 for control = 'Private For-Profit'; the rows give 1.",
+ "freq[10] expects 'percentage 'N/A' for control'": "refused: Refused: control has values ['Private For-Profit'] that ED's Frequencies sheet does not list.",
+ "freq[11] expects 'has an outcome but no variable'": "accepted",
+ "type-only DOUBLE num_miss_prior": "accepted; target replaced: True; num_miss_prior type now DOUBLE",
+ "path \"O'Brien.parquet\"": "error: ParserException: Parser Error: syntax error at or near \"Brien\"\n\nLINE 1: ...-4959-921d-ad00d2e6e533/scratchp",
+ "path \"O'Brien's [draft] *1?/out.parquet\"": "error: ParserException: Parser Error: syntax error at or near \"Brien\"\n\nLINE 1: ...-4959-921d-ad00d2e6e533/scratchp"
+}

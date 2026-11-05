@@ -1,0 +1,21 @@
+August output from ED's real workbook. Measured 4 November 2026 on this Mac (DuckDB 1.5.4, Python
+3.14.2). An earlier version of this note, never published, said the published file came from a
+different writer build. That was a guess and it was wrong: the file's own metadata names the same
+version.
+
+SHA-256 of the output:
+  published/fvtge_reporting.parquet   a94ec4cce82fcffc8f3b4c1e602e437b1c20e05f83274d43f566ccb2e2259863
+  main's writer (db80da6, unchanged)  1e4f1bc6b9bb4425addc0efaa1d085dc2647bd5a1850b17bd546b7bb653a70aa
+  3c1097f's writer                    1e4f1bc6b9bb4425addc0efaa1d085dc2647bd5a1850b17bd546b7bb653a70aa
+  3c3a083's writer                    1e4f1bc6b9bb4425addc0efaa1d085dc2647bd5a1850b17bd546b7bb653a70aa
+main's writer and 3c3a083's writer give that hash at DuckDB's default thread count and at 1, 2, 4 and
+8 threads.
+
+Against the published file, 3c3a083's output has:
+  the same column names and types, and the same rows in the same file order;
+  the same writer in the metadata (DuckDB version v1.5.4, build 08e34c447b), and one row group;
+  different compressed sizes in 12 of 15 column chunks, and 105,969 bytes against 106,261.
+
+So this PR does not cause the byte difference: main's own unchanged writer gives the same bytes as
+3c3a083. The cause of the difference from the published file is not established. The parity test checks
+names, types and values, not bytes. published/ is unchanged.

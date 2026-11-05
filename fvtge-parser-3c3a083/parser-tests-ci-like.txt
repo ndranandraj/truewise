@@ -1,0 +1,55 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.2, pytest-9.1.1, pluggy-1.6.0 -- /Library/Frameworks/Python.framework/Versions/3.14/bin/python3
+rootdir: <scratch>/wt-parser
+configfile: pyproject.toml
+collecting ... collected 44 items
+
+tests/test_fvtge_source.py::test_october_layout_keeps_every_row_and_value_exactly PASSED [  2%]
+tests/test_fvtge_source.py::test_august_layout_has_no_2026_fields_rather_than_zeros PASSED [  4%]
+tests/test_fvtge_source.py::test_a_fully_empty_row_is_skipped_but_a_row_of_zeros_is_not PASSED [  6%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown submission status0] PASSED [  9%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown submission status1] PASSED [ 11%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-OPEID 001001 appears twice] PASSED [ 13%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits0] PASSED [ 15%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits1] PASSED [ 18%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-not six digits2] PASSED [ 20%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-missing name or state] PASSED [ 22%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-unknown control] PASSED [ 25%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_prior is 6] PASSED [ 27%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_prior is 6.5] PASSED [ 29%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_current is False] PASSED [ 31%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-num_miss_total is '10'] PASSED [ 34%]
+tests/test_fvtge_source.py::test_a_bad_row_is_refused_by_its_own_rule[<lambda>-yes_missing_current is] PASSED [ 36%]
+tests/test_fvtge_source.py::test_a_row_with_values_but_no_opeid_is_refused_not_dropped PASSED [ 38%]
+tests/test_fvtge_source.py::test_a_changed_header_is_refused PASSED      [ 40%]
+tests/test_fvtge_source.py::test_a_different_compile_date_is_refused PASSED [ 43%]
+tests/test_fvtge_source.py::test_the_real_registered_checksum_is_enforced PASSED [ 45%]
+tests/test_fvtge_source.py::test_frequencies_counts_percentages_and_listing_are_each_checked PASSED [ 47%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel0-edit-no group for \\['program2526'\\]] PASSED [ 50%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel1-edit-no group for \\['control'\\]] PASSED [ 52%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel2-edit-no group for \\['num_miss'\\]] PASSED [ 54%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel3-edit-counted group 'control'] PASSED [ 56%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel4-edit-counted group 'num_miss_2027'] PASSED [ 59%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel5-edit-lists control = 'Public' twice] PASSED [ 61%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel6-edit-lists total2223 = 'Submitted' twice] PASSED [ 63%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel7-edit-instnm is an identifier] PASSED [ 65%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel8-edit-stabbr is an identifier] PASSED [ 68%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel9-edit-count '1' for control] PASSED [ 70%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel10-edit-percentage 'N/A' for control] PASSED [ 72%]
+tests/test_fvtge_source.py::test_the_frequencies_sheet_has_exactly_the_releases_groups[rel11-_stray_after_note-has an outcome but no variable] PASSED [ 75%]
+tests/test_fvtge_source.py::test_a_changed_frequencies_header_is_refused PASSED [ 77%]
+tests/test_fvtge_source.py::test_the_checksum_and_the_parse_use_the_same_bytes PASSED [ 79%]
+tests/test_fvtge_source.py::test_a_refused_file_leaves_the_existing_output_untouched PASSED [ 81%]
+tests/test_fvtge_source.py::test_a_write_that_does_not_read_back_identically_changes_nothing[<lambda>-did not read back identically] PASSED [ 84%]
+tests/test_fvtge_source.py::test_a_write_that_does_not_read_back_identically_changes_nothing[<lambda>-columns or types are not the release's0] PASSED [ 86%]
+tests/test_fvtge_source.py::test_a_write_that_does_not_read_back_identically_changes_nothing[<lambda>-columns or types are not the release's1] PASSED [ 88%]
+tests/test_fvtge_source.py::test_any_output_path_works_quotes_and_glob_characters_included[O'Brien.parquet] PASSED [ 90%]
+tests/test_fvtge_source.py::test_any_output_path_works_quotes_and_glob_characters_included[O'Brien's [draft] *1?/out.parquet] PASSED [ 93%]
+tests/test_fvtge_source.py::test_october_without_an_output_path_fails_before_reading_or_writing PASSED [ 95%]
+tests/test_fvtge_source.py::test_august_reproduces_the_published_file_exactly SKIPPED [ 97%]
+tests/test_fvtge_source.py::test_october_keeps_every_row_and_agrees_with_ed SKIPPED [100%]
+
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_fvtge_source.py:484: ED's August file is not in data/raw here
+SKIPPED [1] tests/test_fvtge_source.py:495: ED's October file is not in data/raw here
+======================== 42 passed, 2 skipped in 1.22s =========================

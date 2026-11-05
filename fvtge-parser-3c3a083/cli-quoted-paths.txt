@@ -1,0 +1,4 @@
+FVT/GE status, compiled 2026-10-05: 4,674 institutions, 1,396 with a num_miss_prior above zero
+wrote -> <scratch>/cli/O'Brien's [run]/oct'26.parquet
+FVT/GE status, compiled 2026-08-06: 4,635 institutions, 1,932 with a num_miss above zero
+wrote -> <scratch>/cli/O'Brien's [run]/aug.parquet
