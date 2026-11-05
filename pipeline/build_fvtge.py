@@ -146,13 +146,16 @@ def compute(con) -> dict:
 
     matched = q("SELECT count(DISTINCT e.opeid6) FROM ed e JOIN vc v USING (opeid6)")[0][0]
 
-    # The association. Programs with an earnings verdict, at institutions on ED's list.
+    # The association. Undergraduate programs with an earnings verdict, at institutions on ED's list:
+    # the high-school line is the test for these, and the method and the nine-group table say so.
+    # Until November 2026 the three figures above the table counted graduate programs too.
     con.execute(
         """CREATE OR REPLACE TEMP VIEW judged AS
         SELECT v.control AS sector, v.credential_desc AS cred, e.num_miss > 0 AS missing,
                v.value_flag = 'fails_earnings_premium' AS fail
         FROM vc v JOIN ed e USING (opeid6)
-        WHERE v.value_flag IN ('passes_earnings_premium', 'fails_earnings_premium')"""
+        WHERE v.value_flag IN ('passes_earnings_premium', 'fails_earnings_premium')
+          AND v.credential_level IN ('1', '2', '3')"""
     )
     raw = {
         m: (n, f)
@@ -459,7 +462,8 @@ def render_page(s) -> str:
     <section id="earnings" aria-labelledby="earnings-h">
       <h2 id="earnings-h">What the College Scorecard shows about these colleges</h2>
       <p>Using the Scorecard earnings Truewise already publishes, not the FVT/GE files: the share of
-        programs whose graduates earn less than a typical high-school graduate in their state.</p>
+        undergraduate programs whose graduates earn less than a typical high-school graduate in their
+        state.</p>
       <div class="stats">
         <div class="stat"><p class="stat__kind">Observed</p><div class="stat__fig">{r_comp:.1f}%</div><p class="stat__lab">all required files submitted</p></div>
         <div class="stat stat--est"><p class="stat__kind">Expected</p><div class="stat__fig">{r_exp:.1f}%</div><p class="stat__lab">for the other colleges, after allowing for sector and credential</p></div>

@@ -73,6 +73,10 @@ def test_the_association_is_standardised_and_every_cell_reported(built):
     assert raw_complete < a["expected_missing"] < raw_missing
     assert a["unstandardised"] == 0, "every missing-filer program must fall in a comparable cell"
     assert len(s["cells"]) == 9
+    # The figures above the table count what the table counts: they once included graduate programs.
+    assert sum(c["n_missing"] for c in s["cells"]) == a["n_missing"]
+    assert sum(c["n_complete"] for c in s["cells"]) == a["n_complete"]
+    assert sum(c["fail_missing"] for c in s["cells"]) == a["fail_missing"]
 
 
 def test_the_homepage_line_matches_eds_list(built):

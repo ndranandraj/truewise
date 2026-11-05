@@ -117,6 +117,19 @@ CORRECTIONS = [
     },
     {
         "date": "November 2026",
+        "title": "FVT/GE finding: its earnings figures counted graduate programs",
+        "body": (
+            "The finding compares how often graduates earn less than a typical high-school graduate "
+            "at colleges with and without a missing file. Its three figures, 6.6%, 11.5% and 14.1%, "
+            "counted every credential, including graduate programs, while the table beneath them and "
+            "the method described undergraduate programs. Counted as the table counts, they were "
+            "8.5%, 14.4% and 17.6%. On the new College Scorecard data they are 7.4%, 13.3% and 15.8%. "
+            "It remains an association, not an explanation."
+        ),
+        "link": "/findings/fvtge-reporting/#earnings",
+    },
+    {
+        "date": "November 2026",
         "title": "High schools: students-per-counselor figures that could not be real",
         "body": (
             "High School Compare showed a students-per-counselor ratio for every school that reported "
