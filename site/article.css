@@ -41,6 +41,8 @@
 .sectnav__label { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
 .sectnav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .sectnav a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-fine); color: var(--ink-soft); text-decoration: none; background: var(--surface); }
+/* A link at the fold: the browser scrolls it just into view, which leaves its focus ring cut off. */
+.sectnav a { scroll-margin-block: 12px; }
 .sectnav a:hover { border-color: var(--brand); color: var(--brand); }
 @media (max-width: 767px) {
   .sectnav--scroll { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 2px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
