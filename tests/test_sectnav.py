@@ -1,11 +1,12 @@
 """The section links on the finding and on every profile (review of 11 October 2026).
 
 On phones the links ran sideways under a fade, and a link reached by Tab or Shift+Tab stayed partly
-under it. The fix: with pipeline/sectnav_script.js the row scrolls and a focused link, ring included,
-is moved clear; without the script the links wrap. These tests hold the parts that can be read from
-the source. The behaviour itself (real Tab and Shift+Tab in Chromium and Firefox, normal and 200%
-text, reduced motion, JavaScript off, the script failing) is tests/sectnav_focus.js, against a built
-site.
+under it. The fix: with pipeline/sectnav_script.js the row scrolls a focused link clear, also when a
+size changes; without the script the links wrap; and the focus ring is painted inside the link, so it
+shows whenever the link does. These tests hold the parts that can be read from the source. The
+behaviour itself (real Tab and Shift+Tab in Chromium and Firefox, normal and 200% text, reduced motion,
+JavaScript off, the script failing, the screen's edges, resizing with focus kept) is
+tests/sectnav_focus.js, against a built site.
 """
 
 from __future__ import annotations
@@ -60,28 +61,37 @@ def test_without_the_script_the_links_wrap_and_nothing_pins_or_scrolls():
     assert "flex-wrap: wrap" in base[".sectnav ul"]
 
 
-def test_the_ring_has_room_at_both_ends():
-    """The scroller clips, so the first link's ring needs padding inside it, and the last link must
-    be able to scroll its ring clear of the fade with the script's gap."""
-    block = {sel: d for media, sel, d in _rules(CSS) if media == PHONE}
+def test_the_focus_ring_is_painted_inside_the_link():
+    """Moving focus brings at most a link's border box on screen, so only a ring inside that box is
+    sure to show: at the screen's edges and the row's, and with JavaScript off (review of 5 November).
+    It must stay clear of the words, by more than a near-fit."""
     focus = (ROOT / "site" / "styles.css").read_text()
-    m = re.search(
-        r":focus-visible \{ outline: (\d+)px solid [^;]+; outline-offset: (\d+)px;", focus
-    )
-    ring = int(m[1]) + int(m[2])
-    pad = re.search(r"padding: (\d+)px (\d+)px (\d+)px;", block[".sectnav--scroll ul"])
-    # A margin beyond the ring, not a near-fit: text and subpixels measure differently on Linux.
-    edge = int(re.search(r"EDGE = (\d+);", SRC)[1])
-    assert edge >= 2 and int(pad[1]) >= ring + edge and int(pad[2]) >= ring + edge, (
-        "the ring is clipped, or only just fits, at the row's edges"
-    )
-    assert f"margin: 0 -{pad[2]}px" in block[".sectnav--scroll .sectnav__scroll"], (
-        "the wrapper must give the padding back, or the chips move"
-    )
+    width = int(re.search(r":focus-visible \{ outline: (\d+)px solid", focus)[1])
+    base = {}
+    for media, sel, decl in _rules(CSS):
+        if media is None:
+            base[sel] = base.get(sel, "") + decl
+    offset = int(re.search(r"outline-offset: (-?\d+)px", base[".sectnav a:focus-visible"])[1])
+    assert width + offset <= 0, f"the {width}px ring at {offset}px reaches outside the link"
+    pad = re.search(r"padding: (\d+)px (\d+)px;", base[".sectnav a"])
+    assert min(int(pad[1]), int(pad[2])) >= -offset + 2, "the ring touches, or nearly, the words"
+
+
+def test_the_scroll_margin_is_enough_and_follows_the_text():
+    """Firefox left a link cut by up to 5.5px with a 12px margin, or 12px at 200% text; from 24px none
+    was cut (measured 5 November). A px value would be a near-fit as soon as text grows further."""
+    base = " ".join(d for media, sel, d in _rules(CSS) if media is None and sel == ".sectnav a")
+    margin = re.search(r"scroll-margin-block: ([\d.]+)rem", base)
+    assert margin, "the bar's scroll margin must be in rem, so it grows with the text"
+    assert float(margin[1]) >= 2, "the scroll margin is below what was measured to be enough"
+
+
+def test_the_last_link_can_scroll_clear_of_the_fade():
+    block = {sel: d for media, sel, d in _rules(CSS) if media == PHONE}
     fade = int(re.search(r"width: (\d+)px", block[".sectnav--scroll .sectnav__scroll::after"])[1])
     gap = int(re.search(r"var GAP = (\d+)", SRC)[1])
     end = int(re.search(r"padding-right: (\d+)px", block[".sectnav--scroll li:last-child"])[1])
-    assert end >= fade + gap + ring, f"the last link can scroll only {end}px of {fade + gap + ring}"
+    assert end >= fade + gap, f"the last link can scroll only {end}px of {fade + gap}"
 
 
 def test_the_script_enables_the_row_last_and_never_moves_focus():
@@ -89,8 +99,20 @@ def test_the_script_enables_the_row_last_and_never_moves_focus():
     assert body[-2:] == ['nav.classList.add("sectnav--scroll");', "})();"], (
         "the class must be the last thing the script does, so a failure leaves the wrapped list"
     )
-    for banned in (".focus(", "preventDefault", "tabindex", "scrollIntoView"):
-        assert banned not in SECTNAV_JS, f"the script must leave native focus alone ({banned})"
+    for banned in (
+        ".focus(",
+        "preventDefault",
+        "tabindex",
+        "scrollIntoView",
+        "scrollTo",
+        "scrollBy",
+    ):
+        assert banned not in SECTNAV_JS, (
+            f"the script must leave focus and the page alone ({banned})"
+        )
+    # A size change repeats the check, for the link that has focus and for nothing else.
+    assert "new ResizeObserver" in SECTNAV_JS and "document.activeElement" in SECTNAV_JS
+    assert "list.contains(a)" in SECTNAV_JS, "the row must only act for a link inside it"
     # The guard: a browser without what the script needs keeps the wrapped list.
     assert "!window.requestAnimationFrame" in SECTNAV_JS
     assert sectnav_script() == f"<script>{SECTNAV_JS}</script>"
