@@ -181,7 +181,7 @@ if __name__ == "__main__":
         SITE / "og.png",
         "Open, honest US education data",
         "Do graduates out-earn a high-school graduate?",
-        big="1 in 10",
+        big="1 in 11",
         big_color=BAD,
         sub="undergraduate programs have graduates who earn less than a high-school graduate.",
     )

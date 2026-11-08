@@ -77,7 +77,11 @@ fi
 # 6. Repackage. The published/ directory is the build source CI deploys from, so it has to move with
 # the data or the next deploy rebuilds the site from the old release.
 step "6/7 Refresh the published build-source"
+# Before published/ is replaced: schools leaving the data keep an address that says so.
+[ "$DRY" = "1" ] || $PYTHON -m pipeline.retired_schools --release "$BEFORE_RELEASE"
 $PYTHON -m pipeline.build_package_data
+# Main-campus flags decide a program's verdict across campuses, and come from the Institution file.
+$PYTHON -m pipeline.program_unit
 mkdir -p published
 for f in value_check institutions careers_demand k12; do
   [ -f "data/parquet/$f.parquet" ] && cp "data/parquet/$f.parquet" "published/$f.parquet"
@@ -96,6 +100,12 @@ $PYTHON -m pipeline.monitor_check || true
 
 AFTER_RELEASE="$(grep -oE '^SCORECARD_RELEASE = "[0-9-]+"' pipeline/build_package_data.py | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}')"
 
+# New schools need a slug before the site will build. Adding them is a reviewed change, so this
+# reports rather than writes: `make slug-registry`, then commit the diff.
+if ! $PYTHON -m pipeline.slug_registry --check; then
+  note "New schools have no slug yet: run make slug-registry and commit the result."
+fi
+
 step "What to review before committing"
 if [ "$BEFORE_RELEASE" = "$AFTER_RELEASE" ]; then
   cat <<EOF
@@ -105,6 +115,7 @@ if [ "$BEFORE_RELEASE" = "$AFTER_RELEASE" ]; then
     pipeline/build_package_data.py and pipeline/build_canonical_profiles.py. It is declared twice,
     which is its own hazard: the monitor fails when they disagree, deliberately, because a site
     quoting one vintage while the data holds another is the kind of wrong that reads as right.
+    The hand-written pages and docs name it too; tests/test_release_date.py lists any left behind.
 EOF
 else
   note "SCORECARD_RELEASE moved $BEFORE_RELEASE -> $AFTER_RELEASE."

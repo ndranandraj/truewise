@@ -21,9 +21,10 @@ import shutil
 import duckdb
 
 from pipeline.config import PARQUET_DIR, ROOT
+from pipeline.sorted_parquet import PROGRAM_KEY, write_sorted_parquet
 
 PKG_DATA = ROOT / "packages" / "truewise-data" / "truewise_data" / "data"
-SCORECARD_RELEASE = "2026-06-10"  # College Scorecard bulk release the data derives from
+SCORECARD_RELEASE = "2026-11-02"  # College Scorecard bulk release the data derives from
 
 COLUMNS = [
     "unitid",
@@ -58,14 +59,16 @@ def main() -> None:
 
     con = duckdb.connect()
     out = PKG_DATA / "value_check.parquet"
-    con.execute(
-        f"""
-        COPY (
+    write_sorted_parquet(
+        con,
+        f"""(
             SELECT {", ".join(COLUMNS)}
             FROM read_parquet('{vc}')
             WHERE regexp_matches(unitid, '^[0-9]+$')
-        ) TO '{out}' (FORMAT PARQUET, COMPRESSION zstd)
-        """
+        )""",
+        PROGRAM_KEY,
+        out,
+        "COMPRESSION zstd",
     )
     n = con.execute(f"SELECT count(*) FROM read_parquet('{out}')").fetchone()[0]
 

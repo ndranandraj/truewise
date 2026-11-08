@@ -31,22 +31,41 @@
 .kf__more { display: flex; flex-wrap: wrap; gap: 6px 24px; margin: var(--sp-related) 0 0; font-size: var(--t-ui); color: var(--ink-soft); }
 .kf__more b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
 
-/* Section nav. A labelled row of chips; on phones it sticks under the 65px header and scrolls
-   sideways, with a fade and a visible scrollbar so the later sections are discoverable. From 1200px
-   the side rail carries the same links, so the row is hidden there. */
+/* Section nav. A labelled list of chips that wraps. On phones, once pipeline/sectnav_script.js has
+   run (.sectnav--scroll), it becomes one row that sticks under the header and scrolls sideways, with
+   a fade and a visible scrollbar so the later sections are discoverable; the script keeps a focused
+   link clear of the fade and the edges. Without the script (JavaScript off, or the script failing)
+   the chips keep wrapping and the bar scrolls with the page, so no link can be hidden (review of
+   11 October). From 1200px the side rail carries the same links, so the row is hidden. */
 .sectnav { margin: 0 0 var(--sp-section); }
 .sectnav__label { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
 .sectnav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .sectnav a { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-fine); color: var(--ink-soft); text-decoration: none; background: var(--surface); }
+/* The focus ring is painted inside the chip (the 2px outline from styles.css, pulled in by its width).
+   Moving focus brings at most a link's border box on screen, so a ring outside the box could be cut by
+   the screen's edge, the header or the row, in any layout, and no script can repair that with
+   JavaScript off. A ring inside the box shows whenever the link does (review of 5 November). */
+.sectnav a:focus-visible { outline-offset: -2px; }
+/* The margin brings the whole link on screen when part of it is past the edge. Measured in Firefox on
+   5 November: a 12px margin left a link cut by up to 5.5px (12px at 200% text), and from 24px none was
+   cut. It is in rem because the amount needed grew with the text, and this leaves room to spare. */
+.sectnav a { scroll-margin-block: 2rem; }
 .sectnav a:hover { border-color: var(--brand); color: var(--brand); }
 @media (max-width: 767px) {
-  .sectnav { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
-  .sectnav__label { display: none; }
-  .sectnav__scroll { position: relative; }
-  .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
-  .sectnav ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
-  .sectnav li:last-child { padding-right: 36px; }
-  .sectnav a { white-space: nowrap; }
+  .sectnav--scroll { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
+  .sectnav--scroll .sectnav__label { display: none; }
+  .sectnav--scroll .sectnav__scroll { position: relative; container-type: inline-size; }
+  .sectnav--scroll .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
+  .sectnav--scroll ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  /* Room for the last link to scroll clear of the fade: 36px fade, and the script's 4px gap. */
+  .sectnav--scroll li:last-child { padding-right: 40px; }
+  /* A link is never wider than the part of the row it can be scrolled into: the row less the fade, the
+     script's gap and its edge, 42px, with 2px to spare. Linux Firefox at 200% text set "Look up a
+     college" 245px wide against 238px clear on a 320px screen, so no scroll could show it whole and
+     one end was always cut (CI, 8 November). A label that long now wraps inside its chip; every other
+     chip keeps one line, because the list items keep their own width. */
+  .sectnav--scroll li { flex: none; }
+  .sectnav--scroll a { max-width: calc(100cqw - 44px); }
 }
 @media (min-width: 1200px) { .sectnav { display: none; } }
 .art section { margin: 0 0 var(--sp-section); }

@@ -262,6 +262,19 @@ def cost_section(meta: dict, rows: list[dict], net_price) -> str:
         if neg
         else ""
     )
+    # 254 schools in the November 2026 release, up from 154: Baylor's under-$30k band reads $45,498
+    # beside $24,146 for the next band. It is ED's figure and is shown as published, with a word.
+    low, next_up = brackets[0], brackets[1]
+    uneven = (
+        low is not None and next_up is not None and low > next_up * 1.25 and low - next_up > 2000
+    )
+    uneven_note = (
+        f'<p class="cost__assume">ED reports a higher net price for the lowest income band than for '
+        f"the next one up ({money(low)} against {money(next_up)}). That is unusual, but it is what ED "
+        "reports, so check it with the school&rsquo;s own net price calculator.</p>"
+        if uneven
+        else ""
+    )
     data = {"brackets": brackets, "avg": avg, "labels": NP_LABELS}
     return f"""    <section id="cost" aria-labelledby="cost-h">
       <h2 id="cost-h">What it would cost</h2>
@@ -282,6 +295,7 @@ def cost_section(meta: dict, rows: list[dict], net_price) -> str:
         is not a quote or a prediction: it leaves out interest, price rises and the chance of taking
         longer to finish.</p>
       {neg_note}
+      {uneven_note}
       <details class="more"><summary>Net price for every income band</summary>
         <div class="tscroll" tabindex="0" role="region" aria-label="Net price by family income"><table class="t"><thead><tr><th>Family income</th><th class="num">Net price per year</th></tr></thead><tbody>{rows_html}</tbody></table></div>
         <p class="chart-src">College Scorecard, release {release}. Bands with no figure were not reported by the school.</p>

@@ -47,6 +47,25 @@ def test_release_date_comes_from_eds_stamp_not_our_download_date():
     assert mc.release_date_from("x_13402026.zip") is None
 
 
+def test_a_release_is_the_newest_stamp_it_names():
+    """ED moved the Institution file on 2 November 2026 and left Field-of-Study at 15 October."""
+    assert mc.release_date_from(
+        "field_of_study: https://x/Most-Recent-Cohorts-Field-of-Study_10152026.zip\n"
+        "institution: https://x/Most-Recent-Cohorts-Institution_11022026.zip\n"
+    ) == dt.date(2026, 11, 2)
+    assert mc.release_date_from("x_13402026.zip y_10152026.zip") == dt.date(2026, 10, 15)
+
+
+def test_the_diffs_folder_is_not_a_snapshot(tmp_path, monkeypatch):
+    """monitor_diff writes archive/fvt/diffs/ on the first real diff. Counted as a snapshot, it
+    failed "every snapshot records its provenance" the moment a second release arrived."""
+    (tmp_path / "diffs").mkdir()
+    (tmp_path / "2026-11-04").mkdir()
+    (tmp_path / "2026-11-04" / "SOURCE.txt").write_text("x: https://x/a_11022026.zip\n")
+    monkeypatch.setattr(mc, "ARCHIVE_DIR", tmp_path)
+    assert [s["dir"] for s in mc.read_snapshots()] == ["2026-11-04"]
+
+
 def test_freshness_uses_the_four_hundred_day_threshold():
     """400 days, because the Scorecard publishes roughly annually. A 45-day threshold would fire
     nearly every month against a source that is current, and a warning that is always on is
@@ -116,7 +135,7 @@ def test_a_release_constant_declared_twice_must_agree(monkeypatch):
     """It IS declared twice, in build_package_data and build_canonical_profiles. Two sources of one
     truth is tolerable only while something checks they match."""
     value, sources = mc.declared_release()
-    assert value == "2026-06-10", f"unexpected declared release: {value} from {sources}"
+    assert value == "2026-11-02", f"unexpected declared release: {value} from {sources}"
     assert len(sources) >= 2, "expected the constant in more than one module; the check guards that"
 
     monkeypatch.setattr(

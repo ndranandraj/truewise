@@ -5,6 +5,7 @@ from __future__ import annotations
 import duckdb
 
 from analysis.validate import CHECKS
+from pipeline.config import ARCHIVE_DIR
 from pipeline.monitor_diff import compute_diff
 
 # --- validation checks -----------------------------------------------------
@@ -77,14 +78,26 @@ def test_debt_payback_sane_flags_bad_rows():
 # --- diff engine -----------------------------------------------------------
 
 _SNAP_COLS = (
-    "unitid VARCHAR, cip_code VARCHAR, credential_level VARCHAR, credential_desc VARCHAR, "
-    "inst_name VARCHAR, value_flag VARCHAR, earnings DOUBLE"
+    "unitid VARCHAR, opeid6 VARCHAR, cip_code VARCHAR, credential_level VARCHAR, "
+    "credential_desc VARCHAR, inst_name VARCHAR, value_flag VARCHAR, earnings DOUBLE"
 )
 
 
 def _snap(con, name, rows):
     con.execute(f"CREATE TABLE {name} ({_SNAP_COLS})")
-    con.executemany(f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?)", rows)
+    con.executemany(
+        f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?,?)",
+        [(r[0], "000001", *r[1:]) for r in rows],
+    )
+
+
+def _schools(con, name, rows):
+    """Rows of (unitid, opeid6, name, flag, earnings) at one CIP and credential."""
+    con.execute(f"CREATE TABLE {name} ({_SNAP_COLS})")
+    con.executemany(
+        f"INSERT INTO {name} VALUES (?,?,?,?,?,?,?,?)",
+        [(u, o, "0101", "3", "BA", inst, flag, earn) for u, o, inst, flag, earn in rows],
+    )
 
 
 def test_compute_diff_categories():
@@ -125,3 +138,92 @@ def test_compute_diff_categories():
     assert [r["cip"] for r in d["removed"]] == ["04"]
     revised_cips = {r["cip"] for r in d["earnings_revised"]}
     assert "03" in revised_cips  # 60k -> 68k crosses the $1000 threshold
+
+
+def test_a_verdict_appearing_is_not_a_verdict_flipping():
+    """Counting "no verdict -> falls short" as newly failing, with no match the other way, made the
+    November 2026 release read as 1,036 newly fell short and 666 newly cleared. 63 had flipped down."""
+    con = duckdb.connect()
+    u = ("1", "A", "3", "BA", "A Univ")
+    _snap(
+        con,
+        "old",
+        [
+            (*u[:1], "01", *u[2:], "insufficient_data", None),
+            (*u[:1], "02", *u[2:], "insufficient_data", None),
+            (*u[:1], "03", *u[2:], "passes_earnings_premium", 50000),
+            (*u[:1], "04", *u[2:], "fails_earnings_premium", 20000),
+        ],
+    )
+    _snap(
+        con,
+        "new",
+        [
+            (*u[:1], "01", *u[2:], "fails_earnings_premium", 20000),
+            (*u[:1], "02", *u[2:], "passes_earnings_premium", 50000),
+            (*u[:1], "03", *u[2:], "insufficient_data", 50000),
+            (*u[:1], "04", *u[2:], "insufficient_data", 20000),
+        ],
+    )
+    d = compute_diff(con)
+    assert d["newly_failing"] == [] and d["newly_passing"] == []
+    assert [r["cip"] for r in d["gained_failing"]] == ["01"]
+    assert [r["cip"] for r in d["gained_passing"]] == ["02"]
+    assert [r["cip"] for r in d["lost_verdict"]] == ["03", "04"]
+
+
+def test_rows_with_no_unitid_pair_only_with_the_same_school():
+    """Pairing every UNITID "NA" row at a CIP and credential invented 21,404 revisions on real data."""
+    flag = "insufficient_data"
+    same = [
+        ("NA", "000010", "Closed A", flag, 40000.0),
+        ("NA", "000020", "Closed B", flag, 90000.0),
+    ]
+    con = duckdb.connect()
+    _schools(
+        con,
+        "old",
+        [
+            *same,
+            ("NA", "000030", "Closed C", flag, 50000.0),
+            ("NA", "000040", "Closed D", flag, 6e4),
+        ],
+    )
+    _schools(
+        con,
+        "new",
+        [
+            *same,
+            ("NA", "000030", "Closed C", flag, 52000.0),
+            ("NA", "000050", "Closed E", flag, 7e4),
+        ],
+    )
+    d = compute_diff(con)
+    assert [(r["inst_name"], r["old_earn"], r["new_earn"]) for r in d["earnings_revised"]] == [
+        ("Closed C", 50000.0, 52000.0)
+    ]
+    assert [r["inst_name"] for r in d["removed"]] == ["Closed D"]
+    assert [r["inst_name"] for r in d["added"]] == ["Closed E"]
+
+
+def test_a_school_whose_opeid6_changes_keeps_its_programs():
+    """A real UNITID is enough: a new OPEID6 must not read as every program removed and added."""
+    con = duckdb.connect()
+    _schools(con, "old", [("100", "000100", "A Univ", "passes_earnings_premium", 50000.0)])
+    _schools(con, "new", [("100", "000999", "A Univ", "fails_earnings_premium", 30000.0)])
+    d = compute_diff(con)
+    assert not d["added"] and not d["removed"]
+    assert [r["inst_name"] for r in d["newly_failing"]] == ["A Univ"]
+    assert [r["inst_name"] for r in d["earnings_revised"]] == ["A Univ"]
+
+
+def test_archived_snapshots_diffed_against_themselves_list_nothing():
+    """Real rows, so this also fails on a release where a program's key stops being unique."""
+    snapshots = sorted(ARCHIVE_DIR.glob("*/value_check_snapshot.parquet"))
+    assert snapshots
+    for path in snapshots:
+        con = duckdb.connect()
+        for name in ("old", "new"):
+            con.execute(f"CREATE TABLE {name} AS SELECT * FROM read_parquet('{path}')")
+        d = compute_diff(con)
+        assert {k: len(v) for k, v in d.items()} == dict.fromkeys(d, 0), path

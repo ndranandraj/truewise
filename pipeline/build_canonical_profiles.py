@@ -27,6 +27,7 @@ from pipeline.build_college_pages import (
     esc,
     head,
     known_state,
+    sectnav_script,
     slugify,
     state_label,
 )
@@ -43,7 +44,7 @@ from pipeline.config import ROOT
 PARQUET = ROOT / "published" / "value_check.parquet"
 OUT = ROOT / "staging"
 # College Scorecard release the value_check parquet was built from (matches the live source line).
-SCORECARD_RELEASE = "2026-06-10"
+SCORECARD_RELEASE = "2026-11-02"
 
 
 INSTITUTIONS = ROOT / "published" / "institutions.parquet"
@@ -61,10 +62,9 @@ NP_LABELS = ["Under $30k", "$30k to $48k", "$48k to $75k", "$75k to $110k", "$11
 
 
 def _benchmark(con, unitid: str):
-    row = con.sql(
+    return con.sql(
         f"SELECT max(earnings_threshold_state) AS t FROM '{PARQUET}' WHERE unitid = '{unitid}'"
-    ).fetchone()
-    return row[0] if row else None
+    ).fetchall()[0][0]
 
 
 def _net_price(con, unitid: str) -> dict | None:
@@ -72,14 +72,18 @@ def _net_price(con, unitid: str) -> dict | None:
     summary page). Returns None when the school reports no net price."""
     if not INSTITUTIONS.exists():
         return None
-    row = con.sql(
-        f"""SELECT net_price_avg, net_price_0_30k, net_price_30_48k, net_price_48_75k,
+    rows = (
+        con.sql(
+            f"""SELECT net_price_avg, net_price_0_30k, net_price_30_48k, net_price_48_75k,
                    net_price_75_110k, net_price_110k_plus
             FROM '{INSTITUTIONS}' WHERE unitid = '{unitid}'"""
-    ).fetchone()
-    if not row:
+        )
+        .limit(1)
+        .fetchall()
+    )
+    if not rows:
         return None
-    avg, *brackets = (None if v is None else round(float(v)) for v in row)
+    avg, *brackets = (None if v is None else round(float(v)) for v in rows[0])
     if avg is None and not any(b is not None for b in brackets):
         return None
     return {"avg": avg, "brackets": brackets}
@@ -89,10 +93,6 @@ REPORT_URL = (
     "https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction"
     "&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A"
 )
-
-
-def loc_text(meta: dict, st_name: str) -> str:
-    return f"{meta['city']}, {st_name}" if meta.get("city") else st_name
 
 
 def canonical_page(
@@ -277,7 +277,8 @@ def canonical_page(
         pl.summary(meta, rows, benchmark, net_price),
         f'    <nav class="sectnav" aria-label="Sections"><p class="sectnav__label" id="sn-l">'
         f"{len(pl.NAV)} sections</p>"
-        f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
+        f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>'
+        f"{sectnav_script()}\n",
         pl.cost_section(meta, rows, net_price),
         "    </div>\n",
         "    </div>\n",

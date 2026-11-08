@@ -37,12 +37,12 @@ async function render(search) {
 }
 
 (async () => {
-  // Baylor University (unitid 223232): 62 pass, 2 fail.
+  // Baylor University (unitid 223232): 68 pass, 1 fail.
   const bay = await render("?school=223232");
   ck("renders the school name", bay.includes("Baylor University"));
-  ck("shows the comparison (at 62 of 64 ... at 2, they earned less)", /62<\/b> of <b>64<\/b>/.test(bay) && /at <b class="fail">2<\/b>, they earned less/.test(bay));
+  ck("shows the comparison (at 68 of 69 ... at 1, they earned less)", /68<\/b> of <b>69<\/b>/.test(bay) && /at <b class="fail">1<\/b>, they earned less/.test(bay));
   ck("describes earnings, never says programs leave graduates earning more or less", !/leave graduates/.test(bay));
-  ck("shows the clear-the-bar rate (97% of 64)", bay.includes("97%") && bay.includes("clear the bar"));
+  ck("shows the clear-the-bar rate (99% of 69)", bay.includes("99%") && bay.includes("clear the bar"));
   ck("backlinks to the pre-rendered college page", bay.includes('href="https://truewise.dev/college/baylor-university/"'));
   ck("carries attribution to truewise.dev", bay.includes("truewise.dev"));
   ck("credits the federal source", bay.includes("College Scorecard"));

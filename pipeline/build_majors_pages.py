@@ -21,6 +21,7 @@ from pipeline import tokens_gen as tk
 from pipeline.build_careers import build_fields
 from pipeline.build_careers_demand import ep_years
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money, slugify
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
@@ -51,6 +52,11 @@ CRED_SHORT = {
     "First Professional Degree": "First prof",
     "Non-Credential Program (Preparatory Coursework/Teacher Certification)": "Non-credential",
 }
+
+
+def growth_text(g: float) -> str:
+    """Signed percent. The median can be -0.0, which formats as "-0%", so add 0.0 to normalise it."""
+    return f"{g + 0.0:+g}%"
 
 
 def _cred_short(cred: str) -> str:
@@ -333,7 +339,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         g = demand.get("growth_pct")
         opn = demand.get("annual_openings")
         # BLS unknowns read "not published", the site rule for BLS figures.
-        gtxt = "not published" if g is None else f"{g:+g}%"
+        gtxt = "not published" if g is None else growth_text(g)
         otxt = "not published" if opn is None else f"{int(round(opn)):,}"
         # The projection years come from the data (see build_careers_demand), not from this file.
         ep_start, ep_end = ep_years(demand["vintage"]["ep"])
@@ -351,7 +357,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
             )
             for o in occ:
                 w = money(o.get("wage"))
-                gr = "not published" if o.get("growth") is None else f"{o['growth']:+g}%"
+                gr = "not published" if o.get("growth") is None else growth_text(o["growth"])
                 op = (
                     "not published"
                     if o.get("openings") is None
@@ -374,7 +380,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
 
     parts.append(
         '    <p class="src">Earnings source: U.S. Department of Education College Scorecard '
-        "(release 2026-06-10), median earnings of graduates measured up to four years after "
+        f"(release {SCORECARD_RELEASE}), median earnings of graduates measured up to four years after "
         "completing. Figures describe past graduates and are never a promise. Method: "
         '<a href="/methodology/">methodology</a>. '
         '<a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction">'

@@ -15,7 +15,7 @@ from functools import lru_cache
 from importlib import resources
 from typing import Any
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = ["load_value_check", "load_summary", "meta", "DATA_VERSION", "__version__"]
 

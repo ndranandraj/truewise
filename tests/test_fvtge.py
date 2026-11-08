@@ -73,6 +73,10 @@ def test_the_association_is_standardised_and_every_cell_reported(built):
     assert raw_complete < a["expected_missing"] < raw_missing
     assert a["unstandardised"] == 0, "every missing-filer program must fall in a comparable cell"
     assert len(s["cells"]) == 9
+    # The figures above the table count what the table counts: they once included graduate programs.
+    assert sum(c["n_missing"] for c in s["cells"]) == a["n_missing"]
+    assert sum(c["n_complete"] for c in s["cells"]) == a["n_complete"]
+    assert sum(c["fail_missing"] for c in s["cells"]) == a["fail_missing"]
 
 
 def test_the_homepage_line_matches_eds_list(built):
@@ -185,6 +189,8 @@ def test_the_key_finding_keeps_its_qualifier_beside_the_figure(built):
     assert "does not mean &ldquo;complete&rdquo;" in text
     assert "Files rejected with errors count as not submitted." in text
     assert "Filings after 6 August are not reflected." in text
+    # The key finding says newer lists exist, beside the figure, not in the method at the bottom.
+    assert "ED has published newer lists since" in text and "nearly 1,400" in text
     # Read as "received files count as not submitted" in review; this wording must not come back.
     assert "counts any file received" not in text
 
@@ -234,7 +240,7 @@ def test_the_browser_check_drives_the_lookup_that_exists(built):
 def test_the_dateline_carries_both_editorial_dates_in_full(built):
     _, _, out = built
     html = (out / "index.html").read_text()
-    assert "<span>Published 23 Sep 2026</span><span>updated 2 Oct 2026</span>" in html
+    assert "<span>Published 23 Sep 2026</span><span>updated 4 Nov 2026</span>" in html
 
 
 def test_a_passed_deadline_is_not_described_as_upcoming(built):
@@ -242,3 +248,17 @@ def test_a_passed_deadline_is_not_described_as_upcoming(built):
     _, _, out = built
     text = re.sub(r"\s+", " ", (out / "index.html").read_text())
     assert "is due 1 October 2026" not in text and "was due 1 October 2026" in text
+
+
+def test_the_section_links_carry_their_script(built):
+    """The phone row's script comes straight after the bar, so it runs before the first paint, and
+    without it the links wrap (tests/test_sectnav.py, tests/sectnav_focus.js)."""
+    from pipeline.build_college_pages import sectnav_script
+
+    _, _, out = built
+    html = (out / "index.html").read_text()
+    assert html.count('<nav class="sectnav"') == 1
+    bar = html[html.index('<nav class="sectnav"') :]
+    end = bar.index("</nav>") + len("</nav>")
+    assert bar[end:].startswith(sectnav_script())
+    assert html.count(sectnav_script()) == 1

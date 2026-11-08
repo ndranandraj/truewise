@@ -59,6 +59,7 @@ MAX_SOURCE_AGE_DAYS = 400
 
 # ED stamps the release into the filename as MMDDYYYY: Most-Recent-Cohorts-...-Study_06102026.zip
 RELEASE_IN_NAME = re.compile(r"_(\d{2})(\d{2})(\d{4})\.zip", re.IGNORECASE)
+SNAPSHOT_DIR_NAME = re.compile(r"\d{4}-\d{2}-\d{2}")
 
 
 class Finding:
@@ -72,15 +73,19 @@ class Finding:
 
 
 def release_date_from(text: str) -> dt.date | None:
-    """ED's release date, read from a bulk filename. None when no filename in `text` carries one."""
-    m = RELEASE_IN_NAME.search(text)
-    if not m:
-        return None
-    month, day, year = (int(g) for g in m.groups())
-    try:
-        return dt.date(year, month, day)
-    except ValueError:
-        return None
+    """ED's release date: the newest date stamped on a bulk filename in `text`, or None.
+
+    ED can move one file without the other: the November 2026 release is a Field-of-Study file
+    stamped 15 October and an Institution file stamped 2 November.
+    """
+    dates = []
+    for m in RELEASE_IN_NAME.finditer(text):
+        month, day, year = (int(g) for g in m.groups())
+        try:
+            dates.append(dt.date(year, month, day))
+        except ValueError:
+            continue
+    return max(dates, default=None)
 
 
 def read_snapshots() -> list[dict]:
@@ -94,7 +99,9 @@ def read_snapshots() -> list[dict]:
     if not ARCHIVE_DIR.exists():
         return out
     for d in sorted(ARCHIVE_DIR.iterdir(), reverse=True):
-        if not d.is_dir():
+        # monitor_diff writes archive/fvt/diffs/ once two snapshots exist. Only a dated folder is a
+        # snapshot; counting that one failed the monitor on the first real diff.
+        if not d.is_dir() or not SNAPSHOT_DIR_NAME.fullmatch(d.name):
             continue
         src = d / "SOURCE.txt"
         entry = {

@@ -50,6 +50,38 @@ jobs:
           node tests/layout_shot_smoke.js
           node tests/layout_enlarged_smoke.js
 
+  section-links:
+    name: Section links in Linux browsers (builds two pages, publishes nothing)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          npm ci
+          npx playwright install --with-deps chromium firefox
+      - name: Build the two pages the check walks
+        run: python -m tests.build_sectnav_fixture
+      # The same check also blocks the deploy, on the full build. This one answers on the pull request,
+      # because text measures differently on Linux and the deploy job is too late to find that out.
+      - name: Section links by keyboard
+        run: node tests/sectnav_focus.js --out sectnav-focus
+      - name: Keep the section-links report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sectnav-focus
+          path: sectnav-focus/
+          retention-days: 14
+
   package:
     name: Build + test truewise-data package
     runs-on: ubuntu-latest

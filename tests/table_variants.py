@@ -74,10 +74,14 @@ def main() -> None:
     args = ap.parse_args()
     con = duckdb.connect()
     pmeta, rows = all_profiles(con, PARQUET)[args.unitid]
-    city, bench = con.sql(
-        f"SELECT i.city, max(v.earnings_threshold_state) FROM '{PARQUET}' v "
-        f"LEFT JOIN '{INSTITUTIONS}' i USING (unitid) WHERE v.unitid = '{args.unitid}' GROUP BY 1"
-    ).fetchone()
+    city, bench = (
+        con.sql(
+            f"SELECT i.city, max(v.earnings_threshold_state) FROM '{PARQUET}' v "
+            f"LEFT JOIN '{INSTITUTIONS}' i USING (unitid) WHERE v.unitid = '{args.unitid}' GROUP BY 1"
+        )
+        .limit(1)
+        .fetchall()[0]
+    )
     import json
 
     slug = json.loads((ROOT / "published" / "slug_registry.json").read_text())[args.unitid]

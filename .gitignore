@@ -119,6 +119,8 @@ node_modules/
 # Browsers are ~170 MB and machine-specific; the reports are evidence for a single run.
 .playwright-browsers/
 layout-check-*/
+sectnav-focus/
+sectnav-focus-*/
 
 # Stage 4.1 canonical-profile pilot (measurements only, never deployed)
 pilot/

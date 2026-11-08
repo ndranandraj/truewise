@@ -62,7 +62,7 @@ def test_a_complete_table_carries_no_notice(profiles):
 def test_every_csv_matches_the_complete_dataset(partial):
     con = duckdb.connect()
     out = programs_csv(con, PARQUET, partial)
-    assert set(out) == set(partial) and len(out) == 245
+    assert set(out) == set(partial) and len(out) == 243
     truth = {}
     for u, cip, lvl, e, c, d, flag in con.sql(
         f"SELECT unitid, cip_code, credential_level, earnings, completers_count, debt_median, "
@@ -92,7 +92,7 @@ def test_penn_state_keeps_the_three_states_apart(partial):
         csv.DictReader(io.StringIO(programs_csv(duckdb.connect(), PARQUET, ["214777"])["214777"]))
     )
     got = {s: sum(1 for r in rows if r["status"] == s) for s in {r["status"] for r in rows}}
-    assert got == {"pass": 183, "fail": 1, "earnings_not_published": 221, "nothing_reported": 84}
+    assert got == {"pass": 199, "fail": 1, "earnings_not_published": 217, "nothing_reported": 75}
     assert {r["earnings_window"] for r in rows if r["earnings_median"]} <= {
         "4 years after completion",
         "1 year after completion",
@@ -149,14 +149,14 @@ def _page_live(rows, threshold):
 
 def test_live_profiles_send_every_program_and_link_the_csv(profiles):
     """Option B (30 September 2026): measured acceptable on the largest profile, so every program
-    is in the HTML. The 245 largest keep a complete CSV, linked below the table."""
+    is in the HTML. The 243 largest keep a complete CSV, linked below the table."""
     from pipeline.build_canonical_profiles import CSV_MIN_PROGRAMS, LIVE_STATIC_ROWS
 
     biggest = max(len(rows) for _, rows in profiles.values())
     assert LIVE_STATIC_ROWS >= biggest
     _, rows = profiles["214777"]
     html, tail = _page_live(rows, LIVE_STATIC_ROWS)
-    assert tail is None and html.count('<tr class="tw-tr') == len(rows) == 489
+    assert tail is None and html.count('<tr class="tw-tr') == len(rows) == 492
     assert "data-tw-partial" not in html, "nothing is partial, so nothing says it is"
     assert html.count(f'href="{PROGRAMS_CSV}" download') == 1 and len(rows) > CSV_MIN_PROGRAMS
     small, _ = _page_live(profiles["461111"][1], LIVE_STATIC_ROWS)

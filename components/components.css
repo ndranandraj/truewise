@@ -727,6 +727,9 @@
 /* Programme name as a link to its major page. Underlined on hover rather than always, because a
    table of 150 underlined rows reads as noise; the colour and the pointer carry it at rest. */
 .tw-prog {
+  /* The shared rule for links in a page, overflow-wrap: break-word, would override the cell's
+     `anywhere`. "Communications" at doubled text ran 14px past a 320px card (November 2026). */
+  overflow-wrap: anywhere;
   color: inherit;
   text-decoration: none;
 }

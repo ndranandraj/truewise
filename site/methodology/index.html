@@ -196,12 +196,12 @@ window.addEventListener("resize", onResize);
   <main class="wrap doc has-rail">
     <aside class="rail" aria-label="On this page"><div class="rail__inner"><h2>On this page</h2><ul><li><a href="#sources">Sources</a></li><li><a href="#the-earnings-premium-test-value-check">The earnings-premium test (Value Check)</a></li><li><a href="#the-headline-number-in-full">The headline number, in full</a></li><li><a href="#principles">Principles</a></li><li><a href="#why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</a></li><li><a href="#cite-this">Cite this</a></li><li><a href="#the-other-modules-in-brief">The other modules, in brief</a></li><li><a href="#known-limitations">Known limitations</a></li></ul></div></aside>
     <h1>Methodology</h1>
-    <p class="updated">How every number on Truewise is computed. Last updated 2026-10-03. Data vintages: College
-      Scorecard release 2026-06-10; BLS OEWS May 2025 + Employment Projections 2025-35; CRDC 2023-24.</p>
+    <p class="updated">How every number on Truewise is computed. Last updated 2026-11-04. Data vintages: College
+      Scorecard release 2026-11-02; BLS OEWS May 2025 + Employment Projections 2025-35; CRDC 2023-24.</p>
 
     <h2 id="sources">Sources</h2>
     <p>Everything comes from public U.S. federal data. College outcomes use two College Scorecard bulk files
-      (most recent release, 2026-06-10), joined on the IPEDS <span class="mono">UNITID</span>: the
+      (most recent release, 2026-11-02), joined on the IPEDS <span class="mono">UNITID</span>: the
       <b>Field-of-Study file</b> (per program: median earnings after completion, median debt) and the
       <b>Institution file</b> (the state and national high-school-graduate earnings thresholds). Careers demand
       adds the <b>NCES CIP-to-SOC crosswalk</b>, <b>BLS OEWS</b> wages, and <b>BLS Employment Projections</b>.
@@ -221,7 +221,7 @@ window.addEventListener("resize", onResize);
     </ul>
 
     <h2 id="the-headline-number-in-full">The headline number, in full</h2>
-    <p>Our headline is that <b>1 in 10 undergraduate programs with reported earnings</b> have graduates who
+    <p>Our headline is that <b>1 in 11 undergraduate programs with reported earnings</b> have graduates who
       earn less than a typical high-school graduate. Here is exactly what is behind it, including the parts most
       coverage leaves out:</p>
     <ul>
@@ -231,50 +231,58 @@ window.addEventListener("resize", onResize);
         <a href="/findings/stats-grad-exposure/">the graduate finding</a>.</li>
       <li><b>Each program counted once.</b> ED reports field-of-study earnings for each federal institution ID
         (OPEID) and repeats the same figures on every campus that shares it. We count a program once per ID,
-        field and credential. Where campuses in different states would get different verdicts (48 programs), the
+        field and credential. Where campuses in different states would get different verdicts (55 programs), the
         main campus's state decides, as the federal rule compares an institution with the state where it is
         located.</li>
-      <li><b>Denominator.</b> Of 149,340 undergraduate programs, <b>42,653</b> have reported earnings. Of those,
-        <b>41,198 (about 28%)</b> also have the state high-school-graduate benchmark needed for the comparison,
-        and the rate is computed on that set: 4,308 fall short (10.5%, or 1 in 9.6). The other 1,455 report
-        earnings but cannot be judged because that state benchmark is unavailable, mostly closed schools and
-        territories absent from ED's current institution file; the remaining programs are mainly
+      <li><b>Denominator.</b> Of 146,686 undergraduate programs, <b>43,679</b> have reported earnings. Of those,
+        <b>42,429 (about 29%)</b> also have the state high-school-graduate benchmark needed for the comparison,
+        and the rate is computed on that set: 3,891 fall short (9.2%, or 1 in 10.9). The other 1,250 report
+        earnings but cannot be judged because that state benchmark is unavailable: 674 at schools absent from
+        ED's current institution file, often closed or merged, and 576 in Puerto Rico and other territories,
+        for which ED's current release gives no state line. The remaining programs are mainly
         privacy-suppressed by ED for small cohorts.</li>
       <li><b>Horizon.</b> Earnings are measured up to four years after completing. Where the four-year figure is
-        suppressed we fall back to the one-year figure, and 31% of the programs that fall short use that
-        fallback. On four-year earnings alone the rate is 7.8% (2,982 of 38,287), about <b>1 in 13</b>.
+        suppressed we fall back to the one-year figure, and 32% of the programs that fall short use that
+        fallback. On four-year earnings alone the rate is 7.1% (2,637 of 37,158), about <b>1 in 14</b>.
         One-year rows carry a visible "1-yr" marker so you can weigh them.</li>
       <li><b>Cosmetology.</b> Among undergraduate cosmetology programs (CIP 12.04), <b>96%</b> fall short
-        (885 of 923 with data).</li>
+        (943 of 985 with data).</li>
       <li><b>Correction, September 2026.</b> This page previously said 1 in 11 (5,396 of 60,202). That count
         treated every campus row as a separate program, so programs shared across campuses were counted
-        several times, and it included graduate programs judged against the high-school line. Counted once
-        and across all credentials, the rate is 8.1% (4,438 of 54,701); undergraduate-only, as above, it is
-        10.5%. See <a href="/updates/">Updates</a>.</li>
+        several times, and it included graduate programs judged against the high-school line. The per-campus
+        count on the current release would be 7.8% (4,903 of 62,820). Counted once and across all credentials,
+        the current rate is 7.0% (3,984 of 57,058); undergraduate-only, as above, it is 9.2%. See
+        <a href="/updates/">Updates</a>.</li>
+      <li><b>New data, November 2026.</b> ED's release of 2 November 2026 moved the headline from 1 in 10
+        (4,308 of 41,198) to 1 in 11 (3,891 of 42,429). This is new data, not a correction. About half of the
+        change comes from ED's new high-school lines, based on 2024 Census estimates and lower in most states,
+        and about half from newer one-year earnings and the programs ED added and removed. ED's new file gives
+        no line for Puerto Rico, so its 554 programs with a verdict, 47 of which fell short, now have none.</li>
     </ul>
 
     <h3>How sensitive is that number?</h3>
-    <p>The fair criticism of any rate built on the reported 28% is that suppression might not be random,
+    <p>The fair criticism of any rate built on the reported 29% is that suppression might not be random,
       so the visible programs could be an unrepresentative sample. Suppression is indeed <em>not</em> random:
-      undergraduate certificates are about 84% suppressed and fall short at 34.6% where reported, while
-      bachelor's degrees are about 60% suppressed and fall short at 4.7%. Reported programs have a median of 35
+      undergraduate certificates are about 84% suppressed and fall short at 31.6% where reported, while
+      bachelor's degrees are about 59% suppressed and fall short at 3.6%. Reported programs have a median of 34
       graduates; suppressed ones have 4.</p>
     <p>Assuming every suppressed program falls short at the rate observed in its own credential-and-sector group,
-      and re-estimating across all programs, the rate becomes <b>12.1%</b>, against the <b>10.5%</b> we
+      and re-estimating across all programs, the rate becomes <b>10.4%</b>, against the <b>9.2%</b> we
       publish. So the reported programs likely understate the true share, because the programs ED suppresses
       are disproportionately certificates, which fall short most often. This adjustment only accounts for
       credential and sector mix; it cannot tell whether suppressed programs differ from reported ones within
-      the same group, so read it as a sign that the true share is probably somewhat higher than 10.5%, not as a
+      the same group, so read it as a sign that the true share is probably somewhat higher than 9.2%, not as a
       precise figure.</p>
     <p>One distinction worth stating plainly, because it is easy to conflate. Our headline counts
-      <em>programs</em>. Weighted by the number of graduates instead, the rate is <b>9.7%</b>, a little
-      lower: programs that fall short are somewhat smaller than average. Graduate counts are the ones ED's
+      <em>programs</em>. Weighted by the number of graduates instead, the rate is <b>9.4%</b>, about the
+      same. Graduate counts are the ones ED's
       College Scorecard site displays. Both numbers are in
       <code>site/data/value_check_summary.json</code> and are recomputed by <code>analysis/summary.py</code> on
       every data refresh; a test checks that this page matches it.</p>
     <p class="repro">Reproduce these numbers: the dataset lives in <code>published/value_check.parquet</code> and
       the exact script is <code>analysis/summary.py</code> in the
-      <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>.</p>
+      <a href="https://github.com/ndranandraj/truewise">GitHub repo</a>. To verify a download from
+      <code>/data/</code>, compare it with the <a href="/data/SHA256SUMS.txt">SHA-256 checksums</a>.</p>
 
     <h2 id="principles">Principles</h2>
     <ul>
@@ -298,7 +306,7 @@ window.addEventListener("resize", onResize);
 
     <h2 id="why-do-other-studies-say-1-in-4">Why do other studies say 1 in 4?</h2>
     <p>Some coverage (for example a widely cited HEA Group study) reports that attendees of about 1 in 4 higher-ed
-      programs earn less than high-school graduates. The difference from our 1 in 10 is not a contradiction, it is
+      programs earn less than high-school graduates. The difference from our 1 in 11 is not a contradiction, it is
       three definitional choices:</p>
     <ul>
       <li><b>Who counts.</b> Studies that count <i>attendees</i> (including non-completers) show higher failure
@@ -306,7 +314,7 @@ window.addEventListener("resize", onResize);
       <li><b>The benchmark.</b> A national high-school-earnings line, a state line, or an age-adjusted line each
         move the bar. We use ED's own state threshold.</li>
       <li><b>The denominator.</b> Including or excluding privacy-suppressed programs changes the base. We are
-        explicit that ours is the 28% of undergraduate programs with reported earnings.</li>
+        explicit that ours is the 29% of undergraduate programs with reported earnings.</li>
     </ul>
     <p>All three are defensible; we state ours plainly so the number is reproducible.</p>
 
@@ -341,7 +349,7 @@ window.addEventListener("resize", onResize);
     <ul>
       <li>Earnings cohorts predate the current year; figures describe past graduates.</li>
       <li>The debt-to-earnings ratio shown is a plain ratio, not the amortized federal D/E rate.</li>
-      <li id="k12">High-school data is the <b>2023-24</b> CRDC, released by ED in September 2026; the collection year is labeled on every high-school page. Two readings are ours, not ED's. First, ED published a high school's AP or IB answer of &ldquo;No&rdquo; as -9 (&ldquo;not applicable&rdquo;): the School Form asks every school with grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), no &ldquo;No&rdquo; appears anywhere in the file, and read as &ldquo;No&rdquo; the national rates match 2021-22 (AP 53.5% against 54.1%, IB 3.8% against 3.9%). So Truewise reads -9 as &ldquo;No&rdquo; at regular high schools, and as unknown at justice facilities and where a school reported AP courses under a -9 (about 850 schools for AP, 790 for IB). Second, ED withheld every count of nonbinary students under Executive Order 14168, so enrollment totals and participation rates count only students reported as male or female.</li>
+      <li id="k12">High-school data is the <b>2023-24</b> CRDC, released by ED in September 2026; the collection year is labeled on every high-school page. Two readings are ours, not ED's. First, ED published a high school's AP or IB answer of &ldquo;No&rdquo; as -9 (&ldquo;not applicable&rdquo;): the School Form asks every school with grade 9-12 students both questions as required Yes/No items (APIB-1 and APIB-3), no &ldquo;No&rdquo; appears anywhere in the file, and read as &ldquo;No&rdquo; the national rates match 2021-22 (AP 53.5% against 54.1%, IB 3.8% against 3.9%). So Truewise reads -9 as &ldquo;No&rdquo; at regular high schools, and as unknown at justice facilities and where a school reported AP courses under a -9 (about 850 schools for AP, 790 for IB). Second, ED withheld every count of nonbinary students under Executive Order 14168, so enrollment totals and participation rates count only students reported as male or female. Some schools file staffing counts that cannot be real: Huntington Beach High reports 300 full-time counselors for 2,721 students. Where a school reports ten or more counselors at fewer than 50 students each (50 schools), we show the count as filed and calculate no ratio, and leave the school out of its state&rsquo;s median. Where one figure of ten or more fills the counselor, police and guard columns alike (one school), we treat police and guards as not reported. The published dataset keeps every count as filed.</li>
       <li>The Careers occupation layer uses a many-to-many CIP-to-occupation crosswalk, so it lists the
         occupations a field commonly leads to rather than predicting any one graduate's job.</li>
     </ul>

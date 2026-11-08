@@ -125,7 +125,8 @@
 }
 
 * { box-sizing: border-box; }
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* No smooth scrolling. In Chromium it left a link focused off-screen when Shift+Tab followed Tab within
+   about 100ms (found October 2026), and keyboard reliability outranks the animation. */
 
 body {
   margin: 0;

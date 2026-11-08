@@ -1,395 +1,430 @@
 {
   "generated_from": "College Scorecard Field-of-Study + Institution (most recent)",
-  "programs_total": 227980,
-  "programs_decided": 60202,
-  "programs_insufficient_data": 167778,
-  "programs_fail_earnings_premium": 5396,
-  "programs_pass_earnings_premium": 54806,
-  "fail_rate_among_decided": 0.0896,
+  "population": "undergraduate programs (certificates, associate's, bachelor's), each counted once per OPEID6 x 4-digit CIP x credential",
+  "programs_total": 149340,
+  "programs_with_earnings": 42653,
+  "programs_decided": 41198,
+  "programs_insufficient_data": 108142,
+  "programs_fail_earnings_premium": 4308,
+  "programs_pass_earnings_premium": 36890,
+  "fail_rate_among_decided": 0.1046,
+  "median_premium_among_decided": 0.5174,
+  "four_year_only": {
+    "decided": 38287,
+    "fails": 2982,
+    "fail_rate": 0.0779
+  },
+  "fails_on_1yr_fallback": 1326,
+  "cosmetology_1204": {
+    "fails": 885,
+    "decided": 923,
+    "fail_rate": 0.9588
+  },
+  "fail_rate_poststratified_all_programs": 0.121,
+  "fail_rate_weighted_by_graduates": 0.0965,
+  "reference": {
+    "all_credentials": {
+      "programs_total": 217369,
+      "decided": 54701,
+      "fails": 4438,
+      "fail_rate": 0.0811
+    },
+    "graduate_credentials": {
+      "decided": 13503,
+      "fails": 130
+    },
+    "per_campus_rows_before_2026_09_correction": {
+      "rows_total": 227980,
+      "decided": 60202,
+      "fails": 5396,
+      "fail_rate": 0.0896
+    },
+    "decided_programs_shared_by_several_campuses": 2442
+  },
   "by_state": [
     {
       "state": "CA",
-      "fails": 592,
-      "decided": 4684,
-      "fail_rate": 0.1264
-    },
-    {
-      "state": "TX",
-      "fails": 383,
-      "decided": 3748,
-      "fail_rate": 0.1022
+      "fails": 415,
+      "decided": 3112,
+      "fail_rate": 0.1334
     },
     {
       "state": "FL",
-      "fails": 339,
-      "decided": 2700,
-      "fail_rate": 0.1256
+      "fails": 296,
+      "decided": 1825,
+      "fail_rate": 0.1622
+    },
+    {
+      "state": "TX",
+      "fails": 271,
+      "decided": 2543,
+      "fail_rate": 0.1066
     },
     {
       "state": "NY",
-      "fails": 284,
-      "decided": 3981,
-      "fail_rate": 0.0713
-    },
-    {
-      "state": "OH",
       "fails": 248,
-      "decided": 2929,
-      "fail_rate": 0.0847
-    },
-    {
-      "state": "PA",
-      "fails": 211,
-      "decided": 3457,
-      "fail_rate": 0.061
-    },
-    {
-      "state": "GA",
-      "fails": 176,
-      "decided": 1663,
-      "fail_rate": 0.1058
-    },
-    {
-      "state": "NC",
-      "fails": 166,
-      "decided": 1916,
-      "fail_rate": 0.0866
-    },
-    {
-      "state": "LA",
-      "fails": 164,
-      "decided": 891,
-      "fail_rate": 0.1841
-    },
-    {
-      "state": "MI",
-      "fails": 161,
-      "decided": 1800,
-      "fail_rate": 0.0894
-    },
-    {
-      "state": "TN",
-      "fails": 159,
-      "decided": 1284,
-      "fail_rate": 0.1238
-    },
-    {
-      "state": "VA",
-      "fails": 141,
-      "decided": 1570,
-      "fail_rate": 0.0898
-    },
-    {
-      "state": "IL",
-      "fails": 140,
-      "decided": 2209,
-      "fail_rate": 0.0634
-    },
-    {
-      "state": "MA",
-      "fails": 139,
-      "decided": 1815,
-      "fail_rate": 0.0766
-    },
-    {
-      "state": "KY",
-      "fails": 129,
-      "decided": 989,
-      "fail_rate": 0.1304
-    },
-    {
-      "state": "CO",
-      "fails": 125,
-      "decided": 957,
-      "fail_rate": 0.1306
-    },
-    {
-      "state": "WI",
-      "fails": 121,
-      "decided": 1486,
-      "fail_rate": 0.0814
-    },
-    {
-      "state": "WA",
-      "fails": 108,
-      "decided": 1046,
-      "fail_rate": 0.1033
-    },
-    {
-      "state": "MO",
-      "fails": 107,
-      "decided": 1347,
-      "fail_rate": 0.0794
-    },
-    {
-      "state": "NJ",
-      "fails": 96,
-      "decided": 1383,
-      "fail_rate": 0.0694
-    },
-    {
-      "state": "IN",
-      "fails": 93,
-      "decided": 1340,
-      "fail_rate": 0.0694
-    },
-    {
-      "state": "SC",
-      "fails": 90,
-      "decided": 866,
-      "fail_rate": 0.1039
-    },
-    {
-      "state": "AZ",
-      "fails": 88,
-      "decided": 1150,
-      "fail_rate": 0.0765
-    },
-    {
-      "state": "MN",
-      "fails": 82,
-      "decided": 1536,
-      "fail_rate": 0.0534
-    },
-    {
-      "state": "OK",
-      "fails": 76,
-      "decided": 753,
-      "fail_rate": 0.1009
-    },
-    {
-      "state": "UT",
-      "fails": 75,
-      "decided": 593,
-      "fail_rate": 0.1265
-    },
-    {
-      "state": "MS",
-      "fails": 72,
-      "decided": 591,
-      "fail_rate": 0.1218
-    },
-    {
-      "state": "IA",
-      "fails": 71,
-      "decided": 883,
-      "fail_rate": 0.0804
-    },
-    {
-      "state": "OR",
-      "fails": 66,
-      "decided": 706,
-      "fail_rate": 0.0935
-    },
-    {
-      "state": "MD",
-      "fails": 61,
-      "decided": 854,
-      "fail_rate": 0.0714
-    },
-    {
-      "state": "AL",
-      "fails": 58,
-      "decided": 872,
-      "fail_rate": 0.0665
-    },
-    {
-      "state": "PR",
-      "fails": 55,
-      "decided": 802,
-      "fail_rate": 0.0686
-    },
-    {
-      "state": "CT",
-      "fails": 54,
-      "decided": 1081,
-      "fail_rate": 0.05
-    },
-    {
-      "state": "AR",
-      "fails": 50,
-      "decided": 644,
-      "fail_rate": 0.0776
-    },
-    {
-      "state": "KS",
-      "fails": 45,
-      "decided": 720,
-      "fail_rate": 0.0625
-    },
-    {
-      "state": "ID",
-      "fails": 44,
-      "decided": 362,
-      "fail_rate": 0.1215
-    },
-    {
-      "state": "WV",
-      "fails": 42,
-      "decided": 502,
-      "fail_rate": 0.0837
-    },
-    {
-      "state": "NV",
-      "fails": 39,
-      "decided": 287,
-      "fail_rate": 0.1359
-    },
-    {
-      "state": "RI",
-      "fails": 33,
-      "decided": 373,
+      "decided": 2802,
       "fail_rate": 0.0885
     },
     {
-      "state": "NM",
-      "fails": 31,
-      "decided": 355,
-      "fail_rate": 0.0873
+      "state": "OH",
+      "fails": 185,
+      "decided": 1761,
+      "fail_rate": 0.1051
+    },
+    {
+      "state": "PA",
+      "fails": 172,
+      "decided": 2065,
+      "fail_rate": 0.0833
+    },
+    {
+      "state": "NC",
+      "fails": 146,
+      "decided": 1428,
+      "fail_rate": 0.1022
+    },
+    {
+      "state": "GA",
+      "fails": 143,
+      "decided": 1118,
+      "fail_rate": 0.1279
+    },
+    {
+      "state": "TN",
+      "fails": 136,
+      "decided": 927,
+      "fail_rate": 0.1467
+    },
+    {
+      "state": "MA",
+      "fails": 125,
+      "decided": 1185,
+      "fail_rate": 0.1055
+    },
+    {
+      "state": "IL",
+      "fails": 113,
+      "decided": 1511,
+      "fail_rate": 0.0748
+    },
+    {
+      "state": "VA",
+      "fails": 111,
+      "decided": 1072,
+      "fail_rate": 0.1035
+    },
+    {
+      "state": "KY",
+      "fails": 110,
+      "decided": 758,
+      "fail_rate": 0.1451
+    },
+    {
+      "state": "CO",
+      "fails": 108,
+      "decided": 687,
+      "fail_rate": 0.1572
+    },
+    {
+      "state": "LA",
+      "fails": 105,
+      "decided": 608,
+      "fail_rate": 0.1727
+    },
+    {
+      "state": "MI",
+      "fails": 103,
+      "decided": 1312,
+      "fail_rate": 0.0785
+    },
+    {
+      "state": "MO",
+      "fails": 95,
+      "decided": 966,
+      "fail_rate": 0.0983
+    },
+    {
+      "state": "WI",
+      "fails": 93,
+      "decided": 1126,
+      "fail_rate": 0.0826
+    },
+    {
+      "state": "WA",
+      "fails": 90,
+      "decided": 730,
+      "fail_rate": 0.1233
+    },
+    {
+      "state": "SC",
+      "fails": 83,
+      "decided": 661,
+      "fail_rate": 0.1256
+    },
+    {
+      "state": "MN",
+      "fails": 74,
+      "decided": 1140,
+      "fail_rate": 0.0649
+    },
+    {
+      "state": "UT",
+      "fails": 69,
+      "decided": 464,
+      "fail_rate": 0.1487
+    },
+    {
+      "state": "NJ",
+      "fails": 68,
+      "decided": 840,
+      "fail_rate": 0.081
+    },
+    {
+      "state": "OK",
+      "fails": 68,
+      "decided": 598,
+      "fail_rate": 0.1137
+    },
+    {
+      "state": "IN",
+      "fails": 65,
+      "decided": 954,
+      "fail_rate": 0.0681
+    },
+    {
+      "state": "IA",
+      "fails": 64,
+      "decided": 716,
+      "fail_rate": 0.0894
+    },
+    {
+      "state": "MS",
+      "fails": 60,
+      "decided": 439,
+      "fail_rate": 0.1367
+    },
+    {
+      "state": "OR",
+      "fails": 58,
+      "decided": 460,
+      "fail_rate": 0.1261
+    },
+    {
+      "state": "AZ",
+      "fails": 55,
+      "decided": 646,
+      "fail_rate": 0.0851
+    },
+    {
+      "state": "MD",
+      "fails": 52,
+      "decided": 581,
+      "fail_rate": 0.0895
+    },
+    {
+      "state": "AR",
+      "fails": 49,
+      "decided": 515,
+      "fail_rate": 0.0951
+    },
+    {
+      "state": "PR",
+      "fails": 47,
+      "decided": 554,
+      "fail_rate": 0.0848
+    },
+    {
+      "state": "AL",
+      "fails": 46,
+      "decided": 586,
+      "fail_rate": 0.0785
+    },
+    {
+      "state": "ID",
+      "fails": 40,
+      "decided": 303,
+      "fail_rate": 0.132
+    },
+    {
+      "state": "CT",
+      "fails": 37,
+      "decided": 480,
+      "fail_rate": 0.0771
+    },
+    {
+      "state": "KS",
+      "fails": 35,
+      "decided": 496,
+      "fail_rate": 0.0706
+    },
+    {
+      "state": "WV",
+      "fails": 35,
+      "decided": 352,
+      "fail_rate": 0.0994
     },
     {
       "state": "ME",
       "fails": 26,
-      "decided": 300,
-      "fail_rate": 0.0867
+      "decided": 250,
+      "fail_rate": 0.104
     },
     {
       "state": "NE",
       "fails": 24,
-      "decided": 490,
-      "fail_rate": 0.049
+      "decided": 348,
+      "fail_rate": 0.069
+    },
+    {
+      "state": "NM",
+      "fails": 24,
+      "decided": 223,
+      "fail_rate": 0.1076
+    },
+    {
+      "state": "RI",
+      "fails": 24,
+      "decided": 266,
+      "fail_rate": 0.0902
     },
     {
       "state": "NH",
-      "fails": 23,
-      "decided": 391,
-      "fail_rate": 0.0588
+      "fails": 21,
+      "decided": 270,
+      "fail_rate": 0.0778
     },
     {
-      "state": "DC",
+      "state": "NV",
       "fails": 18,
-      "decided": 382,
-      "fail_rate": 0.0471
+      "decided": 181,
+      "fail_rate": 0.0994
     },
     {
       "state": "SD",
       "fails": 17,
-      "decided": 297,
-      "fail_rate": 0.0572
+      "decided": 244,
+      "fail_rate": 0.0697
+    },
+    {
+      "state": "DC",
+      "fails": 15,
+      "decided": 180,
+      "fail_rate": 0.0833
     },
     {
       "state": "AK",
       "fails": 13,
-      "decided": 89,
-      "fail_rate": 0.1461
+      "decided": 76,
+      "fail_rate": 0.1711
     },
     {
       "state": "VT",
       "fails": 13,
-      "decided": 221,
-      "fail_rate": 0.0588
+      "decided": 162,
+      "fail_rate": 0.0802
     },
     {
       "state": "WY",
       "fails": 12,
-      "decided": 109,
-      "fail_rate": 0.1101
+      "decided": 97,
+      "fail_rate": 0.1237
     },
     {
       "state": "HI",
-      "fails": 11,
-      "decided": 151,
-      "fail_rate": 0.0728
-    },
-    {
-      "state": "ND",
       "fails": 10,
-      "decided": 272,
-      "fail_rate": 0.0368
+      "decided": 117,
+      "fail_rate": 0.0855
     },
     {
       "state": "MT",
       "fails": 8,
-      "decided": 184,
-      "fail_rate": 0.0435
+      "decided": 149,
+      "fail_rate": 0.0537
     },
     {
       "state": "DE",
       "fails": 7,
-      "decided": 191,
-      "fail_rate": 0.0366
+      "decided": 132,
+      "fail_rate": 0.053
+    },
+    {
+      "state": "ND",
+      "fails": 6,
+      "decided": 182,
+      "fail_rate": 0.033
     }
   ],
   "highest_fail_rate_fields": [
     {
-      "cip2": "12",
+      "cip": "1204",
       "example": "Cosmetology and Related Personal Grooming Services.",
-      "fails": 1178,
-      "decided": 1377,
-      "fail_rate": 0.8555
+      "fails": 885,
+      "decided": 923,
+      "fail_rate": 0.9588
     },
     {
-      "cip2": "10",
-      "example": "Audiovisual Communications Technologies/Technicians.",
-      "fails": 74,
-      "decided": 184,
-      "fail_rate": 0.4022
+      "cip": "5135",
+      "example": "Somatic Bodywork and Related Therapeutic Services.",
+      "fails": 176,
+      "decided": 188,
+      "fail_rate": 0.9362
     },
     {
-      "cip2": "50",
-      "example": "Music.",
-      "fails": 571,
-      "decided": 2365,
-      "fail_rate": 0.2414
+      "cip": "5204",
+      "example": "Business Operations Support and Assistant Services.",
+      "fails": 85,
+      "decided": 142,
+      "fail_rate": 0.5986
     },
     {
-      "cip2": "19",
+      "cip": "1205",
+      "example": "Culinary Arts and Related Services.",
+      "fails": 88,
+      "decided": 203,
+      "fail_rate": 0.4335
+    },
+    {
+      "cip": "1907",
       "example": "Human Development, Family Studies, and Related Services.",
-      "fails": 144,
-      "decided": 653,
-      "fail_rate": 0.2205
+      "fails": 122,
+      "decided": 309,
+      "fail_rate": 0.3948
     },
     {
-      "cip2": "38",
-      "example": "Philosophy.",
-      "fails": 38,
-      "decided": 178,
-      "fail_rate": 0.2135
+      "cip": "5005",
+      "example": "Drama/Theatre Arts and Stagecraft.",
+      "fails": 102,
+      "decided": 293,
+      "fail_rate": 0.3481
     },
     {
-      "cip2": "01",
-      "example": "Applied Horticulture and Horticultural Business Services.",
-      "fails": 112,
-      "decided": 806,
-      "fail_rate": 0.139
+      "cip": "5108",
+      "example": "Allied Health and Medical Assisting Services.",
+      "fails": 292,
+      "decided": 877,
+      "fail_rate": 0.333
     },
     {
-      "cip2": "51",
-      "example": "Registered Nursing, Nursing Administration, Nursing Research and Clinical Nursing.",
-      "fails": 1559,
-      "decided": 12456,
-      "fail_rate": 0.1252
+      "cip": "5009",
+      "example": "Music.",
+      "fails": 85,
+      "decided": 309,
+      "fail_rate": 0.2751
     },
     {
-      "cip2": "16",
-      "example": "Romance Languages, Literatures, and Linguistics.",
-      "fails": 53,
-      "decided": 468,
-      "fail_rate": 0.1132
+      "cip": "5007",
+      "example": "Fine and Studio Arts.",
+      "fails": 126,
+      "decided": 465,
+      "fail_rate": 0.271
     },
     {
-      "cip2": "46",
-      "example": "Building/Construction Finishing, Management, and Inspection.",
-      "fails": 38,
-      "decided": 369,
-      "fail_rate": 0.103
-    },
-    {
-      "cip2": "05",
-      "example": "Area Studies.",
-      "fails": 23,
-      "decided": 227,
-      "fail_rate": 0.1013
+      "cip": "0183",
+      "example": "Veterinary/Animal Health Technologies/Technicians.",
+      "fails": 41,
+      "decided": 158,
+      "fail_rate": 0.2595
     }
   ]
 }

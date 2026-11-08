@@ -6,8 +6,8 @@ silently. Each refresh we archive a compact snapshot (`pipeline.value_check` wri
 produces a human-readable changelog: programs that newly fail the earnings-premium test,
 ones that flipped back to passing, notable earnings revisions, and rows added or removed.
 
-Programs are keyed on UNITID + CIP + credential level. The diff logic lives in
-`compute_diff` (unit-tested on synthetic snapshots).
+Programs are keyed on UNITID + CIP + credential level, plus OPEID6 where ED gives no real UNITID.
+The diff logic lives in `compute_diff` (unit-tested on synthetic snapshots and the archived ones).
 
 Usage (from repo root):
     python -m pipeline.monitor_diff                 # diff the two most recent snapshots
@@ -22,6 +22,7 @@ from pathlib import Path
 import duckdb
 
 from pipeline.config import ARCHIVE_DIR
+from pipeline.sorted_parquet import PROGRAM_KEY
 
 # A revision in median earnings at least this large is worth flagging.
 EARNINGS_DELTA = 1000
@@ -29,12 +30,18 @@ EARNINGS_DELTA = 1000
 
 def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
     """Diff `old` and `new` tables (both with the snapshot columns) on `con`."""
+    # UNITID "NA" covers many schools, and only OPEID6 says which: without it, unrelated schools pair
+    # up and read as revisions. A real UNITID is enough on its own, so a school whose OPEID6 changes
+    # keeps its programs rather than reading as every one removed and added. The comparison stays an
+    # equality so DuckDB can hash it: written with OR, 1.5.6 falls back to a nested loop (26 seconds).
     con.execute(
         """
         CREATE OR REPLACE TEMP VIEW joined AS
         SELECT
             COALESCE(o.unitid, n.unitid)                     AS unitid,
+            COALESCE(o.opeid6, n.opeid6)                     AS opeid6,
             COALESCE(o.cip_code, n.cip_code)                 AS cip_code,
+            COALESCE(o.credential_level, n.credential_level) AS credential_level,
             COALESCE(o.credential_desc, n.credential_desc)   AS credential_desc,
             COALESCE(o.inst_name, n.inst_name)               AS inst_name,
             o.value_flag AS old_flag, n.value_flag AS new_flag,
@@ -42,6 +49,8 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
         FROM old o FULL OUTER JOIN new n
           ON o.unitid = n.unitid AND o.cip_code = n.cip_code
          AND o.credential_level = n.credential_level
+         AND IF(regexp_matches(o.unitid, '^[0-9]+$'), '', o.opeid6)
+           = IF(regexp_matches(n.unitid, '^[0-9]+$'), '', n.opeid6)
         """
     )
 
@@ -49,6 +58,8 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
         cols = (
             "inst_name, credential_desc, cip_code, old_flag, new_flag, old_earnings, new_earnings"
         )
+        # The changelog prints the first 50 of each list, so which programs it names must not depend
+        # on the order of the files.
         return [
             dict(
                 zip(
@@ -65,15 +76,26 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
                     strict=True,
                 )
             )
-            for r in con.execute(f"SELECT {cols} FROM joined WHERE {where}").fetchall()
+            for r in con.execute(
+                f"SELECT {cols} FROM joined WHERE {where} ORDER BY {PROGRAM_KEY}"
+            ).fetchall()
         ]
 
+    # A verdict changing and a verdict appearing are different events, and each is counted in both
+    # directions. Counting "no verdict -> falls short" as newly failing, with no match on the other
+    # side, read as 1,036 newly fell short and 666 newly cleared on the November 2026 release, when
+    # 63 verdicts had flipped down and 666 up.
     newly_failing = rows(
-        "old_flag IS DISTINCT FROM 'fails_earnings_premium' "
-        "AND new_flag = 'fails_earnings_premium' AND old_flag IS NOT NULL"
+        "old_flag = 'passes_earnings_premium' AND new_flag = 'fails_earnings_premium'"
     )
     newly_passing = rows(
         "old_flag = 'fails_earnings_premium' AND new_flag = 'passes_earnings_premium'"
+    )
+    gained_failing = rows("old_flag = 'insufficient_data' AND new_flag = 'fails_earnings_premium'")
+    gained_passing = rows("old_flag = 'insufficient_data' AND new_flag = 'passes_earnings_premium'")
+    lost_verdict = rows(
+        "old_flag IN ('passes_earnings_premium', 'fails_earnings_premium') "
+        "AND new_flag = 'insufficient_data'"
     )
     added = rows("old_flag IS NULL")
     removed = rows("new_flag IS NULL")
@@ -84,6 +106,9 @@ def compute_diff(con: duckdb.DuckDBPyConnection) -> dict:
     return {
         "newly_failing": newly_failing,
         "newly_passing": newly_passing,
+        "gained_failing": gained_failing,
+        "gained_passing": gained_passing,
+        "lost_verdict": lost_verdict,
         "added": added,
         "removed": removed,
         "earnings_revised": revised,
@@ -109,6 +134,9 @@ def render_markdown(diff: dict, old_label: str, new_label: str) -> str:
     for key, title in [
         ("newly_failing", "Newly failing the earnings-premium test"),
         ("newly_passing", "Newly passing (recovered)"),
+        ("gained_failing", "No verdict before, now failing"),
+        ("gained_passing", "No verdict before, now passing"),
+        ("lost_verdict", "Had a verdict, now none"),
         ("earnings_revised", "Notable earnings revisions"),
         ("added", "New programs"),
         ("removed", "Removed programs"),
@@ -142,7 +170,16 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     out = out_dir / f"{old_label}_to_{new_label}.md"
     out.write_text(md)
-    for key in ("newly_failing", "newly_passing", "earnings_revised", "added", "removed"):
+    for key in (
+        "newly_failing",
+        "newly_passing",
+        "gained_failing",
+        "gained_passing",
+        "lost_verdict",
+        "earnings_revised",
+        "added",
+        "removed",
+    ):
         print(f"  {key:18s} {len(diff[key]):>6,}")
     print(f"\nchangelog -> {out}")
 

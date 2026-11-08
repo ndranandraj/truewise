@@ -151,12 +151,12 @@ def test_methodology_matches_the_summary_it_cites(tmp_path, monkeypatch):
     allc, old = ref["all_credentials"], ref["per_campus_rows_before_2026_09_correction"]
     assert f"({allc['fails']:,} of {allc['decided']:,})" in meth
     assert f"({old['fails']:,} of {old['decided']:,})" in meth
+    # What the page said before the September correction is history, not a live figure.
+    assert "(5,396 of 60,202)" in meth
     assert "robust to the most likely objection" not in meth, (
         "the sensitivity test no longer says so"
     )
     upd = (ROOT / "pipeline" / "build_updates.py").read_text()
-    assert f"{old['fails']:,} of {old['decided']:,}" in upd, (
-        "the correction must quote the old figure"
-    )
+    assert "5,396 of 60,202" in upd, "the September correction must quote the old figure"
     new = f"{d['programs_fail_earnings_premium']:,} of {d['programs_decided']:,}"
     assert new in upd, "the correction must quote the new figure"

@@ -21,6 +21,7 @@ from __future__ import annotations
 import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
+from pipeline.build_package_data import SCORECARD_RELEASE
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
@@ -45,20 +46,20 @@ def compute_exposure(con) -> dict:
         SELECT *, earnings_median_4yr AS earn FROM {programs_sql(vc)}
         WHERE credential_level IN {GRAD_LEVELS} AND regexp_matches(unitid, '^[0-9]+$')"""
     )
-    total = con.sql("SELECT count(*) FROM grad").fetchone()[0]
-    denom = con.sql("SELECT count(*) FROM grad WHERE earn IS NOT NULL").fetchone()[0]
+    total = con.sql("SELECT count(*) FROM grad").fetchall()[0][0]
+    denom = con.sql("SELECT count(*) FROM grad WHERE earn IS NOT NULL").fetchall()[0][0]
 
     curve = []
     for b in BENCHMARKS:
-        n = con.sql(f"SELECT count(*) FROM grad WHERE earn IS NOT NULL AND earn < {b}").fetchone()[
+        n = con.sql(f"SELECT count(*) FROM grad WHERE earn IS NOT NULL AND earn < {b}").fetchall()[
             0
-        ]
+        ][0]
         curve.append({"benchmark": b, "n_below": n, "pct": round(100 * n / denom, 1)})
 
     def _below(b):
         return con.sql(
             f"SELECT count(*) FROM grad WHERE earn IS NOT NULL AND earn < {b}"
-        ).fetchone()[0]
+        ).fetchall()[0][0]
 
     # Band range = [programs below the low benchmark, programs below the high benchmark].
     band = sorted([_below(BAND[0]), _below(BAND[1])])
@@ -80,7 +81,7 @@ def compute_exposure(con) -> dict:
     pct = con.sql(
         "SELECT round(quantile_cont(earn,0.10)), round(median(earn)), round(quantile_cont(earn,0.75)) "
         "FROM grad WHERE earn IS NOT NULL"
-    ).fetchone()
+    ).fetchall()[0]
 
     return {
         "total": total,
@@ -239,7 +240,7 @@ def render_page(s) -> str:
         "(credential levels 4 to 8) with <code>earnings_median_4yr</code> below the benchmark. Script: "
         "<code>pipeline/build_stats_exposure.py</code>. Full method: "
         '<a href="/methodology/">methodology</a>. Sources: U.S. Department of Education College Scorecard '
-        "(release 2026-06-10); the final STATS / Earnings Accountability rule (Federal Register, "
+        f"(release {SCORECARD_RELEASE}); the final STATS / Earnings Accountability rule (Federal Register, "
         "2026-07-01).</p>\n"
     )
     p.append(

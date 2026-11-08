@@ -6,7 +6,9 @@ pilot-review fixes (escaping, assessed-first selection, could-be-assessed label)
 
 from __future__ import annotations
 
-from pipeline.build_canonical_profiles import canonical_page
+import duckdb
+
+from pipeline.build_canonical_profiles import _benchmark, _net_price, canonical_page
 from pipeline.build_profile_pilot import DEFAULT_THRESHOLD, _row_from
 
 
@@ -69,7 +71,7 @@ def test_coverage_and_benchmark_are_honest():
     assert (
         "($36,498 a year)" in html
     )  # the benchmark dollar value is stated (was missing in the pilot)
-    assert "release 2026-06-10" in html  # dated source line
+    assert "release 2026-11-02" in html  # dated source line
 
 
 def test_no_verdict_school_is_truthful_not_blank():
@@ -122,6 +124,16 @@ def test_no_net_price_omits_the_calculator():
     """A school with no reported net price shows no calculator, not an empty or broken one."""
     html, _ = canonical_page(META, _rows(3, 0), "x", 36498, DEFAULT_THRESHOLD, net_price=None)
     assert 'id="c-data"' not in html and "ED reports no net price for this school" in html
+
+
+def test_a_school_with_no_row_reads_as_no_data():
+    """DuckDB 2.0 removed relation.fetchone(), which returned None on no rows. A school missing from
+    the files must still read as no benchmark and no net price, not raise."""
+    con = duckdb.connect()
+    assert _benchmark(con, "000000") is None
+    assert _net_price(con, "000000") is None
+    assert _benchmark(con, "110662") is not None
+    assert _net_price(con, "110662") is not None
 
 
 def test_one_year_label_and_notice_on_mixed_window():
@@ -265,3 +277,14 @@ def test_profile_css_gives_programs_the_full_column_and_keeps_prose_measures():
     # The column floors exist only where there is room for them.
     assert ".tw-td--program { min-width: 14em; }" in wide
     assert ".tw-td--program { min-width" not in css.split("@media (min-width: 1200px)", 1)[0]
+
+
+def test_the_section_links_carry_their_script():
+    """As on the finding: the phone row's script comes straight after the bar, once."""
+    from pipeline.build_college_pages import sectnav_script
+
+    html, _ = canonical_page(META, _rows(3, 1, one_year=1), "x", 36498, DEFAULT_THRESHOLD)
+    bar = html[html.index('<nav class="sectnav"') :]
+    end = bar.index("</nav>") + len("</nav>")
+    assert bar[end:].startswith(sectnav_script())
+    assert html.count(sectnav_script()) == 1

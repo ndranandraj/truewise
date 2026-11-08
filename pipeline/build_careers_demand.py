@@ -28,6 +28,7 @@ import json
 import duckdb
 
 from pipeline.config import PARQUET_DIR, RAW_DIR
+from pipeline.sorted_parquet import write_sorted_parquet
 
 TOP_N = 6  # occupations listed per field, most annual openings first
 OEWS_WAGE_CAP = 239200  # BLS reports '#' for annual wages at or above this cap
@@ -162,7 +163,7 @@ def main() -> None:
     print(f"BLS vintage: OEWS {vintage['oews']}, Employment Projections {vintage['ep']}")
     PARQUET_DIR.mkdir(parents=True, exist_ok=True)
     out = PARQUET_DIR / "careers_demand.parquet"
-    con.execute(f"COPY careers_demand TO '{out}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "careers_demand", "cip_code", out)
     n = con.execute("SELECT count(*) FROM careers_demand").fetchone()[0]
     print(f"careers_demand: {n:,} fields with an occupation outlook")
     print(f"wrote -> {out}")

@@ -30,6 +30,7 @@ from pipeline.config import (
     RAW_DIR,
     SUPPRESSION_SENTINELS,
 )
+from pipeline.sorted_parquet import PROGRAM_KEY, write_sorted_parquet
 
 
 def _find_csv(*needles: str) -> str:
@@ -82,6 +83,12 @@ def _num(resolved: dict[str, str], logical: str) -> str:
 def _txt(resolved: dict[str, str], logical: str) -> str:
     col = resolved.get(logical)
     return f'"{col}"' if col else "NULL"
+
+
+def _name(resolved: dict[str, str]) -> str:
+    """A school name with its spacing tidied: 23 of ED's carry double spaces ("Clayton  State")."""
+    col = resolved.get("inst_name")
+    return f"""regexp_replace(trim("{col}"), '\\s+', ' ', 'g')""" if col else "NULL"
 
 
 # Average net price and net-price-by-income-bracket come in parallel columns per sector
@@ -139,7 +146,7 @@ def main() -> None:
         f"""
         CREATE OR REPLACE TABLE institutions AS SELECT
             {_txt(inst, "unitid")}                        AS unitid,
-            {_txt(inst, "inst_name")}                     AS inst_name,
+            {_name(inst)}                     AS inst_name,
             {_txt(inst, "city")}                          AS city,
             {_txt(inst, "state")}                         AS state,
             {_txt(inst, "school_url")}                    AS school_url,
@@ -166,7 +173,7 @@ def main() -> None:
         FROM inst_raw
         """
     )
-    con.execute(f"COPY institutions TO '{PARQUET_DIR / 'institutions.parquet'}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "institutions", "unitid", PARQUET_DIR / "institutions.parquet")
 
     # Program-level table joined to its institution's thresholds by UNITID.
     con.execute(
@@ -176,7 +183,7 @@ def main() -> None:
             SELECT
                 {_txt(fos, "unitid")}            AS unitid,
                 {_txt(fos, "opeid6")}            AS opeid6,
-                {_txt(fos, "inst_name")}         AS inst_name,
+                {_name(fos)}         AS inst_name,
                 {_txt(fos, "control")}           AS control,
                 {_txt(fos, "cip_code")}          AS cip_code,
                 {_txt(fos, "cip_desc")}          AS cip_desc,
@@ -205,7 +212,7 @@ def main() -> None:
         f"\n  programs: {n:,}  |  with a state threshold joined: {matched:,} ({100 * matched / n:.1f}%)"
     )
     out = PARQUET_DIR / "fos.parquet"
-    con.execute(f"COPY fos TO '{out}' (FORMAT PARQUET)")
+    write_sorted_parquet(con, "fos", PROGRAM_KEY, out)
     print(f"  wrote -> {out}")
     con.close()
     print("Next: python -m pipeline.value_check")

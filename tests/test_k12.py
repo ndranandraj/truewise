@@ -345,3 +345,68 @@ def test_crdc_labels_follow_the_published_data():
         named |= set(re.findall(r"(20\d\d-\d\d)\s+federal collection", text))
         assert named, f"{page} should name the CRDC collection"
         assert named == {vintage}, f"{page} names {named}, the data is {vintage}"
+
+
+def test_counselor_count_no_school_could_have_gives_no_ratio():
+    """Huntington Beach High files 300 full-time counselors for 2,721 students (CRDC 2023-24)."""
+    assert bk.counselor_count_unusable(300, 2721)
+    assert bk.counselor_count_unusable(155.15, 372)
+    # The real ones stay: a big school's staff, and a small school with one counselor.
+    assert not bk.counselor_count_unusable(21.9, 8000)
+    assert not bk.counselor_count_unusable(1, 18)
+    assert not bk.counselor_count_unusable(9, 200)
+    # Not reported and a real zero are other states, handled elsewhere.
+    assert not bk.counselor_count_unusable(None, 2721)
+    assert not bk.counselor_count_unusable(0, 2721)
+    assert not bk.counselor_count_unusable(300, None)
+
+
+def test_one_figure_in_every_staff_column_says_nothing_about_police():
+    assert bk.staff_columns_copied(155.15, 155.15, 155.15)
+    # A school can really have two of each.
+    assert not bk.staff_columns_copied(2, 2, 2)
+    assert not bk.staff_columns_copied(12, 1, 1)
+    assert not bk.staff_columns_copied(None, None, None)
+
+
+def test_unusable_counselor_count_stays_out_of_the_page_and_the_state_median(tmp_path, monkeypatch):
+    pq = tmp_path / "pq"
+    pq.mkdir()
+    src = tmp_path / "k12.parquet"
+    duckdb.execute(
+        f"""COPY (SELECT * FROM (VALUES
+          ('A', 'Real High', 'TX', 1000.0, 4.0, 1.0, 0.0),
+          ('B', 'Rekeyed High', 'TX', 2000.0, 200.0, 1.0, 0.0),
+          ('C', 'Copied High', 'TX', 300.0, 155.15, 155.15, 155.15)
+        ) AS t(combokey, name, state, enroll_total, fte_counselors, fte_police, fte_guards))
+        TO '{src}' (FORMAT PARQUET)"""
+    )
+    # Fill the rest of the schema from an empty, real extraction shape.
+    cols = {
+        "crdc_vintage": "'2023-24'",
+        "district": "'D'",
+        "charter": "false",
+        "magnet": "false",
+        "fte_teachers": "10.0",
+        "fte_teach_uncert": "0.0",
+        "ap_courses": "NULL::DOUBLE",
+    }
+    for c in ("ap", "calc", "physics", "chem", "cs", "dual", "ib", "gt"):
+        cols[f"offers_{c}"] = "NULL::BOOLEAN"
+    for c in ("ap", "calc", "phys", "chem", "cs", "dual", "ib", "gt"):
+        cols[f"{c}_enroll"] = "NULL::DOUBLE"
+    extra = ", ".join(f"{v} AS {k}" for k, v in cols.items())
+    duckdb.execute(
+        f"COPY (SELECT *, {extra} FROM '{src}') TO '{pq / 'k12.parquet'}' (FORMAT PARQUET)"
+    )
+    monkeypatch.setattr(bk, "PARQUET_DIR", pq)
+    monkeypatch.setattr(bk, "OUT_DIR", tmp_path / "k12-data")
+    bk.main()
+
+    tx = json.loads((tmp_path / "k12-data" / "schools" / "TX.json").read_text())
+    assert tx["A"]["staff"]["counselor_ratio"] == 250
+    assert tx["A"]["staff"]["counselor_reported"] is None
+    assert tx["B"]["staff"]["counselor_ratio"] is None
+    assert tx["B"]["staff"]["counselor_reported"] == 200
+    assert tx["B"]["staff"]["police"] is True, "only the counselor count is in doubt here"
+    assert tx["C"]["staff"]["police"] is None and tx["C"]["staff"]["guard"] is None
