@@ -54,12 +54,18 @@
 @media (max-width: 767px) {
   .sectnav--scroll { position: sticky; top: var(--hdr-h, 0px); z-index: 5; background: var(--paper); margin: 0 calc(-1 * var(--s5, 20px)) var(--sp-group); padding: 8px var(--s5, 20px) 6px; border-bottom: 1px solid var(--line); }
   .sectnav--scroll .sectnav__label { display: none; }
-  .sectnav--scroll .sectnav__scroll { position: relative; }
+  .sectnav--scroll .sectnav__scroll { position: relative; container-type: inline-size; }
   .sectnav--scroll .sectnav__scroll::after { content: ""; position: absolute; top: 0; right: 0; bottom: 8px; width: 36px; pointer-events: none; background: linear-gradient(90deg, rgba(251, 250, 248, 0), var(--paper)); }
   .sectnav--scroll ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
   /* Room for the last link to scroll clear of the fade: 36px fade, and the script's 4px gap. */
   .sectnav--scroll li:last-child { padding-right: 40px; }
-  .sectnav--scroll a { white-space: nowrap; }
+  /* A link is never wider than the part of the row it can be scrolled into: the row less the fade, the
+     script's gap and its edge, 42px, with 2px to spare. Linux Firefox at 200% text set "Look up a
+     college" 245px wide against 238px clear on a 320px screen, so no scroll could show it whole and
+     one end was always cut (CI, 8 November). A label that long now wraps inside its chip; every other
+     chip keeps one line, because the list items keep their own width. */
+  .sectnav--scroll li { flex: none; }
+  .sectnav--scroll a { max-width: calc(100cqw - 44px); }
 }
 @media (min-width: 1200px) { .sectnav { display: none; } }
 .art section { margin: 0 0 var(--sp-section); }

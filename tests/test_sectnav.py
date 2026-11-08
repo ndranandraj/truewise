@@ -117,3 +117,17 @@ def test_the_script_enables_the_row_last_and_never_moves_focus():
     assert "!window.requestAnimationFrame" in SECTNAV_JS
     assert sectnav_script() == f"<script>{SECTNAV_JS}</script>"
     assert "{{" not in SECTNAV_JS and "/*" not in SECTNAV_JS and "// " not in SECTNAV_JS
+
+
+def test_a_link_is_never_wider_than_the_clear_part_of_the_row():
+    """Linux Firefox at 200% text set "Look up a college" 245px wide against 238px of clear row on a
+    320px screen, so the script could show one end or the other, never both (CI, 8 November)."""
+    block = {sel: d for media, sel, d in _rules(CSS) if media == PHONE}
+    fade = int(re.search(r"width: (\d+)px", block[".sectnav--scroll .sectnav__scroll::after"])[1])
+    gap = int(re.search(r"var GAP = (\d+)", SRC)[1])
+    edge = int(re.search(r"EDGE = (\d+)", SRC)[1])
+    assert "container-type: inline-size" in block[".sectnav--scroll .sectnav__scroll"]
+    cap = re.search(r"max-width: calc\(100cqw - (\d+)px\)", block[".sectnav--scroll a"])
+    assert cap and int(cap[1]) >= fade + gap + edge, "a link can be wider than the clear row"
+    # Each item keeps its own width, so only a label longer than the cap wraps.
+    assert "flex: none" in block[".sectnav--scroll li"]
