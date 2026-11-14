@@ -296,8 +296,10 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         f"programs, College Scorecard).</div>\n"
     )
     parts.append(
-        f'    <div class="cta-row"><a class="btn" href="/careers/?field={esc(cip)}">'
-        "Explore this major &rarr;</a></div>\n"
+        # The button used to open this major in the Careers script's own view, which now forwards
+        # here. It opens the list of all majors instead; each degree below has its own page.
+        '    <div class="cta-row"><a class="btn" href="/careers/">Compare with other majors '
+        "&rarr;</a></div>\n"
     )
 
     # Degree ladder: a range chart (the visual) above the exact table (the detail).

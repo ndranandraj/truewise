@@ -178,6 +178,10 @@ details.more li { line-height: 1.6; margin: 0 0 8px; max-width: 66ch; }
 .md-oneyr { display: block; font-size: var(--t-label); color: var(--ink-soft); }
 .md table.t tbody tr.md-cur > *, .md table.t tbody tr.md-cur:hover > * { background: var(--brand-50); }
 .md table.t tbody tr.md-cur > :first-child { box-shadow: inset 3px 0 0 var(--brand); }
+/* In the table that marks this page's degree, hover and keyboard focus on the other rows use a
+   neutral tint, so "this one" and "under the pointer or focus" never look alike. */
+#degrees table.t tbody tr:not(.md-cur):hover > *,
+#degrees table.t tbody tr:not(.md-cur):focus-within > * { background: var(--bg-alt); }
 .md-tag { display: inline-block; margin-left: var(--s2); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-deep); }
 .md table.t td a { text-decoration: underline; text-underline-offset: 0.16em; }
 .md-next { display: flex; flex-wrap: wrap; gap: 10px 12px; margin: var(--sp-group) 0 0; }

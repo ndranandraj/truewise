@@ -64,6 +64,20 @@ def test_build_careers_aggregates_fields(tmp_path, monkeypatch):
     assert f["programs"] == 6 and f["schools"] == 6  # insufficient/suppressed row excluded
     assert f["pass_pct"] == 83  # 5 of 6
     assert f["p25"] is not None and f["p75"] is not None and f["med"] is not None
+    # Each row carries the address of its own page, and the static row links to that same address.
+    assert f["page"] == "/majors/registered-nursing/bachelors/"
+    assert (
+        '<a href="/majors/registered-nursing/bachelors/">Registered Nursing</a>' in page.read_text()
+    )
+
+
+def test_a_degree_level_without_a_page_links_to_the_majors_page():
+    fields = [
+        {"cip": "5138", "name": "Registered Nursing", "cred": "3"},
+        {"cip": "5138", "name": "Registered Nursing", "cred": "42"},
+    ]
+    pages = [f["page"] for f in bc.with_pages(fields)]
+    assert pages == ["/majors/registered-nursing/bachelors/", "/majors/registered-nursing/"]
 
 
 def test_build_demand_lists_occupations_with_outlook():

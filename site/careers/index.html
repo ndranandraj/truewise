@@ -82,116 +82,31 @@
       .cr-table td.mname::before { content: none; }
       .cr-table td .rangecell { flex: 1 1 auto; min-width: 0; max-width: 60%; align-items: flex-end; }
       .cr-table td .rangebar { width: 100%; min-width: 0; }
-      /* The same card pattern for the two tables on a major's detail view. The listing was fixed and
-         the detail view was not: at 390px the degree table was about 428px in a 350px column and the
-         page itself grew to 448px. */
-      .cred-table thead, .occ thead { display: none; }
-      .cred-table, .cred-table tbody, .cred-table tr, .cred-table td,
-      .occ, .occ tbody, .occ tr, .occ td { display: block; width: 100%; }
-      .cred-table tbody tr, .occ tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
-      .cred-table td, .occ td { border: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 6px 12px; text-align: right; }
-      .cred-table td::before, .occ td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
-      .cred-table td.rhead, .occ td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
-      .cred-table td.rhead::before, .occ td.rhead::before { content: none; }
     }
 
     .backlink { display: inline-block; margin: 24px 0 8px; color: var(--brand); text-decoration: none; font-size: .95rem; }
     .backlink:hover { text-decoration: underline; }
-    .fld-head { padding: 8px 0 4px; }
-    .fld-head h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 6px; }
-    .fld-head .sub { color: var(--ink-soft); }
-    .headline { display: flex; gap: 26px; flex-wrap: wrap; padding: 18px 20px; border: 1px solid var(--brand); border-radius: var(--r-lg); background: var(--surface); box-shadow: 0 6px 22px rgba(12,21,18,.08); max-width: 760px; }
-    /* The wrapper is the container and holds the box's outer margins: a container contains its
-       children's margins, so on the box they would no longer collapse with the text around it. */
-    .headline-cq { container: cr-figs / inline-size; margin: 18px 0 6px; }
-    .headline .big { font-size: 2rem; font-weight: 800; color: var(--brand-deep); letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-    .headline .lbl { color: var(--ink-soft); font-size: .9rem; }
-    /* At enlarged text "$148,463" at 64px was 304px in a 280px box (320px screen), and the page grew.
-       The box sits in a wrapper (.headline-cq) that is the container, because a container query styles
-       what is inside the container, never the container itself. Below 12em of the wrapper's own text
-       (enlarged text only: about 19em at normal size on a 320px phone) the box's padding tightens and
-       the display figure starts from 1.5rem instead of 2rem, so 200% text gives 48px: it fits and stays
-       well above the doubled body text. An amount is never split between digits: a range wraps only at
-       the spaces around "to", so each amount stays whole. */
     /* Phone cards at enlarged text: each card is a container, and below 12em of its own text the label
        sits above its value, so a figure such as "$148,463" moves down instead of running past the card
        (320px with enlarged text). At normal size the narrowest card is about 18em: unchanged. */
     @media (max-width: 768px) {
-      .cr-table tbody tr, .cred-table tbody tr, .occ tbody tr { container: cr-card / inline-size; }
+      .cr-table tbody tr { container: cr-card / inline-size; }
     }
     @container cr-card (max-width: 12em) {
-      .cr-table td, .cred-table td, .occ td { flex-wrap: wrap; justify-content: flex-start; text-align: left; row-gap: 2px; }
-      .cr-table td::before, .cred-table td::before, .occ td::before { flex: 0 0 100%; max-width: none; }
+      .cr-table td { flex-wrap: wrap; justify-content: flex-start; text-align: left; row-gap: 2px; }
+      .cr-table td::before { flex: 0 0 100%; max-width: none; }
       .cr-table td .rangecell { max-width: none; align-items: flex-start; }
       .cr-table .rangetxt { white-space: normal; }
     }
-    @container cr-figs (max-width: 12em) {
-      .headline { padding: 14px 16px; }
-      .headline .big { font-size: 1.5rem; }
-    }
-    .module h2 { font-size: var(--t-section); line-height: 1.2; letter-spacing: -0.02em; margin: 28px 0 8px; }
-    .cred-table { width: 100%; border-collapse: collapse; font-size: .93rem; max-width: 760px; }
-    .cred-table th, .cred-table td { padding: 9px 12px; border-bottom: 1px solid var(--line); text-align: left; }
-    .cred-table th.num, .cred-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .demand { margin: 12px 0; padding: 16px 18px; border-radius: var(--r-lg); background: var(--bg-alt); border: 1px solid var(--line); max-width: 760px; }
-    .demand.soon { color: var(--ink-soft); font-size: .95rem; }
-    .demand h3 { margin: 0 0 8px; font-size: 1.05rem; }
-    .occ { width: 100%; border-collapse: collapse; font-size: .92rem; }
-    .occ th, .occ td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; }
-    .occ th.num, .occ td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .grow-pos { color: var(--good); } .grow-neg { color: var(--bad); }
-    .caveats { margin: 26px 0; padding: 16px 18px; border-left: 4px solid var(--line); background: var(--bg-alt); border-radius: 0 var(--r-lg) var(--r-lg) 0; max-width: 760px; color: var(--ink-soft); font-size: .9rem; }
-    .caveats a { color: var(--brand); }
     .empty { color: var(--ink-soft); padding: 20px 0; }
     @media (max-width: 560px) { .cr-table thead th { top: 0; } }
-    /* Data tables (October 2026): the site's shared table treatment (pg.css), for this page's three
-       tables. Only where each is still a table (phone cards are unchanged). */
+    /* Data tables (October 2026): the site's shared table treatment (pg.css), for this page's
+       table. Only where it is still a table (phone cards are unchanged). */
     @media (min-width: 769px) {
       .cr-table th, .cr-table td { padding-top: 13px; padding-bottom: 13px; }
       .cr-table thead th { color: var(--text); border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
       .cr-table td.num, .cr-table th.num { font-variant-numeric: tabular-nums lining-nums; }
       .cr-table tbody tr:focus-within { background: var(--brand-50); }
-      .cred-table, .occ { border: 1px solid var(--line); border-radius: var(--r-lg); border-collapse: separate; border-spacing: 0; overflow: hidden; }
-      .cred-table th, .cred-table td, .occ th, .occ td { padding: 12px 14px; border-bottom: 1px solid var(--line); }
-      .cred-table thead th, .occ thead th { background: var(--bg-alt); color: var(--text); font-weight: 600; border-bottom: 2px solid var(--ink-faint); vertical-align: bottom; }
-      .cred-table tbody tr:last-child > *, .occ tbody tr:last-child > * { border-bottom: 0; }
-      .occ tbody tr:hover > *, .occ tbody tr:focus-within > * { background: var(--brand-50); }
-      .cred-table .num, .occ .num { font-variant-numeric: tabular-nums lining-nums; }
-      /* The degree being viewed (tr.is-current, aria-current on its link, a visible label) keeps its
-         tint and a leading bar; hover and keyboard focus elsewhere use a neutral tint, so "this one"
-         and "under the pointer or focus" never look alike. */
-      .cred-table tbody tr:not(.is-current):hover > *,
-      .cred-table tbody tr:not(.is-current):focus-within > * { background: var(--bg-alt); }
-    }
-    .cred-table tbody tr.is-current > * { background: var(--brand-50); }
-    .cred-table tbody tr.is-current > :first-child { box-shadow: inset 3px 0 0 var(--brand); }
-    .cur-tag { display: inline-block; margin-left: var(--s2); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-deep); }
-    /* The detail tables at enlarged text: the degree table was 721px in a 689px section at 769px with
-       doubled text, and the section does not scroll, so the page grew. Below 44em of their own text
-       (36em for the four-column occupation table, which sits in a padded box) they use the phone card
-       layout. At normal size the narrowest desktop sections are about 46em and 43em. */
-    @media (min-width: 769px) {
-      .cr-detail-cq { container: cr-detail / inline-size; }
-      .cr-demand-cq { container: cr-demand / inline-size; }
-      @container cr-demand (max-width: 36em) {
-        .occ thead { display: none; }
-        .occ, .occ tbody, .occ tr, .occ td { display: block; width: 100%; border: 0; }
-        .occ tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
-        .occ td { border: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 6px 12px; text-align: right; }
-        .occ td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
-        .occ td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
-        .occ td.rhead::before { content: none; }
-      }
-      @container cr-detail (max-width: 44em) {
-        .cred-table thead { display: none; }
-        .cred-table, .cred-table tbody, .cred-table tr, .cred-table td { display: block; width: 100%; border: 0; }
-        .cred-table tbody tr { border: 1px solid var(--line); border-radius: var(--r-lg); margin-bottom: 12px; padding: 6px 4px; }
-        .cred-table td { border: 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 16px; padding: 6px 12px; text-align: right; }
-        .cred-table td::before { content: attr(data-label); flex: 0 0 auto; max-width: 55%; text-align: left; font-size: var(--t-fine); font-weight: 600; color: var(--ink-soft); }
-        .cred-table td.rhead { display: block; text-align: left; font-weight: 600; padding-bottom: 8px; }
-        .cred-table td.rhead::before { content: none; }
-        .cred-table tbody tr.is-current { border-color: var(--brand); }
-      }
     }
     /* Site frame (October 2026): the list becomes cards by its width in its own text, not by screen
        width. The five figure columns need about 43em on one line (643px at normal size, with the
@@ -537,7 +452,7 @@ window.addEventListener("resize", onResize);
               + '<div class="rangebar" aria-hidden="true"><i style="left:' + left + '%;width:' + width + '%"></i><b style="left:' + medPos + '%"></b></div></div>'
             : '<span class="unk-txt">not assessed</span>';
           return `<tr data-cip="${f.cip}" data-cred="${f.cred}">
-            <td class="mname"><a href="?field=${f.cip}&cred=${f.cred}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
+            <td class="mname"><a href="${esc(f.page)}" data-cip="${f.cip}" data-cred="${f.cred}" class="mlink">${esc(f.name)}</a><div class="fam">${esc(f.family)}</div></td>
             <td data-label="Degree">${esc(f.cred_short)}</td>
             <td class="num" data-label="Median earnings">${money(f.med)}</td>
             <td data-label="Typical range">${bandCell}</td>
@@ -561,10 +476,8 @@ window.addEventListener("resize", onResize);
         if (landing) { landing.setAttribute("tabindex", "-1"); landing.focus(); }
         if (live) live.textContent = `${rows.length - firstNew} more shown. ${count.textContent}`;
       });
-      // The major name is a real link (keyboard-focusable, works with JS off); the handler is
-      // progressive enhancement so the SPA route is used when JS is on.
-      list.querySelectorAll("a.mlink").forEach(a =>
-        a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
+      // The major name is an ordinary link to that major and degree's own page
+      // (/majors/<major>/<degree>/), so it needs no handler.
     };
     let t;
     /* Announce the new count whenever the SET changes, not only when Show more runs.
@@ -588,84 +501,24 @@ window.addEventListener("resize", onResize);
     // phones and made a screen reader start at the input instead of the heading above it.
   }
 
-  // ---- Field detail view ----
-  function growthTxt(g) {
-    if (g == null) return "not published";
-    const c = g >= 0 ? "grow-pos" : "grow-neg";
-    return `<span class="${c}">${g >= 0 ? "+" : ""}${g}%</span>`;
+  // ---- Old addresses ----
+  // A major and degree used to open here, drawn by this script at ?field=<code>&cred=<level>. Each
+  // now has its own page, and an old address forwards to it.
+  // Returns that page; the major's page when the degree is not given or has no page of its own;
+  // null when the field is not in the data.
+  function pageFor(cip, cred) {
+    const all = (FIELDS || []).filter(f => f.cip === cip);
+    if (!all.length) return null;
+    const f = all.find(x => x.cred === cred);
+    return f ? f.page : all[0].page.replace(/[^/]+\/$/, "");
   }
-  // A missing count says so in words; it never renders as 0 or throws on .toLocaleString().
-  function basedOn(f) {
-    const n = x => Number(x).toLocaleString();
-    if (f.programs != null && f.schools != null)
-      return `Based on ${n(f.programs)} programs at ${n(f.schools)} schools reporting this degree.`;
-    if (f.programs != null)
-      return `Based on ${n(f.programs)} programs reporting this degree; the number of schools is not reported.`;
-    if (f.schools != null)
-      return `Based on programs at ${n(f.schools)} schools reporting this degree; the number of programs is not reported.`;
-    return "The number of programs and schools behind these figures is not reported.";
-  }
-
-  async function renderField(cip, cred) {
+  async function forward(cip, cred) {
     await load();
-    const all = FIELDS.filter(f => f.cip === cip);
-    const f = all.find(x => x.cred === cred) || all[0];
-    if (!f) { app.innerHTML = `<a class="backlink" href="/careers/" id="back">← All majors</a><p class="empty">Major not found.</p>`; wireBack(); return; }
-    const creds = all.slice().sort((a, b) => (a.cred || "").localeCompare(b.cred || ""));
-    const d = f.demand;
-    // A range needs both ends. With either missing it is one unknown, not two joined by a dash.
-    const rangeTxt = r => r.p25 == null || r.p75 == null ? "not assessed" : money(r.p25) + " to " + money(r.p75);
-    // The BLS release travels with the data (build_careers_demand writes it into every field), so
-    // this label cannot fall behind the numbers it describes. Before, it was typed into the page.
-    const blsLabel = d && d.vintage
-      ? "OEWS " + d.vintage.oews + " wages and Employment Projections " + d.vintage.ep
-      : "OEWS wages and Employment Projections";
-    const demandHtml = d && d.occupations && d.occupations.length ? `
-      <div class="demand cr-demand-cq">
-        <h3>Where it leads, and the outlook</h3>
-        <p class="cr-count">${d.summary || "Occupations this field commonly leads to, with Bureau of Labor Statistics pay and 10-year outlook."}</p>
-        <table class="occ"><thead><tr><th>Occupation</th><th class="num">Median pay</th><th class="num">Projected growth</th><th class="num">Annual openings</th></tr></thead>
-          <tbody>${d.occupations.map(o => `<tr><td class="rhead">${esc(o.title)}</td><td class="num" data-label="Median pay">${money(o.wage)}</td><td class="num" data-label="Projected growth">${growthTxt(o.growth)}</td><td class="num" data-label="Annual openings">${o.openings == null ? "not published" : Number(o.openings).toLocaleString()}</td></tr>`).join("")}</tbody></table>
-      </div>` : `
-      <div class="demand soon"><b>Occupation outlook is on the way.</b> Job growth and annual openings for the
-        careers this field leads to are being added from the Bureau of Labor Statistics, mapped through the
-        federal CIP-to-occupation crosswalk. Earnings above are live now.</div>`;
-    app.innerHTML = `
-      <a class="backlink" href="/careers/" id="back">← All majors</a>
-      <div class="fld-head">
-        <h1>${esc(f.name)}</h1>
-        <div class="sub">${esc(f.family)}</div>
-      </div>
-      <div class="headline-cq"><div class="headline">
-        <div><div class="big">${money(f.med)}</div><div class="lbl">median earnings, ${esc(f.cred_short)}</div></div>
-        <div><div class="big">${rangeTxt(f)}</div><div class="lbl">typical range across schools</div></div>
-        <div><div class="big">${f.pass_pct == null ? "not assessed" : f.pass_pct + "%"}</div><div class="lbl">of programs clear the earnings bar</div></div>
-      </div></div>
-      <p class="cr-count">${basedOn(f)}</p>
-      ${creds.length > 1 ? `
-        <section class="module cr-detail-cq">
-          <h2>By degree level</h2>
-          <table class="cred-table"><thead><tr><th>Degree</th><th class="num">Median earnings</th><th>Typical range</th><th class="num">Clear the bar</th><th class="num">Schools</th></tr></thead>
-            <tbody>${creds.map(c => `<tr${c.cred === f.cred ? ' class="is-current"' : ""}>
-              <td class="rhead"><a href="?field=${c.cip}&cred=${c.cred}" data-cip="${c.cip}" data-cred="${c.cred}" class="credlink"${c.cred === f.cred ? ' aria-current="page"' : ""} style="color:var(--brand);text-decoration:none">${esc(c.cred_short)}</a>${c.cred === f.cred ? ' <span class="cur-tag">Current degree</span>' : ""}</td>
-              <td class="num" data-label="Median earnings">${money(c.med)}</td><td data-label="Typical range">${rangeTxt(c)}</td>
-              <td class="num" data-label="Clear the bar">${c.pass_pct == null ? "not assessed" : c.pass_pct + "%"}</td><td class="num" data-label="Schools">${c.schools == null ? "not reported" : c.schools.toLocaleString()}</td></tr>`).join("")}</tbody></table>
-        </section>` : ""}
-      <section class="module">
-        <h2>Outlook</h2>
-        ${demandHtml}
-      </section>
-      <div class="caveats"><strong>How to read this.</strong> Figures are median earnings of graduates in this
-        field, pooled across schools, measured four years after completing where available. The typical range is
-        the middle half (25th to 75th percentile) of school-level medians, so it shows how much the same major
-        varies by where you study. "Clear the bar" is the share of programs whose graduates out-earn a typical
-        high-school graduate (the federal earnings-premium test). These describe past graduates, not a promise.
-        Earnings source: ${DATA_VINTAGE}. Occupation pay and outlook: U.S. Bureau of Labor Statistics,
-        ${blsLabel}. <a href="/methodology/">Methodology</a>.</div>`;
-    app.querySelectorAll(".credlink").forEach(a =>
-      a.addEventListener("click", e => { e.preventDefault(); go({ field: a.dataset.cip, cred: a.dataset.cred }); }));
+    const to = pageFor(cip, cred);
+    // replace(), so Back does not return to an address that only forwards again.
+    if (to) { location.replace(to); return; }
+    app.innerHTML = `<a class="backlink" href="/careers/" id="back">← All majors</a><p class="empty">Major not found.</p>`;
     wireBack();
-    window.scrollTo({ top: 0 });
   }
 
   function wireBack() {
@@ -674,7 +527,7 @@ window.addEventListener("resize", onResize);
   }
 
   function route(params) {
-    if (params.field) return renderField(params.field, params.cred || null);
+    if (params.field) return forward(params.field, params.cred || null);
     return renderBrowse(params.q || "");
   }
   window.addEventListener("popstate", async e => {

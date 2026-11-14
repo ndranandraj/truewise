@@ -100,14 +100,16 @@ const ROUTES = [
   { label: "ucla", path: "/college/university-of-california-los-angeles/", kind: "twtable" },
   { label: "compare", path: "/compare/?schools=214777,110662,223232", kind: "compare" },
   { label: "careers", path: "/careers/", kind: "careers" },
-  /* A real major's detail view: a different layout from the listing, and the one that overflowed. */
-  /* enlargedReady: the enlarged-text pass waits for the degree and occupation tables and fails if they
-   * never render, so the 769px degree-table check cannot pass on a page without the table. */
-  { label: "careers-detail", path: "/careers/?field=1107&cred=5", kind: "static",
-    enlargedReady: [".cred-table", ".occ"],
-    prepare: async (page) => { await page.waitForSelector(".fld-head h1", { timeout: 10000 }); } },
-  /* Added for the design pass: every page family whose shell, type or tables Phase 2 changes needs
-   * a before and an after, and none of these were measured until now. */
+  /* An old Careers address. Until November 2026 a major and degree opened in place on Careers, at
+   * ?field=<code>&cred=<level>; each now has its own page and the old address must forward to it.
+   * `prepare` waits for the forward and fails by timing out if the page stays on Careers, so what is
+   * measured is the page a reader lands on. The enlarged-text pass waits for that page's figure. */
+  { label: "careers-old-address", path: "/careers/?field=1107&cred=5", kind: "static",
+    enlargedReady: [".md .kf__num"],
+    prepare: async (page) => {
+      await page.waitForURL(/\/majors\/computer-science\/masters\/$/, { timeout: 10000 });
+      await page.waitForSelector(".md h1", { timeout: 10000 });
+    } },
   { label: "k12-hub", path: "/k12/", kind: "static" },
   { label: "k12-rankings", path: "/k12/rankings/", kind: "static" },
   { label: "k12-compare", path: "/k12/compare/", kind: "static" },
@@ -180,27 +182,33 @@ const ROUTES = [
   // that carries the tipped-jobs note.
   { label: "major-degree", path: "/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/bachelors/", kind: "static" },
   { label: "major-degree-tipped", path: "/majors/cosmetology-and-related-personal-grooming-services/certificate/", kind: "static" },
-  /* Opening a major on Careers in place must retitle the page and move focus to its heading, so
-   * keyboard and screen-reader users land on what changed (September 2026 audit, V4). */
-  { label: "careers-open-field", path: "/careers/", kind: "flow",
+  /* Opening a major on Careers goes to that major and degree's own page. The row's link must be a
+   * real link there: a click that stays on Careers, or lands anywhere else, is a blocking finding. */
+  { label: "careers-open-major", path: "/careers/", kind: "flow",
     check: async (page) => {
-      await page.waitForSelector("a[data-cip]", { timeout: 10000 });
-      await page.click("a[data-cip]");
-      await page.waitForSelector(".fld-head h1", { timeout: 10000 });
-      await page.waitForTimeout(200);
-      const st = await page.evaluate(() => ({
-        title: document.title,
-        heading: (document.querySelector(".fld-head h1") || {}).textContent || "",
-        focus: document.activeElement ? document.activeElement.tagName : "",
-      }));
+      await page.waitForSelector("#list a[data-cip]", { timeout: 10000 });
+      const href = await page.getAttribute("#list a[data-cip]", "href");
       const findings = [];
-      if (!st.heading || !st.title.startsWith(st.heading.trim()))
-        findings.push({ kind: "view-title", blocking: true,
-          detail: `After opening "${st.heading}" the title is still "${st.title}".` });
-      if (st.focus !== "H1")
-        findings.push({ kind: "view-focus", blocking: true,
-          detail: `After opening a major, focus is on <${st.focus}>, not the new heading.` });
-      return { findings, steps: [{ step: "open-field", ...st }] };
+      const st = { href, url: "", heading: "" };
+      if (!/^\/majors\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(href || "")) {
+        findings.push({ kind: "major-link", blocking: true,
+          detail: `The first major on Careers links to "${href}", not to a major and degree page.` });
+        return { findings, steps: [{ step: "open-major", ...st }] };
+      }
+      await page.click("#list a[data-cip]");
+      try {
+        await page.waitForURL((u) => u.pathname === href, { timeout: 10000 });
+        await page.waitForSelector(".md h1", { timeout: 10000 });
+        st.url = new URL(page.url()).pathname;
+        st.heading = ((await page.textContent(".md h1")) || "").trim();
+      } catch (e) {
+        findings.push({ kind: "major-link", blocking: true,
+          detail: `Opening the first major on Careers (${href}) did not reach its page: ${String(e).split("\n")[0]}` });
+      }
+      if (!findings.length && !st.heading)
+        findings.push({ kind: "major-link", blocking: true,
+          detail: `${href} opened with no heading, so the page a reader lands on was not established.` });
+      return { findings, steps: [{ step: "open-major", ...st }] };
     } },
 ];
 
@@ -625,12 +633,6 @@ function headerProbe() {
  *  fallback), so only the sign is judged there. */
 function tableEnlargedProbe() {
   const findings = [];
-  /* Careers detail tables: their sections do not scroll, so a table wider than its section widens
-   * the page (the degree table at 769px with doubled text, October 2026 review). */
-  for (const t of document.querySelectorAll(".cred-table, .occ")) {
-    const sec = t.parentElement.getBoundingClientRect(), r = t.getBoundingClientRect();
-    if (r.width && r.right > sec.right + 1) findings.push({ kind: "table-enlarged-section-overflow", blocking: true, detail: `At doubled text the ${t.className} table runs ${Math.round(r.right - sec.right)}px past its section.` });
-  }
   const sc = document.querySelector(".prof #programs .tw-table__scroll");
   if (!sc) return { findings };
   const t = sc.querySelector(".tw-table");

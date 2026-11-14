@@ -34,20 +34,24 @@ def test_fvtge_boxes_let_the_label_move_below_the_figure():
     assert ".art h1, .chart-src { overflow-wrap: break-word; }" in css
 
 
-def test_careers_detail_figures_and_phone_cards_respond_to_text_size():
+def test_careers_phone_cards_respond_to_text_size():
     page = _css("careers/index.html")
-    # A container query styles what is inside the container, so the container is a wrapper around the
-    # box, and the box's padding and its figures are both inside it (review of PR #11).
-    assert ".headline-cq { container: cr-figs / inline-size;" in page
-    assert '<div class="headline-cq"><div class="headline">' in page
-    assert "container: cr-head" not in page and ".headline { container" not in page
-    head = page.split("@container cr-figs (max-width: 12em)", 1)[1].split("}\n    }", 1)[0]
-    assert ".headline { padding: 14px 16px; }" in head and "font-size: 1.5rem" in head
-    # An amount is never split between digits ("$148,4" / "63"): no break-anywhere on the figures.
-    assert "overflow-wrap: anywhere" not in head
-    assert not re.search(r"\.big[^{]*\{[^}]*overflow-wrap", page)
     assert "@container cr-card (max-width: 12em)" in page
-    assert "container: cr-card / inline-size" in page
+    assert ".cr-table tbody tr { container: cr-card / inline-size; }" in page
+
+
+def test_major_degree_figure_is_sized_from_its_box_and_never_split():
+    """The view a major opened in on Careers is gone (November 2026); its headline figure is now the
+    major and degree page's. At 200% text "$84,253" was 31px wider than a 320px screen."""
+    css = _css("article.css")
+    # A container query styles what is inside the container: the box is the container, the figure
+    # is inside it.
+    assert ".md .kf { container: md-kf / inline-size; }" in css
+    assert ".md .kf__num { font-size: clamp(40px, 10cqi, 64px); }" in css
+    small = css.split("@container md-kf (max-width: 14em)", 1)[1].split("\n", 1)[0]
+    assert ".md .kf__num { font-size: 24px; }" in small
+    # An amount is never split between digits ("$148,4" / "63"): no break-anywhere on the figure.
+    assert not re.search(r"\.kf__num[^{]*\{[^}]*overflow-wrap", css)
 
 
 def test_k12_ranking_rows_stack_at_enlarged_text():
