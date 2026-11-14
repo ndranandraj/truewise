@@ -2,10 +2,11 @@
 
 Every data table family gets the same look: a tinted header band with a 2px base, row padding and
 rules, a hover and keyboard-focus row highlight, tabular figures. No stripes, because the profile's
-sand tint means "no verdict". Where a table already marks a row with --brand-50 (the Careers degree
-being viewed, the Value Check row a link pointed to), hover and focus use a neutral tint instead,
-and the marked row gets a leading bar. The Careers current degree is explicit: a class, aria-current
-on its link and a visible label, not an inline tint read by colour alone.
+sand tint means "no verdict". Where a table already marks a row with --brand-50 (the degree being
+viewed on a major and degree page, the Value Check row a link pointed to), hover and focus use a
+neutral tint instead, and the marked row gets a leading bar. The degree being viewed is explicit: a
+class, aria-current on its link and a visible label, not a tint read by colour alone. Until November
+2026 that table was on Careers, in the view a major opened in; the view is now its own page.
 """
 
 from __future__ import annotations
@@ -52,27 +53,32 @@ def test_unassessed_rows_keep_their_tint_under_the_pointer():
     assert "tr:not(.tw-tr--insuf):hover" in css and "tr:not(.tw-tr--insuf):focus-within" in css
 
 
-def test_careers_current_degree_is_explicit_not_colour_alone():
-    page = (SITE / "careers" / "index.html").read_text()
-    assert 'style="background: var(--brand-50)"' not in page, (
-        "the current degree is still an inline tint"
-    )
+def test_the_degree_being_viewed_is_explicit_not_colour_alone():
+    from pipeline import build_major_degree_pages as mdp
+
+    f = {
+        "cip": "5138",
+        "name": "Registered Nursing",
+        "cred": "3",
+        "credential": "Bachelor's Degree",
+    }
+    row = {"med": 80000, "p25": 70000, "p75": 90000, "programs": 6}
+    siblings = [
+        {**f, **row},
+        {**f, **row, "cred": "5", "credential": "Master's Degree"},
+    ]
+    table = mdp.ladder(siblings[0], siblings, "registered-nursing")
+    current = [r for r in table.split("<tr")[1:] if 'class="md-cur"' in r]
+    assert len(current) == 1, "exactly one row is this page's degree"
+    assert 'aria-current="page"' in current[0] and "This page" in current[0]
+    assert "style=" not in table, "the current degree must not be an inline tint"
+    css = _nocomments((SITE / "article.css").read_text())
     assert (
-        'class="is-current"' in page and 'aria-current="page"' in page and "Current degree" in page
-    )
-    css = SOURCES["careers"]
-    assert ".cred-table tbody tr:not(.is-current):focus-within" in css
-    assert (
-        ".cred-table tbody tr.is-current > :first-child { box-shadow: inset 3px 0 0 var(--brand); }"
+        ".md table.t tbody tr.md-cur > :first-child { box-shadow: inset 3px 0 0 var(--brand); }"
         in css
     )
-
-
-def test_careers_detail_tables_use_cards_at_enlarged_text():
-    css = SOURCES["careers"]
     assert (
-        "@container cr-detail (max-width: 44em)" in css
-        and "@container cr-demand (max-width: 36em)" in css
+        "#degrees table.t tbody tr:not(.md-cur):focus-within > * { background: var(--bg-alt); }"
+        in css
     )
-    page = (SITE / "careers" / "index.html").read_text()
-    assert 'class="module cr-detail-cq"' in page and 'class="demand cr-demand-cq"' in page
+    assert "#degrees table.t tbody tr:not(.md-cur):hover > *," in css

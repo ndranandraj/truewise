@@ -225,6 +225,37 @@ def test_the_major_page_links_each_degree_row_to_its_page(site):
         )
 
 
+def test_every_careers_row_links_to_a_page_that_is_built(site):
+    fields = bc.with_pages(bc.build_fields(duckdb.connect()))
+    assert len(fields) == 3
+    for f in fields:
+        assert f["page"] == degree_path(mdp.major_slugs(fields)[f["cip"]], f["cred"])
+        assert (site / f["page"].strip("/") / "index.html").exists(), f["page"]
+
+
+def test_careers_opens_a_major_on_its_page_and_only_forwards_old_addresses():
+    """The view a major opened in on Careers named /careers/ as its address, so it could not be
+    found on its own. Rows now link to the static page, and an old address forwards there."""
+    html = (ROOT / "site" / "careers" / "index.html").read_text(encoding="utf-8")
+    script = max(
+        re.findall(r"<script(?![^>]*\ssrc=)[^>]*>(.*?)</script>", html, flags=re.S), key=len
+    )
+    assert 'href="${esc(f.page)}"' in script, "a row links to its own page"
+    assert "?field=${" not in script, "a row must not link to an old address"
+    assert "location.replace(to)" in script and "function pageFor(" in script
+    for gone in ("renderField", "cred-table", "fld-head", "headline-cq"):
+        assert gone not in html, f"{gone}: part of the view that was removed is still in the page"
+
+
+def test_the_major_page_button_no_longer_points_at_an_address_that_forwards_back(site):
+    creds = [f for f in bc.build_fields(duckdb.connect()) if f["cip"] == "5138"]
+    html = bmp.major_page(
+        "5138", "Registered Nursing", "Health Professions", creds, "registered-nursing"
+    )
+    assert "/careers/?field=" not in html
+    assert '<a class="btn" href="/careers/">Compare with other majors' in html
+
+
 def test_a_page_whose_median_differs_from_the_careers_figure_stops_the_build(site):
     con = duckdb.connect()
     fields = [f for f in bc.build_fields(con) if f["cip"] == "5138" and f["cred"] == "3"]

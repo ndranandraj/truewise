@@ -165,6 +165,24 @@ def build_fields(con) -> list[dict]:
     return fields
 
 
+def with_pages(fields: list[dict]) -> list[dict]:
+    """Give each field the address of its own page: /majors/<major>/<degree>/.
+
+    The Careers list links each row there, in the script's rows and in the static ones, so the two
+    cannot point at different places. The address is built by the same two functions the pages are
+    built with (major_slugs and degree_path). A degree level with no page keeps the major's page,
+    which lists it.
+    """
+    from pipeline.build_majors_pages import major_slugs
+    from pipeline.degree_levels import degree_path
+
+    slugs = major_slugs(fields)
+    for f in fields:
+        slug = slugs[f["cip"]]
+        f["page"] = degree_path(slug, f["cred"]) or f"/majors/{slug}/"
+    return fields
+
+
 STATIC_ROWS = 25  # one page of the reveal, matching the PAGE constant in the page's own script
 CORE_START = "<!-- CAREERS_CORE_START -->"
 CORE_END = "<!-- CAREERS_CORE_END -->"
@@ -203,19 +221,16 @@ def static_core(fields: list[dict]) -> str:
     25 rows they would have seen anyway, which is what makes this progressive enhancement rather than
     two implementations of one table.
 
-    The links go to `/majors/<slug>/`, not to the page's own `?field=` route. That route is itself
-    rendered in the browser, so linking a no-JavaScript reader into it would hand them a second empty
-    page. Every one of the 292 CIPs here has a real major page, checked rather than assumed.
+    The links go to each row's own static page, /majors/<major>/<degree>/ (with_pages), the same
+    address the script's rows use. They never go to a `?field=` address: that was a view drawn in
+    the browser, and it now only forwards to the static page.
     """
-    from pipeline.build_majors_pages import major_slugs
-
-    slugs = major_slugs(fields)
+    with_pages(fields)
     rows = sorted(fields, key=lambda f: (-(f["med"] or -1), f["name"], f["cred"]))[:STATIC_ROWS]
     out = []
     for f in rows:
-        slug = slugs.get(f["cip"])
         name = _esc(f["name"])
-        link = f'<a href="/majors/{slug}/">{name}</a>' if slug else name
+        link = f'<a href="{_esc(f["page"])}">{name}</a>'
         # Unknown says why, never "n/a" ("does not apply" is a different claim): a share or range
         # Truewise could not compute is "not assessed", the term the methodology defines.
         pass_txt = "not assessed" if f["pass_pct"] is None else f"{f['pass_pct']}%"
@@ -281,7 +296,7 @@ def inject_core(fields: list[dict]) -> None:
 
 def main() -> None:
     con = duckdb.connect()
-    fields = build_fields(con)
+    fields = with_pages(build_fields(con))
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "fields.json").write_text(
         json.dumps({"generated": True, "fields": fields}, separators=(",", ":"))

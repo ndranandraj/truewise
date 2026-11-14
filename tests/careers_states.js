@@ -1,13 +1,14 @@
-// Careers renders unknown values in words, in both the browse table and a major's detail view.
+// Careers renders unknown values in words in its list, links each row to that major and degree's own
+// page, and forwards the old ?field= addresses there.
 //
 // This runs the page's own script in jsdom with fields.json stubbed. No field in today's data is
 // missing a count, a range or a share, so a page built from real data cannot show these states; the
-// fixture can. Before this check, a missing school count crashed the detail view on
-// .toLocaleString() instead of saying "not reported".
+// fixture can. The view a major used to open in on this page is gone (November 2026): each major and
+// degree has a static page, whose own unknown states are tested in tests/test_major_degree_pages.py.
 //
 // Usage: node tests/careers_states.js   (no built site needed: the fields are a fixture)
 const fs = require("fs");
-const { JSDOM } = require("jsdom");
+const { JSDOM, VirtualConsole } = require("jsdom");
 
 const html = fs.readFileSync("site/careers/index.html", "utf8");
 const inline = Array.from(html.matchAll(/<script(?![^>]*\ssrc=)[^>]*>([\s\S]*?)<\/script>/g)).map((m) => m[1]);
@@ -17,13 +18,13 @@ const page = html.replace(/<script[\s\S]*?<\/script>/g, "");
 const field = (over) => ({
   cip: "5138", cip2: "51", family: "Health", name: "Registered Nursing", cred: "3",
   credential: "Bachelor's Degree", cred_short: "Bachelor's", med: 80000, p25: 70000, p75: 90000,
-  programs: 12, schools: 10, pass_pct: 92, ...over,
+  programs: 12, schools: 10, pass_pct: 92, page: "/majors/registered-nursing/bachelors/", ...over,
 });
 const FIXTURE = {
   fields: [
     field({ schools: null }),
-    field({ cred: "2", credential: "Associate's Degree", cred_short: "Associate's", programs: null, p25: null, pass_pct: null }),
-    field({ cip: "5139", name: "Practical Nursing", programs: null, schools: null }),
+    field({ cred: "2", credential: "Associate's Degree", cred_short: "Associate's", programs: null, p25: null, pass_pct: null, page: "/majors/registered-nursing/associates/" }),
+    field({ cip: "5139", name: "Practical Nursing", programs: null, schools: null, page: "/majors/practical-nursing/bachelors/" }),
   ],
 };
 
@@ -35,7 +36,11 @@ const check = (ok, msg) => {
 const settle = () => new Promise((r) => setTimeout(r, 30));
 
 async function render(search) {
-  const dom = new JSDOM(page, { runScripts: "outside-only", url: "https://truewise.dev/careers/" + search });
+  // jsdom does not navigate: it reports each attempt, which is how a forward is seen here.
+  const virtualConsole = new VirtualConsole();
+  let navigations = 0;
+  virtualConsole.on("jsdomError", (e) => { if (/navigation/i.test(String(e.message))) navigations += 1; });
+  const dom = new JSDOM(page, { runScripts: "outside-only", url: "https://truewise.dev/careers/" + search, virtualConsole });
   const w = dom.window;
   const errors = [];
   w.addEventListener("error", (e) => errors.push(String(e.message)));
@@ -47,39 +52,40 @@ async function render(search) {
   w.scrollTo = () => {};
   w.eval(app);
   await settle();
-  return { d: w.document, errors };
+  return { d: w.document, w, errors, navigations: () => navigations };
 }
 
 const text = (el) => (el ? el.textContent.replace(/\s+/g, " ").trim() : "");
 
 async function main() {
-  // Detail view, school count missing.
-  let { d, errors } = await render("?field=5138&cred=3");
-  check(!errors.length, `detail view renders without an error (${errors.join("; ") || "none"})`);
-  check(text(d.querySelector("h1")) === "Registered Nursing", "detail view shows the major");
-  check(
-    text(d.querySelector(".cr-count")) === "Based on 12 programs reporting this degree; the number of schools is not reported.",
-    `missing school count is named (got: "${text(d.querySelector(".cr-count"))}")`
-  );
-  const schoolCells = Array.from(d.querySelectorAll('td[data-label="Schools"]')).map(text);
-  check(schoolCells.includes("not reported"), "the degree table's missing school count reads not reported");
+  // An old address forwards to the page that replaced the view.
+  let { d, w, errors, navigations } = await render("?field=5138&cred=3");
+  check(!errors.length, `an old address is handled without an error (${errors.join("; ") || "none"})`);
+  check(navigations() === 1, `an old address navigates away once (attempts: ${navigations()})`);
+  check(w.pageFor("5138", "3") === "/majors/registered-nursing/bachelors/", "a major and degree forwards to its own page");
+  check(w.pageFor("5138", "2") === "/majors/registered-nursing/associates/", "the degree in the address decides the page");
+  check(w.pageFor("5138", null) === "/majors/registered-nursing/", "a major with no degree forwards to the major's page");
+  check(w.pageFor("5138", "9") === "/majors/registered-nursing/", "a degree with no page forwards to the major's page");
+  check(w.pageFor("0000", "3") === null, "a field that is not in the data has no page");
+  check(!/Major not found/.test(text(d.getElementById("app"))), "a known address never shows the not-found message");
 
-  // Detail view, program count, range and share all missing.
-  ({ d, errors } = await render("?field=5138&cred=2"));
-  check(!errors.length, "detail view with several unknowns renders without an error");
-  check(/the number of programs is not reported/.test(text(d.querySelector(".cr-count"))), "missing program count is named");
-  check(/not assessed/.test(text(d.querySelector(".headline"))), "missing range and share read not assessed");
-
-  // Detail view, both counts missing.
-  ({ d, errors } = await render("?field=5139&cred=3"));
-  check(
-    text(d.querySelector(".cr-count")) === "The number of programs and schools behind these figures is not reported.",
-    "both counts missing are named together"
-  );
+  // A field that is not in the data says so and offers the list.
+  ({ d, errors, navigations } = await render("?field=0000&cred=3"));
+  check(!errors.length, "an unknown address is handled without an error");
+  check(navigations() === 0, "an unknown address does not navigate");
+  check(/Major not found/.test(text(d.getElementById("app"))), "an unknown address says the major was not found");
+  check(d.querySelector("#app a.backlink[href='/careers/']") !== null, "and links back to the list");
 
   // Browse table.
-  ({ d, errors } = await render(""));
+  ({ d, errors, navigations } = await render(""));
   check(!errors.length, "browse view renders without an error");
+  check(navigations() === 0, "the list does not navigate by itself");
+  const links = Array.from(d.querySelectorAll(".cr-table a.mlink")).map((a) => a.getAttribute("href"));
+  check(
+    links.length === 3 && links.every((h) => /^\/majors\/[a-z0-9-]+\/[a-z0-9-]+\/$/.test(h)),
+    `every row links to its major and degree page (${links.join(", ")})`
+  );
+  check(!/[?&]field=/.test(d.getElementById("app").innerHTML), "no row links to an old ?field= address");
   const body = text(d.querySelector(".cr-table tbody"));
   check(/not reported/.test(body), "browse table's missing school count reads not reported");
   check(/not assessed/.test(body), "browse table's missing range and share read not assessed");
