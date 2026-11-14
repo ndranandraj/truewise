@@ -176,6 +176,10 @@ const ROUTES = [
     prepare: async (page) => { await page.waitForSelector('.upd-meta:has-text("Fetched 20")', { timeout: 10000 }); } },
   /* The earnings-test explainer: an article page with three tables and a numbered list. */
   { label: "earnings-test", path: "/earnings-test/", kind: "static" },
+  // A page per major and degree: a large group with a 20-row college table, and the one field
+  // that carries the tipped-jobs note.
+  { label: "major-degree", path: "/majors/registered-nursing-nursing-administration-nursing-research-and-clinical-nursing/bachelors/", kind: "static" },
+  { label: "major-degree-tipped", path: "/majors/cosmetology-and-related-personal-grooming-services/certificate/", kind: "static" },
   /* Opening a major on Careers in place must retitle the page and move focus to its heading, so
    * keyboard and screen-reader users land on what changed (September 2026 audit, V4). */
   { label: "careers-open-field", path: "/careers/", kind: "flow",

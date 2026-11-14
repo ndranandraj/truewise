@@ -36,7 +36,7 @@ PUBLISHED = ROOT / "published"
 RUNS = [("0", "1"), ("1", "1"), ("1", "4"), ("2", "8"), ("3", "8"), ("4", "2")]
 
 _RENDER = """
-import hashlib, json, pathlib, sys, tempfile
+import atexit, hashlib, json, pathlib, shutil, sys, tempfile
 import duckdb
 
 threads = sys.argv[1]
@@ -59,6 +59,10 @@ from pipeline.config import ROOT
 
 published = ROOT / "published"
 out = pathlib.Path(tempfile.mkdtemp())
+# Removed when this process ends, however it ends. Each run writes about 21 MB here and there are six
+# runs per test: left in place, every local test run kept 126 MB in the system temp directory.
+atexit.register(shutil.rmtree, out, ignore_errors=True)
+print("BUILD_DIR", out)
 no_card = lambda *args, **kwargs: None
 bl.render_card = bse.render_card = bf.render_card = no_card
 bl.SITE = out
@@ -101,6 +105,10 @@ def test_builds_agree_across_thread_counts_and_hash_seeds():
         assert out.returncode == 0, out.stderr
         # The last line: the K-12 builder prints its own summary first.
         runs[(seed, threads)] = json.loads(out.stdout.splitlines()[-1])
+        built = [
+            ln.split(" ", 1)[1] for ln in out.stdout.splitlines() if ln.startswith("BUILD_DIR ")
+        ]
+        assert len(built) == 1 and not Path(built[0]).exists(), "a run left its build folder behind"
     first = runs[RUNS[0]]
     assert any("debt-does-not-pay-back" in name for name in first), "the debt list was not built"
     assert any(name.startswith("fvtge/") and name.endswith(".csv") for name in first)

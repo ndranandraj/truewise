@@ -71,6 +71,7 @@ college-pages:
 	$(PYTHON) -m pipeline.build_home_chart
 	$(PYTHON) -m pipeline.build_college_pages
 	$(PYTHON) -m pipeline.build_majors_pages
+	$(PYTHON) -m pipeline.build_major_degree_pages
 	$(PYTHON) -m pipeline.build_lists
 	$(PYTHON) -m pipeline.build_stats_exposure
 	$(PYTHON) -m pipeline.build_fvtge
