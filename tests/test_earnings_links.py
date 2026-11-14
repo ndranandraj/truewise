@@ -98,3 +98,17 @@ def test_the_shared_footer_links_the_explainer():
     without a way to it (test_every_page_uses_the_one_shared_footer keeps the copies the same)."""
     research = re.search(r'<nav class="foot__group" aria-label="Research">.*?</nav>', FOOTER, re.S)
     assert '<a href="/earnings-test/">The federal earnings test</a>' in research.group(0)
+
+
+def test_the_homepage_cosmetology_figure_says_the_rule_holds_tipped_jobs_out_at_first():
+    """The figure sits in the band that names the federal comparison. The rule does not pass or fail
+    programs for tipped jobs in its first rounds, which changes what the figure means for a
+    cosmetology program, so it stays in the same sentence as the figure."""
+    home = (SITE / "index.html").read_text(encoding="utf-8")
+    band = re.sub(r"\s+", " ", re.search(r'<p class="h-band__body">.*?</p>', home, re.S).group(0))
+    sentence = re.search(r"Cosmetology: \d+% fall short[^.]*\.", band)
+    assert sentence, "the homepage band no longer gives the cosmetology figure"
+    assert (
+        "; the federal rule holds programs for tipped jobs out of its first rounds."
+        in sentence.group(0)
+    )
