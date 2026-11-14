@@ -174,6 +174,8 @@ const ROUTES = [
   { label: "updates", path: "/updates/", kind: "static",
     enlargedReady: ['.upd-meta:has-text("Fetched 20")'],
     prepare: async (page) => { await page.waitForSelector('.upd-meta:has-text("Fetched 20")', { timeout: 10000 }); } },
+  /* The earnings-test explainer: an article page with three tables and a numbered list. */
+  { label: "earnings-test", path: "/earnings-test/", kind: "static" },
   /* Opening a major on Careers in place must retitle the page and move focus to its heading, so
    * keyboard and screen-reader users land on what changed (September 2026 audit, V4). */
   { label: "careers-open-field", path: "/careers/", kind: "flow",

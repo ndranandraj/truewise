@@ -80,6 +80,7 @@ site/college/
 site/colleges/
 site/majors/
 site/findings/
+site/earnings-test/
 site/lists/
 # The list CSVs are generated from the same rows those pages render, by the same run.
 site/data/lists/

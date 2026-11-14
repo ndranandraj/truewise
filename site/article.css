@@ -121,3 +121,28 @@ details.more li { line-height: 1.6; margin: 0 0 8px; max-width: 66ch; }
 .srcs { font-size: var(--t-fine); color: var(--ink-soft); padding-left: 20px; }
 .srcs code, .art code { overflow-wrap: anywhere; word-break: break-word; }
 .srcs li { margin: 0 0 6px; }
+
+/* The earnings-test explainer (/earnings-test/, November 2026). It states a rule, not a count, so
+   its key box leads with a sentence at heading size instead of a figure. */
+/* Every word of this heading fits a 320px phone at 200% text, so it breaks between words only.
+   .art h1 hyphenates, which set "pro-grams" on a 375px phone to fill the line. */
+.et h1 { hyphens: manual; }
+.et-eyebrow { font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--sp-control); }
+.art .kf__lead { font-family: var(--display); font-size: var(--t-section); line-height: 1.25; letter-spacing: -0.01em; color: var(--ink); margin: 0; max-width: 34ch; }
+/* What happens, in order. The number sits in the padding, so a wrapped line never runs under it. */
+.et-steps { list-style: none; padding: 0; margin: 0 0 var(--sp-related); counter-reset: et; max-width: 66ch; }
+.et-steps li { counter-increment: et; position: relative; padding: 0 0 14px 2.75em; line-height: 1.55; }
+.et-steps li::before { content: counter(et); position: absolute; left: 0; top: 0; width: 1.9em; height: 1.9em; border-radius: 50%; border: 1px solid var(--control-border); font: 500 var(--t-ui) / 1.9em var(--mono); text-align: center; color: var(--ink); background: var(--surface); }
+.et-steps b { color: var(--ink); }
+/* Dates as a list, not a table: a stacked table would label every entry "What". Two columns while
+   the list is at least 30em of its own text wide, one column below that (a phone, or enlarged text). */
+.et-timeline { list-style: none; padding: 0; margin: 0; max-width: 66ch; border-top: 1px solid var(--line); container: et-timeline / inline-size; }
+.et-timeline li { display: grid; grid-template-columns: 10.5em 1fr; gap: 2px 16px; padding: 10px 0; border-bottom: 1px solid var(--line); line-height: 1.55; }
+.et-when { font-family: var(--mono); font-size: var(--t-label); font-weight: 500; color: var(--ink); padding-top: 0.2em; }
+@container et-timeline (max-width: 30em) { .et-timeline li { grid-template-columns: 1fr; } }
+.et-q h3 { font-family: var(--font); font-size: var(--t-sub); line-height: 1.35; margin: var(--sp-group) 0 6px; max-width: 60ch; }
+.et-q p { max-width: 66ch; }
+.et-next { display: flex; flex-wrap: wrap; gap: 10px 12px; margin: var(--sp-related) 0 0; }
+/* Paragraphs here follow one another, and the site resets paragraph margins to zero. Scoped to
+   this page (main.et) so the findings keep their spacing. */
+.et section > p + p, .et section > p + .tscroll, .et section > .tscroll + p, .et section > p + .et-steps { margin-top: var(--sp-related); }
