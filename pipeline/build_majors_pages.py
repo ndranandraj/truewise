@@ -308,6 +308,9 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         '<th class="num">Typical range</th><th class="num">Schools</th>'
         '<th class="num">Clear the bar</th></tr></thead><tbody>\n'
     )
+    # Each degree level has its own page (build_major_degree_pages), built from these same rows.
+    from pipeline.degree_levels import degree_path
+
     for c in sorted(creds, key=lambda c: CRED_ORDER.get(c["credential"], 9)):
         rng = (
             f"{money(c['p25'])} to {money(c['p75'])}"
@@ -317,8 +320,13 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         passp = "not assessed" if c.get("pass_pct") is None else f"{c['pass_pct']}%"
         # None is unknown; a real 0 is a count and prints as 0.
         nsch = "not reported" if c.get("schools") is None else c["schools"]
+        # A row with no level code (a hand-made one) has no page to link to.
+        deg = degree_path(slug, c.get("cred"))
+        cred_cell = esc(c["credential"])
+        if deg:
+            cred_cell = f'<a href="{deg}">{cred_cell}</a>'
         parts.append(
-            f"      <tr><td>{esc(c['credential'])}</td><td class='num'>{money(c['med'])}</td>"
+            f"      <tr><td>{cred_cell}</td><td class='num'>{money(c['med'])}</td>"
             f"<td class='num'>{rng}</td><td class='num'>{nsch}</td>"
             f"<td class='num'>{passp}</td></tr>\n"
         )

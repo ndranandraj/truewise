@@ -146,3 +146,38 @@ details.more li { line-height: 1.6; margin: 0 0 8px; max-width: 66ch; }
 /* Paragraphs here follow one another, and the site resets paragraph margins to zero. Scoped to
    this page (main.et) so the findings keep their spacing. */
 .et section > p + p, .et section > p + .tscroll, .et section > .tscroll + p, .et section > p + .et-steps { margin-top: var(--sp-related); }
+
+/* A page per major and degree (/majors/<major>/<degree>/, November 2026). Its heading carries a
+   federal field name, which can hold a word too long for a phone, so it keeps the site's hyphenation. */
+.md .idline { color: var(--ink-soft); margin: 0 0 var(--sp-group); }
+/* The figure's population is a phrase, not two words: it wraps under the figure on a phone. */
+.md .kf__of { white-space: normal; }
+/* The headline figure is an amount of up to eight characters ("$224,001"), which is wider than the
+   counts the other key boxes hold. At 200% text "$84,253" at 80px was 31px wider than a 320px screen.
+   So the box is a container and the figure is sized from the box, not the screen: a tenth of the box's
+   width, which holds eight characters at doubled text with a tenth to spare, between the same 40px and
+   64px as elsewhere. Below 14em of the box's own text (enlarged text only: a 320px phone is about 16em
+   at normal size) it starts from 24px, so 200% text gives 48px, still above the doubled body text. */
+.md .kf { container: md-kf / inline-size; }
+.md .kf__num { font-size: clamp(40px, 10cqi, 64px); }
+@container md-kf (max-width: 14em) { .md .kf__num { font-size: 24px; } }
+/* Two facts beside the headline figure, each with what it rests on. Two columns while the list is
+   at least 32em of its own text wide; one column below that (a phone, or enlarged text). */
+.md-facts { list-style: none; padding: 0; margin: 0 0 var(--sp-section); border-top: 1px solid var(--line); container: md-facts / inline-size; }
+.md-facts li { display: grid; grid-template-columns: 15em 1fr; gap: 2px 16px; padding: 12px 0; border-bottom: 1px solid var(--line); line-height: 1.5; }
+.md-facts__k { font-weight: 600; color: var(--ink); }
+.md-facts__v b { font-family: var(--mono); font-weight: 500; font-size: var(--t-sub); color: var(--ink); font-variant-numeric: tabular-nums; }
+.md-facts__v span { display: block; font-size: var(--t-fine); color: var(--ink-soft); }
+@container md-facts (max-width: 32em) { .md-facts li { grid-template-columns: 1fr; } }
+/* The site resets paragraph margins; consecutive blocks in a section need their own gap. */
+.md section > p + p, .md section > p + .tscroll, .md section > .tscroll + p { margin-top: var(--sp-related); }
+.md-rule { font-size: var(--t-ui); color: var(--ink-soft); }
+/* Tables: the state under the college, the 1-year marker under its figure, and the degree being
+   viewed marked as the shared table treatment marks a current row (bar, tint, neutral hover). */
+.md-st { display: block; font-size: var(--t-fine); font-weight: 400; color: var(--ink-soft); }
+.md-oneyr { display: block; font-size: var(--t-label); color: var(--ink-soft); }
+.md table.t tbody tr.md-cur > *, .md table.t tbody tr.md-cur:hover > * { background: var(--brand-50); }
+.md table.t tbody tr.md-cur > :first-child { box-shadow: inset 3px 0 0 var(--brand); }
+.md-tag { display: inline-block; margin-left: var(--s2); font-size: var(--t-label); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--brand-deep); }
+.md table.t td a { text-decoration: underline; text-underline-offset: 0.16em; }
+.md-next { display: flex; flex-wrap: wrap; gap: 10px 12px; margin: var(--sp-group) 0 0; }

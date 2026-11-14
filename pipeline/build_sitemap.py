@@ -47,6 +47,11 @@ SEGMENTS = [
     ("lists", "/lists/"),
     ("findings", "/findings/"),
 ]
+# Families one folder below another family's pages: (sitemap name, parent folder). A page per major
+# and degree lives at /majors/<major>/<degree>/. It gets a file of its own, for the reason the
+# sitemap is split at all: so its indexation can be read without classifying thousands of URLs.
+NESTED = [("major-degrees", "majors")]
+FAMILIES = [name for name, _ in SEGMENTS] + [name for name, _ in NESTED]
 
 
 def _urlset(urls) -> str:
@@ -60,7 +65,7 @@ def _urlset(urls) -> str:
 
 def collect() -> dict[str, list[str]]:
     """URLs per page family, in the order a crawler should meet them."""
-    seg: dict[str, list[str]] = {name: [] for name, _ in SEGMENTS}
+    seg: dict[str, list[str]] = {name: [] for name in FAMILIES}
     seg["core"] = [
         f"{BASE}{p}" for p in STATIC if (SITE / p.strip("/") / "index.html").exists() or p == "/"
     ]
@@ -73,10 +78,20 @@ def collect() -> dict[str, list[str]]:
         for d in sorted(base.iterdir()):
             if d.is_dir() and (d / "index.html").exists():
                 seg[name].append(f"{BASE}{prefix}{d.name}/")
+    for name, parent in NESTED:
+        base = SITE / parent
+        if not base.is_dir():
+            continue
+        for d in sorted(base.iterdir()):
+            if not d.is_dir():
+                continue
+            for e in sorted(d.iterdir()):
+                if e.is_dir() and (e / "index.html").exists():
+                    seg[name].append(f"{BASE}/{parent}/{d.name}/{e.name}/")
     # A URL belongs to exactly one sitemap. /colleges/ is in core AND is a directory, so it would
     # otherwise appear twice and make the per-family counts in Search Console disagree with reality.
     seen = set()
-    for name, _ in SEGMENTS:
+    for name in FAMILIES:
         kept = []
         for u in seg[name]:
             if u not in seen:
@@ -99,7 +114,7 @@ def main() -> None:
     """
     seg = collect()
     index_entries = []
-    for name, _ in SEGMENTS:
+    for name in FAMILIES:
         urls = seg[name]
         if not urls:
             continue
@@ -113,7 +128,7 @@ def main() -> None:
         + "\n</sitemapindex>\n"
     )
     total = sum(len(v) for v in seg.values())
-    parts = ", ".join(f"{n} {len(seg[n]):,}" for n, _ in SEGMENTS if seg[n])
+    parts = ", ".join(f"{n} {len(seg[n]):,}" for n in FAMILIES if seg[n])
     print(f"sitemap index: {total:,} urls across {len(index_entries)} files ({parts})")
 
 
