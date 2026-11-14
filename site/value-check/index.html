@@ -24,6 +24,7 @@
     .vc-search { padding: 48px 0 8px; }
     .vc-search h1 { font-size: var(--t-title); line-height: 1.08; letter-spacing: -0.03em; margin: 0 0 10px; }
     .vc-search p.lede { font-size: var(--t-sub); max-width: var(--measure); }
+    .vc-search p.lede-rule { font-size: var(--t-ui); margin: 0 0 var(--s4); }
     .searchbox { margin: 20px 0 6px; }
     .hint { color: var(--ink-soft); font-size: .9rem; margin: 4px 0 0; }
     .results { list-style: none; padding: 0; margin: 18px 0; max-width: 720px; }
@@ -365,6 +366,7 @@ window.addEventListener("resize", onResize);
         <h1>Look up a college</h1>
         <p class="lede">See, program by program, whether a college&rsquo;s graduates out-earn a
           typical high-school graduate, and what families pay, from the Department of Education&rsquo;s data.</p>
+        <p class="lede-rule"><a href="/earnings-test/">How this relates to the federal earnings test</a></p>
         <label class="field-label" for="q-boot">Search colleges by name</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -520,6 +522,7 @@ window.addEventListener("resize", onResize);
         <h1>Look up a college</h1>
         <p class="lede">See, program by program, whether a college&rsquo;s graduates out-earn a
           typical high-school graduate, and what families pay, from the Department of Education&rsquo;s data.</p>
+        <p class="lede-rule"><a href="/earnings-test/">How this relates to the federal earnings test</a></p>
         <label class="field-label" for="q">${SCHOOLS ? "Search " + SCHOOLS.length.toLocaleString() + " colleges by name" : "Loading colleges"}</label>
         <div class="searchbox">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
@@ -1171,7 +1174,7 @@ window.addEventListener("resize", onResize);
         <p><a href="/methodology/">Methodology</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
       </div>
       <nav class="foot__group" aria-label="Explore"><h2>Explore</h2><ul><li><a href="/value-check/">Find a college</a></li><li><a href="/colleges/">Colleges by state</a></li><li><a href="/compare/">Compare</a></li><li><a href="/careers/">Careers</a></li><li><a href="/majors/">Majors</a></li><li><a href="/k12/">High schools</a></li></ul></nav>
-      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
+      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/earnings-test/">The federal earnings test</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
     </div>
   </footer>
   <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->

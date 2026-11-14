@@ -377,7 +377,7 @@ FOOTER = """  <footer class="site-footer">
         <p><a href="/methodology/">Methodology</a> &middot; <a href="https://github.com/ndranandraj/truewise/issues/new?labels=correction&title=Correction&body=Page%20URL%3A%0AWhat%20looks%20wrong%3A%0AExpected%20value%20and%20source%3A">Report an error</a></p>
       </div>
       <nav class="foot__group" aria-label="Explore"><h2>Explore</h2><ul><li><a href="/value-check/">Find a college</a></li><li><a href="/colleges/">Colleges by state</a></li><li><a href="/compare/">Compare</a></li><li><a href="/careers/">Careers</a></li><li><a href="/majors/">Majors</a></li><li><a href="/k12/">High schools</a></li></ul></nav>
-      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
+      <nav class="foot__group" aria-label="Research"><h2>Research</h2><ul><li><a href="/findings/">Findings</a></li><li><a href="/lists/">Lists</a></li><li><a href="/earnings-test/">The federal earnings test</a></li><li><a href="/updates/">Updates and corrections</a></li><li><a href="/data/value_check.parquet">Download the data</a></li><li><a href="https://github.com/ndranandraj/truewise">Source on GitHub</a></li></ul></nav>
     </div>
   </footer>
 """
