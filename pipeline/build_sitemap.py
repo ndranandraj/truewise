@@ -30,6 +30,7 @@ STATIC = [
     "/k12/rankings/",
     "/k12/compare/",
     "/methodology/",
+    "/earnings-test/",
     "/about/",
     "/about/embed/",
     "/findings/",

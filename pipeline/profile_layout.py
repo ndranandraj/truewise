@@ -72,6 +72,39 @@ def rest_line(c: dict, n_rest: int) -> str:
     return f"The other {n_rest:,}: " + ", ".join(listed[:-1]) + " and " + listed[-1] + "."
 
 
+# One line under the verdict box, pointing at the explainer (/earnings-test/, Prototype K2, approved
+# 14 November 2026). Which line depends on what the box compared, so it never calls a comparison the
+# federal test when it is not: undergraduate verdicts are the test's comparison, made by Truewise on
+# published earnings; graduate programs are tested against bachelor's degree holders, which the box
+# does not do; and a profile with no verdict gets the link without any claim about its programs.
+_RULE_LINK = '<a href="/earnings-test/">What the test is</a>'
+RULE_UNDERGRADUATE = (
+    "This is the comparison the federal earnings test makes for undergraduate programs. It is "
+    "Truewise&rsquo;s calculation on published earnings, not the Department of Education&rsquo;s "
+    "result."
+)
+RULE_GRADUATE = (
+    "The federal earnings test compares graduate programs with bachelor&rsquo;s degree holders."
+)
+RULE_NO_VERDICT = (
+    "The federal earnings test compares an undergraduate program&rsquo;s graduates with high-school "
+    "graduates."
+)
+
+
+def rule_line(rows: list[dict]) -> str:
+    """The sentence about the federal test that fits this profile's summary box."""
+    ug = [r for r in rows if not r.get("grad")]
+    if counts(ug)["decided"]:
+        text = RULE_UNDERGRADUATE
+    elif counts(rows)["decided"] or not ug:
+        # Verdicts on graduate programs only, or a school that lists graduate programs only.
+        text = RULE_GRADUATE
+    else:
+        text = RULE_NO_VERDICT
+    return f'<p class="sum__rule">{text} {_RULE_LINK}</p>'
+
+
 def summary(meta: dict, rows: list[dict], bench, net_price) -> str:
     """The earnings verdict with its coverage in one box.
 
@@ -171,6 +204,7 @@ def summary(meta: dict, rows: list[dict], bench, net_price) -> str:
         f'      <p class="kf__text">{text}</p>\n'
         f'      <p class="kf__qual">{" ".join(qual)}</p>\n'
         "    </div>\n"
+        f"    {rule_line(rows)}\n"
         f"    {cost}\n"
     )
 

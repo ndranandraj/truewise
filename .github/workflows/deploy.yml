@@ -56,6 +56,7 @@ jobs:
           python -m pipeline.build_lists
           python -m pipeline.build_stats_exposure
           python -m pipeline.build_fvtge
+          python -m pipeline.build_earnings_test
           python -m pipeline.build_updates
           python -m pipeline.build_sitemap
           # Stamp styles.css with a content hash so a CSS change busts its own browser cache.

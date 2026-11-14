@@ -30,6 +30,23 @@ def _round(x, n=0):
     return int(round(x)) if n == 0 else round(x, n)
 
 
+def display_city(city: str | None) -> str | None:
+    """A city ED reports in capitals ("CANAL WINCHESTER"), in ordinary case for display.
+
+    Eleven schools in the June 2026 release carry theirs that way, and it reached search results,
+    titles and profiles as shouting. Only plain all-letter names are changed: a name whose case
+    cannot be derived from its letters ("MCALLEN", "O'FALLON", "ST. LOUIS") stays as ED wrote it,
+    since a wrong guess would put a misspelling where a correct, if loud, name was. The published
+    parquet keeps ED's value; this is for what a reader sees.
+    """
+    if not city or not city.isupper():
+        return city
+    words = city.split()
+    if not all(w.isalpha() for w in words) or any(w.startswith(("MC", "MAC")) for w in words):
+        return city
+    return " ".join(w.capitalize() for w in words)
+
+
 def build_model(con) -> tuple[dict, dict, dict]:
     """Read the parquet source and return (schools, by_state, benchmarks).
 
@@ -199,6 +216,7 @@ def build_model(con) -> tuple[dict, dict, dict]:
                 rep_dec,
                 rep_dec_max,
             ) = row
+            city = display_city(city)
             # Loan repayment. ED censors small rates as "<= x", so each value ships with a
             # flag saying it is an upper bound; the site renders those as "x% or less" and
             # never averages or ranks them as if exact.

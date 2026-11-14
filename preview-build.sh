@@ -35,6 +35,7 @@ fi
 # nothing tracked is at risk.
 step "Removing the generated trees"
 rm -rf site/college site/colleges site/majors site/findings site/lists site/updates \
+       site/earnings-test \
        site/og site/components site/components.css site/pg.css \
        site/sitemap.xml site/sitemap-0.xml site/sitemap-core.xml site/sitemap-college.xml \
        site/sitemap-colleges.xml site/sitemap-majors.xml site/sitemap-lists.xml \
@@ -76,6 +77,7 @@ $PYTHON -m pipeline.build_majors_pages
 $PYTHON -m pipeline.build_lists
 $PYTHON -m pipeline.build_stats_exposure
 $PYTHON -m pipeline.build_fvtge
+$PYTHON -m pipeline.build_earnings_test
 $PYTHON -m pipeline.build_updates
 $PYTHON -m pipeline.build_sitemap
 $PYTHON -m pipeline.version_assets

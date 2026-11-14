@@ -44,6 +44,9 @@ truewise-ux-audit-*.md
 truewise-reach-*.md
 truewise-review-*.md
 review-*/
+# Local review notes, scripts and evidence (3.6 GB by November 2026). Untracked but not ignored, the
+# gate's clean-copy step duplicated all of it into the temp directory on every run.
+.review-work/
 # Search Console exports: production data, not source. Kept local.
 gsc-baseline-*/
 Truewise Review - *.html
@@ -77,6 +80,7 @@ site/college/
 site/colleges/
 site/majors/
 site/findings/
+site/earnings-test/
 site/lists/
 # The list CSVs are generated from the same rows those pages render, by the same run.
 site/data/lists/

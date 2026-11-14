@@ -61,6 +61,9 @@
 /* Summary: the earnings verdict with its coverage in the same box (R1), then the one cost figure
    that never changes with the calculator. */
 .kf__none { font-family: var(--display); font-size: clamp(26px, 6vw, 34px); line-height: 1.1; color: var(--ink); margin: 0; letter-spacing: -0.02em; }
+/* Under the box: how its comparison relates to the federal earnings test, with the link to the
+   explainer. Outside the box, so it does not read as part of the verdict. */
+.sum__rule { font-size: var(--t-ui); line-height: 1.5; color: var(--ink-soft); margin: 0 0 var(--sp-related); max-width: 66ch; }
 .sum__cost { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0 0 var(--sp-group); font-size: var(--t-ui); color: var(--ink-soft); }
 .sum__costlab { font-weight: 600; color: var(--ink); }
 .sum__costfig { font-family: var(--mono); font-weight: 500; font-size: var(--t-sub); color: var(--ink); }

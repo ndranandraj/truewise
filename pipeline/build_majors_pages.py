@@ -229,8 +229,10 @@ def _schools_module(cip, plain, schools, slugs) -> str:
         return ""
     p = ['    <h2 class="sec">Where this is studied</h2>\n']
     p.append(
+        # "a program in X", so the article never meets the field's first letter: the earlier
+        # "complete a {field} program" printed "a accounting program" on every vowel-led field.
         f'    <p class="idline">The {len(linked)} colleges where the most students complete a '
-        f"{esc(plain.lower())} program, of {total:,} that report one. Ordered by number of "
+        f"program in {esc(plain)}, of {total:,} that report one. Ordered by number of "
         "completions only: this is where people study it, not a judgement about where to.</p>\n"
     )
     p.append('    <ul class="schoollist">\n')
