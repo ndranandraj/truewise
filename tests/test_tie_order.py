@@ -217,7 +217,8 @@ def test_a_state_list_settles_ties_by_name_ignoring_case_then_unitid(tmp_path, m
         "Southern University Law Center",
     ]
     assert (
-        "Schools with the same share are ordered by median earnings, then by name." in pages[slug]
+        "Colleges with the same share and the same median earnings are listed by name."
+        in pages[slug]
     )
     # The two Empire rows read the same in the CSV, so their links show the order.
     assert pages[slug].index("/college/school-101/") < pages[slug].index("/college/school-102/")

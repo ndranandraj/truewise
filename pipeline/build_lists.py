@@ -1,9 +1,13 @@
-"""Generate ranked list pages: /lists/<slug>/ plus per-state "best value" lists.
+"""Generate ranked list pages: /lists/<slug>/ plus one list of colleges per state.
 
-These target the highest-volume search format in this category ("highest paying majors",
-"best value colleges in Texas") while staying honest: every list ranks on ONE stated metric,
-with its denominator and minimum-sample rule printed on the page. No weighted opinion index,
-no composite score. Each row links to the underlying college or major page.
+Every list ranks on ONE stated metric, with its denominator and minimum-sample rule printed on the
+page. No weighted opinion index, no composite score. Each row links to the underlying college or
+major page.
+
+The state lists rank colleges by the share of their programs whose graduates earned more than a
+typical high-school graduate. Price is not in that measure, so the pages no longer call it "best
+value" (November 2026). Their addresses still say best-value-colleges-<state>: an address is a
+contract with every link to it, and the site has no redirects.
 
 Usage (from repo root, after the pipeline has produced value_check.parquet):
     python -m pipeline.build_lists
@@ -15,6 +19,7 @@ import csv
 import html
 import io
 import re
+from typing import NamedTuple
 
 import duckdb
 
@@ -85,14 +90,29 @@ def _strip_tags(cell) -> str:
     return html.unescape(txt).strip()
 
 
-def _csv_text(headers, rows) -> str:
-    """Build the CSV from the same rows the table renders, so the two cannot disagree."""
+def _csv_text(headers, rows, ranks=None) -> str:
+    """Build the CSV from the same rows the table renders, so the two cannot disagree.
+
+    ranks is the rank printed beside each row where rows can share one; without it rows are
+    numbered in order."""
+    ranks = _ranks_for(rows, ranks)
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["rank", *[_strip_tags(h) for h in headers]])
-    for i, cells in enumerate(rows, 1):
-        w.writerow([i, *[_strip_tags(c) for c in cells]])
+    for rank, cells in zip(ranks, rows, strict=True):
+        w.writerow([rank, *[_strip_tags(c) for c in cells]])
     return buf.getvalue()
+
+
+def _ranks_for(rows, ranks) -> list:
+    """One rank per row. A list that is a different length would print ranks against the wrong
+    rows, so that stops the build."""
+    if ranks is None:
+        return list(range(1, len(rows) + 1))
+    ranks = list(ranks)
+    if len(ranks) != len(rows):
+        raise ValueError(f"{len(ranks)} ranks for {len(rows)} rows")
+    return ranks
 
 
 CSV_DIR = "/data/lists"
@@ -122,46 +142,94 @@ def _download_block(slug) -> str:
     )
 
 
-def write_csv(slug, headers, rows) -> int:
+def write_csv(slug, headers, rows, ranks=None) -> int:
     """Write the list's CSV beside the site and return its byte length."""
     out = SITE / CSV_DIR.lstrip("/") / csv_filename(slug)
     out.parent.mkdir(parents=True, exist_ok=True)
-    text = _csv_text(headers, rows)
+    text = _csv_text(headers, rows, ranks)
     out.write_text(text, encoding="utf-8")
     return len(text.encode("utf-8"))
 
 
-def _page(title, desc, canonical, h1, lede, headers, rows, note, slug) -> str:
+def _page(
+    title,
+    desc,
+    canonical,
+    h1,
+    lede,
+    headers,
+    rows,
+    note,
+    slug,
+    *,
+    ranks=None,
+    rank_head="#",
+    above="",
+    card_headline=None,
+    card_sub=None,
+    csv_table=None,
+) -> str:
+    """One list page, its share card and its CSV.
+
+    ranks: the rank printed for each row, where rows can share one (default 1, 2, 3 in row order).
+    above: HTML between the introduction and the table, for what a reader needs to read the order.
+    note: one paragraph of small print, or several.
+    card_headline: the share card's heading, where the page heading is too long to fit on it.
+    card_sub: the share card's line, where "#1: <first row>" would name a row that is first only
+        by a tie-break. One line, or several from fullest to shortest: the first that fits the
+        card is used, and the build stops if none does, because a cut caption can lose the words
+        that say what a figure measures.
+    csv_table: (headers, rows) for the download, where it gives a table cell as separate columns.
+    """
+    ranks = _ranks_for(rows, ranks)
     # A share card whose hook is the #1 entry, so a posted ranking is not a generic card.
     top = _strip_tags(rows[0][0]) if rows else ""
-    render_card(
-        SITE / "og" / "lists" / f"{slug}.png",
-        "Ranked list · US education data",
-        h1,
-        big=None,
-        sub=(f"#1: {top}." if top else _strip_tags(lede)),
-    )
+    if card_sub is None:
+        render_card(
+            SITE / "og" / "lists" / f"{slug}.png",
+            "Ranked list · US education data",
+            card_headline or h1,
+            big=None,
+            sub=(f"#1: {top}." if top else _strip_tags(lede)),
+        )
+    else:
+        for line in [card_sub] if isinstance(card_sub, str) else card_sub:
+            cut = render_card(
+                SITE / "og" / "lists" / f"{slug}.png",
+                "Ranked list · US education data",
+                card_headline or h1,
+                big=None,
+                sub=line,
+            )
+            if not cut:
+                break
+        else:
+            raise SystemExit(f"lists: no share-card line for {slug} fits the card")
     p = [head(title, desc, canonical, og_image=f"/og/lists/{slug}.png")]
     p.append('  <main class="wrap pg">\n')
     p.append(f'    <nav class="crumbs"><a href="/lists/">Lists</a> &rsaquo; {esc(h1)}</nav>\n')
     p.append(f"    <h1>{esc(h1)}</h1>\n")
     p.append(f'    <p class="idline">{lede}</p>\n')
+    p.append(above)
     p.append(
-        '    <div class="tscroll" tabindex="0" role="region" aria-label="Ranking"><table class="t"><thead><tr><th class="num">#</th>'
+        '    <div class="tscroll" tabindex="0" role="region" aria-label="Ranking"><table class="t"><thead><tr>'
+        f'<th class="num">{esc(rank_head)}</th>'
     )
     num_attr = " class='num'"
     for i, hd in enumerate(headers):
         p.append("<th" + (num_attr if i else "") + ">" + esc(hd) + "</th>")
     p.append("</tr></thead><tbody>\n")
-    for i, cells in enumerate(rows, 1):
-        p.append(f"      <tr><td class='num'>{i}</td>")
+    for rank, cells in zip(ranks, rows, strict=True):
+        p.append(f"      <tr><td class='num'>{rank}</td>")
         for j, c in enumerate(cells):
             p.append("<td" + (num_attr if j else "") + ">" + str(c) + "</td>")
         p.append("</tr>\n")
     p.append("    </tbody></table></div>\n")
-    write_csv(slug, headers, rows)
+    csv_headers, csv_rows = csv_table or (headers, rows)
+    write_csv(slug, csv_headers, csv_rows, ranks)
     p.append(_download_block(slug))
-    p.append(f'    <p class="src">{note}</p>\n')
+    for para in [note] if isinstance(note, str) else note:
+        p.append(f'    <p class="src">{para}</p>\n')
     p.append(
         '    <p class="src">Source: U.S. Department of Education College Scorecard (release '
         "2026-06-10). Earnings are median earnings of graduates measured up to four years after "
@@ -304,8 +372,122 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
     return out
 
 
+class Ranked(NamedTuple):
+    """One college on a state list."""
+
+    unitid: str
+    name: str
+    compared: int  # programs with published earnings and a state high-school line
+    above: int  # of those, the programs whose graduates earned more than that line
+    median: float | None  # the middle of the college's program medians
+    rank: int  # by the share above / compared; colleges with the same share have the same rank
+    eligible: int  # colleges in the state with enough programs to be ranked
+
+
+def state_ranking(con, st: str) -> list[Ranked]:
+    """A state's colleges ranked by the share of their programs above the high-school line.
+
+    The rank is on the exact share. Until November 2026 the order was on the percentage rounded to
+    a whole number, so 13 of 14 and 14 of 15 (both "93%") counted as a tie and the higher earner
+    went first, ahead of the college with the higher share. Colleges with the same share get
+    the same rank, and the cut keeps every college tied at it, so a list can run past TOP_N rather
+    than drop a college for its earnings or its name. Median earnings, then name, then federal ID
+    only settle the order of rows within one rank.
+    """
+    rows = con.execute(
+        f"""
+        WITH e AS (
+            SELECT unitid, nm, n_dec, n_pass, n_pass::DOUBLE / n_dec AS share,
+                   round(med_earn) AS med
+            FROM sch WHERE st = ? AND n_dec >= {MIN_SCHOOL_PROGRAMS}
+        )
+        SELECT unitid, nm, n_dec, n_pass, med, rank() OVER (ORDER BY share DESC) AS rk,
+               count(*) OVER () AS eligible
+        FROM e QUALIFY rk <= {TOP_N}
+        ORDER BY share DESC, med DESC, lower(nm), unitid
+        """,
+        [st],
+    ).fetchall()
+    return [Ranked(*r) for r in rows]
+
+
+def share_text(above: int, compared: int) -> str:
+    """The share as a percentage, with one decimal where it has one ("96.3%", "100%").
+
+    A share short of every program is never printed as 100%, and one above none never as 0%: the
+    count beside it would say otherwise."""
+    pct = 100.0 * above / compared
+    if above < compared:
+        pct = min(pct, 99.9)
+    if above > 0:
+        pct = max(pct, 0.1)
+    return f"{pct:.1f}".rstrip("0").rstrip(".") + "%"
+
+
+_TIE_ORDER = "Colleges with the same share are listed by median earnings, highest first"
+
+
+def tie_sentence(rows: list[Ranked]) -> str:
+    """What a reader needs to read the order: how many colleges share first place, and what orders
+    colleges that share a rank. Printed above the table, never in the small print."""
+    top = [r for r in rows if r.rank == 1]
+    share = share_text(top[0].above, top[0].compared)
+    if len(top) == len(rows) and len(rows) > 1:
+        return (
+            f"<b>All {len(rows)} colleges shown have the same share, {share}.</b> The share cannot "
+            f"order them. {_TIE_ORDER}, and that is the only order on this page."
+        )
+    if len(top) > 1:
+        return (
+            f"<b>{len(top)} colleges share first place at {share}.</b> {_TIE_ORDER}; they keep "
+            "the same rank."
+        )
+    return f"{_TIE_ORDER}; they keep the same rank."
+
+
+CARD_MEASURE = "By share of programs whose graduates earned more than a high-school graduate."
+
+
+def card_lines(rows: list[Ranked]) -> list[str]:
+    """The share card's caption, fullest first. The measure always comes first, because a share
+    quoted without it means nothing. A college is named only when one college is first on the
+    measure, and only if its name fits."""
+    top = [r for r in rows if r.rank == 1]
+    if len(top) == 1:
+        return [f"{CARD_MEASURE} #1: {top[0].name}.", f"{CARD_MEASURE} One college is first."]
+    share = share_text(top[0].above, top[0].compared)
+    return [f"{CARD_MEASURE} {len(top)} colleges share first place at {share}."]
+
+
+DESC_MAX = 155  # a longer description is cut in a search result
+
+
+def state_description(st_name: str) -> str:
+    """The search description, in the fullest wording that fits."""
+    for programs in ("their programs", "programs"):
+        text = (
+            f"{st_name} colleges ranked by the share of {programs} whose graduates earned more "
+            "than a typical high-school graduate. Ties are shown as ties."
+        )
+        if len(text) <= DESC_MAX:
+            return text
+    raise ValueError(f"no description for {st_name} fits {DESC_MAX} characters")
+
+
+STATE_NOTES = (
+    "Every degree level is counted, graduate programs included, against the high-school line. "
+    "That is Truewise&rsquo;s comparison and not the federal earnings test, which compares "
+    "graduate programs with bachelor&rsquo;s degree holders. "
+    '<a href="/earnings-test/">What the test is</a>. Colleges that teach mostly graduate health '
+    "programs are often at the top for that reason.",
+    "Median earnings is the middle of the college&rsquo;s program medians, not the earnings of "
+    "its typical graduate. Colleges with the same share and the same median earnings are listed "
+    "by name.",
+)
+
+
 def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
-    """Per-state 'colleges whose graduates clear the bar most often' lists."""
+    """One list per state: its colleges by how often graduates out-earn a high-school graduate."""
     out = []
     states = [
         r[0]
@@ -315,46 +497,64 @@ def build_state_lists(con, slugs_by_unitid) -> list[tuple[str, str, str]]:
         ).fetchall()
     ]
     for st in states:
-        rows = con.sql(f"""
-            SELECT unitid, nm, n_dec, round(100.0*n_pass/n_dec) AS pass_pct, round(med_earn) AS med
-            FROM sch WHERE st='{st}' AND n_dec >= {MIN_SCHOOL_PROGRAMS}
-            ORDER BY pass_pct DESC, med DESC, lower(nm), unitid LIMIT {TOP_N}""").fetchall()
         # Never rank a "state" the data did not report; the label would be a fiction.
         if not known_state(st):
             continue
+        rows = state_ranking(con, st)
         st_name = state_label(st)
-        cells = []
-        for unitid, nm, n_dec, pct, med in rows:
-            slug = slugs_by_unitid.get(unitid)
-            link = f'<a href="/college/{slug}/">{esc(nm)}</a>' if slug else esc(nm)
-            cells.append((link, f"{pct:g}%", money(med), f"{n_dec:,}"))
+        cells, csv_cells = [], []
+        for r in rows:
+            slug = slugs_by_unitid.get(r.unitid)
+            link = f'<a href="/college/{slug}/">{esc(r.name)}</a>' if slug else esc(r.name)
+            share = share_text(r.above, r.compared)
+            cells.append(
+                (
+                    link,
+                    f"{r.above:,} of {r.compared:,} <span class='ln-pct'>({share})</span>",
+                    money(r.median),
+                )
+            )
+            csv_cells.append((link, f"{r.above:,}", f"{r.compared:,}", share, money(r.median)))
+        eligible = rows[0].eligible
+        past = (
+            f" {len(rows)} are shown, not {TOP_N}, because the cut would have split colleges "
+            "with the same share."
+            if len(rows) > TOP_N
+            else ""
+        )
+        h1 = f"Colleges in {st_name} whose graduates most often out-earn a high-school graduate"
         out.append(
             (
                 f"best-value-colleges-{st.lower()}",
-                f"Colleges in {st_name} whose graduates most often out-earn a high-school graduate",
+                h1,
                 _page(
-                    f"Best-value colleges in {st_name} by graduate earnings",
-                    f"{st_name} colleges ranked by the share of their programs whose graduates "
-                    f"out-earn a typical high-school graduate, from federal data.",
+                    f"Colleges in {st_name}: how often graduates out-earn a high-school graduate",
+                    state_description(st_name),
                     f"{BASE}/lists/best-value-colleges-{st.lower()}/",
-                    f"Colleges in {st_name} whose graduates clear the bar most often",
-                    "Ranked by the share of each school's programs whose graduates out-earn a "
-                    "typical high-school graduate (the federal earnings-premium test).",
-                    [
-                        "College",
-                        "Programs clearing the bar",
-                        "Median earnings",
-                        "Programs measured",
-                    ],
+                    h1,
+                    "Ranked by one measure: the share of each college&rsquo;s programs whose "
+                    f"graduates earned more than a typical {esc(st_name)} high-school graduate. "
+                    f"{eligible:,} colleges in {esc(st_name)} have at least "
+                    f"{MIN_SCHOOL_PROGRAMS} programs that can be compared.{past}",
+                    ["College", "Programs above the line", "Median earnings"],
                     cells,
-                    f"Ranked on one stated metric, the share of a school's programs that clear the "
-                    "benchmark. Schools with the same share are ordered by median earnings, then "
-                    f"by name. Schools need at least {MIN_SCHOOL_PROGRAMS} programs with reported "
-                    "earnings to appear. Note that specialised graduate institutions (medical and "
-                    "health-science centres, for example) often rank at the top because their "
-                    "programs are almost all high-earning; the 'programs measured' column and each "
-                    "school's page give the context.",
+                    STATE_NOTES,
                     f"best-value-colleges-{st.lower()}",
+                    ranks=[r.rank for r in rows],
+                    rank_head="Rank",
+                    above=f'    <p class="ln-tie">{tie_sentence(rows)}</p>\n',
+                    card_headline=f"Colleges in {st_name}",
+                    card_sub=card_lines(rows),
+                    csv_table=(
+                        [
+                            "College",
+                            "Programs above the line",
+                            "Programs compared",
+                            "Share",
+                            "Median earnings",
+                        ],
+                        csv_cells,
+                    ),
                 ),
             )
         )

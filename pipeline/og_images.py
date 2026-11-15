@@ -96,8 +96,12 @@ def card(
     big: str | None = None,
     big_color: str = BRAND_DEEP,
     sub: str | None = None,
-) -> None:
-    """Render one 1200x630 share card and write it as a PNG."""
+) -> bool:
+    """Render one 1200x630 share card and write it as a PNG.
+
+    Returns True when the caption did not fit and was cut with an ellipsis, so a caller whose
+    caption carries a qualifier can try a shorter one instead of publishing it cut."""
+    sub_cut = False
     img = Image.new("RGB", (W, H), BG)
     d = ImageDraw.Draw(img)
 
@@ -142,7 +146,9 @@ def card(
         sf = _font(False, 30)
         room = (FOOTER_RULE_Y - FOOTER_CLEARANCE) - y
         max_lines = max(1, min(2, int((room + SUB_ADVANCE - SUB_INK) // SUB_ADVANCE)))
-        for line in _wrap(d, sub, sf, W - 2 * MARGIN, max_lines):
+        sub_lines = _wrap(d, sub, sf, W - 2 * MARGIN, max_lines)
+        sub_cut = " ".join(sub_lines) != " ".join(sub.split())
+        for line in sub_lines:
             d.text((MARGIN, y), line, font=sf, fill=INK_SOFT)
             y += SUB_ADVANCE
 
@@ -161,6 +167,7 @@ def card(
     # compress_level 6 (zlib default) is the speed/size knee; optimize=True triples render time
     # for ~3% smaller files, which does not pay off across the ~5,000 college cards built per deploy.
     img.save(out_path, "PNG", compress_level=6)
+    return sub_cut
 
 
 if __name__ == "__main__":

@@ -96,6 +96,35 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "November 2026",
+        "title": "State college lists: renamed for what they measure, and ranked on the exact share",
+        "body": (
+            "The 49 state lists were titled 'Best-value colleges in [state] by graduate earnings'. "
+            "They rank colleges by the share of their programs whose graduates earned more than a "
+            "typical high-school graduate. Price is not part of that measure, so each list is now "
+            "titled 'Colleges in [state]: how often graduates out-earn a high-school graduate'. The "
+            "addresses are unchanged. Three things on the lists were wrong. First, the order used "
+            "the share rounded to a whole percentage. In New Mexico a college with 13 of 14 programs "
+            "above the line was listed ahead of one with 14 of 15, because both showed as 93% and "
+            "its median earnings were higher. Ranked on the exact share, the order of the colleges "
+            "shown changes on 34 of the 49 lists, and on 4 (Florida, Massachusetts, North Carolina "
+            "and Virginia) a college with a lower share had been shown while one with a higher "
+            "share was left off. Second, colleges with the same share were numbered 1, 2, 3 as if "
+            "the share ranked them. That happened on 47 lists, and on 7 (California, Delaware, "
+            "Illinois, New York, Ohio, Pennsylvania and Texas) every college shown was at 100%. "
+            "Colleges with the same share now have the same rank, a sentence above each table says "
+            "how they are ordered, and every college tied at the cut-off is shown, so 9 lists run "
+            "past 25 rows; Texas shows 44. Each list's share card named one college as number 1. On "
+            "47 lists that college shared first place, and the card now says how many do. Third, "
+            "the pages called the comparison the federal earnings-premium test. They count graduate "
+            "programs against the high-school line, which the federal test does not, and they now "
+            "say so. The share is printed with its counts, for example 14 of 15 (93.3%), and the "
+            "download gives the counts as columns. These counts describe the lists built from the "
+            "10 June 2026 College Scorecard release. No program count or earnings figure changed."
+        ),
+        "link": "/lists/",
+    },
+    {
+        "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
         "body": (
             "Rows with equal figures had no fixed order, so their order could change from one site "

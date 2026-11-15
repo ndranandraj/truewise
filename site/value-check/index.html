@@ -507,7 +507,7 @@ window.addEventListener("resize", onResize);
     if (ab) {
       const nm = ABBR_TO_STATE[ab];
       onward = ` or <a href="/colleges/${ab.toLowerCase()}/">browse ${esc(nm)} colleges</a>,`
-        + ` or see the <a href="/lists/best-value-colleges-${ab.toLowerCase()}/">best-value colleges in ${esc(nm)}</a>`;
+        + ` or see the <a href="/lists/best-value-colleges-${ab.toLowerCase()}/">${esc(nm)} colleges whose graduates most often out-earn a high-school graduate</a>`;
     } else {
       onward = ` or <a href="/colleges/">browse colleges by location</a>,`
         + ` or explore the <a href="/lists/">rankings and lists</a>`;
