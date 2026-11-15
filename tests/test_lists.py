@@ -114,4 +114,4 @@ def test_index_and_state_list_exist(tmp_path, monkeypatch, register_fixture_slug
     assert 'href="/lists/highest-paying-majors/"' in idx
     assert "one stated metric" in idx  # the honesty framing
     tx = site / "lists" / "best-value-colleges-tx" / "index.html"
-    assert not tx.exists() or "clear the bar" in tx.read_text()
+    assert not tx.exists() or "out-earn a high-school graduate" in tx.read_text()

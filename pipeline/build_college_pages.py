@@ -233,6 +233,10 @@ table.t a:hover { color: var(--brand); text-decoration: underline; }
    declares both. 11px of padding on a 15px step at line-height 1.5 is a 46px target,
    past the 44px floor the phone pass asked for. */
 .dl-note { color: var(--ink-faint); font-size: var(--t-fine); }
+/* A state list's line on how to read its order: beside the table, never in the small print. */
+.ln-tie { font-size: var(--t-ui); line-height: 1.5; color: var(--ink); background: var(--bg-alt); border-left: 3px solid var(--caution); padding: 10px 14px; border-radius: 0 var(--r-sm) var(--r-sm) 0; max-width: 66ch; margin: 0 0 18px; }
+/* The count leads; the percentage it gives is quieter beside it. */
+.ln-pct { color: var(--ink-soft); }
 .upd { border-left: 3px solid var(--line); padding: 2px 0 2px 16px; margin: 20px 0; }
 .upd h2.sec { margin: 4px 0 6px; font-size: var(--t-sub); }
 .upd-meta { color: var(--ink-soft); font-size: var(--t-ui); max-width: var(--measure); line-height: 1.55; margin: 4px 0; overflow-wrap: anywhere; }
