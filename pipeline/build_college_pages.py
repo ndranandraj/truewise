@@ -613,6 +613,38 @@ def main() -> None:
         else set()
     )
 
+    # About the college and Colleges to compare (pipeline/profile_basics.py). Read from the same
+    # institutions file the model above read, so a profile and Compare cannot disagree. Each
+    # college's list repeats the other colleges' own headline counts, so those are taken first.
+    from pipeline import build_site as _model
+    from pipeline import profile_basics as pb
+    from pipeline import profile_layout as pl
+    from pipeline.build_canonical_profiles import SCORECARD_RELEASE
+
+    basics_path = _model.PARQUET_DIR / "institutions.parquet"
+    basics = pb.load(con, basics_path) if basics_path.exists() else None
+    years = peer_index = None
+    if basics is not None:
+        years = pb.years_for(SCORECARD_RELEASE)
+        peers = []
+        for u, s in qualified.items():
+            b = basics.get(u)
+            ug = pl.counts([r for r in profiles.get(u, ({}, []))[1] if not r.get("grad")])
+            peers.append(
+                pb.Peer(
+                    u,
+                    s["name"],
+                    slugs[u],
+                    s["state"],
+                    s.get("control"),
+                    b.degree if b else None,
+                    b.enrollment if b else None,
+                    ug["pass"],
+                    ug["decided"],
+                )
+            )
+        peer_index = pb.PeerIndex(peers)
+
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
     partial: dict = {}  # profiles that get programs.csv
@@ -621,8 +653,19 @@ def main() -> None:
         slug = slugs[u]
         pmeta, rows = profiles.get(u, ({}, []))
         meta = profile_meta(s, pmeta, u in in_file)
+        about = compare = ""
+        if basics is not None:
+            about = pb.about_section(basics.get(u), years, SCORECARD_RELEASE)
+            compare = pb.compare_section(u, peer_index, years)
         html, tail_json = canonical_page(
-            meta, rows, slug, s.get("threshold"), LIVE_STATIC_ROWS, s.get("net_price")
+            meta,
+            rows,
+            slug,
+            s.get("threshold"),
+            LIVE_STATIC_ROWS,
+            s.get("net_price"),
+            about,
+            compare,
         )
         d = col_dir / slug
         d.mkdir(parents=True, exist_ok=True)

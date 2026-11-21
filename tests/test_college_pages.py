@@ -99,6 +99,15 @@ def _setup(tmp_path, monkeypatch, register_fixture_slugs):
     con.execute(
         "INSERT INTO inst VALUES ('100','Austin','http://x',5000,18000,12000,14000,20000,24000,28000,0.4,0.3,0.75)"
     )
+    # The profile's About section needs each rate's cohort and ED's credential class (Nov 2026).
+    con.execute("ALTER TABLE inst ADD COLUMN completion_cohort INTEGER")
+    con.execute("ALTER TABLE inst ADD COLUMN completion_basis VARCHAR")
+    con.execute("ALTER TABLE inst ADD COLUMN predominant_degree INTEGER")
+    con.execute(
+        """UPDATE inst SET predominant_degree = 3,
+           completion_cohort = CASE WHEN completion_rate IS NOT NULL THEN 1200 END,
+           completion_basis = CASE WHEN completion_rate IS NOT NULL THEN 'four_year' END"""
+    )
     con.execute(f"COPY inst TO '{pq / 'institutions.parquet'}' (FORMAT PARQUET)")
 
     monkeypatch.setattr(bs, "PARQUET_DIR", pq)

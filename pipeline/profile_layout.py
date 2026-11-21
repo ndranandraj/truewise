@@ -10,6 +10,8 @@ build_canonical_profiles.py assembles these around the program table:
   sources_section  sources and the three no-verdict states defined
   rail             "On this page" and "At a glance", shown from 1200px
 
+About the college and Colleges to compare are in pipeline/profile_basics.py.
+
 The headline counts undergraduate programs, as the site's headline does. Three reasons a program
 has no verdict are kept apart throughout: no state benchmark, earnings not published, nothing
 reported.
@@ -407,7 +409,20 @@ def sources_section(meta: dict, bench) -> str:
 NAV = [("cost", "Cost"), ("programs", "Programs"), ("sources", "Sources")]
 
 
-def rail(meta: dict, c: dict, net_price) -> str:
+def nav_items(about: bool = False, compare: bool = False) -> list[tuple[str, str]]:
+    """The section links, in page order. About the college and Colleges to compare (November
+    2026) are on every live profile; a page built without them keeps the three it always had."""
+    items = [("cost", "Cost")]
+    if about:
+        items.append(("about", "About"))
+    items.append(("programs", "Programs"))
+    if compare:
+        items.append(("compare", "Compare"))
+    items.append(("sources", "Sources"))
+    return items
+
+
+def rail(meta: dict, c: dict, net_price, nav: list[tuple[str, str]] | None = None) -> str:
     where = ", ".join(p for p in (meta.get("city"), state_label(meta["state"])) if p)
     facts = [("Location", where)]
     if meta.get("control"):
@@ -422,7 +437,7 @@ def rail(meta: dict, c: dict, net_price) -> str:
     )
     facts.append(("Data", f"College Scorecard, {_consts()[1]}"))
     dl = "".join(f"<dt>{esc(k)}</dt><dd>{esc(v)}</dd>" for k, v in facts)
-    links = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in NAV)
+    links = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in nav or NAV)
     return (
         f'    <aside class="rail" aria-label="{esc(meta["name"])} at a glance"><div class="rail__inner">'
         f"<h2>On this page</h2><ul>{links}</ul>"

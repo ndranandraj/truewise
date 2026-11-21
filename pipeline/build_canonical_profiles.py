@@ -102,12 +102,18 @@ def canonical_page(
     benchmark,
     threshold: int,
     net_price: dict | None = None,
+    about: str = "",
+    compare: str = "",
 ) -> tuple[str, str | None]:
     """The college profile (profile release, 30 September 2026: design plan Prototype B).
 
     Summary, cost, programs and sources, with the section links sticky on phones and the side rail
     from 1200px. Every figure in the summary counts undergraduate programs, as the site's headline
-    does; graduate comparisons stay in the table, labelled."""
+    does; graduate comparisons stay in the table, labelled.
+
+    about and compare are the two sections from pipeline/profile_basics.py, already rendered:
+    About the college goes after Cost, beside the rail; Colleges to compare after Programs. The
+    live build passes both for every profile."""
     from pipeline import profile_layout as pl
 
     name = meta["name"]
@@ -258,7 +264,8 @@ def canonical_page(
             f'<a href="{PROGRAMS_CSV}" download>download all {total:,} (CSV)</a>.</p>\n'
         )
 
-    chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in pl.NAV)
+    nav = pl.nav_items(bool(about), bool(compare))
+    chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in nav)
     loc = ", ".join(p for p in (meta.get("city"), st_name) if p)
     ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
     # The rail and everything above Programs share one block (.prof__top), so from 1200px the rail
@@ -268,7 +275,7 @@ def canonical_page(
         page_head,
         '  <main class="wrap art prof">\n',
         '    <div class="prof__top">\n',
-        pl.rail(meta, c, net_price),
+        pl.rail(meta, c, net_price, nav),
         '    <div class="prof__main">\n',
         f'    <nav class="crumbs"><a href="/colleges/">Colleges</a> &rsaquo; '
         f'<a href="/colleges/{st.lower()}/">{esc(st_name)}</a> &rsaquo; {esc(name)}</nav>\n',
@@ -276,9 +283,10 @@ def canonical_page(
         f'    <p class="idline">{esc(loc)}{ctrl}</p>\n',
         pl.summary(meta, rows, benchmark, net_price),
         f'    <nav class="sectnav" aria-label="Sections"><p class="sectnav__label" id="sn-l">'
-        f"{len(pl.NAV)} sections</p>"
+        f"{len(nav)} sections</p>"
         f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
         pl.cost_section(meta, rows, net_price),
+        about,
         "    </div>\n",
         "    </div>\n",
         '    <section id="programs" aria-labelledby="programs-h" class="progs">\n',
@@ -287,6 +295,7 @@ def canonical_page(
         _notes_aside(pl.program_notes(meta, c)),
         *table,
         "    </section>\n",
+        compare,
         pl.sources_section(meta, benchmark),
         "  </main>\n",
         FOOTER,
