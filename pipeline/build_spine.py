@@ -157,6 +157,16 @@ def main() -> None:
             -- a 0 fall through to the sibling column, and yields NULL when both are unusable, so
             -- the page says "not reported" instead of inventing a devastating statistic.
             COALESCE(NULLIF({_num(inst, "completion_4yr")}, 0), NULLIF({_num(inst, "completion_l4")}, 0)) AS completion_rate,
+            -- The cohort and the kind of rate follow the same choice as the rate above, so the
+            -- three always describe the same students. A school reports one rate or the other.
+            CAST(CASE WHEN NULLIF({_num(inst, "completion_4yr")}, 0) IS NOT NULL
+                          THEN {_num(inst, "completion_cohort_4yr")}
+                      WHEN NULLIF({_num(inst, "completion_l4")}, 0) IS NOT NULL
+                          THEN {_num(inst, "completion_cohort_l4")} END AS INTEGER) AS completion_cohort,
+            CASE WHEN NULLIF({_num(inst, "completion_4yr")}, 0) IS NOT NULL THEN 'four_year'
+                 WHEN NULLIF({_num(inst, "completion_l4")}, 0) IS NOT NULL THEN 'less_than_four_year'
+                 END AS completion_basis,
+            CAST({_num(inst, "predominant_degree")} AS INTEGER) AS predominant_degree,
             {_net_price(icols, "")}                       AS net_price_avg,
             {_net_price(icols, "1")}                      AS net_price_0_30k,
             {_net_price(icols, "2")}                      AS net_price_30_48k,

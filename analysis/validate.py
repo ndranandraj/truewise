@@ -179,6 +179,34 @@ def check_completion_not_zero(inst_path) -> tuple[bool, str]:
     return bad == 0, f"{bad} schools with completion_rate exactly 0 (should be null)"
 
 
+def check_completion_cohort(inst_path) -> tuple[bool, str]:
+    """Every completion rate comes with the students it rests on, and they agree.
+
+    Profiles print the rate as "of the N first-time, full-time students who started in <year>", so
+    a rate with no cohort, a cohort with no rate, or a kind of rate that does not say which year
+    applies would each put a wrong or unqualified figure on a page. The last test is arithmetic: a
+    rate times its cohort is a whole number of students, within ED's rounding to four decimals, so
+    a cohort column that is not the rate's own denominator is caught here.
+    """
+    con = duckdb.connect()
+    con.execute(f"CREATE VIEW inst AS SELECT * FROM read_parquet('{inst_path}')")
+    have = {r[0] for r in con.execute("DESCRIBE inst").fetchall()}
+    missing = [c for c in ("completion_cohort", "completion_basis") if c not in have]
+    if missing:
+        return False, f"institutions.parquet has no {', '.join(missing)}: rebuild the spine"
+    bad = con.execute(
+        """SELECT count(*) FROM inst WHERE
+             (completion_rate IS NOT NULL AND (completion_cohort IS NULL OR completion_cohort < 1))
+          OR (completion_rate IS NULL AND (completion_cohort IS NOT NULL OR completion_basis IS NOT NULL))
+          OR (completion_rate IS NOT NULL
+              AND completion_basis IS DISTINCT FROM 'four_year'
+              AND completion_basis IS DISTINCT FROM 'less_than_four_year')
+          OR (completion_rate IS NOT NULL AND abs(completion_rate * completion_cohort
+              - round(completion_rate * completion_cohort)) > completion_cohort * 0.00005 + 0.001)"""
+    ).fetchall()[0][0]
+    return bad == 0, f"{bad} completion rates whose cohort is missing or does not fit the rate"
+
+
 def main() -> None:
     from pipeline.config import PARQUET_DIR
 
@@ -193,6 +221,7 @@ def main() -> None:
         results.append(("net_price_within_bounds", *check_net_price(inst_path)))
         results.append(("mobility_shares_within_bounds", *check_mobility(inst_path)))
         results.append(("completion_rate_never_zero", *check_completion_not_zero(inst_path)))
+        results.append(("completion_rate_has_its_cohort", *check_completion_cohort(inst_path)))
     failed = 0
     for name, ok, detail in results:
         print(f"  [{'PASS' if ok else 'FAIL'}] {name:32s} {detail}")

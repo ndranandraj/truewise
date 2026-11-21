@@ -77,6 +77,14 @@ INST_FIELD_CANDIDATES: dict[str, list[str]] = {
     # the less-than-4-year (C150_L4) rate; build_spine coalesces the two.
     "completion_4yr": ["C150_4"],
     "completion_l4": ["C150_L4"],
+    # The students each completion rate rests on (the adjusted cohort), so a rate is never shown
+    # without its denominator: 923 of the 5,058 rates in the 2026-06-10 release rest on fewer
+    # than 30 students, and the 157 rates of exactly 100% have a median cohort of 6.
+    "completion_cohort_4yr": ["D150_4"],
+    "completion_cohort_l4": ["D150_L4"],
+    # ED's predominant undergraduate credential, from awards conferred: 0 not classified,
+    # 1 certificate, 2 associate's, 3 bachelor's, 4 entirely graduate.
+    "predominant_degree": ["PREDDEG"],
     # Loan repayment, borrower-based, two years after entering repayment, for students who
     # COMPLETED (graduates), which matches how the rest of the site counts people. These are
     # shares of borrowers in each status and sum to about 1 across the status categories.

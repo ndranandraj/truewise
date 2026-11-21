@@ -70,6 +70,15 @@ def _build(tmp_path, monkeypatch, register_fixture_slugs, net_price_row):
     con.execute(f"COPY vc TO '{pq / 'value_check.parquet'}' (FORMAT PARQUET)")
     con.execute(f"CREATE TABLE inst({INST_COLS})")
     con.execute(f"INSERT INTO inst VALUES {net_price_row}")
+    # The profile's About section needs each rate's cohort and ED's credential class (Nov 2026).
+    con.execute("ALTER TABLE inst ADD COLUMN completion_cohort INTEGER")
+    con.execute("ALTER TABLE inst ADD COLUMN completion_basis VARCHAR")
+    con.execute("ALTER TABLE inst ADD COLUMN predominant_degree INTEGER")
+    con.execute(
+        """UPDATE inst SET predominant_degree = 3,
+           completion_cohort = CASE WHEN completion_rate IS NOT NULL THEN 1200 END,
+           completion_basis = CASE WHEN completion_rate IS NOT NULL THEN 'four_year' END"""
+    )
     con.execute(f"COPY inst TO '{pq / 'institutions.parquet'}' (FORMAT PARQUET)")
 
     monkeypatch.setattr(bs, "PARQUET_DIR", pq)
