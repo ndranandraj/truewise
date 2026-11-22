@@ -81,6 +81,7 @@ $PYTHON -m pipeline.build_earnings_test
 $PYTHON -m pipeline.build_updates
 $PYTHON -m pipeline.build_sitemap
 $PYTHON -m pipeline.version_assets
+$PYTHON -m pipeline.version_assets --check
 
 step "Gates that would block a deploy"
 $PYTHON -m analysis.validate
