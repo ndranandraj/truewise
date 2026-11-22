@@ -35,6 +35,7 @@ from pipeline.build_site import build_model
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
+from pipeline.search_copy import fit
 
 SITE = ROOT / "site"
 MIN_PROGRAMS = 10  # a major needs this many reported programs to be ranked
@@ -284,8 +285,10 @@ def build_major_lists(con, cip_slugs) -> list[tuple[str, str, str]]:
             "Fields with the most programs below the high-school line that report debt",
             _page(
                 "Programs below the high-school earnings line that report debt, by field",
-                "Fields with the most programs whose graduates' median earnings fall below a typical "
-                "high-school graduate's, among programs that report median federal debt. Federal data.",
+                fit(
+                    "Fields with the most programs whose graduates earn less than a typical "
+                    "high-school graduate, among programs that report median federal debt."
+                ),
                 f"{BASE}/lists/programs-where-debt-does-not-pay-back/",
                 "Programs below the high-school line that report debt, by field",
                 "Fields with the most programs whose graduates both fall short of a typical "
@@ -366,9 +369,10 @@ def render_index(entries) -> str:
     p = [
         head(
             "Rankings and lists from federal education data",
-            "Highest and lowest paying majors, debt compared with earnings gain, and the colleges in each "
-            "state whose graduates most often out-earn a high-school graduate. Each list ranks on "
-            "one stated metric from public federal data.",
+            fit(
+                "Highest- and lowest-paying majors, debt against earnings gain, and each state's "
+                "colleges by how often graduates out-earn a high-school graduate."
+            ),
             canonical,
         )
     ]

@@ -24,6 +24,7 @@ from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money,
 from pipeline.cip_names import has_plain_name, plain_name, short_label, tidy_official
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
+from pipeline.search_copy import fit
 
 SITE = ROOT / "site"
 
@@ -245,6 +246,50 @@ def _schools_module(cip, plain, schools, slugs) -> str:
     return "".join(p)
 
 
+# How each credential reads in a sentence ("graduates with an associate's degree") and as a word
+# before "graduates" in a title. The short labels ("Undergrad cert", "First prof.") are table
+# labels: after "a" they printed "with a undergrad cert" on 28 pages until November 2026.
+CRED_PHRASE = {
+    "Bachelor's": ("a bachelor's degree", "bachelor's"),
+    "Master's": ("a master's degree", "master's"),
+    "Associate's": ("an associate's degree", "associate's"),
+    "Undergrad cert": ("an undergraduate certificate", "certificate"),
+    "Doctoral": ("a doctoral degree", "doctoral"),
+    "Grad cert": ("a graduate certificate", "graduate-certificate"),
+    "First prof.": ("a first professional degree", "professional-degree"),
+    "Post-bacc cert": ("a post-baccalaureate certificate", "post-baccalaureate"),
+}
+
+
+def cred_phrase(cred_short: str) -> tuple[str, str]:
+    """(sentence phrase, title word) for a credential; an unknown label stops the build rather
+    than print a guess."""
+    if cred_short not in CRED_PHRASE:
+        raise SystemExit(f"build_majors_pages: no wording for the credential {cred_short!r}")
+    return CRED_PHRASE[cred_short]
+
+
+def major_description(field: str, cred_short: str, earn: str) -> str:
+    """The figure with its credential, what it is and its horizon, within a search result.
+
+    The figure is the median of program medians (build_fields), so "at the median US program". No
+    program count: build_fields counts programs with a verdict, while the median takes in every
+    program with earnings, including those with no state line."""
+    phrase, word = cred_phrase(cred_short)
+    core = (
+        f"{field} graduates with {phrase} earned {earn} at the median US program, a few years "
+        "after finishing"
+    )
+    return fit(
+        f"{core}. By degree level, with the job outlook.",
+        f"{core}.",
+        f"{field}, {word}: graduates earned {earn} at the median US program, a few years after "
+        "finishing.",
+        f"{field}, {word} graduates: {earn} at the median US program, a few years after finishing.",
+        f"{field}, {word}: {earn}, the median across US programs, a few years after finishing.",
+    )
+
+
 def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     canonical = f"{BASE}/majors/{slug}/"
     head_row = _headline(creds)
@@ -256,14 +301,12 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     plain = plain_name(cip, name)
     official = tidy_official(name)
     show_official = has_plain_name(cip) and official.lower() != plain.lower()
-    # The figure and the year are what earn the click in a search result.
-    # Keep this near 60 characters so search results do not truncate it. The credential lives in
-    # the description and on the page; the figure and the year are what earn the click.
-    title = f"{short_label(cip, name)}: what graduates earn, {lead_earn} median (College Scorecard)"
-    desc = (
-        f"{plain} graduates typically earn about {lead_earn} ({lead_cred}). See median earnings by "
-        f"degree level, the range across schools, and the job outlook. From federal data."
-    )
+    # Search copy (Prototype P): the field, then the credential, then the figure, so a cut title
+    # loses the figure before the words that say whose figure it is.
+    phrase, word = cred_phrase(lead_cred)
+    field = short_label(cip, name)
+    title = f"{field}: {word} graduates earned a median {lead_earn}"
+    desc = major_description(field, lead_cred, lead_earn)
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
     {{"@type":"ListItem","position":1,"name":"Majors","item":"{BASE}/majors/"}},
@@ -291,7 +334,7 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         idline += f' &middot; federal classification: <span class="offname">{esc(official)}</span>'
     parts.append(f'    <p class="idline">{idline}</p>\n')
     parts.append(
-        f'    <div class="verdict">{esc(plain)} graduates with a {esc(lead_cred.lower())} typically '
+        f'    <div class="verdict">{esc(plain)} graduates with {esc(phrase)} typically '
         f"earned about <b>{lead_earn}</b>, measured a few years after finishing (median across US "
         f"programs, College Scorecard).</div>\n"
     )
