@@ -23,6 +23,7 @@ import duckdb
 
 from pipeline.cip_names import plain_name, tidy_official
 from pipeline.config import ROOT
+from pipeline.program_unit import UNDERGRAD_LEVELS
 
 PARQUET = ROOT / "published" / "value_check.parquet"
 SITE = ROOT / "site"
@@ -176,6 +177,12 @@ def _row_from(r) -> dict:
         # graduate test (the 2026 rule uses a bachelor's-holder line), so their verdict is worded
         # as a comparison, not as clearing the federal bar.
         "grad": str(r.get("credential_level") or "") in GRAD_LEVELS,
+        # The headline's undergraduate programs are certificates, associate's and bachelor's, as
+        # the national headline counts them; CREDLEV 99 (teacher certification, preparatory
+        # coursework) is not a credential and stays out of every headline (correction, November
+        # 2026: profiles counted it as undergraduate). Both rows still appear in the table.
+        "undergrad": str(r.get("credential_level") or "") in UNDERGRAD_LEVELS,
+        "noncredential": str(r.get("credential_level") or "") == NONCREDENTIAL_LEVEL,
         # Horizon only for a DISPLAYED value. Insufficient rows hide their earnings, so their
         # horizon must stay None or they would trip the 1-year label/notice for a figure never shown.
         "horizon": r["earnings_horizon"] if shown else None,
@@ -288,6 +295,7 @@ def _program_cell(r: dict) -> str:
 
 
 GRAD_LEVELS = ("4", "5", "6", "7", "8")
+NONCREDENTIAL_LEVEL = "99"
 
 
 def payback_text(r: dict) -> str:

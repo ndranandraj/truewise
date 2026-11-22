@@ -470,8 +470,8 @@ window.addEventListener("resize", onResize);
   }
 
   // A dead end is a wasted visitor. Route "no match" into the state index and lists we already have.
-  // A result card counts what the profile's summary counts: undergraduate programs, every one that
-  // is not CREDLEV 4 to 8 (Value Check review, 2 October 2026). Baylor's card read 62 pass and 2
+  // A result card counts what the profile's summary counts: undergraduate programs, CREDLEV 1 to 3
+  // (Value Check review, 2 October 2026; CREDLEV 99 counted apart since November 2026). Baylor's card read 62 pass and 2
   // fall short across all 183 programs, one click before a profile leading with 49 of 51
   // undergraduate programs. A school with undergraduate programs but no undergraduate verdict says
   // so rather than showing graduate results; a graduate-only school is labelled as one. Parts are
@@ -493,7 +493,9 @@ window.addEventListener("resize", onResize);
       }
     } else {
       const dec = s.n_pass + s.n_fail, rest = s.n_programs - dec;
-      parts.push(span("k", "Graduate programs only:"));
+      // No certificate, associate's or bachelor's: graduate programs, and at nine schools
+      // non-credential ones too (teacher certification, preparatory coursework).
+      parts.push(span("k", s.n_nc_programs ? "No undergraduate programs:" : "Graduate programs only:"));
       if (s.n_pass) parts.push(span("p", s.n_pass + " above the high-school line"));
       if (s.n_fail) parts.push(span("f", s.n_fail + " below it"));
       if (rest) parts.push(span("i", rest + " no verdict"));
@@ -952,6 +954,7 @@ window.addEventListener("resize", onResize);
     const iparts = [];
     if (s.n_insuff_grad) iparts.push(`${s.n_insuff_grad} graduate`);
     if (s.n_insuff_ug) iparts.push(`${s.n_insuff_ug} undergraduate`);
+    if (s.n_insuff_nc) iparts.push(`${s.n_insuff_nc} non-credential`);
     const whyHtml = `The Department of Education only publishes a program's earnings when enough of
       its graduates received federal financial aid, so that individuals can't be identified. That
       mainly affects graduate programs, especially doctoral, where students are usually funded by

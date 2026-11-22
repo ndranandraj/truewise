@@ -92,12 +92,38 @@ RULE_NO_VERDICT = (
 )
 
 
+def undergrad(rows: list[dict]) -> list[dict]:
+    """Certificates, associate's and bachelor's: the programs the national headline counts. Every
+    row the build makes carries the flag (build_profile_pilot._row_from); a row made by hand without
+    it (test fixtures) falls back to "not graduate", the rule before November 2026."""
+    return [r for r in rows if r.get("undergrad", not r.get("grad"))]
+
+
+def headline_rows(rows: list[dict]) -> tuple[list[dict], bool]:
+    """The rows a profile's headline counts, and whether they are its undergraduate programs.
+
+    Undergraduate programs where any has a verdict, as the national headline; otherwise every
+    credential program (so graduate verdicts, labelled as such), never the non-credential ones
+    (CREDLEV 99: teacher certification, preparatory coursework), which no headline counts. Until
+    November 2026 profiles counted those as undergraduate (95 profiles; correction on /updates/).
+    The search card (build_site), the share image and the search description use this too."""
+    ug = undergrad(rows)
+    if counts(ug)["decided"]:
+        return ug, True
+    credentialed = [r for r in rows if not r.get("noncredential")]
+    if not counts(credentialed)["decided"] and counts(rows)["decided"]:
+        # No such profile today. Its summary would say ED publishes no earnings for the school's
+        # programs, which would be false, so the build stops rather than print it.
+        raise SystemExit("profile_layout: a profile's only verdicts are non-credential programs")
+    return credentialed, False
+
+
 def rule_line(rows: list[dict]) -> str:
     """The sentence about the federal test that fits this profile's summary box."""
-    ug = [r for r in rows if not r.get("grad")]
+    ug = undergrad(rows)
     if counts(ug)["decided"]:
         text = RULE_UNDERGRADUATE
-    elif counts(rows)["decided"] or not ug:
+    elif counts(headline_rows(rows)[0])["decided"] or not ug:
         # Verdicts on graduate programs only, or a school that lists graduate programs only.
         text = RULE_GRADUATE
     else:
@@ -117,10 +143,8 @@ def summary(meta: dict, rows: list[dict], bench, net_price) -> str:
     line = f"a typical {st} high-school graduate" if st else "a typical high-school graduate"
     bench_txt = f" (about {money(bench)} a year)" if bench is not None else ""
     all_c = counts(rows)
-    ug = [r for r in rows if not r.get("grad")]
-    ug_c = counts(ug)
-    scoped = ug_c["decided"] > 0
-    c = ug_c if scoped else all_c
+    scope, scoped = headline_rows(rows)
+    c = counts(scope) if counts(scope)["decided"] else all_c
     kind = "undergraduate programs" if scoped else "programs"
     total = c["total"]
 
@@ -143,10 +167,16 @@ def summary(meta: dict, rows: list[dict], bench, net_price) -> str:
                 f"{plural(c['one_year'], 'verdict')} use{'s' if c['one_year'] == 1 else ''} "
                 "1-year earnings, an earlier career stage."
             )
-        n_grad = all_c["total"] - ug_c["total"]
+        n_grad = sum(1 for r in rows if r.get("grad"))
         if scoped and n_grad:
             qual.append(f"The {n_grad:,} graduate programs are in the table.")
-        if not scoped and all_c["grad_decided"]:
+        n_nc = sum(1 for r in rows if r.get("noncredential"))
+        if n_nc:
+            qual.append(
+                f"The {plural(n_nc, 'non-credential program')} (teacher certification, preparatory "
+                f"coursework) {'is' if n_nc == 1 else 'are'} in the table, outside this count."
+            )
+        if not scoped and c["grad_decided"]:
             qual.append(
                 "These are graduate programs, compared with the high-school line, which is not "
                 "the federal test for them."

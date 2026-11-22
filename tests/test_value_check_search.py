@@ -128,11 +128,13 @@ def test_cards_count_what_the_profile_counts(run_page):
     )
 
     from pipeline.build_profile_pilot import all_profiles
-    from pipeline.profile_layout import counts
+    from pipeline.profile_layout import counts, undergrad
 
     profiles = all_profiles(duckdb.connect())
     for u, s in schools.items():
-        ug = [r for r in profiles.get(u, ({}, []))[1] if not r.get("grad")]
+        # Certificates, associate's and bachelor's, as the profile's headline counts them since the
+        # November 2026 correction (non-credential programs are counted apart).
+        ug = undergrad(profiles.get(u, ({}, []))[1])
         c = counts(ug)
         assert (s["n_ug_pass"], s["n_ug_fail"], s["n_ug_programs"]) == (
             c["pass"],
