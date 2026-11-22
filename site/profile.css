@@ -149,3 +149,13 @@ aside.rail .rail__h2 { margin-top: var(--sp-group); }
 .peers table.t.stack td { flex-wrap: wrap; }
 .peers table.t.stack td::before { flex: 1 1 8em; min-width: 0; }
 .peers table.t.stack td > .peers__n { margin-left: auto; }
+/* The same programs at other colleges in the state (no-verdict profiles, November 2026). The lede
+   says whose graduates these are before any figure; the counts keep "0 of 5" in one piece. */
+.art .same__lede { font-size: var(--t-ui); line-height: 1.5; color: var(--ink); max-width: 66ch; margin: 0 0 var(--sp-group); }
+.art .same__gap { font-size: var(--t-ui); line-height: 1.5; color: var(--ink-soft); max-width: 66ch; margin: var(--sp-related) 0 0; }
+.same__n { white-space: nowrap; }
+/* A word, not a badge: the rule's treatment of tipped jobs, explained in the note below the table. */
+.same__tip { font-size: var(--t-fine); color: var(--ink-soft); white-space: nowrap; }
+.same table.t.stack td { flex-wrap: wrap; }
+.same table.t.stack td::before { flex: 1 1 8em; min-width: 0; }
+.same table.t.stack td > .same__n { margin-left: auto; }

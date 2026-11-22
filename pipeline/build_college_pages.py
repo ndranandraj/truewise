@@ -645,6 +645,13 @@ def main() -> None:
             )
         peer_index = pb.PeerIndex(peers)
 
+    # The same programs at other colleges in the state, for profiles with no undergraduate verdict
+    # (pipeline/same_programs.py). Read from the same program file as the profiles.
+    from pipeline import same_programs as sp
+
+    same_path = _model.PARQUET_DIR / "value_check.parquet"
+    same = sp.load(con, same_path) if same_path.exists() else {}
+
     col_dir = SITE / "college"
     col_dir.mkdir(parents=True, exist_ok=True)
     partial: dict = {}  # profiles that get programs.csv
@@ -657,6 +664,19 @@ def main() -> None:
         if basics is not None:
             about = pb.about_section(basics.get(u), years, SCORECARD_RELEASE)
             compare = pb.compare_section(u, peer_index, years)
+        elsewhere = ""
+        ctx = same.get(u)
+        if ctx is not None:
+            # The section and the summary read the same rows: it is served only where the summary
+            # has no undergraduate verdict, and both name the same state.
+            if pl.counts([r for r in rows if not r.get("grad")])["decided"] or (
+                ctx.state != meta["state"]
+            ):
+                raise SystemExit(
+                    f"same_programs: {u} disagrees with its profile (state {ctx.state} vs "
+                    f"{meta['state']}, or an undergraduate verdict on the page)"
+                )
+            elsewhere = sp.section(ctx)
         html, tail_json = canonical_page(
             meta,
             rows,
@@ -666,6 +686,7 @@ def main() -> None:
             s.get("net_price"),
             about,
             compare,
+            elsewhere,
         )
         d = col_dir / slug
         d.mkdir(parents=True, exist_ok=True)
