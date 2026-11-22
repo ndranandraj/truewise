@@ -189,3 +189,35 @@ def test_national_index_explains_coverage_gap():
     assert "4,949" in html and "1,178" in html  # profiled and the searchable-but-suppressed gap
     # No gap sentence when every school in the data is profiled.
     assert "have no full profile" not in national_index(["TX"], profiled=10, searchable=10)
+
+
+def test_the_build_writes_the_homepage_search_list(tmp_path, monkeypatch, register_fixture_slugs):
+    """The homepage's suggestions (site/assets/home-search.js) read this list. Each row carries the
+    fields the shared matcher ranks on and the profile address from the same slug map as the pages,
+    so a suggestion can never open a page the build did not write."""
+    import json
+
+    site = _setup(tmp_path, monkeypatch, register_fixture_slugs)
+    rows = json.loads((site / "college" / bcp.SEARCH_INDEX).read_text(encoding="utf-8"))
+    slugs = json.loads((site / "college" / "slug-map.json").read_text())
+    assert rows == [["Test State University", "Austin", "TX", 5000, slugs["100"]]]
+    for _name, _city, _state, _enrollment, slug in rows:
+        assert (site / "college" / slug / "index.html").exists()
+
+
+def test_the_search_list_is_sorted_and_keeps_names_as_written():
+    qualified = {
+        "2": {"name": "Université Example", "city": None, "state": "PR", "enrollment": None},
+        "1": {"name": "baylor University", "city": "Waco", "state": "TX", "enrollment": 20000.0},
+        "3": {"name": "Baylor University", "city": "Waco", "state": "TX", "enrollment": 5},
+    }
+    slugs = {"1": "baylor-university-b", "2": "universite-example", "3": "baylor-university"}
+    text = bcp.search_index(qualified, slugs)
+    assert "Université" in text, "names stay as written, not escaped to \\u sequences"
+    import json
+
+    assert json.loads(text) == [
+        ["Baylor University", "Waco", "TX", 5, "baylor-university"],
+        ["baylor University", "Waco", "TX", 20000, "baylor-university-b"],
+        ["Université Example", "", "PR", 0, "universite-example"],
+    ]

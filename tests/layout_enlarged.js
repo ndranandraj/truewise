@@ -26,10 +26,12 @@ function bodyFontPx() {
 /**
  * Load `url` in `page`, require the header (and any route-specific `ready` selectors) to render,
  * enlarge the text (`doubleText`; a no-op when the browser itself zooms text, as Firefox does with
- * native text-only zoom), confirm the body text really is at least `minBodyPx`, then run each probe.
+ * native text-only zoom), confirm the body text really is at least `minBodyPx`, run the route's own
+ * `prepare` if it has one (to reach a state that exists only after an interaction, such as the
+ * homepage's open search suggestions), then run each probe.
  * Returns the findings; every failure to reach the state being measured is a blocking finding.
  */
-async function enlargedPass(page, url, { probes, ready = [], doubleText, timeout = 30000, readyTimeout = 10000, settle = 300, minBodyPx = 28 }) {
+async function enlargedPass(page, url, { probes, ready = [], doubleText, prepare = null, timeout = 30000, readyTimeout = 10000, settle = 300, minBodyPx = 28 }) {
   let resp;
   try {
     resp = await page.goto(url, { waitUntil: "load", timeout });
@@ -53,6 +55,14 @@ async function enlargedPass(page, url, { probes, ready = [], doubleText, timeout
   const body = await page.evaluate(bodyFontPx);
   if (!(body >= minBodyPx)) {
     return [{ kind: "enlarged-not-applied", blocking: true, detail: `${url}: body text is ${body}px, under ${minBodyPx}px, so the text was not enlarged and nothing was measured.` }];
+  }
+  if (prepare) {
+    try {
+      await prepare(page);
+      await page.waitForTimeout(settle);
+    } catch (e) {
+      return [{ kind: "enlarged-not-ready", blocking: true, detail: `${url}: the route's prepare step failed, so the state it opens was not measured at enlarged text (${first(e)}).` }];
+    }
   }
   const findings = [];
   for (const probe of probes) {

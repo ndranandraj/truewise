@@ -17,6 +17,15 @@
  *     limit = 25,
  *   })
  *
+ * Enhance mode (November 2026, the homepage): pass `input`, an input already on the page inside a
+ * form that works without JavaScript, and the combobox attaches to it instead of building its own
+ * label and input. `root` is then the element focus must stay inside (the form), `after` the element
+ * the list and status follow (default: the input), and `listLabel` names the list. Enter with no
+ * active option is left alone, so the form submits as it would without the script.
+ *   data may be a function returning the dataset, or null while it loads (`loadingText`, a string
+ *   or a function, is announced; call refresh() when it arrives). `countText(n, limit)` and
+ *   `noneText(q)` replace the default status wording. notify(text) sets the status line.
+ *
  * Implements the WAI-ARIA combobox-with-listbox pattern: focus stays in the input and the active
  * option is tracked with aria-activedescendant, so a screen reader announces the option without
  * moving focus. Keys: Down/Up move, Home/End jump, Enter selects, Escape closes then clears.
@@ -46,6 +55,10 @@
     }
 
     _build() {
+      if (this.o.input) {
+        this._enhance();
+        return;
+      }
       const listId = nextId("tw-listbox");
       const labelId = nextId("tw-label");
       const statusId = nextId("tw-status");
@@ -70,12 +83,55 @@
       this.status = this.root.querySelector(".tw-search__status");
       this.listId = listId;
 
+      this._listen();
+    }
+
+    // Attach to an input already on the page (see "Enhance mode" above). The label, the input and
+    // the form stay as they are; the list, the empty region and the status line follow `after`.
+    _enhance() {
+      const listId = nextId("tw-listbox");
+      const statusId = nextId("tw-status");
+      const input = this.o.input;
+      input.setAttribute("role", "combobox");
+      input.setAttribute("aria-expanded", "false");
+      input.setAttribute("aria-controls", listId);
+      input.setAttribute("aria-autocomplete", "list");
+      input.setAttribute("autocomplete", "off");
+      const list = document.createElement("ul");
+      list.id = listId;
+      list.className = "tw-search__list";
+      list.setAttribute("role", "listbox");
+      list.setAttribute("aria-label", this.o.listLabel || "Suggestions");
+      list.hidden = true;
+      const empty = document.createElement("div");
+      empty.className = "tw-search__empty-region";
+      empty.hidden = true;
+      const status = document.createElement("p");
+      status.id = statusId;
+      status.className = "tw-search__status";
+      status.setAttribute("role", "status");
+      status.setAttribute("aria-live", "polite");
+      (this.o.after || input).after(list, empty, status);
+      this.input = input;
+      this.list = list;
+      this.emptyRegion = empty;
+      this.status = status;
+      this.listId = listId;
+      this._listen();
+    }
+
+    _listen() {
       this.input.addEventListener("input", () => this._onInput());
       this.input.addEventListener("keydown", (e) => this._onKey(e));
       // Close when focus leaves the whole widget (not on option mousedown, which we preventDefault).
       this.root.addEventListener("focusout", (e) => {
         if (!this.root.contains(e.relatedTarget)) this._close();
       });
+    }
+
+    // Set the status line, e.g. when the caller's data failed to load.
+    notify(text) {
+      this.status.textContent = text;
     }
 
     _onInput() {
@@ -93,11 +149,19 @@
         this.status.textContent = "";
         return;
       }
+      // data may arrive later (enhance mode loads it on first use): until then, say so.
+      const data = typeof this.o.data === "function" ? this.o.data() : this.o.data;
+      if (data == null) {
+        this.results = [];
+        this._close();
+        const t = this.o.loadingText;
+        this.status.textContent = (typeof t === "function" ? t() : t) || "Loading\u2026";
+        return;
+      }
       // providerOpts lets a caller pass extra provider arguments (e.g. a K-12 state filter from the
       // state chips) that compose with the query. It can be an object or a function returning one.
       const extra = typeof this.o.providerOpts === "function" ? this.o.providerOpts() : this.o.providerOpts;
-      this.results =
-        this.o.provider.search(q, { data: this.o.data, limit: this.o.limit, ...extra }) || [];
+      this.results = this.o.provider.search(q, { data, limit: this.o.limit, ...extra }) || [];
       this.active = -1;
       this._render(q);
     }
@@ -117,7 +181,7 @@
         this._close();
         this.emptyRegion.innerHTML = `<div class="tw-search__empty">${empty}</div>`;
         this.emptyRegion.hidden = false;
-        this.status.textContent = `No results for ${q}`;
+        this.status.textContent = this.o.noneText ? this.o.noneText(q) : `No results for ${q}`;
         return;
       }
       this.emptyRegion.hidden = true;
@@ -136,7 +200,9 @@
         el.addEventListener("click", () => this._select(i));
       });
       const n = this.results.length;
-      this.status.textContent = `${n} result${n === 1 ? "" : "s"}${n === this.o.limit ? " or more" : ""}`;
+      this.status.textContent = this.o.countText
+        ? this.o.countText(n, this.o.limit)
+        : `${n} result${n === 1 ? "" : "s"}${n === this.o.limit ? " or more" : ""}`;
       this._show();
     }
 

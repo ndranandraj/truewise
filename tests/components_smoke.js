@@ -130,6 +130,59 @@ stateFilter = "TX";
 cb2.refresh();
 check(lastOpts && lastOpts.state === "TX", "refresh() should re-run with the updated providerOpts");
 
+// 9. Enhance mode (the homepage, November 2026): attach to an input already in a form that works
+// without JavaScript. The label and input stay; the list follows the row; data may arrive later.
+const form = document.createElement("form");
+form.innerHTML = `<label for="h-q">Find a college</label>
+  <div class="row"><input id="h-q" name="q" type="search" /><button type="submit">Search</button></div>
+  <p class="hint">Or browse</p>`;
+document.body.appendChild(form);
+const hq = form.querySelector("#h-q");
+let late = null;
+let picked3 = null;
+const cb3 = new SearchCombobox(form, {
+  input: hq,
+  after: form.querySelector(".row"),
+  provider,
+  data: () => late,
+  minChars: 1,
+  listLabel: "Colleges",
+  loadingText: () => "Loading colleges",
+  countText: (n) => `${n} colleges. Use the arrow keys to choose one.`,
+  noneText: (q) => `No colleges match ${q}`,
+  onSelect: (r) => (picked3 = r),
+});
+const list3 = form.querySelector('[role="listbox"]');
+const status3 = form.querySelector('[role="status"]');
+check(form.querySelector("label[for='h-q']") && form.querySelectorAll("input").length === 1,
+  "enhance mode must keep the page's own label and input, not add its own");
+check(hq.getAttribute("role") === "combobox" && hq.getAttribute("aria-controls") === list3.id,
+  "the existing input should become the combobox controlling the new list");
+check(hq.getAttribute("name") === "q", "the input keeps its name, so the form still submits the query");
+check(form.querySelector(".row").nextElementSibling === list3, "the list should follow the row");
+check(list3.getAttribute("aria-label") === "Colleges", "the list should carry its label");
+check(!form.classList.contains("tw-search"), "enhance mode must not restyle the host form");
+hq.value = "b";
+cb3._run();
+check(status3.textContent === "Loading colleges" && list3.hidden, "with no data yet it should say it is loading");
+late = DATA;
+cb3.refresh();
+check(!list3.hidden && list3.querySelectorAll('[role="option"]').length === 3, "refresh() should search once data arrives");
+check(status3.textContent === "3 colleges. Use the arrow keys to choose one.", `custom count text, got "${status3.textContent}"`);
+// Enter with nothing chosen is left alone, so the form submits as it would without the script.
+const enterNone = new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+hq.dispatchEvent(enterNone);
+check(!enterNone.defaultPrevented, "Enter with no active option must not be prevented (the form submits)");
+hq.dispatchEvent(new window.KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true }));
+const enterOne = new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+hq.dispatchEvent(enterOne);
+check(enterOne.defaultPrevented && picked3 && picked3.id === 1, "Enter on an active option selects it and does not submit");
+hq.value = "zzzz";
+cb3._run();
+check(status3.textContent === "No colleges match zzzz", "custom no-result text");
+cb3.notify("Suggestions did not load.");
+check(status3.textContent === "Suggestions did not load.", "notify() sets the status line");
+
 console.log(`components smoke (B1 search combobox): ${pass}/${pass + fail.length} passed`);
 if (fail.length) {
   fail.forEach((f) => console.log("  FAIL: " + f));
