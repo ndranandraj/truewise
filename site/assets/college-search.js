@@ -166,6 +166,10 @@
           break;
         }
         if (!ok) continue;
+        /* An alias names one institution, so every word it expands to must be in the name. "ucla"
+           expands to "university of california los angeles", and the University of Southern
+           California matched it on its city and showed as "matched on alias" (November 2026). */
+        if (aliased && placeHits) continue;
 
         let score = 0;
         let why = aliased ? "alias" : "name";

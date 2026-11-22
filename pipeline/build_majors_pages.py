@@ -245,6 +245,11 @@ def _schools_module(cip, plain, schools, slugs) -> str:
     return "".join(p)
 
 
+def card_caption(credential: str) -> str:
+    """The share card's caption: the credential the figure belongs to, first."""
+    return f"{credential} graduates, a few years after finishing: the median across US programs."
+
+
 def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
     canonical = f"{BASE}/majors/{slug}/"
     head_row = _headline(creds)
@@ -271,14 +276,17 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
   ]}}
   </script>
 """
-    # A share card carrying this field's real figure, so a posted link is not a generic card.
+    # A share card carrying this field's real figure, so a posted link is not a generic card. The
+    # caption names the credential first, so an ellipsis on a long field name never takes it
+    # (correction, November 2026: the card showed the figure with no credential, and dentistry's
+    # $216,728 is a master's figure). Earnings, not "salary": that is what ED measures.
     og_path = SITE / "og" / "majors" / f"{slug}.png"
     render_card(
         og_path,
         "College major · median graduate earnings",
         short_label(cip, name),
         big=lead_earn,
-        sub="Median salary a few years after graduating, across US programs.",
+        sub=card_caption(head_row["credential"]),
     )
     parts = [head(title, desc, canonical, ld, og_image=f"/og/majors/{slug}.png")]
     parts.append('  <main class="wrap pg">\n')
@@ -324,9 +332,14 @@ def major_page(cip, name, family, creds, slug, schools=None, slugs=None) -> str:
         )
     parts.append("    </tbody></table></div>\n")
     parts.append(
+        # The federal earnings-premium test uses the high-school line for undergraduate programs
+        # only; the 2026 rule holds graduate programs to a bachelor's-holder line (correction,
+        # November 2026: this note called the column the federal test on graduate rows too).
         '    <p class="src">"Clear the bar" is the share of programs whose graduates out-earn a '
-        "typical high-school graduate (the federal earnings-premium test). Typical range is the "
-        "25th to 75th percentile of program medians.</p>\n"
+        "typical high-school graduate, the line the federal earnings-premium test uses for "
+        "undergraduate programs. The rule holds graduate programs to a bachelor&rsquo;s-holder line, "
+        "so on a graduate degree&rsquo;s row this is Truewise&rsquo;s comparison, not the federal "
+        "test. Typical range is the 25th to 75th percentile of program medians.</p>\n"
     )
 
     # BLS demand / outlook (from any credential row that carries it).

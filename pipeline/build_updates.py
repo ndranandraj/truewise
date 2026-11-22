@@ -96,6 +96,37 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "November 2026",
+        "title": (
+            "Major pages and Careers: the high-school comparison was called the federal test for "
+            "graduate degrees too"
+        ),
+        "body": (
+            "A note under each major page's table of degrees, and the same note in Careers, said "
+            'that "Clear the bar", the share of programs whose graduates out-earn a typical '
+            "high-school graduate, was the federal earnings-premium test. The federal test uses "
+            "that line for undergraduate programs only; the 2026 rule holds graduate programs to a "
+            "bachelor's-holder line. On 180 of the 291 major pages the table has a graduate degree "
+            "row, and 260 of the 720 major and degree combinations in Careers are graduate degrees. "
+            "The note now says that on a graduate row this is Truewise's comparison, not the "
+            "federal test. No figure changed."
+        ),
+        "link": "/methodology/",
+    },
+    {
+        "date": "November 2026",
+        "title": "Major share cards: the figure did not say which degree it was for",
+        "body": (
+            "The image shown when a major page is shared gave one median earnings figure with no "
+            "credential. On 241 of the 291 cards it is a bachelor's figure; on the other 50 it is "
+            "a master's (22), undergraduate certificate (14), associate's (8) or first professional "
+            "degree (6) figure, which a reader could take for a bachelor's. The caption now names "
+            'the credential first. It also said "salary"; the figure is median earnings. No figure '
+            "changed."
+        ),
+        "link": "/majors/",
+    },
+    {
+        "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
         "body": (
             "Rows with equal figures had no fixed order, so their order could change from one site "
