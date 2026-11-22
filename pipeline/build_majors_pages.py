@@ -396,7 +396,8 @@ def majors_index(by_family) -> str:
         "Browse college majors to see median earnings by degree level, the range across schools, "
         "and the job outlook. Built on public federal data."
     )
-    parts = [head(title, desc, canonical)]
+    # The header's Majors link opens this page (Prototype R), so it marks itself.
+    parts = [head(title, desc, canonical, current={"/majors/": "page"})]
     parts.append('  <main class="wrap pg">\n')
     parts.append('    <nav class="crumbs">Majors</nav>\n')
     parts.append("    <h1>What college majors pay</h1>\n")
