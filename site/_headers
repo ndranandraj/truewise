@@ -39,17 +39,36 @@
 /embed/*
   ! X-Frame-Options
 
-# Stylesheet and icons: change rarely, safe to hold for an hour.
+# Fingerprinted stylesheets and scripts: a year, immutable (Prototype S, November 2026). The deploy
+# stamps every reference with ?v=<content hash> (pipeline/version_assets.py), so a changed file has
+# a new address and the old one can be kept for good; the path match ignores the query string. This
+# is only safe while every reference carries its current hash: the deploy runs
+# `python -m pipeline.version_assets --check` after stamping, and stops if one does not. A file
+# listed here must be in version_assets.FINGERPRINTED (a test checks), never an unhashed one.
 /styles.css
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=31536000, immutable
 /pg.css
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=31536000, immutable
 /article.css
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=31536000, immutable
 /profile.css
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=31536000, immutable
 /home.css
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=31536000, immutable
+/components.css
+  Cache-Control: public, max-age=31536000, immutable
+/components/table.js
+  Cache-Control: public, max-age=31536000, immutable
+/components/profile.js
+  Cache-Control: public, max-age=31536000, immutable
+/components/search.js
+  Cache-Control: public, max-age=31536000, immutable
+/assets/college-search.js
+  Cache-Control: public, max-age=31536000, immutable
+/assets/home-search.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# Icons: change rarely.
 
 # Self-hosted fonts: immutable for a year. Safe because each filename pins the family, weight and
 # subset, so a different face is always a different URL. Replace the file name, never the bytes.

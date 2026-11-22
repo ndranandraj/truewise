@@ -2185,9 +2185,10 @@ def test_committed_pages_carry_no_stylesheet_stamp():
         staged = subprocess.run(
             ["git", "show", f":{rel}"], cwd=ROOT, capture_output=True, text=True
         ).stdout
-        if re.search(r'\.css\?v=[0-9a-f]+"', staged):
+        # Scripts are stamped too since November 2026 (Prototype S).
+        if re.search(r'\.(?:css|js)\?v=[0-9a-f]+"', staged):
             stamped.append(rel)
-    assert not stamped, "stylesheet stamps staged for commit: " + ", ".join(stamped)
+    assert not stamped, "asset stamps staged for commit: " + ", ".join(stamped)
 
 
 def test_every_page_has_a_skip_link_and_an_escapable_menu(tmp_path, monkeypatch):

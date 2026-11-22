@@ -38,7 +38,10 @@ const [root, page, data] = process.argv.slice(2);
 const { JSDOM } = require(root + "/node_modules/jsdom");
 const search = fs.readFileSync(root + "/site/assets/college-search.js", "utf8");
 const html = fs.readFileSync(page, "utf8")
-  .replace('<script src="/assets/college-search.js"></script>', "<script>" + search + "</script>")
+  // The deploy stamps the tag with ?v=<content hash> before pytest runs (version_assets), so the
+  // match allows one; an exact string match dropped the matcher from the page.
+  .replace(/<script src="\\/assets\\/college-search\\.js(?:\\?v=[0-9a-f]+)?"><\\/script>/,
+    () => "<script>" + search + "</script>")
   .replace(/<script[^>]*src=[^>]*><\\/script>/g, "");
 const index = JSON.parse(fs.readFileSync(data, "utf8"));
 const dom = new JSDOM(html, { runScripts: "dangerously", url: "https://truewise.dev/value-check/",

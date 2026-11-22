@@ -61,6 +61,9 @@ jobs:
           python -m pipeline.build_sitemap
           # Stamp styles.css with a content hash so a CSS change busts its own browser cache.
           python -m pipeline.version_assets
+          # Year-cached files must be referenced with their current hash, or a reader keeps an old
+          # one for a year (site/_headers).
+          python -m pipeline.version_assets --check
 
       - name: Data-quality gate + tests (block deploy on failure)
         run: |
