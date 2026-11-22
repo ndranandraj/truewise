@@ -74,6 +74,19 @@ async function main() {
   f = await enlargedPass(p, "http://x/", opts());
   check(blocking(f, "enlarged-not-applied"), "an unreadable body text size is a blocking finding");
 
+  // A route's prepare step (the homepage's open suggestions) runs after the text is enlarged and
+  // before the probes; if it fails, the state was not reached, which is blocking, never clean.
+  p = fakePage();
+  const order = [];
+  f = await enlargedPass(p, "http://x/", opts({ prepare: async () => { order.push(p.calls.length); } }));
+  check(f.length === 1 && f[0].detail === "probe ran" && order.length === 1 &&
+    order[0] > p.calls.indexOf("evaluate bodyFontPx") && order[0] <= p.calls.indexOf("evaluate probe"),
+    "a route's prepare step runs after the text is enlarged and before the probes");
+  p = fakePage();
+  f = await enlargedPass(p, "http://x/", opts({ prepare: async () => { throw new Error("page.waitForSelector: Timeout 8000ms exceeded\nCall log"); } }));
+  check(blocking(f, "enlarged-not-ready") && /prepare step failed/.test(f[0].detail) && !p.calls.includes("evaluate probe"),
+    "a prepare step that fails is a blocking finding, and nothing is measured");
+
   // headerProbe on a page with no header: a blocking finding, not an empty (clean) result.
   const dom = new JSDOM("<!doctype html><body><main><h1>No header here</h1></main></body>", { runScripts: "outside-only" });
   dom.window.eval(fs.readFileSync(path.join(__dirname, "layout_probe.js"), "utf8") + ";window.headerProbe = headerProbe;");

@@ -238,7 +238,7 @@ window.addEventListener("resize", onResize);
           <h1 id="h-title">The honest number behind US&nbsp;education.</h1>
           <p class="h-lede">See, program by program, whether a college&rsquo;s graduates out-earn a
             high-school graduate, and what families actually pay.</p>
-          <form class="h-search" action="/value-check/" method="get" role="search">
+          <form class="h-search" action="/value-check/" method="get" role="search" data-index="/college/search-index.json">
             <label for="h-q">Find a college</label>
             <div class="h-search__row">
               <input id="h-q" name="q" type="search" placeholder="e.g. Baylor" autocomplete="off" />
@@ -335,6 +335,10 @@ window.addEventListener("resize", onResize);
     </div>
   </footer>
   <!-- Cloudflare Web Analytics: cookieless, aggregate, no personal data. Token injected at deploy from the CF_BEACON_TOKEN secret. -->
+  <!-- Search suggestions: the form works without these (assets/home-search.js). -->
+  <script defer src="/assets/college-search.js"></script>
+  <script defer src="/components/search.js"></script>
+  <script defer src="/assets/home-search.js"></script>
   <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "CF_BEACON_TOKEN"}'></script>
 </body>
 </html>

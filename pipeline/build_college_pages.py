@@ -131,6 +131,24 @@ def profile_meta(s: dict, pmeta: dict, in_institution_file: bool) -> dict:
     }
 
 
+# The homepage's search suggestions (site/assets/home-search.js) read this list: one row per college
+# with a profile, [name, city, state, enrollment, slug], the fields the shared matcher ranks on plus
+# the profile address from the same slug map as the pages. About 135 KB compressed, loaded on first
+# use rather than with the page.
+SEARCH_INDEX = "search-index.json"
+
+
+def search_index(qualified: dict, slugs: dict) -> str:
+    rows = sorted(
+        (
+            [s["name"], s.get("city") or "", s["state"], int(s.get("enrollment") or 0), slugs[u]]
+            for u, s in qualified.items()
+        ),
+        key=lambda r: (r[0].lower(), r[4]),
+    )
+    return json.dumps(rows, separators=(",", ":"), ensure_ascii=False)
+
+
 def known_state(st) -> bool:
     return st in STATE_NAMES
 
@@ -663,8 +681,10 @@ def main() -> None:
         json.dumps({u: slugs[u] for u in qualified}, separators=(",", ":"))
     )
 
+    (col_dir / SEARCH_INDEX).write_text(search_index(qualified, slugs), encoding="utf-8")
+
     print(f"college pages: {len(qualified):,}  |  state indexes: {len(states_present)}")
-    print(f"wrote -> {col_dir} and {colleges_dir} (+ slug-map.json)")
+    print(f"wrote -> {col_dir} and {colleges_dir} (+ slug-map.json, {SEARCH_INDEX})")
     print("run pipeline.build_sitemap after the page builders to refresh sitemap.xml")
 
 

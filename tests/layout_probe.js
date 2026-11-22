@@ -49,8 +49,54 @@ const WIDTHS = [
  *  its own `cr-*` markup and its own live region, and treating "no .tw-table" as "nothing to drive"
  *  silently skipped every Careers interaction while the report said clean.
  */
+/* Open the homepage's search suggestions: type a query with many long names and wait for the list.
+ * Throws if it never opens, so the route fails rather than measuring the page with the list closed. */
+async function openHomeSuggestions(page) {
+  await page.waitForSelector("#h-q");
+  await page.fill("#h-q", "institute of technology");
+  await page.waitForSelector('.h-search [role="option"]', { timeout: 8000 });
+}
+
 const ROUTES = [
   { label: "homepage", path: "/", kind: "static" },
+  /* The homepage with its search suggestions open (November 2026): the list exists only after typing,
+   * so the route opens it before measuring, at every width and at 200% text (enlargedPrepare), with
+   * eight long names. Choosing one must open the profile; Enter with nothing chosen must search Value
+   * Check, as the form does without the script. */
+  { label: "homepage-suggestions", path: "/", kind: "flow",
+    prepare: openHomeSuggestions,
+    enlargedPrepare: openHomeSuggestions,
+    check: async (page) => {
+      const findings = [];
+      const shown = await page.locator('.h-search [role="option"]').count();
+      if (shown < 2) findings.push({ kind: "home-suggestions", blocking: true,
+        detail: `Typing in the homepage search showed ${shown} suggestions.` });
+      await page.press("#h-q", "ArrowDown");
+      await page.press("#h-q", "Enter");
+      let landed = "";
+      try {
+        await page.waitForURL(/\/college\/[a-z0-9-]+\/$/, { timeout: 8000 });
+        landed = new URL(page.url()).pathname;
+      } catch (e) {
+        findings.push({ kind: "home-open-profile", blocking: true,
+          detail: `Enter on a suggestion stayed at ${page.url()} instead of opening /college/<slug>/.` });
+      }
+      // A fresh homepage, not goBack(): if Enter went nowhere there is no page to go back to, and the
+      // next step would wait out its timeout and end the run instead of reporting a finding.
+      await page.goto(new URL("/", page.url()).href, { waitUntil: "load" });
+      await page.waitForSelector("#h-q");
+      await page.fill("#h-q", "baylor");
+      await page.press("#h-q", "Enter");
+      let searched = "";
+      try {
+        await page.waitForURL(/\/value-check\/\?q=baylor$/, { timeout: 8000 });
+        searched = new URL(page.url()).pathname + new URL(page.url()).search;
+      } catch (e) {
+        findings.push({ kind: "home-search-submits", blocking: true,
+          detail: `Enter with nothing chosen went to ${page.url()} instead of /value-check/?q=baylor.` });
+      }
+      return { findings, steps: [{ step: "suggest", shown }, { step: "enter-opens-profile", landed }, { step: "enter-searches", searched }] };
+    } },
   /* Value Check, ready: a search must produce results and the label must say the list is loaded. */
   { label: "value-check", path: "/value-check/", kind: "flow",
     check: async (page) => {

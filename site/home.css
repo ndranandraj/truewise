@@ -31,6 +31,21 @@
 .h-search button { font: inherit; font-weight: 600; font-size: var(--t-ui); padding: 0 20px; border: 0; border-radius: var(--r-sm); background: var(--brand); color: var(--paper); cursor: pointer; }
 .h-search input:focus-visible, .h-search button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .h-hint { margin: var(--s2) 0 0; font-size: var(--t-fine); color: var(--ink-soft); }
+/* Search suggestions (assets/home-search.js, November 2026). They sit in the flow under the search
+   row and push the page down rather than cover it, so nothing hides behind them at any text size.
+   The active option has a bar as well as a tint, for keyboard users and forced colours. */
+.h-search .tw-search__list { list-style: none; margin: var(--s2) 0 0; padding: 4px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+.h-search .tw-search__list[hidden], .h-search .tw-search__empty-region[hidden] { display: none; }
+.h-search .tw-search__opt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 10px 12px; border-radius: var(--r-sm); cursor: pointer; }
+.h-search .tw-search__opt.is-active, .h-search .tw-search__opt:hover { background: var(--sand); }
+.h-search .tw-search__opt.is-active { box-shadow: inset 3px 0 0 var(--brand); }
+.h-search .tw-search__title { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.h-search .tw-search__meta { color: var(--ink-soft); font-size: var(--t-fine); }
+.h-search .tw-search__why { color: var(--ink-faint); font-size: var(--t-label); }
+.h-search .tw-search__empty { padding: var(--s2) 0 0; color: var(--ink-soft); font-size: var(--t-fine); }
+.h-search .tw-search__empty a { font-weight: 600; }
+.h-search .tw-search__status { margin: var(--s2) 0 0; font-size: var(--t-fine); color: var(--ink-faint); }
+.h-search .tw-search__status:empty { display: none; }
 .h-latest { margin-top: var(--s6); padding: 10px 14px; border-left: 3px solid var(--brand); background: var(--bg-alt); font-size: var(--t-fine); color: var(--ink-soft); }
 .h-latest p { margin: 0; line-height: 1.5; }
 .h-latest__tag { font-size: var(--t-label) !important; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 2px !important; }
