@@ -104,6 +104,7 @@ def canonical_page(
     net_price: dict | None = None,
     about: str = "",
     compare: str = "",
+    elsewhere: str = "",
 ) -> tuple[str, str | None]:
     """The college profile (profile release, 30 September 2026: design plan Prototype B).
 
@@ -113,7 +114,10 @@ def canonical_page(
 
     about and compare are the two sections from pipeline/profile_basics.py, already rendered:
     About the college goes after Cost, beside the rail; Colleges to compare after Programs. The
-    live build passes both for every profile."""
+    live build passes both for every profile.
+
+    elsewhere is the same programs at other colleges in the state (pipeline/same_programs.py),
+    already rendered: the first section, before Cost, on profiles with no undergraduate verdict."""
     from pipeline import profile_layout as pl
 
     name = meta["name"]
@@ -264,7 +268,7 @@ def canonical_page(
             f'<a href="{PROGRAMS_CSV}" download>download all {total:,} (CSV)</a>.</p>\n'
         )
 
-    nav = pl.nav_items(bool(about), bool(compare))
+    nav = pl.nav_items(bool(about), bool(compare), bool(elsewhere))
     chips = "".join(f'<li><a href="#{i}">{t}</a></li>' for i, t in nav)
     loc = ", ".join(p for p in (meta.get("city"), st_name) if p)
     ctrl = f" &middot; {esc(meta['control'])}" if meta.get("control") else ""
@@ -285,6 +289,7 @@ def canonical_page(
         f'    <nav class="sectnav" aria-label="Sections"><p class="sectnav__label" id="sn-l">'
         f"{len(nav)} sections</p>"
         f'<div class="sectnav__scroll"><ul aria-labelledby="sn-l">{chips}</ul></div></nav>\n',
+        elsewhere,
         pl.cost_section(meta, rows, net_price),
         about,
         "    </div>\n",

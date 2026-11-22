@@ -409,10 +409,15 @@ def sources_section(meta: dict, bench) -> str:
 NAV = [("cost", "Cost"), ("programs", "Programs"), ("sources", "Sources")]
 
 
-def nav_items(about: bool = False, compare: bool = False) -> list[tuple[str, str]]:
+def nav_items(
+    about: bool = False, compare: bool = False, same: bool = False
+) -> list[tuple[str, str]]:
     """The section links, in page order. About the college and Colleges to compare (November
-    2026) are on every live profile; a page built without them keeps the three it always had."""
-    items = [("cost", "Cost")]
+    2026) are on every live profile; a page built without them keeps the three it always had.
+    The same programs at other colleges (pipeline/same_programs.py) comes first where it is
+    served: profiles with no undergraduate verdict."""
+    items = [("elsewhere", "Same programs")] if same else []
+    items.append(("cost", "Cost"))
     if about:
         items.append(("about", "About"))
     items.append(("programs", "Programs"))
