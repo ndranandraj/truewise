@@ -266,7 +266,8 @@ def render_index() -> str:
         "Truewise findings: each a reproducible number from public federal education data, with the "
         "method and the dataset behind it."
     )
-    p = [head(title, desc, canonical)]
+    # The header's Findings link opens this page (Prototype R), so it marks itself.
+    p = [head(title, desc, canonical, current={"/findings/": "page"})]
     p.append('  <main class="wrap pg">\n')
     p.append('    <nav class="crumbs">Findings</nav>\n')
     p.append("    <h1>Findings</h1>\n")

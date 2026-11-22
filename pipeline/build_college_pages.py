@@ -304,10 +304,28 @@ def _header_js() -> str:
 HEADER_JS = _header_js()
 
 
-def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
+def mark_section(html: str, current: dict[str, str]) -> str:
+    """aria-current on the header's links to the page's own section, in the bar and in the menu:
+    "page" on the section's own page, "true" on a page inside it (the K-12 subpages' convention).
+    The build stops if a link is not there twice, so a renamed link cannot drop the mark silently."""
+    start = html.index('<header class="site-header">')
+    end = html.index("</header>", start)
+    header = html[start:end]
+    for href, value in current.items():
+        header, n = re.subn(
+            rf'(<a href="{re.escape(href)}")>', rf'\1 aria-current="{value}">', header
+        )
+        if n != 2:
+            raise SystemExit(f"mark_section: {href} appears {n} times in the header, not 2")
+    return html[:start] + header + html[end:]
+
+
+def head(title, desc, canonical, extra_ld="", og_image="/og.png", current=None) -> str:
+    """The page head and the site header. `current` marks the header links to the page's own section
+    (see mark_section); the Majors and Findings indexes pass theirs (November 2026)."""
     ensure_pg_css()
     og = f"{BASE}{og_image}" if og_image.startswith("/") else og_image
-    return f"""<!DOCTYPE html>
+    page = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -339,18 +357,18 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
         <span class="brand-tagline">Honest US education data</span>
       </div>
       <nav aria-label="Primary">
-        <a href="/careers/">Careers</a>
+        <a href="/majors/">Majors</a>
+        <a href="/findings/">Findings</a>
         <a href="/k12/">High schools</a>
-        <a href="/#data">Data</a>
         <a href="/methodology/">Methodology</a>
         <a href="/about/">About</a>
         <a class="nav-cta" href="/value-check/">Find a college</a>
         <details class="nav-toggle">
           <summary aria-label="Menu">&#9776;</summary>
           <div class="menu">
-            <a href="/careers/">Careers</a>
+            <a href="/majors/">Majors</a>
+            <a href="/findings/">Findings</a>
             <a href="/k12/">High schools</a>
-            <a href="/#data">Data</a>
             <a href="/methodology/">Methodology</a>
             <a href="/about/">About</a>
           </div>
@@ -361,6 +379,7 @@ def head(title, desc, canonical, extra_ld="", og_image="/og.png") -> str:
   </header>
   <span id="main" tabindex="-1"></span>
 """
+    return mark_section(page, current) if current else page
 
 
 # The one footer. Every generated page uses this constant and every hand-written page carries the

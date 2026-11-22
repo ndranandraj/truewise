@@ -18,7 +18,9 @@ SITE = ROOT / "site"
 PIPELINE = ROOT / "pipeline"
 
 # The one primary-nav order every page must share (links before the mobile menu).
-CANONICAL_NAV = ["/careers/", "/k12/", "/#data", "/methodology/", "/about/", "/value-check/"]
+# Majors and Findings in place of Careers and Data since Prototype R (November 2026): the review found
+# Findings and Majors only in the footer, and "Data" jumping to a homepage anchor.
+CANONICAL_NAV = ["/majors/", "/findings/", "/k12/", "/methodology/", "/about/", "/value-check/"]
 
 # Builders that emit .t data tables. College profiles are not here: their table is the component's
 # own (tw-table inside .tw-table__scroll), checked in test_wide_tables_are_wrapped_for_horizontal_scroll.
@@ -1919,7 +1921,8 @@ def test_the_primary_nav_says_where_you_are():
     show its active tab. Each section page now marks its own nav link aria-current, in the static
     markup so it holds without JavaScript, and styles.css underlines it."""
     expected = {
-        "careers/index.html": ("/careers/", "page"),
+        # Careers sits inside Majors since the header changed (Prototype R, November 2026).
+        "careers/index.html": ("/majors/", "true"),
         "methodology/index.html": ("/methodology/", "page"),
         "about/index.html": ("/about/", "page"),
         "value-check/index.html": ("/value-check/", "page"),
