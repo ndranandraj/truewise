@@ -24,6 +24,7 @@ from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head, money
 from pipeline.config import PARQUET_DIR, ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
+from pipeline.search_copy import fit
 from pipeline.tokens_gen import BAD as OG_BAD
 
 SITE = ROOT / "site"
@@ -99,10 +100,10 @@ def render_page(s) -> str:
     canonical = f"{BASE}/findings/stats-grad-exposure/"
     lo, hi = s["band"]
     title = "How many graduate programs are exposed under the new earnings rule?"
-    desc = (
-        f"On the most recent federal data, {lo:,} to {hi:,} US graduate programs fall below a single "
-        f"national bachelor's-holder earnings line. The final STATS rule uses field-level thresholds and "
-        f"a $1 exemption, so the true count is likely lower. Reproducible, from federal data."
+    # Within a search result (Prototype P), keeping why the count is an upper reading.
+    desc = fit(
+        f"{lo:,} to {hi:,} US graduate programs fall below a national bachelor's-holder earnings "
+        "line. Under the final rule's field-level lines, likely fewer."
     )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[

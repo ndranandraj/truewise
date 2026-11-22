@@ -102,12 +102,14 @@ def canonical_page(
     benchmark,
     threshold: int,
     net_price: dict | None = None,
+    description: str | None = None,
 ) -> tuple[str, str | None]:
     """The college profile (profile release, 30 September 2026: design plan Prototype B).
 
     Summary, cost, programs and sources, with the section links sticky on phones and the side rail
     from 1200px. Every figure in the summary counts undergraduate programs, as the site's headline
     does; graduate comparisons stay in the table, labelled."""
+    from pipeline import profile_copy as pc
     from pipeline import profile_layout as pl
 
     name = meta["name"]
@@ -118,56 +120,13 @@ def canonical_page(
     c = pl.counts(rows)
     decided = c["decided"]
     located = known_state(st)
-    where = ", ".join(p for p in (meta.get("city"), st) if p) if located else ""
-    at_where = f"{name} in {where}" if where else name
     of_state = f"{st_name} " if located else ""
 
-    # The size clause separates the last colliding descriptions: same-named campuses differ in
-    # programs reported or recent graduates, never a fabricated suffix (see git history).
-    grads = sum(r.get("completers") or 0 for r in rows)
-    size = f"Reports {total} program{'' if total == 1 else 's'}"
-    if grads:
-        size += f" and {int(grads):,} recent graduate{'' if grads == 1 else 's'}"
-    size += "."
-
-    # The description says what the summary box says: undergraduate programs where any have a
-    # verdict, otherwise all programs, otherwise why there is no verdict.
-    ug_c = pl.counts([r for r in rows if not r.get("grad")])
-    hc, kind = (ug_c, "undergraduate programs") if ug_c["decided"] else (c, "programs")
-    if hc["decided"] and hc["fail"]:
-        desc = (
-            f"At {at_where}, {hc['fail']} of {hc['decided']} assessed {kind} have graduates who "
-            f"earn less than a typical {of_state}high-school graduate. {size} Program-by-program "
-            "earnings, from federal data."
-        )
-    elif hc["decided"]:
-        desc = (
-            f"At {at_where}, all {hc['decided']} assessed {kind} have graduates out-earning a "
-            f"typical {of_state}high-school graduate. {size} Program earnings, from federal data."
-        )
-    elif c["nobench"]:
-        desc = (
-            f"At {at_where}, the Department of Education reports earnings for {c['nobench']} "
-            f"program{'' if c['nobench'] == 1 else 's'}, with no state benchmark to compare them "
-            f"with. {size} From federal data."
-        )
-    elif c["none"] < total:
-        desc = (
-            f"At {at_where}, the Department of Education publishes no graduate earnings for any "
-            f"program, so none can be assessed. {size} From federal data."
-        )
-    else:
-        desc = (
-            f"The Department of Education lists programs at {at_where} but reports no figures "
-            f"for them. {size}"
-        )
-
-    # Title carries the place, always (86 title values were once shared by 202 pages).
-    title = (
-        f"{name}, {where}: cost and graduate earnings"
-        if where
-        else (f"{name}: cost and graduate earnings")
-    )
+    # Title and search description (pipeline/profile_copy.py): the description leads with the
+    # summary box's own number and fits a search result. The live build passes the description in,
+    # because keeping same-named campuses apart needs every profile at once.
+    title = pc.title(meta)
+    desc = description if description is not None else pc.description(meta, rows)
     # Serialized through _island_json (escapes '<') so a name cannot break out of the script.
     breadcrumb = {
         "@context": "https://schema.org",

@@ -451,17 +451,23 @@ def test_college_titles_carry_the_place():
     they were losing: "miller motte in fayetteville nc" at position 54.9 and "southern careers waco"
     at 78.2, both name-plus-city, against titles carrying no city at all.
 
-    The suffix shortens in the same change, so the median title did not grow.
+    Since Prototype P (November 2026) the place comes last, after what the page answers, so a cut
+    title loses the place rather than the words people search for. It is still always there.
     """
+    from pipeline import profile_copy
+
     src = (PIPELINE / "build_canonical_profiles.py").read_text()
-    assert "{name}, {where}: cost and graduate earnings" in src, "title must carry the place"
     assert "what families pay and what graduates earn" not in src, (
         "the 41-character suffix should be gone from the profile title"
     )
+    located = {"name": "Miller-Motte College", "state": "NC", "city": "Fayetteville"}
+    assert profile_copy.title(located) == (
+        "Miller-Motte College: graduate earnings and cost, Fayetteville, NC"
+    ), "title must carry the place"
     # A school with no location gets no invented one.
-    assert "{name}: cost and graduate earnings" in src, (
-        "an unlocated school must fall back to the bare name rather than an invented place"
-    )
+    assert profile_copy.title({"name": "Nowhere College", "state": "ZZ", "city": None}) == (
+        "Nowhere College: graduate earnings and cost"
+    ), "an unlocated school must fall back to the bare name rather than an invented place"
 
 
 def test_long_lists_open_at_a_page_and_state_the_whole():
@@ -1320,26 +1326,34 @@ def test_a_profile_description_states_the_size_that_separates_two_same_named_cam
 
     Checked against the source before writing the fix: all 13 pairs differ in programs reported,
     distinct CIP codes, or recent completers. None is one record twice. So a real fact separates them,
-    and it is the one a reader comparing two same-named campuses wants. Saying it resolves all ten
-    description collisions without inventing a suffix, a letter or a UNITID, none of which tell a
-    reader anything.
+    and it is the one a reader comparing two same-named campuses wants, never a suffix, a letter or
+    a UNITID, none of which tell a reader anything.
+
+    Since Prototype P (November 2026) descriptions fit a search result, so the size is no longer on
+    every page: profile_copy.choose() gives every colliding page a wording that adds such a fact,
+    its city where the first wording dropped it, else its count of recent graduates.
     """
-    src = (PIPELINE / "build_canonical_profiles.py").read_text()
-    assert 'size = f"Reports {total} program' in src, (
-        "the description must carry the program count that separates same-named campuses"
-    )
-    assert "recent graduate" in src, "and the graduate count, which differs where programs tie"
-    # Every description branch must carry it, or the branch that omits it reintroduces the
-    # collision. The no-verdict branches matter most: six of the ten collisions were in them. Five
-    # since the profile release split "no verdict" into published-but-no-earnings and nothing.
-    assert src.count("{size}") == 5, (
-        f"all five description branches need the size clause, found {src.count('{size}')}"
-    )
+    from pipeline import profile_copy
+
+    def row(done):
+        return {"verdict": "insufficient", "grad": False, "completers": done}
+
+    same_city = {"name": "Cortiva Institute", "state": "FL", "city": "Maitland"}
+    pages = {
+        u: (profile_copy.options(same_city, rows), profile_copy.separating(same_city, rows))
+        for u, rows in (("387925", [row(40), row(48)]), ("438285", [row(80), row(78)]))
+    }
+    got = profile_copy.choose(pages)
+    assert len(set(got.values())) == 2, "two same-named campuses must not share a description"
+    # Both say the fact that separates them, not only the second.
+    assert "88 recent graduates." in got["387925"] and "158 recent graduates." in got["438285"]
     # Not a fabricated distinguisher. A UNITID in a description identifies a row, not an institution.
-    desc_block = src.split("# The description says", 1)[1].split("# Title carries", 1)[0]
-    assert "unitid" not in desc_block.lower(), (
-        "a UNITID in the description distinguishes strings rather than institutions"
-    )
+    for u, d in got.items():
+        assert u not in d, (
+            "a UNITID in the description distinguishes strings rather than institutions"
+        )
+    src = (PIPELINE / "profile_copy.py").read_text()
+    assert "unitid" not in src.split("def options", 1)[1].split("def choose", 1)[0].lower()
 
 
 # The 13 title collisions that remain after the place went into every title, approved as

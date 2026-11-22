@@ -27,6 +27,7 @@ import duckdb
 from pipeline.build_site import build_model
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
+from pipeline.search_copy import fit, n_of
 from pipeline.tokens_gen import BRAND_DEEP, GOOD
 
 SITE = ROOT / "site"
@@ -436,18 +437,24 @@ def state_index(st, schools_in_state) -> str:
     canonical = f"{BASE}/colleges/{st.lower()}/"
     n = len(schools_in_state)
     total_fail = sum(s["n_fail"] for _, s, _ in schools_in_state)
-    title = (
-        f"Colleges in {st_name}: what graduates earn vs a high-school grad"
-        if known_state(st)
-        else "Colleges with no reported location: what graduates earn"
-    )
-    desc = (
-        f"{n} {st_name} colleges by what families pay and whether graduates out-earn a "
-        "typical high-school graduate. Program-level earnings from federal data."
-        if known_state(st)
-        else f"{n} colleges whose state is not reported in the federal data, by what "
-        "families pay and what graduates earn."
-    )
+    # Search copy (Prototype P): within 155 characters, the count singular where it is one.
+    if known_state(st):
+        title = f"Colleges in {st_name}: graduate earnings and cost"
+        lead = (
+            f"{n_of(n, 'college')} in {st_name}: what families pay and, program by program, "
+            "whether graduates out-earn a typical"
+        )
+        desc = fit(
+            f"{lead} {st_name} high-school graduate. From federal data.",
+            f"{lead} {st_name} high-school graduate.",
+            f"{lead} high-school graduate there.",
+        )
+    else:
+        title = "Colleges with no reported location: graduate earnings and cost"
+        desc = fit(
+            f"{n_of(n, 'college')} whose state the federal data does not report: what families "
+            "pay and, program by program, what graduates earn."
+        )
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
     {{"@type":"ListItem","position":1,"name":"Colleges","item":"{BASE}/colleges/"}},
@@ -526,9 +533,9 @@ def state_index(st, schools_in_state) -> str:
 def national_index(states_present, profiled=None, searchable=None) -> str:
     canonical = f"{BASE}/colleges/"
     title = "All US colleges: what families pay and what graduates earn"
-    desc = (
-        "Browse every US college by state to see net price by income and whether each program's "
-        "graduates out-earn a typical high-school graduate. Built on public federal data."
+    desc = fit(
+        "Every US college by state: net price by family income, and whether each program's "
+        "graduates out-earn a typical high-school graduate. Federal data."
     )
     parts = [head(title, desc, canonical)]
     parts.append('  <main class="wrap pg">\n')
@@ -617,12 +624,34 @@ def main() -> None:
     col_dir.mkdir(parents=True, exist_ok=True)
     partial: dict = {}  # profiles that get programs.csv
     states_present: dict[str, list] = defaultdict(list)
+    # Search descriptions for every profile first: same-named campuses can share every word, and
+    # only the whole set shows which (pipeline/profile_copy.py).
+    from pipeline import profile_copy
+
+    metas = {
+        u: profile_meta(s, profiles.get(u, ({}, []))[0], u in in_file) for u, s in qualified.items()
+    }
+    descriptions = profile_copy.choose(
+        {
+            u: (
+                profile_copy.options(metas[u], profiles.get(u, ({}, []))[1]),
+                profile_copy.separating(metas[u], profiles.get(u, ({}, []))[1]),
+            )
+            for u in qualified
+        }
+    )
     for u, s in qualified.items():
         slug = slugs[u]
-        pmeta, rows = profiles.get(u, ({}, []))
-        meta = profile_meta(s, pmeta, u in in_file)
+        rows = profiles.get(u, ({}, []))[1]
+        meta = metas[u]
         html, tail_json = canonical_page(
-            meta, rows, slug, s.get("threshold"), LIVE_STATIC_ROWS, s.get("net_price")
+            meta,
+            rows,
+            slug,
+            s.get("threshold"),
+            LIVE_STATIC_ROWS,
+            s.get("net_price"),
+            description=descriptions[u],
         )
         d = col_dir / slug
         d.mkdir(parents=True, exist_ok=True)

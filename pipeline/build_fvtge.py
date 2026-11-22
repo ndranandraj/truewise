@@ -33,6 +33,7 @@ from pipeline.build_college_pages import BASE, BEACON, FOOTER, STATE_NAMES, esc,
 from pipeline.config import ROOT
 from pipeline.og_images import card as render_card
 from pipeline.program_unit import programs_sql
+from pipeline.search_copy import fit
 from pipeline.tokens_gen import BAD as OG_BAD
 
 SITE = ROOT / "site"
@@ -293,11 +294,14 @@ def render_page(s) -> str:
     r_comp = 100 * a["fail_complete"] / a["n_complete"]
     r_exp = 100 * a["expected_missing"]
     title = "Which colleges had not filed their federal earnings-transparency data?"
-    desc = (
-        f"As of {when}, the Department of Education listed {missing:,} of {total:,} colleges as "
-        f"not having submitted at least one required FVT/GE file; {s['none_filed']:,} had submitted no file at all. "
-        "Searchable by college, with what the Scorecard shows about them."
+    # Within a search result (Prototype P): the list's date stays with its count.
+    # "Submitted no file at all", the page's own words: "submitted none" once described the 578
+    # with all seven marked not submitted, which undercounted (audit, September 2026).
+    lead = (
+        f"On ED's list of {when}, {missing:,} of {total:,} colleges had not submitted at least one "
+        f"required FVT/GE file; {s['none_filed']:,} submitted no file at all."
     )
+    desc = fit(f"{lead} Search by college.", lead)
     ld = f"""  <script type="application/ld+json">
   {{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
     {{"@type":"ListItem","position":1,"name":"Findings","item":"{BASE}/findings/"}},

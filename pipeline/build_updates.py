@@ -22,6 +22,7 @@ import duckdb
 
 from pipeline.build_college_pages import BASE, BEACON, FOOTER, esc, head
 from pipeline.config import ROOT
+from pipeline.search_copy import fit
 
 SITE = ROOT / "site"
 ARCHIVE = ROOT / "archive" / "fvt"
@@ -243,10 +244,9 @@ CORRECTIONS = [
 def render(snaps: list[dict]) -> str:
     canonical = f"{BASE}/updates/"
     title = "Update log: every check of the federal data"
-    desc = (
-        "Truewise snapshots the Department of Education's program-level transparency data and "
-        "keeps the history. Every check is logged here with its source, timestamp, and a SHA-256 "
-        "checksum you can verify yourself."
+    desc = fit(
+        "Every check of the Department of Education's program data, logged with its source, "
+        "timestamp and a SHA-256 checksum you can verify yourself."
     )
     p = [head(title, desc, canonical)]
     p.append('  <main class="wrap pg">\n')
