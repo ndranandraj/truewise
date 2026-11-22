@@ -132,8 +132,8 @@ def canonical_page(
 
     # The description says what the summary box says: undergraduate programs where any have a
     # verdict, otherwise all programs, otherwise why there is no verdict.
-    ug_c = pl.counts([r for r in rows if not r.get("grad")])
-    hc, kind = (ug_c, "undergraduate programs") if ug_c["decided"] else (c, "programs")
+    scope, scoped = pl.headline_rows(rows)
+    hc, kind = (pl.counts(scope), "undergraduate programs" if scoped else "programs")
     if hc["decided"] and hc["fail"]:
         desc = (
             f"At {at_where}, {hc['fail']} of {hc['decided']} assessed {kind} have graduates who "

@@ -96,6 +96,23 @@ def diff_between(newer: Path, older: Path) -> dict | None:
 CORRECTIONS = [
     {
         "date": "November 2026",
+        "title": "College pages: the undergraduate headline counted non-credential programs",
+        "body": (
+            "Each college page leads with how many of its undergraduate programs have graduates "
+            "earning more than a typical high-school graduate. It counted non-credential programs "
+            "(teacher certification and preparatory coursework, which ED codes apart from "
+            "certificates and degrees) as undergraduate; the site-wide headline does not. On 95 "
+            "college pages one of those programs had a verdict. 94 now count only certificates, "
+            "associate's and bachelor's degrees, which changes the share on 57 of them. One, whose "
+            "undergraduate verdicts were all non-credential programs, now leads with its graduate "
+            "programs, labelled as not the federal test for them. The search cards, share images "
+            "and search descriptions count the same way. The non-credential programs stay in each "
+            "page's table, and the summary says so."
+        ),
+        "link": "/college/salina-area-technical-college/",
+    },
+    {
+        "date": "November 2026",
         "title": "Lists and findings: rows with equal figures could change order between updates",
         "body": (
             "Rows with equal figures had no fixed order, so their order could change from one site "

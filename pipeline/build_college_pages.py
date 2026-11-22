@@ -403,9 +403,10 @@ def render_og_card(s, slug, rows=None) -> None:
     passed, fail = s["n_pass"], s["n_fail"]
     kind = "Programs"
     if rows is not None:
-        ug = [r for r in rows if not r.get("grad")]
-        if any(r["verdict"] in ("pass", "fail") for r in ug):
-            rows, kind = ug, "Undergraduate programs"
+        from pipeline import profile_layout as _pl
+
+        scope, scoped = _pl.headline_rows(rows)
+        rows, kind = scope, ("Undergraduate programs" if scoped else "Programs")
         passed = sum(1 for r in rows if r["verdict"] == "pass")
         fail = sum(1 for r in rows if r["verdict"] == "fail")
     decided = passed + fail
